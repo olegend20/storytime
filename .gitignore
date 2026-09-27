@@ -17,3 +17,6 @@ supabase/.branches/
 
 # Local placeholder env used to verify the build; real values never committed.
 .env.local
+
+# Agent worktrees are separate checkouts, not content of this repo.
+.claude/worktrees/

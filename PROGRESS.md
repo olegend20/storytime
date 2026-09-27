@@ -122,3 +122,26 @@ left untouched. With a database available I verified what was previously unverif
 
 **Still open for you:** the Phase 3 bake-off budget (~$37–55, above your $20 threshold)
 and the production `DAILY_BUDGET_USD`. Neither blocks Phase 1.
+
+### 2026-09-27 — Phase 1 launched
+
+Six lanes running in isolated git worktrees (so they cannot collide in one working tree),
+each briefed with `docs/LANE_BRIEF.md` plus a lane-specific brief naming its features, the
+document sections to read, the schema contract, and the findings from the reference stories
+that affect its work.
+
+| Lane | Features | Brief emphasis |
+|---|---|---|
+| 1 Data & auth | F2, F3, F11 (server) | Told RLS is already verified 16/16 — don't redo it; suspect your query, not the policy |
+| 2 AI core | F4, F5, F6, F7 | Must read all four references before writing the master prompt; the four band/structure findings; `lib/schemas/api.ts` is fixed |
+| 3 Cost & ops | F8, F12 | 2 of 6 F8 VTs already green; views already exist; the Auckland/LA timezone VT called out specifically |
+| 4 Frontend | F9, F10, F11 (UI) | Build against `lib/schemas/api.ts` with a mock SSE stream from day 1; refusal copy is lane 6's to write, theirs to render |
+| 5 Eval & judge | F13, F14 | Build both harnesses, **do not run live** — bake-off needs owner approval; judge-blindness and prompt-injection tests first |
+| 6 Safety | F15 | The corpus is the deliverable; report measured rates, not assumed ones; the L1-vs-schema boundary I already settled |
+
+Before launching I added `lib/schemas/api.ts` — the HTTP/SSE contract between lanes 2 and 4,
+which §7 makes the lead's to own. Without it those two lanes would have invented
+incompatible event shapes and only discovered it at integration.
+
+Standing instruction given to every lane: report each feature's VTs individually with real
+pass/fail, and an honest red beats an optimistic green.
