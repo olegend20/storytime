@@ -25,14 +25,27 @@ One line each: what, why, date. Recorded where the planning documents were silen
 | 16 | `generation_logs` and `guardrail_events` get **no RLS policies at all** | With RLS enabled and no permissive policy, anon/authenticated clients see nothing while the service role bypasses RLS. That is exactly the access model §3 asks for. |
 | 17 | pnpm pinned at 12.6.0 with `allowBuilds` in `pnpm-workspace.yaml` | pnpm 12 renamed the build-approval setting from `onlyBuiltDependencies`; without it `pnpm install` exits 1 and CI stops on an interactive prompt. |
 
+## 2026-09-27 — after reading the reference stories
+
+| # | Decision | Why |
+|---|---|---|
+| 18 | **The cold open is the opening of `chapters[0]`, not a separate field.** | §4.1.2 mandates a cold open in the child's real world, but the §4.4 output schema has no field for one. `IMPLEMENTATION_PLAN.md` wins on structure, so the schema stays exactly as written and the cold open lives inside the first chapter. The LEGO and shark references do precisely this (unheaded prose before "Chapter 1"). |
+| 19 | **Ending style is band-dependent**, and the master prompt must choose per band. | The references use two conventions, split cleanly by band. Band A closes with a direct bedtime address after "The End" ("Goodnight, Cruz. Goodnight, Phoenix. Play well."); band C closes on a forward-looking final beat ("Tomorrow, he had a game to make.") with "The End" as a bare marker. A goodnight address to a 10-year-old would read as babyish. Encoded as `endingStyle` in `lib/reference.ts`. |
+| 20 | Gate/judge word count counts **narrative only** — cold open + chapter bodies + ending line — confirmed empirically. | Raw file word counts run ~12% high (headings, True Facts list, markdown emphasis). Counting raw would flag the shark reference at 2,143 against band A's 1,955 tolerance ceiling; counting narrative puts it at 1,859, inside. This independently validates decision #9. |
+| 21 | `lib/reference.ts` parses reference markdown into `StoryOutput`, shared by tests and `eval/`. | F7's VT runs the references through the deterministic gate and `JUDGE_AGENT.md` §5 scores them with their original requests. Both need one definition of "the story", not two parsers. |
+| 22 | Reference `true_facts` get **synthetic** fact ids, and that limitation is stated in the code. | The references predate fact packs, so there is no real `fact_id` to map to. Fabricating ids that look real would let the `unsourced_fact` check appear to pass while testing nothing. |
+| 23 | Eval scenarios use **Cruz 7, Phoenix 4**. | The manifest records the pair as "one of 4 and 7, which is which was not specified". F6's VT and §4.2's bible example both assign Cruz 7 / Phoenix 4, so the plan resolves the ambiguity. |
+| 24 | Stories default to **American spelling**. | The manifest says so explicitly; references 1 and 3 use British spelling and must not be penalised for it. A note for the judge prompt, not a gate rule. |
+| 25 | A headed cold open or coda means a reference may carry up to 12 headed markdown sections while `StoryOutput` caps `chapters` at 10. | Two references head their cold open ("Loading...", "Kickoff") and their return-home coda ("Game Over? Not Quite.", "Full Time"). Those are not journey stops, so the 6–10 rule in §4.1.2 is not breached. |
+
 ## Open — needs the owner
 
 | # | Question | Default while waiting |
 |---|---|---|
-| A | **The four reference stories are missing from the handover archive.** | Proceeding on everything else; calibration and master-prompt style anchors are blocked and marked by a failing test in `test/blocked/`. Not substituting generated stories — see `storytime-plan/reference-stories/README.md`. |
 | B | **Phase 3 bake-off exceeds the $20 threshold**: ~$37 with Opus 5.5 as judge, ~$55 with Fable 5.1. | Will bring an exact figure computed from `config/pricing.json` plus a cheaper 2-sample variant before running anything. |
 | C | `DAILY_BUDGET_USD` production value. | `5` in `.env.example`. |
-| D | Docker Desktop's VM disk is full (890 orphaned anonymous volumes, 46GB), so local Supabase cannot start. | Migrations are unverified locally; the CI `migrations` job verifies them on a clean runner. Not pruning volumes on the owner's machine without permission. |
+| D | ~~Docker Desktop's VM disk full~~ | **Resolved 2026-09-27.** Owner approved `docker volume prune -f`; 46.34GB reclaimed, 890 anonymous volumes removed, both named `litellm-mvp-demo_*` volumes left intact. Migrations and RLS now verified against a real database. |
+| E | ~~Reference stories missing~~ | **Resolved 2026-09-27.** Owner supplied `reference-stories.zip`: four stories plus a `manifest.json` carrying each story's original request and prior bible. Written by `claude-fable-5-1`, confirming bake-off contestant 4. |
 
 ## Appendix B defaults adopted (plan says do not block on these)
 

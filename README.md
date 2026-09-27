@@ -102,9 +102,23 @@ views over `generation_logs`, never from application memory.
 | `DECISIONS.md` | Every judgment call, with its reason and date |
 | `PROGRESS.md` | Feature status, VT counts, session log, open questions |
 
-## Known gap
+## The quality bar
 
-`storytime-plan/reference-stories/` is **empty**. The four reference stories that define
-the quality bar were not in the handover archive. They are required for the master prompt's
-style anchors and for judge calibration, which gates the F13 eval. `pnpm test:blocked`
-fails until they arrive; see `storytime-plan/reference-stories/README.md`.
+`storytime-plan/reference-stories/` holds the four stories that define what "incredible"
+means for this product, plus a `manifest.json` recording each story's original request and
+the series state before it — so the judge can score them with their real inputs
+(`JUDGE_AGENT.md` §5). They were written by `claude-fable-5-1`, which is therefore
+contestant 4 in the bake-off.
+
+`lib/reference.ts` parses them into the same `StoryOutput` shape as a generated story, so
+F7's gate and the judge both read one definition of "the story". What they establish:
+
+| | Band A (ages 3–5) | Band C (ages 9–12) |
+|---|---|---|
+| Journey stops | 7–10 | 9 |
+| Narrative words | 1,549 / 1,859 | 2,474 / 2,643 |
+| True facts | 8–14 | 10–13 |
+| Closing line | direct bedtime address after "The End" — *"Goodnight, Cruz. Goodnight, Phoenix. Play well."* | forward-looking final beat — *"Tomorrow, he had a game to make."* |
+
+Both band A references sit above the nominal 1,700-word ceiling for their band and pass
+only on the ±15% tolerance. Worth knowing before anyone tightens that tolerance.

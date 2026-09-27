@@ -10,6 +10,10 @@ and it never blocks unrelated work. When the dependency arrives, move the test i
 
 ## Currently blocked
 
-| Test | Waiting on | Blocks |
+**Nothing.** The directory is intentionally kept for the next time it is needed.
+
+## Resolved
+
+| Test | Was waiting on | Resolved |
 |---|---|---|
-| `reference-stories.test.ts` | The four reference stories, missing from the handover archive | Master-prompt style anchors (§4.1.8), judge calibration (JUDGE_AGENT.md §5), and therefore the F13 eval gate and F7's reference-story VT |
+| `reference-stories.test.ts` | The four reference stories, missing from the handover archive | 2026-09-27 — owner supplied them; test promoted to `test/unit/` and is now merge-blocking |

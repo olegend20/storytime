@@ -8,8 +8,8 @@ verification tests named in each feature's section (plus `GUARDRAILS.md` §7 and
 
 | F | Feature | VTs | Passing | Status | Lane |
 |---|---|---|---|---|---|
-| F1 | Project scaffold and infrastructure | 3 | 2 | 🟡 in progress — migrations unverified locally (Docker disk full) | 0 lead |
-| F2 | Authentication and family account | 4 | 0 | ⬜ not started | 1 |
+| F1 | Project scaffold and infrastructure | 3 | 3 | ✅ **done** — env, migrations + introspection, CI all green | 0 lead |
+| F2 | Authentication and family account | 4 | 0 | ⬜ not started — RLS isolation pre-verified (16/16 probe checks) | 1 |
 | F3 | Children profiles | 3 | 1 | 🟡 schema VT green; API + e2e pending | 1 |
 | F4 | Series and Story Bible service | 6 | 0 | ⬜ not started | 2 |
 | F5 | Topic normalization and Fact Packs | 6 | 2 | 🟡 schema/review VTs green; service pending | 2 |
@@ -20,7 +20,7 @@ verification tests named in each feature's section (plus `GUARDRAILS.md` §7 and
 | F10 | New-story flow (UI) | 5 | 0 | ⬜ not started | 4 |
 | F11 | Safety, privacy and content policy | 5 | 0 | ⬜ not started | 1 + 4 |
 | F12 | Admin dashboard | 3 | 0 | ⬜ not started — SQL views written | 3 |
-| F13 | Quality evaluation harness | 2 + JUDGE §7 | 0 | 🔴 **blocked** — judge calibration needs the reference stories | 5 |
+| F13 | Quality evaluation harness | 2 + JUDGE §7 | 0 | ⬜ not started — **unblocked**, references arrived | 5 |
 | F14 | Model bake-off | JUDGE §7 (6) | 2 | 🟡 rubric/position-swap VTs green; harness pending. **Budget approval needed** | 5 |
 | F15 | Guardrails | GUARDRAILS §7 (9) | 1 | 🟡 corpus contract locked; L1–L4 pending | 6 |
 
@@ -77,3 +77,48 @@ schemas and the wrapper. `generation_logs` has no rows yet.
    `docker volume prune -f`, which removes anonymous volumes only and leaves your two
    named `litellm-mvp-demo_*` volumes alone. CI verifies migrations on a clean runner
    regardless.
+
+### 2026-09-27 (cont.) — reference stories received, F1 closed out
+
+**Unblocked by you:** `reference-stories.zip` and approval to prune Docker volumes.
+
+**Reference stories** — four stories + a `manifest.json` giving each story's original
+request and prior bible. Written by `claude-fable-5-1`, confirming bake-off contestant 4.
+Extracted to `storytime-plan/reference-stories/`; the guard test moved from
+`test/blocked/` to `test/unit/` and is now **merge-blocking**, with 13 assertions covering
+structure, word targets, chapter share, child coverage and manifest integrity.
+
+Built `lib/reference.ts` — parses reference markdown into the `StoryOutput` shape so F7's
+gate and the judge share one definition of "the story". Lane 5 uses it for calibration.
+
+**Four findings from reading them** (all in `DECISIONS.md` #18–25):
+1. **The §4.4 output schema has no cold-open field**, though §4.1.2 mandates a cold open.
+   Resolved by folding it into `chapters[0]`, which is exactly what the references do.
+2. **Ending style splits by band.** Band A closes with a bedtime address *after* "The End";
+   band C closes on a forward-looking beat *before* it. A goodnight address to a 10-year-old
+   would read as babyish — the master prompt must pick per band, not treat one as correct.
+3. **Word count must be narrative-only**, confirmed empirically: raw file counts run ~12%
+   high and would flag the shark reference (2,143 raw vs band A's 1,955 ceiling; 1,859
+   narrative, comfortably inside). This validates the definition I'd already chosen.
+4. **Both band A references exceed the nominal 1,700-word ceiling** and pass only on the
+   ±15% tolerance. Worth knowing before anyone tightens that tolerance — the bar itself
+   sits at the top of the band.
+
+**Docker + database.** 46.34GB reclaimed; your two named `litellm-mvp-demo_*` volumes were
+left untouched. With a database available I verified what was previously unverifiable:
+- All four migrations apply cleanly to a fresh database.
+- Schema introspection: 6/6 — all nine tables, all six admin views, and `children` proven
+  to have no `last_name`/`birthdate`/`surname`/`photo_url`/`address` column.
+- **RLS isolation: 16/16** via `scripts/dev/probe-rls.ts` — user A sees zero rows of user
+  B's data (not an error), cannot insert into another family, cannot spoof family
+  ownership, cannot reset its own quota; `generation_logs` and `guardrail_events` are
+  invisible to authenticated clients but visible to the service role; `fact_packs` exposes
+  only `status='ready'` rows and rejects client writes; the 24h retention function runs.
+- `pnpm seed` works.
+
+**Gates:** lint ✅ · typecheck ✅ · build ✅ · `pnpm test` → **98 passed, 0 failed**.
+
+**F1 is done** — all three VTs green. **API spend this session: $0.00.**
+
+**Still open for you:** the Phase 3 bake-off budget (~$37–55, above your $20 threshold)
+and the production `DAILY_BUDGET_USD`. Neither blocks Phase 1.
