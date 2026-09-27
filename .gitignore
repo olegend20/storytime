@@ -1,0 +1,19 @@
+node_modules/
+.next/
+out/
+dist/
+.env
+.env.local
+.env*.local
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+coverage/
+playwright-report/
+test-results/
+.archive/
+supabase/.temp/
+supabase/.branches/
+
+# Local placeholder env used to verify the build; real values never committed.
+.env.local

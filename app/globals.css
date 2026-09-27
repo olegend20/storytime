@@ -1,0 +1,26 @@
+@import 'tailwindcss';
+
+/* Night-friendly by default: this app is used at bedtime, in a dark room. */
+@theme {
+  --color-ink: oklch(0.22 0.02 260);
+  --color-paper: oklch(0.98 0.005 90);
+  --font-read: ui-serif, Georgia, 'Times New Roman', serif;
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: oklch(0.17 0.015 265);
+    color: oklch(0.92 0.01 90);
+  }
+}

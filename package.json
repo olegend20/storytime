@@ -1,0 +1,52 @@
+{
+  "name": "storytime",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@12.6.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --exclude \"test/blocked/**\"",
+    "test:watch": "vitest",
+    "test:unit": "vitest run test/unit",
+    "test:int": "vitest run test/int",
+    "test:guardrails": "vitest run test/guardrails",
+    "test:e2e": "playwright test",
+    "migrate": "supabase db push --local",
+    "db:reset": "supabase db reset",
+    "seed": "tsx scripts/seed.ts",
+    "eval": "tsx eval/run-eval.ts",
+    "bakeoff": "tsx eval/run-bakeoff.ts",
+    "fixtures:record": "LIVE_API=1 RECORD_FIXTURES=1 vitest run",
+    "test:blocked": "vitest run test/blocked",
+    "test:schema": "RUN_SCHEMA_TESTS=1 vitest run test/int/schema.test.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.128.0",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.60.0",
+    "next": "^16.3.6",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^24.9.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "eslint": "^9.39.0",
+    "eslint-config-next": "^16.3.6",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.2"
+  }
+}
