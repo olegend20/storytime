@@ -1,0 +1,138 @@
+import { z } from 'zod'
+import { LengthMinutes, Tone } from './common'
+import { StoryOutput } from './story'
+import { QualityResult } from './quality'
+
+/**
+ * HTTP + SSE contract between the AI core (lane 2, F6) and the frontend (lane 4, F9/F10).
+ *
+ * IMPLEMENTATION_PLAN.md §7 makes the lead the owner of this interface so lanes 2 and 4
+ * can build in parallel. Lane 4 builds against it with fixtures from day 1; lane 2
+ * implements it. Neither changes it without the lead.
+ */
+
+// ---------------------------------------------------------------- POST /api/stories/generate
+export const GenerateStoryBody = z.object({
+  child_ids: z.array(z.string().uuid()).min(1).max(8),
+  topic_input: z.string().trim().min(2).max(200),
+  tones: z.array(Tone).min(1).max(2),
+  length_minutes: LengthMinutes,
+})
+export type GenerateStoryBody = z.infer<typeof GenerateStoryBody>
+
+/**
+ * SSE event stream. Every event is one `data:` line of JSON with a `type`.
+ * The client must tolerate unknown `type` values so lane 2 can add events without
+ * breaking a deployed frontend.
+ */
+export const SseEvent = z.discriminatedUnion('type', [
+  /** First event. Lets the reader render a header before any prose (F6 AC: title ≤5s). */
+  z.object({
+    type: z.literal('meta'),
+    story_id: z.string().uuid(),
+    series_id: z.string().uuid(),
+    title: z.string(),
+    subtitle: z.string().nullable(),
+    age_band: z.string(),
+    target_words: z.object({ min: z.number(), max: z.number() }),
+    topic_label: z.string(),
+  }),
+  /** A chapter opens. Emitted before its deltas. */
+  z.object({
+    type: z.literal('chapter_start'),
+    index: z.number().int().nonnegative(),
+    heading: z.string(),
+  }),
+  /** Prose for the chapter at `index`. Concatenate in arrival order. */
+  z.object({
+    type: z.literal('chapter_delta'),
+    index: z.number().int().nonnegative(),
+    text: z.string(),
+  }),
+  z.object({
+    type: z.literal('chapter_end'),
+    index: z.number().int().nonnegative(),
+    shout_line: z.string().nullable(),
+  }),
+  /** Terminal on success. `quality.outcome === 'flagged'` means render the soft banner. */
+  z.object({
+    type: z.literal('done'),
+    story_id: z.string().uuid(),
+    story: StoryOutput,
+    quality: QualityResult,
+    word_count: z.number().int(),
+    /** Quota AFTER this story. */
+    quota: z.object({ used: z.number().int(), limit: z.number().int() }),
+  }),
+  /**
+   * Terminal on failure. `quota_consumed: false` lets the UI say
+   * "this didn't use one of your stories" truthfully (F10).
+   */
+  z.object({
+    type: z.literal('error'),
+    code: z.enum([
+      'quota_exceeded',
+      'topic_refused',
+      'too_mature_for_band',
+      'generation_failed',
+      'service_paused',
+      'budget_exceeded',
+      'invalid_request',
+    ]),
+    /** Parent-facing copy from config/guardrails/messages.json. Safe to render verbatim. */
+    message: z.string(),
+    quota_consumed: z.boolean(),
+    /** Present for quota_exceeded: local reset time, ISO 8601. */
+    resets_at: z.string().nullable().default(null),
+  }),
+])
+export type SseEvent = z.infer<typeof SseEvent>
+
+/**
+ * Non-streaming failures that happen BEFORE the stream opens return a normal JSON body
+ * with the matching HTTP status, not an SSE event:
+ *   429 quota_exceeded · 422 topic_refused / too_mature_for_band
+ *   503 service_paused / budget_exceeded · 400 invalid_request
+ * Once the stream is open, failures arrive as an `error` event with HTTP 200.
+ */
+export const ErrorBody = z.object({
+  code: z.string(),
+  message: z.string(),
+  quota_consumed: z.boolean(),
+  resets_at: z.string().nullable().default(null),
+})
+export type ErrorBody = z.infer<typeof ErrorBody>
+
+export const HTTP_STATUS_FOR_ERROR: Record<string, number> = {
+  invalid_request: 400,
+  topic_refused: 422,
+  too_mature_for_band: 422,
+  quota_exceeded: 429,
+  generation_failed: 502,
+  service_paused: 503,
+  budget_exceeded: 503,
+}
+
+// ---------------------------------------------------------------- GET /api/quota
+export const QuotaResponse = z.object({
+  used: z.number().int().nonnegative(),
+  limit: z.number().int().positive(),
+  /** Local midnight in the family's timezone, ISO 8601. */
+  resets_at: z.string(),
+  /** False when GENERATION_ENABLED=false or the daily budget is spent. */
+  generation_enabled: z.boolean(),
+})
+export type QuotaResponse = z.infer<typeof QuotaResponse>
+
+// ---------------------------------------------------------------- GET /api/topics/suggested
+export const SuggestedTopic = z.object({
+  label: z.string(),
+  topic_key: z.string(),
+  /** True when a fact pack already exists, so generation will be an instant cache hit. */
+  warm: z.boolean(),
+})
+export const SuggestedTopicsResponse = z.object({ topics: z.array(SuggestedTopic).max(8) })
+export type SuggestedTopicsResponse = z.infer<typeof SuggestedTopicsResponse>
+
+/** F8: 3 new stories per family per calendar day, in the family's own timezone. */
+export const DAILY_STORY_LIMIT = 3
