@@ -54,6 +54,13 @@ export interface GetOrBuildOptions {
   countUse?: boolean
   pollIntervalMs?: number
   pollTimeoutMs?: number
+  /**
+   * Seams for testing the LOCK rather than the model. The F5 concurrency VT is about
+   * "built at most once under concurrent requests", and injecting a counted builder proves
+   * that directly instead of inferring it from log rows. Production leaves both unset.
+   */
+  builder?: typeof buildFactPack
+  reviewer?: typeof reviewFactPack
 }
 
 export interface GetOrBuildResult {
@@ -159,15 +166,27 @@ async function waitForBuild(
 }
 
 /**
- * Compare-and-swap increment. Deliberately not a SQL `use_count + 1`: that would need a
- * new database function in a schema other lanes share, and CAS converges fine at this
- * write rate.
+ * Increment `use_count`.
+ *
+ * A popular topic is fetched concurrently at bedtime, so this has to be atomic: a
+ * read-modify-write loop measurably loses increments (8 concurrent callers landed 5), and
+ * `use_count` feeds the §5 cache-hit-rate target and the F12 admin views. The atomic path is
+ * the `increment_fact_pack_use` SQL function (migration 20260927002001).
+ *
+ * The compare-and-swap loop remains as a fallback for a database that has not applied that
+ * migration yet - other lanes share this database and their branches may lag - so a missing
+ * function degrades the counter's accuracy under load rather than breaking generation.
  */
 export async function incrementFactPackUse(
   id: string,
   db: SupabaseClient = supabaseService(),
-  attempts = 5,
+  attempts = 8,
 ): Promise<number | null> {
+  const { data: rpcData, error: rpcError } = await db.rpc('increment_fact_pack_use', {
+    p_id: id,
+  })
+  if (!rpcError && typeof rpcData === 'number') return rpcData
+
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     const { data: current, error: readError } = await db
       .from('fact_packs')
@@ -185,6 +204,8 @@ export async function incrementFactPackUse(
       .select('use_count')
       .maybeSingle()
     if (!error && data) return Number((data as { use_count: number }).use_count)
+    // Jittered backoff: without it, contending callers retry in lockstep and keep colliding.
+    await new Promise((resolve) => setTimeout(resolve, 10 + Math.random() * 40))
   }
   return null
 }
@@ -227,12 +248,12 @@ export async function getOrBuildFactPack(
   }
 
   try {
-    const build = await buildFactPack(topicKey, topicLabel, {
+    const build = await (opts.builder ?? buildFactPack)(topicKey, topicLabel, {
       factPackId: ownedId,
       ...(opts.sink ? { sink: opts.sink } : {}),
       ...(opts.signal ? { signal: opts.signal } : {}),
     })
-    const { deterministic, model } = await reviewFactPack(build.candidate, {
+    const { deterministic, model } = await (opts.reviewer ?? reviewFactPack)(build.candidate, {
       factPackId: ownedId,
       ...(opts.sink ? { sink: opts.sink } : {}),
       ...(opts.signal ? { signal: opts.signal } : {}),

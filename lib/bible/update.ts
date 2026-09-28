@@ -40,10 +40,14 @@ export interface UpdateBibleOptions {
 
 export interface UpdateBibleResult {
   record: StoryBibleRecord
+  /** Model attempts made (1-3). Separate from write attempts - see the retry policy. */
   attempts: number
   /** True when the helper model never produced a valid bible and the fallback was used. */
   usedFallback: boolean
+  /** Optimistic-concurrency conflicts hit while writing. Each one costs a re-read, not a call. */
   conflicts: number
+  /** True when every write attempt lost its race. The bible is unchanged. */
+  abandoned?: boolean
   errors: string[]
 }
 
@@ -109,10 +113,16 @@ async function proposeBible(
 /**
  * Update the bible for a series from the story just written.
  *
- * Retry policy: up to `maxAttempts` (3) attempts. A model failure retries the model. A
- * version conflict does NOT re-call the model - the proposal we already have is merged
- * onto the freshly-read base, so a concurrent update costs nothing extra and neither
- * writer loses its content.
+ * Retry policy, in two INDEPENDENT phases. They must not share a budget: with one shared
+ * counter, a version conflict on the final attempt silently drops the whole update, which is
+ * precisely the failure F4's concurrency VT exists to catch.
+ *
+ *  1. **Proposal** - up to `maxAttempts` (3) helper-model attempts. If all of them fail,
+ *     fall back to `deterministicBibleUpdate`, so continuity never depends on the helper
+ *     model being alive.
+ *  2. **Write** - up to `maxAttempts` optimistic-concurrency attempts with the SAME
+ *     proposal. A conflict costs a re-read and a re-merge, never another model call, so a
+ *     concurrent update is cheap and neither writer's content is lost.
  */
 export async function updateBibleFromStory(
   seriesId: string,
@@ -130,46 +140,45 @@ export async function updateBibleFromStory(
 
   const errors: string[] = []
   let conflicts = 0
-  let proposal: StoryBible | null = null
   let usedFallback = false
 
   const db = opts.db
   let record = await loadBible(seriesId, db ? { db } : {})
 
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    if (!proposal) {
-      const { bible, error } = await proposeBible(record.content, story, meta, opts)
-      if (error) errors.push(`attempt ${attempt}: ${error}`)
-      proposal = bible
-    }
+  // ---- phase 1: the proposal ----
+  let proposal: StoryBible | null = null
+  let attempts = 0
+  for (; attempts < maxAttempts && !proposal; ) {
+    attempts += 1
+    const { bible, error } = await proposeBible(record.content, story, meta, opts)
+    if (error) errors.push(`model attempt ${attempts}: ${error}`)
+    proposal = bible
+  }
+  if (!proposal) {
+    proposal = deterministicBibleUpdate(record.content, story, meta)
+    usedFallback = true
+  }
 
-    // The model has used its attempts: keep continuity rather than lose the ending.
-    if (!proposal && attempt === maxAttempts) {
-      proposal = deterministicBibleUpdate(record.content, story, meta)
-      usedFallback = true
-    }
-    if (!proposal) continue
-
+  // ---- phase 2: the write ----
+  for (let writeAttempt = 1; writeAttempt <= maxAttempts; writeAttempt += 1) {
     const merged = mergeBible(record.content, proposal, date)
     try {
       const written = db
         ? await writeBible(record, merged, db)
         : await writeBible(record, merged)
-      return { record: written, attempts: attempt, usedFallback, conflicts, errors }
+      return { record: written, attempts, usedFallback, conflicts, errors }
     } catch (err) {
-      if (err instanceof BibleVersionConflict) {
-        // Someone else wrote first. Re-read and merge the SAME proposal onto their content:
-        // no second model call, and neither writer's content is lost.
-        conflicts += 1
-        errors.push(`attempt ${attempt}: version conflict`)
-        record = db ? await reloadBible(seriesId, db) : await reloadBible(seriesId)
-        continue
-      }
-      throw err
+      if (!(err instanceof BibleVersionConflict)) throw err
+      conflicts += 1
+      errors.push(`write attempt ${writeAttempt}: version conflict`)
+      record = db ? await reloadBible(seriesId, db) : await reloadBible(seriesId)
     }
   }
 
-  return { record, attempts: maxAttempts, usedFallback, conflicts, errors }
+  // Every write lost its race. Report it rather than claim success: the caller logs it and
+  // the next story's update will carry this story's topic forward anyway.
+  errors.push(`gave up after ${maxAttempts} write attempts`)
+  return { record, attempts, usedFallback, conflicts, abandoned: true, errors }
 }
 
 /**
