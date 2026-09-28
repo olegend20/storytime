@@ -21,7 +21,8 @@ import { loadScroll, saveScroll } from '@/lib/client/storage'
 
 const RESTORE_ATTEMPTS = 20
 const RESTORE_TOLERANCE_PX = 8
-const SAVE_INTERVAL_MS = 400
+/** Trailing, not leading: what matters is where the reader came to rest. */
+const SAVE_DEBOUNCE_MS = 250
 
 export function useScrollMemory(storyId: string | null, ready: boolean): void {
   const restored = useRef(false)
@@ -65,25 +66,42 @@ export function useScrollMemory(storyId: string | null, ready: boolean): void {
   useEffect(() => {
     if (!storyId || !ready) return
 
-    let last = 0
+    let timer: ReturnType<typeof setTimeout> | null = null
+
     const persist = () => {
+      // Suppressed until the restore has finished, or the first scroll event after a reload would
+      // overwrite the stored position with 0.
       if (!restored.current) return
       saveScroll(storyId, window.scrollY)
     }
+
+    /**
+     * Debounced, and deliberately not throttled.
+     *
+     * A leading throttle loses the position whenever scrolling stops inside the window - it saves
+     * where the reader started moving and never where they stopped. Worse, if the very first event
+     * arrives before the restore has settled, `persist` is skipped and the throttle has already
+     * swallowed the next one, so nothing is saved at all. A trailing timer always records the
+     * resting position.
+     */
     const onScroll = () => {
-      const now = Date.now()
-      if (now - last < SAVE_INTERVAL_MS) return
-      last = now
+      if (timer !== null) clearTimeout(timer)
+      timer = setTimeout(persist, SAVE_DEBOUNCE_MS)
+    }
+
+    // `pagehide` fires on iOS Safari where `beforeunload` does not; `visibilitychange` catches the
+    // app being backgrounded, which at bedtime is the usual way a reader is left.
+    const onLeave = () => {
+      if (timer !== null) clearTimeout(timer)
+      timer = null
       persist()
     }
-    // `pagehide` fires on iOS Safari where `beforeunload` does not; `visibilitychange` catches
-    // the app being backgrounded, which at bedtime is the common way a reader is left.
-    const onLeave = () => persist()
 
     window.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('pagehide', onLeave)
     document.addEventListener('visibilitychange', onLeave)
     return () => {
+      if (timer !== null) clearTimeout(timer)
       persist()
       window.removeEventListener('scroll', onScroll)
       window.removeEventListener('pagehide', onLeave)

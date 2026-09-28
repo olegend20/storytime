@@ -1,5 +1,13 @@
 import { expect, test, type Page } from '@playwright/test'
-import { horizontalOverflow, mockState, resetMock, startStory } from './helpers'
+import {
+  bodyBackgroundRgb,
+  horizontalOverflow,
+  mockState,
+  relativeLuminance,
+  resetMock,
+  scrollToAndPersist,
+  startStory,
+} from './helpers'
 
 /**
  * F9 — story library and reader. Each test maps to a VT in §6 F9.
@@ -26,6 +34,7 @@ async function openFirstStory(page: Page) {
  */
 test('generate, open from the library, and the open costs zero model calls', async ({ page }) => {
   await page.goto('/new')
+  await expect(page.getByRole('button', { name: 'Cruz 7' })).toBeVisible()
   await startStory(page, 'the history of soccer')
   await expect(page.getByRole('heading', { name: 'Saved to your library' })).toBeVisible({
     timeout: 30_000,
@@ -50,7 +59,8 @@ test('generate, open from the library, and the open costs zero model calls', asy
   const headings = await page.getByRole('heading', { level: 2 }).count()
   // Same chapter headings as the streamed version, plus the facts and footer headings.
   expect(headings).toBeGreaterThanOrEqual(chapterCount)
-  await expect(page.getByText('The End')).toBeVisible()
+  // Exact: chapter prose legitimately contains the phrase "in the end".
+  await expect(page.getByText('The End', { exact: true })).toBeVisible()
 
   // The open, and re-reading it, made no model calls at all.
   await page.reload()
@@ -106,20 +116,10 @@ test('the reader has no horizontal overflow and its chapter nav works', async ({
 test('reloading mid-story restores the scroll position within 200px', async ({ page }) => {
   await openFirstStory(page)
 
-  // Scroll a long way in, then let the throttled save run.
-  await page.evaluate(() => window.scrollTo(0, Math.round(document.body.scrollHeight * 0.45)))
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(500)
-  const target = await page.evaluate(() => window.scrollY)
-  // The saver is throttled to 400ms; nudge it and wait for the value to be written.
-  await page.mouse.wheel(0, 40)
-  await expect
-    .poll(async () =>
-      page.evaluate(() => {
-        const key = Object.keys(localStorage).find((k) => k.includes(':scroll:'))
-        return key ? (JSON.parse(localStorage.getItem(key) ?? '{}').y as number) : -1
-      }),
-    )
-    .toBeGreaterThan(400)
+  // Scroll a long way in and wait for the debounced save to land.
+  const depth = await page.evaluate(() => Math.round(document.body.scrollHeight * 0.45))
+  const target = await scrollToAndPersist(page, depth)
+  expect(target).toBeGreaterThan(500)
 
   await page.reload()
   await expect(page.getByRole('heading', { name: 'True facts from the story' })).toBeVisible()
@@ -132,9 +132,8 @@ test('reloading mid-story restores the scroll position within 200px', async ({ p
 
 test('scroll memory is per story, so opening another one starts at the top', async ({ page }) => {
   await openFirstStory(page)
-  await page.evaluate(() => window.scrollTo(0, 1200))
-  await page.mouse.wheel(0, 40)
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(1000)
+  const target = await scrollToAndPersist(page, 1200)
+  expect(target).toBeGreaterThan(1000)
 
   await page.goto('/library')
   const second = page.getByRole('link', { name: /read/i }).nth(1)
@@ -193,26 +192,19 @@ test('reading mode dims the UI, enlarges the text, and survives a reload', async
 
 test('the dark theme applies without a reload and persists', async ({ page }) => {
   await openFirstStory(page)
-  const bodyBackground = () =>
-    page.evaluate(() => getComputedStyle(document.body).backgroundColor)
-
   await page.getByRole('radio', { name: 'Light' }).first().click()
-  const light = await bodyBackground()
+  const light = await bodyBackgroundRgb(page)
   await page.getByRole('radio', { name: 'Dark' }).first().click()
-  const dark = await bodyBackground()
-  expect(dark).not.toBe(light)
+  const dark = await bodyBackgroundRgb(page)
+  expect(dark).not.toEqual(light)
 
-  // A dark theme has to actually be dark, not just different.
-  const luminance = (rgb: string) => {
-    const [r = 0, g = 0, b = 0] = (rgb.match(/\d+/g) ?? []).map(Number)
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b
-  }
-  expect(luminance(dark)).toBeLessThan(90)
-  expect(luminance(light)).toBeGreaterThan(200)
+  // A dark theme has to actually be dark, not merely different.
+  expect(relativeLuminance(dark)).toBeLessThan(90)
+  expect(relativeLuminance(light)).toBeGreaterThan(200)
 
   await page.reload()
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-  expect(await bodyBackground()).toBe(dark)
+  expect(await bodyBackgroundRgb(page)).toEqual(dark)
   // Applied before paint by the inline script, so there is no light flash to fix afterwards.
   expect(await page.getAttribute('html', 'data-theme')).toBe('dark')
 })

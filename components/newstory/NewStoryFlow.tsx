@@ -54,6 +54,8 @@ export function NewStoryFlow() {
   const [serverTopics, setServerTopics] = useState<readonly SuggestedTopic[]>([])
   const [chipOffset, setChipOffset] = useState(() => offsetForDay())
   const [loadFailed, setLoadFailed] = useState(false)
+  /** Bumped by the retry button so the load effect runs again. */
+  const [loadAttempt, setLoadAttempt] = useState(0)
 
   /**
    * The remembered children and length (F10 AC), read through the external store rather than a
@@ -95,7 +97,10 @@ export function NewStoryFlow() {
   useEffect(() => {
     const controller = new AbortController()
     Promise.all([
-      fetchChildren(controller.signal).then((res) => setChildren(res.children)),
+      fetchChildren(controller.signal).then((res) => {
+        setChildren(res.children)
+        setLoadFailed(false)
+      }),
       refreshQuota(controller.signal),
       fetchSuggestedTopics(controller.signal)
         .then((res) => setServerTopics(res.topics))
@@ -104,7 +109,7 @@ export function NewStoryFlow() {
       if (!controller.signal.aborted) setLoadFailed(true)
     })
     return () => controller.abort()
-  }, [refreshQuota])
+  }, [refreshQuota, loadAttempt])
 
   /**
    * The remembered selection can name a child who has since been removed, so the effective
@@ -237,9 +242,19 @@ export function NewStoryFlow() {
       </div>
 
       {loadFailed && (
-        <p className="card mb-6 p-4" role="alert">
-          We couldn&rsquo;t load your family details. Check your connection and refresh.
-        </p>
+        <div className="card mb-6 p-4" role="alert">
+          <p className="mt-0 mb-3">
+            We couldn&rsquo;t load your family details. Nothing is lost — have another go.
+          </p>
+          {/* A dead form with no way out is the worst version of this failure. */}
+          <button
+            type="button"
+            className="btn btn-quiet"
+            onClick={() => setLoadAttempt((n) => n + 1)}
+          >
+            Try again
+          </button>
+        </div>
       )}
 
       {stream.error && (

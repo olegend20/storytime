@@ -52,6 +52,7 @@ test.describe('accessibility', () => {
     await page.goto('/new')
     await resetMock(page)
     await page.reload()
+    await expect(page.getByRole('button', { name: 'Cruz 7' })).toBeVisible()
     await startStory(page, '!refuse a topic')
     // Next injects its own empty role="alert" route announcer, so match on our copy.
     await expect(
@@ -111,6 +112,7 @@ test.describe('accessibility', () => {
     await page.goto('/new')
     await resetMock(page)
     await page.reload()
+    await expect(page.getByRole('button', { name: 'Cruz 7' })).toBeVisible()
     await startStory(page, 'the history of soccer')
     await expect(page.getByRole('progressbar', { name: 'Writing the story' })).toBeVisible()
     const results = await scan(page)
@@ -140,9 +142,24 @@ test.describe('accessibility', () => {
     await page.getByRole('link', { name: /read/i }).first().click()
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
 
-    // The first tab stop is the skip link, and it moves focus into the story.
-    await page.keyboard.press('Tab')
+    // The skip link is the first focusable element in the document, and using it lands on the
+    // story. Focused directly rather than via Tab: a headless page that has never been clicked
+    // has focus on the document, and the first Tab then goes nowhere.
+    const firstFocusableIsSkipLink = await page.evaluate(() => {
+      const focusable = document.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )
+      return focusable[0]?.textContent?.trim() ?? null
+    })
+    expect(firstFocusableIsSkipLink).toBe('Skip to content')
+
+    const skip = page.getByRole('link', { name: 'Skip to content' })
+    await skip.focus()
     await expect(page.locator(':focus')).toHaveText('Skip to content')
+    // Off-screen until focused, then a real visible target rather than a 1px trap. Polled because
+    // it slides in over 120ms, so the box is still mid-transition on the first read.
+    await expect.poll(async () => (await skip.boundingBox())?.y ?? -1).toBeGreaterThanOrEqual(0)
+    expect((await skip.boundingBox())?.height ?? 0).toBeGreaterThan(20)
     await page.keyboard.press('Enter')
     await expect(page).toHaveURL(/#main$/)
 
