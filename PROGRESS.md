@@ -200,3 +200,54 @@ database exists — the `check` job's placeholder keys skip them.
 
 **Note for the lead:** `/api/quota` was not assigned to a lane. It is pure quota, so I built
 it against `QuotaResponse`; move it if that collides with lane 4.
+
+### 2026-09-27 — API outage, and lane 3 reviewed and merged
+
+**An Anthropic API outage (ENOTFOUND) killed five of the six lanes mid-run.** Lane 3 had
+already finished. No lane had committed anything, so all five had substantial uncommitted
+work at risk. I resumed all five with an instruction to commit WIP as their first action
+before continuing, so a second outage can't cost the work again.
+
+**Lane 3 merged** (F8 6/6, F12 3/3) after review. I verified its two headline claims
+myself rather than taking the report on trust:
+
+1. **The view exposure was real, and it was my bug.** I recreated a view exactly the way my
+   migration `20260927000003` creates one: it granted `SELECT` to `anon`, and an anonymous
+   caller got real spend data back (`cost_usd: 0.000500`). **RLS on a table does not protect
+   a SQL view over it** — the view is owned by `postgres` and bypasses it. All six cost views
+   now return `42501 permission denied` to the anon key. `v_top_topics` stays readable by
+   `authenticated` only, where `fact_packs`' own `status='ready'` policy applies.
+2. **Quota atomicity holds under real concurrency.** 12 parallel connections against a limit
+   of 3 → exactly 3 allowed, 9 denied, stored count exactly 3. (My first two probes were
+   malformed — `(f()).*` calls a function once per output column, and a single-statement
+   LATERAL shares one snapshot. Neither reflects production, which makes one call per
+   request. Sequential separate statements: 3 allowed then denied, count holds at 3.)
+
+**A hole in my Phase 0 CI, found by lane 3 and accepted:** the `check` job runs with
+placeholder Supabase keys and no database, so **every integration VT silently skipped
+there.** "Passes in CI" was not true for any of them. `pnpm test:int` now runs in the
+`migrations` job, which has a real database.
+
+**A bug of mine, found on merge:** `eslint.config.mjs` didn't ignore `.claude/`, so lint
+walked into the five agent worktrees and reported **17,754 problems** belonging to other
+lanes' in-flight branches. Fixed; `.claude/**` is ignored.
+
+**Gates on `main`:** lint ✅ · typecheck ✅ · **161 tests pass, 0 fail** (was 98).
+**API spend: $0.00** — still no model calls anywhere in the project.
+
+**Outstanding hand-off for lane 2:** call `preflight()` before any model call and
+`consumeQuota()` only after the `stories` row commits. Lane 3 shaped the API so it can't be
+misused but cannot enforce the call site; F8's "quota consumed only on success" AC depends
+on lane 2's call sites.
+
+**Path collisions to resolve at merge:** lanes 2, 5 and 6 all created `prompts/`; lanes 2
+and 6 both created `config/guardrails/`; lanes 1 and 6 both created `lib/guardrails/`; lanes
+1, 3 and 4 all have `app/api/`. I've asked each lane to tell me which files are theirs
+rather than coordinate directly.
+
+**Two notes for later:** `lib/env.ts` validates `OWNER_USER_ID` with zod's `.uuid()`, which
+rejects non-RFC-4122 UUIDs — a placeholder like `0000...0001` fails validation and 500s the
+route; worth a line in `.env.example`. And lane 3 corrected my cost figure: output share of
+total cost is 66% (Haiku) / 76% (Sonnet 5) / 84% (Opus 5.5) / 90% (Fable 5.1), because
+input-heavy helper calls stay on Haiku whatever the writer is. My "~70%" was Sonnet's
+write-call figure specifically.
