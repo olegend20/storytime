@@ -16,6 +16,13 @@ verification tests named in each feature's section (plus `GUARDRAILS.md` §7 and
 | F6 | Story generation pipeline | 7 | 1 | 🟡 `targetWords` VT green; pipeline pending | 2 |
 | F7 | Quality gate | 5 | 0 | ⬜ not started | 2 |
 | F8 | Quotas and cost logging | 6 | 6 | ✅ **done** — quota, tz boundary, cost, freshness, budget cap, failure logging | 3 |
+| F2 | Authentication and family account | 4 | 0 | ⬜ not started — RLS isolation pre-verified (16/16 probe checks) | 1 |
+| F3 | Children profiles | 3 | 1 | 🟡 schema VT green; API + e2e pending | 1 |
+| F4 | Series and Story Bible service | 6 | 4 | 🟡 4/6 green; VT4 blocked on an API key, VT6 is lane 5's eval | 2 |
+| F5 | Topic normalization and Fact Packs | 6 | 3 | 🟡 3/6 green; VT1/VT2/VT5 blocked on an API key | 2 |
+| F6 | Story generation pipeline | 7 | 5 | 🟡 5/7 green; cache-read VT blocked on an API key, e2e is lane 4's | 2 |
+| F7 | Quality gate | 5 | 5 | ✅ **done** — all 5 VTs green, references pass the gate | 2 |
+| F8 | Quotas and cost logging | 6 | 3 | 🟡 cost + freshness VTs green; quota/budget pending | 3 |
 | F9 | Story library and reader | 4 | 0 | ⬜ not started | 4 |
 | F10 | New-story flow (UI) | 5 | 0 | ⬜ not started | 4 |
 | F11 | Safety, privacy and content policy | 5 | 0 | ⬜ not started | 1 + 4 |
@@ -419,3 +426,42 @@ installs WebKit (the `mobile` project is an iPhone 13 and could not launch a bro
 before).
 
 **API spend this session: $0.00.** No model calls — F2/F3/F11's server half touches no model.
+### 2026-09-27 (cont.) — Phase 1, lane 2: the AI core (F4, F5, F6, F7)
+
+**Delivered**
+- `prompts/` — `master.v1.md` (the cached block, ~4.4k estimated tokens, all eight §4.1
+  sections, three ≤120-word style anchors taken from the references), plus `normalize`,
+  `factpack`, `factpack-review`, `bible-update`, `quality-review`, `repair`.
+  `lib/prompts.ts` loads them by highest version and asserts the header matches the file.
+- **F4** `lib/bible` — `childKey`/`getOrCreateSeries`/`loadBible`/`updateBibleFromStory`,
+  LRU trimming to ≤800 tokens, optimistic concurrency on `version`, deterministic merge for
+  conflicts, and a no-model fallback so continuity survives a dead helper model.
+- **F5** `lib/topics` — `normalizeTopic`, the fact-pack builder (the only web-search step,
+  tool type read from `config/models.json`), a free deterministic review before the Haiku
+  one, the `building` lock on the unique `topic_key`, atomic `use_count`.
+- **F6** `lib/generate` + `app/api/stories/generate/route.ts` — the prompt builder with one
+  cache breakpoint, an incremental JSON scanner that emits SSE chapters as they stream,
+  parse/repair, the two-shape failure contract, one writing-model call (two with a rewrite).
+- **F7** `lib/quality` — 16 deterministic checks with stable reason codes, the output
+  blocklist, the child-action heuristic, one Haiku review, and the
+  rewrite → flagged → discarded ladder.
+
+**Gates:** lint ✅ · typecheck ✅ · `pnpm test` → **276 passed, 12 skipped, 0 failed**
+(17 files, up from 98 passed at the end of Phase 0). `pnpm test:blocked` → **16 red**, see
+below.
+
+**Eight defects the tests found and fixed** (detail in the commits): a shared retry budget
+that silently dropped a bible update on a conflict; `use_count` losing increments under
+concurrency; `prepareGeneration` letting a model outage escape as a 500; an NFKD bug that
+would have split one fact pack into two for an accented topic; a truncated stream leaving a
+chapter open forever; the cliffhanger check rejecting the shark reference; a `meta_content`
+gap on the "ignore the rubric" family; a master prompt whose style anchors exceeded §4.1.8's
+120-word cap.
+
+**API spend this session: $0.00.** Not by choice — there is **no working
+`ANTHROPIC_API_KEY`** in this environment (`.env.local` holds a 34-character placeholder;
+no `ant` CLI, no `~/.config/anthropic`; a live call returns 401). So no fixture could be
+recorded. Rather than fake them: the F6/F7 pipeline tests run against synthetic payloads in
+the temp `FIXTURE_DIR` (which proves our plumbing and says so), and the four tests that need
+real model judgement moved to `test/blocked/` with a README naming each VT and the ~$0.75
+one-off recording cost. **Five VTs are therefore unverified, not green.**

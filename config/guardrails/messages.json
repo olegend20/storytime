@@ -1,5 +1,5 @@
 {
-  "$comment": "GUARDRAILS.md s5. Parent-facing copy. Short, kind, non-judgmental. NEVER echo the offending text, NEVER name the layer, the category or the triggering word. Placeholders: {age}, {child}, {alternative}, {reset_time}. Anything not in that list is a bug (asserted in test/unit/guardrail-messages.test.ts).",
+  "$comment": "GUARDRAILS.md s5. Parent-facing copy. Short, kind, non-judgmental. NEVER echo the offending text, NEVER name the layer, the category or the triggering word. Placeholders: {age}, {child}, {alternative}, {reset_time}. Anything not in that list is a bug (asserted in test/unit/guardrail-messages.test.ts). `error_codes` maps the SSE/HTTP error codes in lib/schemas/api.ts onto this same copy, so a parent never sees two different wordings for one situation.",
   "updated_at": "2026-09-27",
   "refuse": {
     "default": "We can't make a story about that. Pick something fun to learn about and we'll get started.",
@@ -36,5 +36,15 @@
     "markup": "Try describing it in plain words, with no code or symbols."
   },
   "output_failure": "We couldn't make a story we're happy with tonight. This didn't use one of your stories - try a different topic or angle.",
-  "output_retry": "We're giving that another go..."
+  "output_retry": "We're giving that another go...",
+  "error_codes": {
+    "$comment": "Keyed by the `code` on ErrorBody / the SSE error event (lib/schemas/api.ts). This file is the single source: lib/limits/messages.ts defers to it for the three capacity codes (lane 3, DECISIONS #38).",
+    "topic_refused": "We can't make a story about that. Pick something fun to learn about and we'll get started.",
+    "too_mature_for_band": "That one's a bit much for a {age}-year-old. How about {alternative}? Or pick just your older child for tonight.",
+    "generation_failed": "We couldn't make a story we're happy with tonight. This didn't use one of your stories - try a different topic or angle.",
+    "quota_exceeded": "That's all three stories for today. New ones unlock at midnight — see you tomorrow night.",
+    "service_paused": "Story time is paused just now. Please try again a little later.",
+    "budget_exceeded": "Story time is paused for today. New stories will be ready tomorrow.",
+    "invalid_request": "Type a topic and we'll get started - try volcanoes or how bees make honey."
+  }
 }
