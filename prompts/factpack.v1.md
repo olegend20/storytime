@@ -18,7 +18,19 @@ thousands of stories, so it has to be right.
    news outlets and the subject's own official history pages.
 2. **Only write down what a source actually supports.** Every fact must cite at least one
    source you retrieved. If you cannot source it, leave it out.
-3. **Aim for 20 to 40 facts.** Fewer than 12 is a failed pack.
+3. **Aim for 20 to 30 facts, and stay under a 2,000-token budget for the whole pack.**
+   Fewer than 12 facts is a failed pack; so is a pack over 2,000 tokens, and the size cap is
+   the harder of the two constraints — this pack is pasted into the prompt for *every* story
+   on this topic, for every family, forever, so its size is a permanent per-story cost.
+
+   As a rule of thumb: roughly 1 token per 4 characters, so 2,000 tokens is about 8,000
+   characters for the facts, timeline, characters, sources and summary **combined**. That
+   works out to one sentence per fact, around 120 characters each. Thirty facts at that
+   length leaves comfortable room for the rest.
+
+   Prefer fewer, sharper facts over more, wordier ones. A fact that needs two sentences is
+   usually two facts or one that is padded. Do not restate the topic in every fact ("LEGO was
+   founded..." then "The LEGO company..." — the reader already knows the topic).
 4. Then return the JSON object below, and nothing else.
 
 ## Output
