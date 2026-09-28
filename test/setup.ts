@@ -28,3 +28,15 @@ const RECORDING = process.env.RECORD_FIXTURES === '1' || process.env.RECORD_FIXT
 if (!RECORDING) {
   process.env.FIXTURE_DIR ??= mkdtempSync(join(tmpdir(), 'storytime-fixtures-'))
 }
+
+/**
+ * A LIVE test run spends real money, so it must land in `generation_logs` like any other
+ * call. `instrumentation.ts` only fires under Next.js and `lib/costs/cli.ts` only covers the
+ * eval CLIs - wiring those two still left the test suite invisible, which is exactly how the
+ * fact-pack and fixture spend went unrecorded. Replay runs skip this: there is nothing to log.
+ */
+if (process.env.LIVE_API === '1' || process.env.LIVE_API === 'true') {
+  const { installCliCostLogging } = await import('@/lib/costs/cli')
+  const status = installCliCostLogging()
+  if (!status.persisting) console.warn(`[costs] live test run NOT persisting costs: ${status.reason}`)
+}

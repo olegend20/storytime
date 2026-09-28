@@ -15,8 +15,12 @@ test-results/
 supabase/.temp/
 supabase/.branches/
 
-# Local placeholder env used to verify the build; real values never committed.
+# Local env in any form - real values never committed. The broad glob matters: a
+# `.env.local.sh` helper slipped past `.env.local` and `.env*.local` because it ends in .sh.
 .env.local
+.env.local.*
+.env*.local
+*.env.sh
 
 # Agent worktrees are separate checkouts, not content of this repo.
 .claude/worktrees/

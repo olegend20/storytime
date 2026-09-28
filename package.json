@@ -29,7 +29,8 @@
     "test:blocked": "vitest run test/blocked",
     "test:schema": "RUN_SCHEMA_TESTS=1 vitest run test/int/schema.test.ts",
     "guardrails:report": "tsx scripts/dev/guardrail-report.ts",
-    "guardrails:record": "LIVE_API=1 RECORD_FIXTURES=1 vitest run test/guardrails"
+    "guardrails:record": "LIVE_API=1 RECORD_FIXTURES=1 vitest run test/guardrails",
+    "factpacks": "tsx scripts/build-fact-packs.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
