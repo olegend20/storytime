@@ -128,7 +128,12 @@ export async function updateFamily(
   return data as FamilyRow
 }
 
-/** Sanitize a raw settings payload before it is validated. */
+/**
+ * Sanitize a raw settings payload before it is validated.
+ *
+ * `display_name` is not cut to length, for the same reason as a child's first name: see
+ * the note on `sanitizeChildPayload`.
+ */
 export function sanitizeFamilySettings(raw: unknown): {
   input: Record<string, unknown>
   containedHtml: boolean
@@ -139,7 +144,7 @@ export function sanitizeFamilySettings(raw: unknown): {
   let htmlField: string | null = null
 
   if (body.display_name !== undefined) {
-    const cleaned = sanitize('display_name', body.display_name)
+    const cleaned = sanitize('display_name', body.display_name, { cap: false })
     if (cleaned.removed.html) htmlField = 'display_name'
     input.display_name = cleaned.value
   }
