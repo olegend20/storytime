@@ -113,7 +113,7 @@ Do not deduct for any of the following. They are deliberate product choices, not
 
 - **Spelling convention.** British and American spellings are both acceptable ("colour"/"color", "tyres"/"tires", "practise"/"practice", "realise"/"realize"). The app defaults to American, but a story written consistently in British English is correct and must not lose a point for it on any criterion.
 - **The cold open has no heading of its own, or has an in-world heading** ("Loading…", "Kickoff"). The cold open is the opening of the first chapter by design.
-- **Two different closing conventions.** Younger bands may close with a direct bedtime address after "The End" ("Goodnight, Cruz. Goodnight, Phoenix. Play well."); older bands may close on a forward-looking final beat instead ("Tomorrow, he had a game to make."). Both land. A goodnight address to a 10-year-old would be the fault, not the absence of one.
+- **Two different closing conventions.** Younger bands may close with a direct bedtime address after "The End" ("Goodnight, Sam. Goodnight, Ali. Play well." — with the story's own children named); older bands may close on a forward-looking final beat instead ("Tomorrow, he had a game to make."). Both land. A goodnight address to a 10-year-old would be the fault, not the absence of one.
 - **A story that stops short of the present day**, or omits an event you expected, when nothing in the story misstates anything.
 - **A closing "True facts from the story" list.** It is part of the product and is not counted in the word count.
 - **Sound words, shout-along lines and repetition in bands A and B.** These are requirements, not filler.

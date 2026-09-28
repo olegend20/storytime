@@ -10,18 +10,14 @@ import {
 } from '@/lib/eval/blind'
 import { buildCapContext } from '@/lib/eval/caps'
 import {
+  buildPairwisePayload,
+  buildScorePayload,
   loadJudgePrompt,
   parseJudgePairwise,
   parseJudgeScore,
   scoreStory,
 } from '@/lib/eval/judge'
-import {
-  dataBlock,
-  narrativeWordCount,
-  renderPairwiseUserMessage,
-  renderScoreUserMessage,
-  sanitizeForDataBlock,
-} from '@/lib/eval/render'
+import { dataBlock, narrativeWordCount, sanitizeForDataBlock } from '@/lib/eval/render'
 import { loadReferenceCases } from '@/lib/eval/references'
 import { SCENARIOS, scenarioBand, scenarioTargetWords } from '@/lib/eval/scenarios'
 import { syntheticStory } from '@/lib/eval/synthetic'
@@ -131,7 +127,6 @@ describe('§7 the judge is blind', () => {
   })
 
   it('no SCORE payload for any scenario or any contestant contains a model id or a brand word', () => {
-    const systemText = loadJudgePrompt().text
     for (const scenario of SCENARIOS) {
       const band = scenarioBand(scenario)
       const context: JudgeContext = {
@@ -151,9 +146,10 @@ describe('§7 the judge is blind', () => {
       }
       for (const writingModel of contestantModelIds()) {
         const story = syntheticStory({ scenario, writingModel, sample: 1 })
-        const payload = `${systemText}\n${renderScoreUserMessage(context, story)}`
+        // The payload the code actually sends, not a reconstruction of it.
+        const payload = buildScorePayload({ context, story })
         expect(
-          findIdentityLeaks(payload),
+          findIdentityLeaks(payload.combined),
           `leak in SCORE payload for ${scenario.id} / ${writingModel}`,
         ).toEqual([])
       }
@@ -161,7 +157,6 @@ describe('§7 the judge is blind', () => {
   })
 
   it('no PAIRWISE payload contains a model id or a brand word', () => {
-    const systemText = loadJudgePrompt().text
     const scenario = SCENARIOS[0]!
     const context: JudgeContext = {
       children: scenario.children.map((c) => ({ name: c.name, age: c.age, likes: c.likes, notes: c.notes })),
@@ -176,16 +171,41 @@ describe('§7 the judge is blind', () => {
     const ids = contestantModelIds()
     const a = syntheticStory({ scenario, writingModel: ids[0]!, sample: 1 })
     const b = syntheticStory({ scenario, writingModel: ids[1] ?? ids[0]!, sample: 1 })
-    const payload = `${systemText}\n${renderPairwiseUserMessage(context, a, b)}`
-    expect(findIdentityLeaks(payload)).toEqual([])
+    expect(findIdentityLeaks(buildPairwisePayload({ context, a, b }).combined)).toEqual([])
   })
 
   it('every reference story payload is blind', () => {
-    const systemText = loadJudgePrompt().text
     for (const c of cases) {
-      const payload = `${systemText}\n${renderScoreUserMessage(c.context, c.story)}`
-      expect(findIdentityLeaks(payload), c.entry.file).toEqual([])
+      const payload = buildScorePayload({ context: c.context, story: c.story })
+      expect(findIdentityLeaks(payload.combined), c.entry.file).toEqual([])
     }
+  })
+
+  it('the system block is the prompt file and nothing else', () => {
+    const payload = buildScorePayload({ context: cases[0]!.context, story: cases[0]!.story })
+    expect(payload.systemText).toBe(loadJudgePrompt().text)
+    // No story text, no child name, no topic in the instruction region.
+    expect(payload.systemText).not.toContain(cases[0]!.story.title)
+    for (const child of cases[0]!.context.children) {
+      expect(payload.systemText).not.toContain(child.name)
+    }
+    expect(payload.userText).toContain(cases[0]!.story.title)
+  })
+
+  it('catches a model name arriving through parent-supplied text, not only through a story', () => {
+    // A real vector: `likes` and `notes` are parent text. This is also the documented
+    // false-positive case - a child who genuinely likes haiku poetry trips the same check -
+    // and it fails the run loudly rather than being quietly downgraded to a warning.
+    const context = {
+      ...cases[0]!.context,
+      children: [{ name: 'Ada', age: 7, likes: ['writing haiku'], notes: null }],
+    }
+    const leaks = findIdentityLeaks(
+      buildScorePayload({ context, story: cases[0]!.story }).combined,
+    )
+    expect(leaks.length).toBe(1)
+    expect(leaks[0]!.kind).toBe('brand_word')
+    expect(leaks[0]!.excerpt).toContain('haiku')
   })
 
   it('finds a leak when a model id is present, and reports where', () => {
@@ -257,28 +277,31 @@ describe('prompt injection in a story cannot move the score', () => {
   }
 
   it('puts the injected text inside the story data block and nowhere else', () => {
-    const payload = `${loadJudgePrompt().text}\n${renderScoreUserMessage(clean.context, injected)}`
-    expect(payload).toContain(INJECTION)
-    expect(instructionRegion(payload)).not.toContain(INJECTION)
-    expect(instructionRegion(payload)).not.toContain(INJECTION_DIRECTIVE)
+    const payload = buildScorePayload({ context: clean.context, story: injected })
+    expect(payload.combined).toContain(INJECTION)
+    // Never in the system block, and never outside a data block in the user turn.
+    expect(payload.systemText).not.toContain(INJECTION_DIRECTIVE)
+    expect(instructionRegion(payload.combined)).not.toContain(INJECTION)
+    expect(instructionRegion(payload.combined)).not.toContain(INJECTION_DIRECTIVE)
+    // It sits inside the one story block, which is opened and closed exactly once.
+    expect(payload.userText.match(/<story>/g)).toHaveLength(1)
+    expect(payload.userText.match(/<\/story>/g)).toHaveLength(1)
+    const storyBlock = /<story>([\s\S]*?)<\/story>/.exec(payload.userText)![1]!
+    expect(storyBlock).toContain(INJECTION)
   })
 
   it('leaves the instruction region byte-identical to the clean story', () => {
-    const a = instructionRegion(
-      `${loadJudgePrompt().text}\n${renderScoreUserMessage(clean.context, clean.story)}`,
-    )
-    const b = instructionRegion(
-      `${loadJudgePrompt().text}\n${renderScoreUserMessage(clean.context, injected)}`,
-    )
+    const a = instructionRegion(buildScorePayload({ context: clean.context, story: clean.story }).combined)
+    const b = instructionRegion(buildScorePayload({ context: clean.context, story: injected }).combined)
     expect(b).toBe(a)
   })
 
   it('gives the injected story the same real score as the clean one, end to end', async () => {
     const run = async (story: JudgeableStory): Promise<number> => {
-      const payload = `${loadJudgePrompt().text}\n${renderScoreUserMessage(clean.context, story)}`
+      const payload = buildScorePayload({ context: clean.context, story })
       const res = await withScriptedJudge(
         () => scoreStory({ context: clean.context, story }),
-        () => simulateGullibleJudge(payload),
+        () => simulateGullibleJudge(payload.combined),
       )
       expect(res.ok).toBe(true)
       if (!res.ok) throw new Error('unreachable')
@@ -293,7 +316,8 @@ describe('prompt injection in a story cannot move the score', () => {
   it('positive control: the same directive OUTSIDE a data block would have worked', () => {
     // Proves the test above can fail. If the renderer ever leaked story text into the
     // instruction region, this is the behaviour we would get.
-    const leaky = `${loadJudgePrompt().text}\n${INJECTION}\n${renderScoreUserMessage(clean.context, clean.story)}`
+    const real = buildScorePayload({ context: clean.context, story: clean.story })
+    const leaky = `${real.systemText}\n${INJECTION}\n${real.userText}`
     const parsed = parseJudgeScore(simulateGullibleJudge(leaky))
     expect(parsed.data?.scores.heroes).toBe(5)
     expect(parsed.data?.scores.delight).toBe(5)

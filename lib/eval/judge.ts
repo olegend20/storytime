@@ -220,6 +220,49 @@ export interface ScoreStoryInput extends JudgeCallCommon {
   factPack?: FactPackLike | null
 }
 
+/**
+ * The two halves of a judge request, exactly as `scoreStory`/`comparePair` send them.
+ *
+ * `systemText` is the instruction region: the static prompt file and nothing else. `userText`
+ * is every piece of untrusted content, each inside its own data block. Exported so the
+ * blindness and prompt-injection tests can assert on the real payload rather than on a
+ * reconstruction of it - a test that rebuilds the payload itself can pass while the code
+ * sends something different.
+ */
+export interface JudgePayload {
+  systemText: string
+  userText: string
+  /** `systemText` + newline + `userText`: what `assertBlind` is given. */
+  combined: string
+}
+
+function payload(systemText: string, userText: string): JudgePayload {
+  return { systemText, userText, combined: `${systemText}\n${userText}` }
+}
+
+export function buildScorePayload(input: {
+  context: JudgeContext
+  story: JudgeableStory
+  promptFile?: string
+}): JudgePayload {
+  return payload(
+    loadJudgePrompt(input.promptFile ?? JUDGE_PROMPT_FILE).text,
+    renderScoreUserMessage(input.context, input.story),
+  )
+}
+
+export function buildPairwisePayload(input: {
+  context: JudgeContext
+  a: JudgeableStory
+  b: JudgeableStory
+  promptFile?: string
+}): JudgePayload {
+  return payload(
+    loadJudgePrompt(input.promptFile ?? JUDGE_PROMPT_FILE).text,
+    renderPairwiseUserMessage(input.context, input.a, input.b),
+  )
+}
+
 export interface ScoreOk {
   ok: true
   /** Exactly what the model said, before our caps and before the overall is recomputed. */
@@ -249,12 +292,11 @@ export interface JudgeError {
 export type ScoreStoryResult = ScoreOk | JudgeError
 
 export async function scoreStory(input: ScoreStoryInput): Promise<ScoreStoryResult> {
-  const prompt = loadJudgePrompt(input.promptFile ?? JUDGE_PROMPT_FILE)
-  const userText = renderScoreUserMessage(input.context, input.story)
+  const { systemText, userText } = buildScorePayload(input)
 
   const outcome = await callJudge({
     purpose: 'judge_score',
-    systemText: prompt.text,
+    systemText,
     userText,
     schema: parseJudgeScore,
     common: input,
@@ -322,12 +364,11 @@ export type ComparePairResult =
   | JudgeError
 
 export async function comparePair(input: ComparePairInput): Promise<ComparePairResult> {
-  const prompt = loadJudgePrompt(input.promptFile ?? JUDGE_PROMPT_FILE)
-  const userText = renderPairwiseUserMessage(input.context, input.a, input.b)
+  const { systemText, userText } = buildPairwisePayload(input)
 
   const outcome = await callJudge({
     purpose: 'judge_pairwise',
-    systemText: prompt.text,
+    systemText,
     userText,
     schema: parseJudgePairwise,
     common: input,
