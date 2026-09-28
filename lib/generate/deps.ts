@@ -3,6 +3,7 @@ import type { GenerationLogSink } from '@/lib/ai'
 import type { SafetyReviewer } from '@/lib/quality/gate'
 import type { BlocklistData } from '@/lib/quality/blocklist'
 import { DAILY_STORY_LIMIT, type InputClassification } from '@/lib/schemas'
+import type { GetOrBuildOptions } from '@/lib/topics'
 import type { ChildProfile } from '@/lib/bible/children'
 
 /**
@@ -111,6 +112,13 @@ export interface GenerationDeps {
   safetyReviewer?: SafetyReviewer
   /** Lane 6's input blocklist, scanned over the finished story alongside the output list. */
   extraBlocklists?: readonly BlocklistData[]
+  /**
+   * Test seams forwarded to `getOrBuildFactPack`, so a pipeline test can run against a fixed
+   * pack instead of building a real one - or writing a fake pack into the globally shared
+   * `fact_packs` table, where another lane would then find it. Unset in production.
+   */
+  factPackBuilder?: GetOrBuildOptions['builder']
+  factPackReviewer?: GetOrBuildOptions['reviewer']
   now?: () => Date
 }
 

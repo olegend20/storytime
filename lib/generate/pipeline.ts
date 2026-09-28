@@ -176,13 +176,19 @@ export async function prepareGeneration(
     if (!normalized.is_appropriate_for_children) {
       return { ok: false, ...failure('topic_refused', 'topic_refused') }
     }
-    topicKey = guard.topic_key_hint && guard.topic_key_hint !== '' ? normalized.topic_key : normalized.topic_key
+    // The L2 classifier's `topic_key_hint` is advisory: the normalizer is the single
+    // authority on the key, because the key decides which shared fact pack is reused and two
+    // sources of truth for it would fragment the library.
+    topicKey = normalized.topic_key
     topicLabel = normalized.topic_label
   } catch (err) {
-    if (err instanceof TopicNormalizationError) {
-      return { ok: false, ...failure('generation_failed', 'generation_failed') }
+    // Every failure of this step is a friendly 502 with the quota untouched (F6 AC), not
+    // just an unparseable response: a Haiku outage, a rate limit or a refusal must not reach
+    // the parent as a 500. Logged so it stays visible rather than swallowed.
+    if (!(err instanceof TopicNormalizationError)) {
+      console.error('[generate] topic normalization failed:', err)
     }
-    throw err
+    return { ok: false, ...failure('generation_failed', 'generation_failed') }
   }
 
   // ---- 6. fact pack: one build per topic, ever (§1 principle 2) ----
@@ -191,13 +197,17 @@ export async function prepareGeneration(
     const pack = await getOrBuildFactPack(topicKey, topicLabel, {
       db,
       ...(sink ? { sink } : {}),
+      ...(deps.factPackBuilder ? { builder: deps.factPackBuilder } : {}),
+      ...(deps.factPackReviewer ? { reviewer: deps.factPackReviewer } : {}),
     })
     factPack = pack.record
   } catch (err) {
-    if (err instanceof FactPackRejectedError) {
-      return { ok: false, ...failure('generation_failed', 'generation_failed') }
+    // Same reasoning as normalization: a rejected pack, a failed build, a search outage and a
+    // lock timeout are all "we could not make a story tonight", free to the parent.
+    if (!(err instanceof FactPackRejectedError)) {
+      console.error('[generate] fact pack unavailable:', err)
     }
-    throw err
+    return { ok: false, ...failure('generation_failed', 'generation_failed') }
   }
 
   // ---- 7. series and bible ----
@@ -457,6 +467,9 @@ export async function runGeneration(
       storyId: prepared.storyId,
       topic: prepared.topicLabel,
       tones: prepared.request.tones,
+      // `deps.now` exists so a test can pin this date: it goes into the bible-update prompt,
+      // and a prompt that changes at midnight cannot be replayed from a fixture.
+      date: (deps.now?.() ?? new Date()).toISOString().slice(0, 10),
     })
 
     return {

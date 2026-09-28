@@ -22,6 +22,13 @@ import { goodStory } from '../helpers/story'
  */
 
 const available = await databaseAvailable()
+/**
+ * The two tests below that call `updateBibleFromStory` are designed around the helper model
+ * being UNAVAILABLE (no fixture), which is what exercises the 3-retry budget and the no-model
+ * fallback. Recording would create fixtures and turn them into tests of the model instead, so
+ * they are skipped while recording. The real Haiku path has its own test in bible-update.test.ts.
+ */
+const RECORDING = process.env.RECORD_FIXTURES === '1' || process.env.RECORD_FIXTURES === 'true'
 const SKIP_REASON =
   'local Supabase not reachable at 127.0.0.1:54321 - run `supabase start` to include these'
 
@@ -105,7 +112,7 @@ describe.skipIf(!available)(`F4 series and bible (int) ${available ? '' : `- SKI
     expect(after.version).toBe(before.version + 1)
   })
 
-  it('F4 VT: two concurrent updateBibleFromStory both succeed, with merged content', async () => {
+  it.skipIf(RECORDING)('F4 VT: two concurrent updateBibleFromStory both succeed, with merged content', async () => {
     const series = await getOrCreateSeries(
       family.familyId,
       [family.children[0]!.id, family.children[1]!.id],
@@ -162,7 +169,7 @@ describe.skipIf(!available)(`F4 series and bible (int) ${available ? '' : `- SKI
     expect(bibleFitsLimit(after.content)).toBe(true)
   })
 
-  it('retries the helper model up to 3 times, then keeps continuity without it', async () => {
+  it.skipIf(RECORDING)('retries the helper model up to 3 times, then keeps continuity without it', async () => {
     const series = await getOrCreateSeries(family.familyId, [family.children[1]!.id], family.db)
     const before = await reloadBible(series.id, family.db)
     const sink = new MemoryLogSink()
