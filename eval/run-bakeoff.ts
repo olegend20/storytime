@@ -5,6 +5,7 @@ import { estimateBakeoffCost, formatEstimate } from '@/lib/eval/estimate'
 import { renderBakeoffReport } from '@/lib/eval/report'
 import { nextResultPath, writeResultFile } from '@/lib/eval/results'
 import { bakeoffScenarios, selectScenarios } from '@/lib/eval/scenarios'
+import { installCliCostLogging } from '@/lib/costs/cli'
 
 /**
  * `pnpm bakeoff` - F14 / JUDGE_AGENT.md §6.
@@ -52,6 +53,9 @@ function list(name: string): string[] | undefined {
 }
 
 async function main(): Promise<void> {
+  // Persist this run's costs to generation_logs; see lib/costs/cli.ts.
+  const costLogging = installCliCostLogging()
+  if (!costLogging.persisting) console.warn(`[costs] ${costLogging.reason}`)
   if (flag('fixture')) process.env.EVAL_PIPELINE = 'fixture'
   const live = process.env.LIVE_API === '1' || process.env.LIVE_API === 'true'
 

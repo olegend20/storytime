@@ -10,6 +10,7 @@ import {
   readResultFile,
   writeResultFile,
 } from '@/lib/eval/results'
+import { installCliCostLogging } from '@/lib/costs/cli'
 
 /**
  * `pnpm eval` - F13.
@@ -48,6 +49,9 @@ function value(name: string): string | undefined {
 }
 
 async function main(): Promise<void> {
+  // Persist this run's costs to generation_logs; see lib/costs/cli.ts.
+  const costLogging = installCliCostLogging()
+  if (!costLogging.persisting) console.warn(`[costs] ${costLogging.reason}`)
   const scenarioSpec = value('scenarios') ?? process.env.EVAL_SCENARIOS
   if (flag('fixture')) process.env.EVAL_PIPELINE = 'fixture'
   const live = process.env.LIVE_API === '1' || process.env.LIVE_API === 'true'

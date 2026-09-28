@@ -18,6 +18,7 @@ import { loadReferenceCases } from '@/lib/eval/references'
 import { scoreStory } from '@/lib/eval/judge'
 import { modelForRole } from '@/lib/ai/pricing'
 import { MemoryLogSink } from '@/lib/ai/types'
+import { installCliCostLogging } from '@/lib/costs/cli'
 
 function arg(name: string, fallback: number): number {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`))
@@ -32,6 +33,9 @@ function stats(xs: number[]): { median: number; min: number; max: number; spread
 }
 
 async function main(): Promise<void> {
+  // Persist this run's costs to generation_logs; see lib/costs/cli.ts.
+  const costLogging = installCliCostLogging()
+  if (!costLogging.persisting) console.warn(`[costs] ${costLogging.reason}`)
   const repeats = arg('repeats', 3)
   const budget = arg('budget', 0)
   const cases = loadReferenceCases()
