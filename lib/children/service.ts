@@ -202,6 +202,14 @@ export interface SanitizedChildPayload {
  *
  * Only keys the client actually sent are returned, so the same function serves POST
  * (validated with `ChildInput`) and PATCH (validated with `ChildPatch`).
+ *
+ * `first_name` and `notes` are cleaned but deliberately NOT cut to length (`cap: false`).
+ * s3.2's "enforce max lengths" is the right default for a programmatic caller, but at a
+ * parent-facing endpoint silently shortening someone's child's name is worse than saying
+ * "First names can be up to 30 characters" - and the F3 AC asks for that length to be
+ * *validated* on the server, which a pre-truncated value could never fail. Likes are the
+ * exception and are still capped at 40 characters each: a trimmed tag loses nothing, and
+ * `ChildLike` in the shared contract has no custom message to show instead.
  */
 export function sanitizeChildPayload(raw: unknown): SanitizedChildPayload {
   const body = (raw ?? {}) as Record<string, unknown>
@@ -212,7 +220,7 @@ export function sanitizeChildPayload(raw: unknown): SanitizedChildPayload {
   }
 
   if ('first_name' in body) {
-    const cleaned = sanitize('first_name', body.first_name)
+    const cleaned = sanitize('first_name', body.first_name, { cap: false })
     flag('first_name', cleaned.removed.html)
     input.first_name = cleaned.value
   }
@@ -230,7 +238,7 @@ export function sanitizeChildPayload(raw: unknown): SanitizedChildPayload {
     if (body.notes === null) {
       input.notes = null
     } else {
-      const cleaned = sanitize('notes', body.notes)
+      const cleaned = sanitize('notes', body.notes, { cap: false })
       flag('notes', cleaned.removed.html)
       input.notes = cleaned.value === '' ? null : cleaned.value
     }

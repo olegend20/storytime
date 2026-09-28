@@ -12,7 +12,7 @@ import { apiError, readJsonBody } from '@/lib/http/responses'
  * Validation runs here as well as in the browser (F3 AC): the client form is a courtesy,
  * the server is the rule. The logic lives in `lib/children/handlers.ts` so the integration
  * tests can drive it directly; the IP rate limit (F11) is applied to every /api route in
- * `middleware.ts`.
+ * `proxy.ts`.
  */
 
 export async function GET() {

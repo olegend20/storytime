@@ -7,7 +7,7 @@ import ChildrenManager, { type ChildView } from './ChildrenManager'
 
 export const metadata: Metadata = { title: 'Children — StoryTime' }
 
-/** F11 AC: every page that shows child data is behind auth. `middleware.ts` redirects
+/** F11 AC: every page that shows child data is behind auth. `proxy.ts` redirects
  * first; this second check means the page is safe even if the matcher ever changes. */
 export default async function ChildrenPage() {
   const ctx = await currentFamily()
