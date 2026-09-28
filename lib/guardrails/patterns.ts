@@ -21,10 +21,10 @@ const NUMERIC_QUANTITY = /\b\d{1,3}(?:,\d{3})+(?:\.\d+)?\b/g
 
 const PII_PATTERNS: NamedPattern[] = [
   { id: 'email', re: /[\w.+-]+@[\w-]+(?:\.[\w-]+)+/ },
-  // 9+ digits, or an international/leading-zero trunk form. Years, scores and
-  // "1,300,000" (masked above) stay clear of it.
-  { id: 'phone', re: /(?:\+\d[\d\s().-]{7,}\d)|(?:\b0\d[\d\s().-]{7,}\d)|(?:\b\d(?:[\s().-]?\d){8,}\b)/ },
   { id: 'card_number', re: /\b(?:\d[ -]?){15}\d\b/ },
+  { id: 'ssn', re: /\b\d{3}-\d{2}-\d{4}\b/ },
+  { id: 'ni_number', re: /\b[A-CEGHJ-PR-TW-Z]{2}\s?\d{2}\s?\d{2}\s?\d{2}\s?[A-D]\b/ },
+  { id: 'uk_postcode', re: /\b[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}\b/ },
   { id: 'url', re: /\b(?:https?:\/\/|www\.)\S+/i },
   {
     id: 'bare_domain',
@@ -34,10 +34,10 @@ const PII_PATTERNS: NamedPattern[] = [
     id: 'street_address',
     re: /\b\d{1,5}[a-z]?\s+[\p{L}'.-]+(?:\s+[\p{L}'.-]+)?\s+(?:street|st|road|rd|avenue|ave|lane|ln|drive|dr|close|court|crescent|terrace|place|boulevard|blvd|way|gardens|grove|walk)\b/iu,
   },
-  { id: 'uk_postcode', re: /\b[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}\b/ },
-  { id: 'ni_number', re: /\b[A-CEGHJ-PR-TW-Z]{2}\s?\d{2}\s?\d{2}\s?\d{2}\s?[A-D]\b/ },
-  { id: 'ssn', re: /\b\d{3}-\d{2}-\d{4}\b/ },
   { id: 'lives_at', re: /\b(?:lives?|live|living|based)\s+at\s+(?:number\s+)?\d/i },
+  // Last: the loosest pattern. 9+ digits, or an international / leading-zero trunk form.
+  // Years, scores and grouped thousands (masked above) stay clear of it.
+  { id: 'phone', re: /(?:\+\d[\d\s().-]{7,}\d)|(?:\b0\d[\d\s().-]{7,}\d)|(?:\b\d(?:[\s().-]?\d){8,}\b)/ },
 ]
 
 export function matchPii(text: string): PatternHit | null {
@@ -65,10 +65,13 @@ const INJECTION_PATTERNS: NamedPattern[] = [
   { id: 'disregard_above', re: /\bdisregard\s+(?:everything|all|the)\s+(?:above|previous|prior|earlier)\b/i },
   { id: 'system_prompt', re: /\bsystem\s*prompt\b/i },
   { id: 'system_message', re: /\bsystem\s+(?:message|instructions?|role)\b/i },
-  { id: 'reveal_prompt', re: /\b(?:reveal|show|print|output|repeat|reproduce|tell\s+me)\s+(?:me\s+)?(?:your|the)\s+(?:system\s+)?(?:prompt|instructions?|rules?|guidelines?)\b/i },
+  // Narrow on purpose: "tell me the rules of cricket" is a fine bedtime topic, so the
+  // possessive/system qualifier is required rather than a bare "the".
+  { id: 'reveal_prompt', re: /\b(?:reveal|show|print|output|repeat|reproduce|tell\s+me)\s+(?:me\s+)?(?:your|the\s+system|the\s+above|the\s+initial)\s+(?:system\s+)?(?:prompt|instructions?|rules?|guidelines?)\b/i },
   { id: 'you_are_now', re: /\byou\s+are\s+now\b/i },
   { id: 'you_must_now', re: /\b(?:you|the\s+(?:ai|model|assistant|system))\s+(?:must|will|should)\s+now\b/i },
-  { id: 'new_instructions', re: /\bnew\s+(?:instructions?|rules?|system\s+prompt)\b\s*[:.]?/i },
+  // "the new rules of football in 1863" is a real topic; an imperative "new rules:" is not.
+  { id: 'new_instructions', re: /\bnew\s+(?:instructions?|system\s+prompt)\b|\bnew\s+rules?\s*:/i },
   { id: 'developer_mode', re: /\bdeveloper\s+mode\b/i },
   { id: 'jailbreak', re: /\b(?:jailbreak|jailbroken|do\s+anything\s+now|unfiltered\s+mode|god\s+mode)\b/i },
   { id: 'pretend_ai', re: /\b(?:pretend|act)\s+(?:that\s+)?(?:you(?:'re| are)?|to\s+be)\s+(?:an?\s+)?(?:ai|assistant|language\s+model|llm|developer|admin|dm|system|chatbot|unrestricted|uncensored)\b/i },

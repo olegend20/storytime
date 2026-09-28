@@ -26,6 +26,8 @@ export interface BlocklistConfig {
   version: number
   input_terms: Record<string, string[]>
   input_phrases: Record<string, string[]>
+  /** Non-English variants for the severe categories (s6 foreign-language vector). */
+  foreign_terms?: Record<string, string[]>
   allow_phrases: string[]
   output: {
     hard_phrases: { rule: number; id: string; phrases: string[] }[]
@@ -48,6 +50,8 @@ const CATEGORY_ORDER: GuardrailCategory[] = [
   'drugs_alcohol',
   'real_private_person',
   'off_mission',
+  // Profanity has no category of its own in the s3.3 enum; it lands on `other`.
+  'other',
 ]
 
 /** Leetspeak and homoglyph substitutions seen in real evasion attempts. */
@@ -71,6 +75,15 @@ const SEPARATOR = "[\\s._\\-*+~|/\\\\'\"`^,:;!?()\\[\\]{}]"
 /** Terms shorter than this get no separator tolerance - "a s s" is too cheap to match. */
 const MIN_LENGTH_FOR_SEPARATORS = 4
 
+/**
+ * Fold combining marks so "cocaína" matches the list entry "cocaina" and "Zoë" still
+ * reads as "Zoe". Applied to both the term and the haystack, so it cannot create a match
+ * the plain form would not have.
+ */
+export function foldDiacritics(text: string): string {
+  return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
@@ -88,7 +101,7 @@ function charClass(ch: string): string {
  * required-but-flexible separator run rather than a literal space.
  */
 export function compileTerm(term: string): RegExp {
-  const letters = [...term.toLowerCase()]
+  const letters = [...foldDiacritics(term.toLowerCase())]
   const tolerateSeparators = term.replace(/[^\p{L}\p{N}]/gu, '').length >= MIN_LENGTH_FOR_SEPARATORS
   const between = tolerateSeparators ? `${SEPARATOR}{0,2}` : ''
 
@@ -174,7 +187,9 @@ function firstHit(
   kind: 'term' | 'phrase',
 ): BlocklistHit | null {
   for (const entry of entries) {
-    const re = kind === 'term' ? termPattern(entry) : plainPhrasePattern(entry)
+    // Phrases use the same compiler as single terms: a multi-word phrase needs the same
+    // separator tolerance ("killmyself", "kill  myself", "k.i.l.l m.y.s.e.l.f").
+    const re = termPattern(entry)
     re.lastIndex = 0
     const m = re.exec(haystack)
     if (m && hasLetter(m[0])) return { category, term: entry, match: m[0], kind }
@@ -188,7 +203,10 @@ function firstHit(
  * ("how to pick a lock" is weapons_instructions, not a bare-term match).
  */
 export function scanInput(text: string): BlocklistHit | null {
-  const masked = maskAllowed(text.toLowerCase(), blocklist.allow_phrases)
+  // NFKC here as well as in the sanitizer: scanInput is called directly by tests and by
+  // other lanes, and a fullwidth "ｂｏｍｂ" must not depend on the caller having normalized.
+  const normalized = foldDiacritics(text.normalize('NFKC').toLowerCase())
+  const masked = maskAllowed(normalized, blocklist.allow_phrases)
 
   for (const category of CATEGORY_ORDER) {
     const phrases = blocklist.input_phrases[category]
@@ -199,6 +217,16 @@ export function scanInput(text: string): BlocklistHit | null {
   }
   for (const category of CATEGORY_ORDER) {
     const terms = blocklist.input_terms[category]
+    if (terms) {
+      const hit = firstHit(masked, terms, category, 'term')
+      if (hit) return hit
+    }
+  }
+  // s6 requires the corpus to cover foreign-language variants of blocklist terms. The
+  // most severe categories carry a small non-English list so they are caught at L1
+  // rather than depending on the classifier.
+  for (const category of CATEGORY_ORDER) {
+    const terms = blocklist.foreign_terms?.[category]
     if (terms) {
       const hit = firstHit(masked, terms, category, 'term')
       if (hit) return hit

@@ -68,8 +68,17 @@ const PRIVATE_RELATION =
   /\b(?:my|his|her|their|our)\s+(?:ex-?(?:wife|husband|boyfriend|girlfriend)|neighbour|neighbor|classmate|babysitter|childminder|landlord|boss|colleague|step-?(?:mum|mom|dad))\b/iu
 const CAPITALIZED_NAME = /\b(?:Mr|Mrs|Miss|Ms|Dr)\.?\s+\p{Lu}\p{Ll}+|\b\p{Lu}\p{Ll}+\s+\p{Lu}\p{Ll}+\b/u
 
-/** s4.2: "Every chapter ends with a sentence, not a cliffhanger marker." */
-const CLIFFHANGER_END = /(?:\.\.\.|…|!\?|\?!)\s*$/
+/**
+ * s4.2: "Every chapter ends with a sentence, not a cliffhanger marker ('…' or '!?')."
+ *
+ * Calibrated against the shark reference story, which ends a band A chapter with
+ * "the whole ocean went **WHOOOOSH**..." - a transition, not dread. So an ellipsis after
+ * an all-caps sound effect is exempt, and the violation it raises is `soft` in any case:
+ * whether a trailing ellipsis is actually a dread cliffhanger is a judgement, and rule 3's
+ * real cliffhangers ("it was right behind him") are caught by the hard phrase list.
+ */
+const CLIFFHANGER_END = /(?:\.\.\.|…|!\?|\?!)[*_"'\s]*$/
+const SOUND_EFFECT_BEFORE_MARKER = /([\p{Lu}]{3,})[*_"'\s]*(?:\.\.\.|…|!\?|\?!)[*_"'\s]*$/u
 
 const META_TOKENS = /\b(?:as an ai|as a language model|system prompt|my instructions were|ignore previous instructions)\b/i
 
@@ -214,14 +223,11 @@ export function scanStoryStructure(
   const failures = [...prose.failures]
 
   story.chapters.forEach((chapter, i) => {
-    if (CLIFFHANGER_END.test(chapter.text.trim())) {
-      failures.push({ check: 'cliffhanger_marker', detail: `chapter_${i + 1}` })
-      violations.push({
-        rule: 3,
-        quote: chapter.text.trim().slice(-200),
-        severity: 'hard',
-      })
-    }
+    const text = chapter.text.trim()
+    if (!CLIFFHANGER_END.test(text)) return
+    if (SOUND_EFFECT_BEFORE_MARKER.test(text)) return
+    failures.push({ check: 'cliffhanger_marker', detail: `chapter_${i + 1}` })
+    violations.push({ rule: 3, quote: text.slice(-200), severity: 'soft' })
   })
 
   const haystack = storyText(story).toLowerCase()
@@ -251,6 +257,41 @@ export function scanStoryStructure(
       return violations.filter((v) => v.severity === 'hard')
     },
   }
+}
+
+/**
+ * s4.4 The True Facts list:
+ *  - "Each item must map to a fact-pack `fact_id` marked `kid_safe: true` with
+ *     `min_age <= youngest child`."
+ *  - "No item may introduce a topic not in the story."
+ *
+ * Free and deterministic, and it is the guardrail half of F7's `unsourced_fact`,
+ * `fact_not_kid_safe` and `fact_min_age` checks.
+ */
+export function checkTrueFacts(
+  story: StoryOutput,
+  facts: readonly { id: string; kid_safe: boolean; min_age: number }[],
+  youngestAge: number,
+): CheckFailure[] {
+  const byId = new Map(facts.map((f) => [f.id, f]))
+  const failures: CheckFailure[] = []
+  for (const item of story.true_facts) {
+    const fact = byId.get(item.fact_id)
+    if (!fact) {
+      failures.push({ check: 'unsourced_fact', detail: `unsourced_fact:${item.fact_id}` })
+      continue
+    }
+    if (!fact.kid_safe) {
+      failures.push({ check: 'fact_not_kid_safe', detail: `fact_not_kid_safe:${item.fact_id}` })
+    }
+    if (fact.min_age > youngestAge) {
+      failures.push({
+        check: 'fact_min_age',
+        detail: `fact_min_age:${item.fact_id}:${fact.min_age}>${youngestAge}`,
+      })
+    }
+  }
+  return failures
 }
 
 /** The rule numbers the deterministic layer can detect at all. Reported, not asserted. */

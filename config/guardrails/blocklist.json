@@ -179,6 +179,26 @@
       "detonator",
       "ghost gun",
       "shiv"
+    ],
+    "other": [
+      "fuck",
+      "fucking",
+      "fucked",
+      "shit",
+      "bullshit",
+      "cunt",
+      "bitch",
+      "bastard",
+      "wanker",
+      "bollocks",
+      "arsehole",
+      "asshole",
+      "twat",
+      "prick",
+      "dickhead",
+      "slag",
+      "motherfucker",
+      "goddamn"
     ]
   },
   "input_phrases": {
@@ -202,7 +222,10 @@
       "burned alive",
       "eaten alive",
       "skinned alive",
-      "snuff film"
+      "snuff film",
+      "stab the",
+      "murder someone",
+      "how to murder"
     ],
     "self_harm": [
       "self harm",
@@ -219,7 +242,13 @@
       "want to die",
       "take my own life",
       "how to purge",
-      "make myself sick"
+      "make myself sick",
+      "cuts herself",
+      "cuts himself",
+      "cut herself",
+      "cut himself",
+      "harm herself",
+      "harm himself"
     ],
     "drugs_alcohol": [
       "smoking cigarettes",
@@ -288,7 +317,14 @@
       "sneak past security",
       "get past a lock",
       "shoplift",
-      "how to steal"
+      "how to steal",
+      "crack passwords",
+      "hack passwords",
+      "hacking into",
+      "make a knife",
+      "sharpen a knife",
+      "make a smoke bomb",
+      "smoke bomb"
     ],
     "real_private_person": [
       "my ex-husband",
@@ -353,7 +389,12 @@
       "write a resignation letter",
       "just tell me jokes",
       "only jokes",
-      "song lyrics for"
+      "song lyrics for",
+      "product descriptions",
+      "maths homework",
+      "math homework",
+      "homework question",
+      "homework for me"
     ]
   },
   "allow_phrases": [
@@ -492,7 +533,9 @@
     "hunter-gatherer",
     "treasure hunt",
     "scavenger hunt",
-    "bloody mary the tudor queen"
+    "bloody mary the tudor queen",
+    "root beer",
+    "root beers"
   ],
   "output": {
     "hard_phrases": [
@@ -1096,6 +1139,67 @@
       "Rapunzel",
       "Ariel the mermaid",
       "Belle from Beauty and the Beast"
+    ]
+  },
+  "foreign_terms": {
+    "sexual": [
+      "sexo",
+      "sexe",
+      "seks",
+      "desnudo",
+      "desnuda",
+      "nackt",
+      "pornografia",
+      "erotico",
+      "prostituta",
+      "nackte",
+      "nackten",
+      "desnudos"
+    ],
+    "violence_graphic": [
+      "matar",
+      "asesinar",
+      "tuer",
+      "toten",
+      "ammazzare",
+      "decapitar",
+      "decapiter"
+    ],
+    "self_harm": [
+      "suicidio",
+      "suicidarse",
+      "suicidarme",
+      "selbstmord",
+      "suicidarsi"
+    ],
+    "drugs_alcohol": [
+      "cocaina",
+      "heroina",
+      "marihuana",
+      "droga",
+      "drogas",
+      "drogue",
+      "alkohol",
+      "cerveza",
+      "bier",
+      "birra",
+      "vinho"
+    ],
+    "weapons_instructions": [
+      "waffe",
+      "waffen",
+      "explosivos",
+      "explosifs",
+      "sprengstoff",
+      "veneno para",
+      "arma de fuego",
+      "hacer una bomba",
+      "fabricar una bomba",
+      "bomba casera",
+      "fabriquer une bombe",
+      "bombe bauen",
+      "bombe fabriquer",
+      "fare una bomba"
     ]
   }
 }

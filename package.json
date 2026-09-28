@@ -25,7 +25,9 @@
     "bakeoff": "tsx eval/run-bakeoff.ts",
     "fixtures:record": "LIVE_API=1 RECORD_FIXTURES=1 vitest run",
     "test:blocked": "vitest run test/blocked",
-    "test:schema": "RUN_SCHEMA_TESTS=1 vitest run test/int/schema.test.ts"
+    "test:schema": "RUN_SCHEMA_TESTS=1 vitest run test/int/schema.test.ts",
+    "guardrails:report": "tsx scripts/dev/guardrail-report.ts",
+    "guardrails:record": "LIVE_API=1 RECORD_FIXTURES=1 vitest run test/guardrails"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",

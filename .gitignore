@@ -17,3 +17,6 @@ supabase/.branches/
 
 # Local placeholder env used to verify the build; real values never committed.
 .env.local
+
+# F15 guardrail corpus run artefacts (uploaded by the nightly workflow).
+test/guardrails/results/
