@@ -20,8 +20,8 @@ verification tests named in each feature's section (plus `GUARDRAILS.md` §7 and
 | F10 | New-story flow (UI) | 5 | 0 | ⬜ not started | 4 |
 | F11 | Safety, privacy and content policy | 5 | 0 | ⬜ not started | 1 + 4 |
 | F12 | Admin dashboard | 3 | 3 | ✅ **done** — owner gate 404s, view arithmetic, 80% hit rate | 3 |
-| F13 | Quality evaluation harness | 2 + JUDGE §7 | 0 | ⬜ not started — **unblocked**, references arrived | 5 |
-| F14 | Model bake-off | JUDGE §7 (6) | 2 | 🟡 rubric/position-swap VTs green; harness pending. **Budget approval needed** | 5 |
+| F13 | Quality evaluation harness | 3 | 2 | 🟡 merged; harness green in fixture mode. Live run blocked on F6 **and** on credentials | 5 |
+| F14 | Model bake-off | 6 | 5 | 🟡 merged; 5/6. Live calibration VT written and skipped — needs credentials. **$54.79 run needs owner approval** | 5 |
 | F15 | Guardrails | GUARDRAILS §7 (9) | 1 | 🟡 corpus contract locked; L1–L4 pending | 6 |
 
 Legend: ⬜ not started · 🟡 in progress · 🔴 blocked · ✅ done
@@ -251,3 +251,46 @@ route; worth a line in `.env.example`. And lane 3 corrected my cost figure: outp
 total cost is 66% (Haiku) / 76% (Sonnet 5) / 84% (Opus 5.5) / 90% (Fable 5.1), because
 input-heavy helper calls stay on Haiku whatever the writer is. My "~70%" was Sonnet's
 write-call figure specifically.
+
+### 2026-09-27 — lane 5 reviewed and merged
+
+**F13 2/3 · F14 5/6.** Merged. What earned it: blindness is enforced in production rather
+than only in tests — `assertBlind` runs on the assembled payload of every judge call and
+throws, and the payload builders are the single place a request is constructed, so the tests
+assert the object actually sent rather than a reconstruction. The injection test carries a
+**positive control** proving it can fail, which is the part such tests usually omit. Cost
+figures reconcile against `generation_logs` recomputed independently from the sink rows.
+
+Three VTs are honest reds and stay red: the live calibration test is written and skipped, the
+titanic `scary_level ≤ 1` AC reports UNVERIFIED (F7 must emit `scary_level` first), and the
+mean-≥4.0 numbers cannot exist before F6 generates anything.
+
+**Lane 5 found two real bugs in my `lib/reference.ts`.** `asStoryOutput()` dropped the cold
+open — 110 words of the LEGO story, 251 of the shark story — so the judge would have scored
+"Story craft" on a story beginning at Chapter 1. The part they didn't spot is worse: it also
+deleted the shark story's opening continuity callback ("It had been a whole week since the
+magic red brick had taken Cruz and Phoenix…"), which is precisely what rubric criterion 5
+looks for in chapter 1. Calibration would have under-scored the stories it treats as the bar,
+on two criteria at once. Fixing it surfaced a second bug: the subtitle was leaking into the
+cold-open prose and into the word count. Both fixed, with five regression tests including one
+asserting every second story carries a continuity callback from its prior bible.
+
+Fixing it upstream then broke lane 5's local workaround, which double-folded the cold open
+(2,102 words instead of 1,851, pushing the shark story out of band). I removed their fold,
+moved `best_moment`/`worst_moment` onto `JudgeScore` in the shared contract, and rewrote the
+one test that asserted the old broken state. All four references now validate against
+`StoryOutput` and sit inside their band targets.
+
+**Measured spend estimates, computed from `config/pricing.json`:** `pnpm eval` **$3.44** ·
+calibration alone **$1.27** · bakeoff as specified **$54.79** · bakeoff at 2 samples with
+Opus 5.5 judging **$20.36**. My $37–55 range was right; the top end is the spec as written.
+Both CLIs refuse a live run above $20 without an explicit `--budget`.
+
+**Gates on `main`:** lint ✅ · typecheck ✅ · **268 tests pass, 0 fail** (was 161).
+**API spend: $0.00.**
+
+**New blocker, affecting every lane:** there are no API credentials here —
+`ANTHROPIC_API_KEY` is unset, `ant` is not installed, `api.anthropic.com` returns 401. Fixture
+mode is the default so this blocks nothing already built, but it blocks every *live* VT:
+judge calibration, `pnpm eval`, F5's live fact packs, F6's cache-read ratio, F15's nightly
+live corpus, and the bake-off. Recorded as open question F.
