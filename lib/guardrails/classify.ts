@@ -91,7 +91,7 @@ export function applyAgeBand(
 
 /**
  * JSON is constrained by prompt instruction plus zod validation rather than
- * `output_config.format` (DECISIONS.md #35): structured outputs are documented as
+ * `output_config.format` (DECISIONS.md #69): structured outputs are documented as
  * available, but Haiku 4.5's support could not be verified live here, and a wrong shape
  * would 400 on the nightly run. To enable it once verified, add
  * `outputConfig: { format: zodOutputFormat(InputClassification) }` below and re-record the
