@@ -23,3 +23,6 @@ supabase/.branches/
 
 # Lane scratch space, never committed.
 .scratch/
+
+# F15 guardrail corpus run artefacts (uploaded by the nightly workflow).
+test/guardrails/results/

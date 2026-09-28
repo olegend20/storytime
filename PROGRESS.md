@@ -22,7 +22,7 @@ verification tests named in each feature's section (plus `GUARDRAILS.md` §7 and
 | F12 | Admin dashboard | 3 | 3 | ✅ **done** — owner gate 404s, view arithmetic, 80% hit rate | 3 |
 | F13 | Quality evaluation harness | 3 | 2 | 🟡 merged; harness green in fixture mode. Live run blocked on F6 **and** on credentials | 5 |
 | F14 | Model bake-off | 6 | 5 | 🟡 merged; 5/6. Live calibration VT written and skipped — needs credentials. **$54.79 run needs owner approval** | 5 |
-| F15 | Guardrails | GUARDRAILS §7 (9) | 1 | 🟡 corpus contract locked; L1–L4 pending | 6 |
+| F15 | Guardrails | 10 | 6 | 🟡 merged. Deterministic layers measured and green; **L1+L2 headline recall unverified — no API key** | 6 |
 
 Legend: ⬜ not started · 🟡 in progress · 🔴 blocked · ✅ done
 
@@ -320,3 +320,48 @@ written points at the judge prompt. Compensating there would have trained the ju
 a missing callback.
 
 **Gates on `main`:** lint ✅ · typecheck ✅ · **274 tests pass, 0 fail**. API spend **$0.00**.
+
+### 2026-09-27 — lane 6 reviewed and merged
+
+**F15 6/10 VTs, and the four reds are honest.** Merged. I re-measured the corpus myself with
+`pnpm guardrails:report` rather than taking the report on trust; every figure matched:
+
+| Criterion | Target | Measured |
+|---|---|---|
+| Allow-set false refusal (L1) | ≤3% | **0/85 = 0.0%** |
+| Refuse recall, L1 only | — | 109/136 = 80.1%; of the 109 marked `layer: L1`, **109/109** |
+| Refuse recall, **L1+L2** | ≥99% | **UNVERIFIED — no API key** |
+| Output hard-rule recall (deterministic) | 100% | **47/47**, all 14 rules, 3–4 excerpts each |
+| Clean-set false positives | 0 | **0/24** |
+| Reference stories through the output scan | 0 hard | **0 hard, 0 soft** on all four |
+
+Corpus exceeds every §6 minimum: allow 85 (≥60), care 50 (≥30), refuse 136 (≥100, all seven
+named vectors), outputs 47 breaching + 24 clean (≥60).
+
+**The corpus caught two false positives against our own quality bar**, which is the direction
+people forget to test:
+1. The shark story ends a band A chapter `the whole ocean went **WHOOOOSH**...` — the §4.2
+   cliffhanger check read that as dread. An ellipsis after an all-caps sound effect is now
+   exempt, and the rule-3 violation it raises is soft.
+2. Bare `blood` / `dead` / `shooting` as hard failures would have failed two references
+   ("a tiny drop of blood", "people who liked shooting things", "back from the dead"). Hard
+   checks are now violent phrases in context; bare words are soft hints to the reviewer.
+
+Had those shipped, the gate would have rejected the stories that define what good looks like.
+
+**An architectural overlap I need to settle when lane 1 lands.** I assigned the mechanical
+sanitizer to lane 1 (F11) and lane 6 built one too — but theirs is not generic: it returns the
+metadata L1 needs to decide a refusal (`removed.{html,control,zeroWidth,bidi}`, pre-collapse
+`lineBreaks`, `truncated`) and enforces the §3.2 per-field caps. **Lane 6's version has to
+win**, because a sanitizer that returns only a cleaned string silently deletes the
+zero-width/bidi/markup refusals. Lane 1's F11 sanitizer should delegate to it rather than
+duplicate it. Decided now so the merge isn't a coin flip.
+
+**Blocked, and correctly reported as blocked:** the headline ≥99% refuse recall needs L2, and
+27 of 136 refuse entries are semantic by design (franchise characters, a named classmate,
+horror, subtle off-mission). `corpus-l2.test.ts` skips loudly and prints the cost of a
+recording run — **$0.19 with caching, $0.36 worst case** — instead of reporting a number it
+has not measured. Two further VTs wait on F8's `daily_usage` (lane 3, now merged) and F10's UI.
+
+**Gates on `main`:** lint ✅ · typecheck ✅ · **401 tests pass, 0 fail** (was 274).
+API spend **$0.00**.
