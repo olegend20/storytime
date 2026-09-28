@@ -18,7 +18,8 @@ import { FACT_PACK_TOKEN_LIMIT } from '@/lib/schemas'
 import { getOrBuildFactPack } from '@/lib/topics/factpack'
 import { installCliCostLogging } from '@/lib/costs/cli'
 import { supabaseService } from '@/lib/supabase/service'
-import { MemoryLogSink } from '@/lib/ai/types'
+import { MemoryLogSink, TeeLogSink } from '@/lib/ai/types'
+import { getDefaultLogSink } from '@/lib/ai/callModel'
 
 /** §8 / F10: the suggested-topic chips, so a first user gets an instant cache hit. */
 const CHIP_TOPICS = [
@@ -78,7 +79,12 @@ async function main(): Promise<void> {
 
   const costs = installCliCostLogging()
   console.log(`[costs] ${costs.reason}`)
-  const sink = new MemoryLogSink()
+  /**
+   * Tee, not replace. Passing a bare MemoryLogSink here counted this run's cost and silently
+   * bypassed the Supabase sink installed a line above, so `generation_logs` stayed empty.
+   */
+  const counter = new MemoryLogSink()
+  const sink = new TeeLogSink([getDefaultLogSink(), counter])
   let built = 0
   let reused = 0
   const failures: string[] = []
@@ -106,7 +112,7 @@ async function main(): Promise<void> {
 
   console.log(
     `\n${built} built, ${reused} already present, ${failures.length} failed. ` +
-      `This run cost $${sink.totalCostUsd.toFixed(4)} over ${sink.rows.length} calls.`,
+      `This run cost $${counter.totalCostUsd.toFixed(4)} over ${counter.rows.length} calls.`,
   )
   if (failures.length > 0) process.exitCode = 1
 }

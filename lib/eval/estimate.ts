@@ -31,8 +31,21 @@ export const STORY_CALL_TOKENS = {
   bible_update: { input: 7_000, output: 600 },
   /** The writing call: master prompt cached, request block uncached. */
   write: { cacheRead: 4_000, input: 1_500 },
-  /** One per NEW topic, on the fact-pack model, plus web searches. */
-  factpack: { input: 3_000, output: 2_500, webSearches: 6 },
+  /**
+   * One per NEW topic, on the fact-pack model, plus web searches.
+   *
+   * MEASURED 2026-09-28, not assumed. The first live build of `history-of-lego` consumed
+   * **506,414 input tokens** and cost **$1.19** - because every web-search result set is
+   * billed as INPUT, which this estimate previously ignored entirely (it guessed 3,000).
+   * That made the fact-pack line of every eval and bake-off estimate roughly 6.6x too low.
+   *
+   * `max_content_tokens` would bound the input directly, but it is a **web_fetch** parameter -
+   * web_search rejects it with a 400. So the only lever is the search COUNT, now 5 instead of
+   * 8, which scales the measured 506k to roughly 320k. Re-measure after the next build and
+   * correct this again if it is still off: an estimate that is quietly wrong about its largest
+   * term is worse than no estimate.
+   */
+  factpack: { input: 320_000, output: 8_000, webSearches: 5 },
 } as const
 
 export interface CostLine {

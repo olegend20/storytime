@@ -73,3 +73,25 @@ export class ModelRefusalError extends Error {
     this.name = 'ModelRefusalError'
   }
 }
+
+/**
+ * Writes to several sinks. Exists because passing a `MemoryLogSink` to get a per-run total
+ * REPLACES the installed Supabase sink, so the run's costs are counted in memory and never
+ * persisted - which is how a fact-pack build reported its own cost while leaving
+ * `generation_logs` empty. Tee instead of replace.
+ */
+export class TeeLogSink implements GenerationLogSink {
+  constructor(private readonly sinks: readonly GenerationLogSink[]) {}
+  async write(row: GenerationLogRow): Promise<void> {
+    for (const sink of this.sinks) {
+      try {
+        await sink.write(row)
+      } catch (err) {
+        // One failing sink must not lose the row for the others, or silence the call.
+        console.warn(
+          `[costs] a log sink failed: ${err instanceof Error ? err.message : String(err)}`,
+        )
+      }
+    }
+  }
+}

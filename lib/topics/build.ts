@@ -13,7 +13,20 @@ import type { FactPack, FactSource } from '@/lib/schemas'
  * the web_search server tool (DECISIONS.md #5).
  */
 
-export const FACT_PACK_MAX_SEARCHES = 8
+export const FACT_PACK_MAX_SEARCHES = 5
+
+/**
+ * Why `max_uses` is the ONLY lever here.
+ *
+ * MEASURED: one `history-of-lego` build consumed **506,414 input tokens** and cost **$1.19** -
+ * 6.6x the estimate - because every web-search result set is billed as INPUT. At $2/MTok on
+ * Sonnet 5 that input was $1.01 of it; output was $0.10 and the searches themselves ~$0.05.
+ *
+ * `max_content_tokens` would be the direct lever but it belongs to the **web_fetch** tool, not
+ * web_search - passing it here returns `400 Extra inputs are not permitted`. web_search takes
+ * only `max_uses`, `allowed_domains`/`blocked_domains` and `user_location`, so bounding the
+ * search COUNT is the only way to bound the input, hence 8 -> 5.
+ */
 
 export class WebSearchUnsupportedError extends Error {
   constructor(readonly model: string) {
@@ -110,7 +123,22 @@ export async function buildFactPack(
         ].join('\n\n'),
       },
     ],
+    /**
+     * Back to 16k. Dropping this to 6k to save time produced `unparseable`: with a server
+     * tool the response interleaves narration, search results and the final answer across
+     * several turns, and 6k truncated the JSON mid-object. The pack itself must fit 2,000
+     * tokens (§4.3), but the *response* needs room for the reasoning around it. Cost is
+     * controlled on the input side instead - see FACT_PACK_MAX_SEARCH_CONTENT_TOKENS - since
+     * input was 98% of the measured token volume.
+     */
     maxTokens: 16_000,
+    /**
+     * The web-search tool loop makes this the longest call in the system. Three retries of a
+     * timing-out 5-minute request cost 902s and produced nothing, so: a generous single
+     * timeout, and one retry rather than three.
+     */
+    timeoutMs: 600_000,
+    maxRetries: 1,
     thinking: 'adaptive',
     factPackId: opts.factPackId ?? null,
     ...(opts.sink ? { sink: opts.sink } : {}),

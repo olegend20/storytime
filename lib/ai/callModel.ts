@@ -50,6 +50,12 @@ export interface CallModelOptions<T = string> {
   /** Validate and return typed JSON. Repair is the caller's job (s4.4). */
   schema?: z.ZodType<T>
   maxRetries?: number
+  /**
+   * Per-call HTTP timeout in ms. The SDK default is 10 minutes, which a long server-tool loop
+   * can exceed - the fact-pack builder runs web search and timed out three times in a row,
+   * burning 902s. Set generously for tool-loop calls.
+   */
+  timeoutMs?: number
   /** Log correlation. */
   familyId?: string | null
   storyId?: string | null
@@ -258,7 +264,10 @@ export async function callModel<T = string>(
     try {
       const response = (await anthropic().messages.create(
         request as unknown as Anthropic.MessageCreateParamsNonStreaming,
-        { signal: opts.signal },
+        {
+          signal: opts.signal,
+          ...(opts.timeoutMs ? { timeout: opts.timeoutMs } : {}),
+        },
       )) as unknown as Record<string, unknown>
 
       const latencyMs = Date.now() - started
