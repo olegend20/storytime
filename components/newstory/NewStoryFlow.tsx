@@ -19,7 +19,14 @@ import {
   type StoryFormState,
 } from '@/lib/client/form'
 import { readerFromStream } from '@/lib/client/reader'
-import { loadFormMemory, saveFormMemory } from '@/lib/client/storage'
+import {
+  DEFAULT_FORM_MEMORY,
+  FORM_KEY,
+  StoryFormMemory,
+  loadFormMemory,
+  saveFormMemory,
+} from '@/lib/client/storage'
+import { useStoredJson } from '@/lib/client/useStored'
 import { offsetForDay, suggestedChips, type SuggestedTopic } from '@/lib/client/topics'
 import { checkTopic } from '@/lib/client/validate'
 import type { Child, LengthMinutes, QuotaResponse, Tone } from '@/lib/schemas'
@@ -33,10 +40,10 @@ import { TopicField } from './TopicField'
 /**
  * F10, the nightly flow: form → streaming reader → saved story.
  *
- * Tap budget (AC: "≤3 taps before typing the topic on a phone"). Children and length are
- * restored from the last story, tones default to funny + exciting, and the topic field is focused
- * once the form is ready — so the returning case is *zero* taps before typing, and the
- * first-ever case is one (pick a child).
+ * Tap budget (AC: "≤3 taps before typing the topic on a phone"). Children and length are restored
+ * from the last story, tones default to funny + exciting, every child is selected on a first visit,
+ * and the topic field is focused once the form is ready — so reaching the topic costs zero taps,
+ * and the one tap in the budget is the parent choosing to narrow the selection.
  *
  * A pre-stream failure never navigates away: the form keeps its contents so the parent can edit
  * the topic instead of retyping it.
@@ -48,7 +55,28 @@ export function NewStoryFlow() {
   const [chipOffset, setChipOffset] = useState(() => offsetForDay())
   const [loadFailed, setLoadFailed] = useState(false)
 
-  const [form, setForm] = useState<StoryFormState>(() => initialFormState(loadFormMemory()))
+  /**
+   * The remembered children and length (F10 AC), read through the external store rather than a
+   * `useState` initializer.
+   *
+   * This matters and it cost a failing test to find: `/new` is statically prerendered, so the
+   * server markup has the default length selected. React does not re-apply mismatched ATTRIBUTES
+   * during hydration, so a `useState(() => loadFormMemory())` initializer left `aria-checked` on
+   * the wrong length button even though the state was right - the parent's remembered "15 min"
+   * silently looked unselected. `useSyncExternalStore` renders the server snapshot during
+   * hydration and then re-renders normally with the stored value, which does patch the DOM.
+   *
+   * `draft` is null until the parent touches something, so the form follows storage until then.
+   */
+  const remembered = useStoredJson(FORM_KEY, StoryFormMemory, DEFAULT_FORM_MEMORY)
+  const [draft, setDraft] = useState<StoryFormState | null>(null)
+  const allChildIds = useMemo(() => (children ?? []).map((c) => c.id), [children])
+  const form = draft ?? initialFormState(remembered, allChildIds)
+  const setForm = useCallback(
+    (update: (current: StoryFormState) => StoryFormState) =>
+      setDraft((current) => update(current ?? initialFormState(loadFormMemory(), allChildIds))),
+    [allChildIds],
+  )
   const [showTopicError, setShowTopicError] = useState(false)
   const [stream, dispatch] = useReducer(streamReducer, initialStreamState)
   const abortRef = useRef<AbortController | null>(null)

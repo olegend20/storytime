@@ -10,8 +10,10 @@ import type { QuotaResponse } from '@/lib/schemas'
  */
 export function quotaMessage(quota: QuotaResponse): string {
   const left = Math.max(0, quota.limit - quota.used)
-  if (left === 0) return `No stories left today`
-  return `${left} of ${quota.limit} ${left === 1 ? 'story' : 'stories'} left today`
+  if (left === 0) return 'No stories left today'
+  // The noun agrees with the LIMIT, not with what is left: "1 of 3 stories left today", never
+  // "1 of 3 story left today". F10's AC quotes the phrasing as "2 of 3 stories left today".
+  return `${left} of ${quota.limit} ${quota.limit === 1 ? 'story' : 'stories'} left today`
 }
 
 export function resetTimeLabel(isoOrNull: string | null | undefined): string | null {

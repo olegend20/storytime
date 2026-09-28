@@ -53,7 +53,10 @@ test.describe('accessibility', () => {
     await resetMock(page)
     await page.reload()
     await startStory(page, '!refuse a topic')
-    await expect(page.getByRole('alert').first()).toBeVisible()
+    // Next injects its own empty role="alert" route announcer, so match on our copy.
+    await expect(
+      page.getByRole('alert').filter({ hasText: /can.t make a story about that/i }),
+    ).toBeVisible()
     const results = await scan(page)
     expect(report('form+error', results.violations)).toEqual([])
   })

@@ -40,12 +40,26 @@ export interface StoryFormState {
  */
 export const DEFAULT_TONES: Tone[] = ['funny', 'exciting']
 
-export function initialFormState(remembered: {
-  childIds: readonly string[]
-  lengthMinutes: LengthMinutes
-}): StoryFormState {
+export function initialFormState(
+  remembered: { childIds: readonly string[]; lengthMinutes: LengthMinutes },
+  /** Every child in the family, used only for the first-ever visit. */
+  allChildIds: readonly string[] = [],
+): StoryFormState {
+  /**
+   * On the first ever visit nothing is remembered, and an empty selection would leave "Start the
+   * story" disabled with nothing on screen explaining why - a tap spent on something the parent
+   * did not choose to think about. So the default is everyone.
+   *
+   * It is a safe default rather than a convenient one: §4.5 makes the YOUNGEST selected child set
+   * the vocabulary and the peril, so including everybody can only make a story gentler, never
+   * more mature than it should be. Deselecting is one tap.
+   *
+   * An empty remembered list always means "never submitted", because a submit requires at least
+   * one child - so this can never override a parent who deliberately narrowed the selection.
+   */
+  const childIds = remembered.childIds.length > 0 ? [...remembered.childIds] : [...allChildIds]
   return {
-    childIds: [...remembered.childIds],
+    childIds,
     topic: '',
     tones: [...DEFAULT_TONES],
     lengthMinutes: remembered.lengthMinutes,

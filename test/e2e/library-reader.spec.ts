@@ -95,9 +95,11 @@ test('the reader has no horizontal overflow and its chapter nav works', async ({
   await expect(dialog).toBeVisible()
   const items = dialog.getByRole('button').filter({ hasNotText: 'Close' })
   expect(await items.count()).toBeGreaterThanOrEqual(6)
+  const total = await items.count()
   await items.last().click()
   await expect(dialog).toBeHidden()
-  await expect(picker).toHaveText(new RegExp(`Chapter ${await items.count()} of`))
+  // Smooth scrolling to the end of a long story takes a moment, and the observer settles after it.
+  await expect(picker).toHaveText(new RegExp(`Chapter ${total} of ${total}`), { timeout: 15_000 })
 })
 
 /** VT: reload mid-story restores scroll position within 200px. */
@@ -175,7 +177,7 @@ test('reading mode dims the UI, enlarges the text, and survives a reload', async
 
   // Chrome is gone from the layout (and therefore from the a11y tree), and the text is bigger.
   await expect(page.getByRole('navigation', { name: 'Main' })).toBeHidden()
-  await expect(page.getByRole('radiogroup', { name: 'Theme' })).toBeHidden()
+  await expect(page.getByRole('radiogroup', { name: 'Theme' }).first()).toBeHidden()
   expect(await proseSize()).toBeGreaterThan(before)
 
   // Reading mode persists, and the way out is still on screen.
