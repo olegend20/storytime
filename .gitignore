@@ -17,3 +17,6 @@ supabase/.branches/
 
 # Local placeholder env used to verify the build; real values never committed.
 .env.local
+
+# lane 5 scratch (never committed)
+.scratch/
