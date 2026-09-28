@@ -287,7 +287,7 @@ export const SCENARIOS: EvalScenario[] = [
   },
   {
     id: 'soccer-goalkeeper-notes',
-    why: '§6: a topic where the parent notes must matter (history-of-soccer, notes "goalkeeper, hates losing"). A story that ignores the notes should visibly lose on heroes.',
+    why: '§6: a topic where the parent notes must matter (history-of-soccer, notes "goalkeeper, hates losing"). A story that ignores the notes should visibly lose on the centre criterion.',
     suites: ['bakeoff'],
     children: [
       {

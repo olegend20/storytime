@@ -92,7 +92,7 @@ export function scoreResponse(
   const body: JudgeScoreWithExcerpts = {
     scores,
     evidence: {
-      heroes: 'evidence heroes',
+      center: 'evidence center',
       craft: 'evidence craft',
       facts: 'evidence facts',
       age_fit: 'evidence age fit',
@@ -118,7 +118,7 @@ export function pairwiseResponse(
 ): string {
   return JSON.stringify({
     per_criterion: {
-      heroes: perCriterion,
+      center: perCriterion,
       craft: perCriterion,
       facts: 'TIE',
       age_fit: perCriterion,

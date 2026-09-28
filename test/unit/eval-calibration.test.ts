@@ -28,7 +28,7 @@ import type { JudgeScoreWithExcerpts } from '@/lib/eval/judge'
  */
 
 const cases = loadReferenceCases()
-const ALL_FIVES = { heroes: 5, craft: 5, facts: 5, age_fit: 5, continuity: 5, delight: 5 }
+const ALL_FIVES = { center: 5, craft: 5, facts: 5, age_fit: 5, continuity: 5, delight: 5 }
 
 describe('§5 sabotage: a child removed from all but one chapter', () => {
   const lego = referenceCase(cases, REFERENCE_FILES.lego)
@@ -50,7 +50,7 @@ describe('§5 sabotage: a child removed from all but one chapter', () => {
     expect(sab.story.chapters[9]!.text).not.toMatch(/Cruz and Cruz/)
   })
 
-  it('keeps the story the same length, so nothing but heroes has changed', () => {
+  it('keeps the story the same length, so nothing but the centre score has changed', () => {
     const sab = removeChildFromAllButOneChapter(lego.story, {
       remove: 'Phoenix',
       keepWith: 'Cruz',
@@ -202,7 +202,7 @@ describe('reference adaptation', () => {
  * in call order: four references, then the four sabotages, then the two pairwise orders.
  */
 function scriptedJudge(opts: {
-  sabotageScores?: Partial<Record<'heroes' | 'facts' | 'peril' | 'padding', JudgeScoreWithExcerpts['scores']>>
+  sabotageScores?: Partial<Record<'center' | 'facts' | 'peril' | 'padding', JudgeScoreWithExcerpts['scores']>>
   factEvidence?: string
   pairwise?: ('A' | 'B' | 'TIE')[]
   pairwiseConfidence?: number
@@ -220,9 +220,9 @@ function scriptedJudge(opts: {
     scoreCall += 1
     if (scoreCall <= 4) return scoreResponse(ALL_FIVES)
     if (scoreCall === 5) {
-      return scoreResponse(s.heroes ?? { ...ALL_FIVES, heroes: 2 }, {
+      return scoreResponse(s.center ?? { ...ALL_FIVES, center: 2 }, {
         evidence: {
-          heroes: 'Phoenix is named in the goodnight line and in one chapter, and does nothing anywhere else.',
+          center: 'Phoenix is named in the goodnight line and in one chapter, and does nothing anywhere else.',
           craft: 'ok',
           facts: 'ok',
           age_fit: 'ok',
@@ -234,7 +234,7 @@ function scriptedJudge(opts: {
     if (scoreCall === 6) {
       return scoreResponse(s.facts ?? { ...ALL_FIVES, facts: 2 }, {
         evidence: {
-          heroes: 'ok',
+          center: 'ok',
           craft: 'ok',
           facts:
             opts.factEvidence ??
@@ -248,7 +248,7 @@ function scriptedJudge(opts: {
     if (scoreCall === 7) {
       return scoreResponse(s.peril ?? { ...ALL_FIVES, age_fit: 2 }, {
         evidence: {
-          heroes: 'ok',
+          center: 'ok',
           craft: 'ok',
           facts: 'ok',
           age_fit: 'A great white rams the submarine and chases them into the dark. Band A allows no chasing at all.',
@@ -296,7 +296,7 @@ describe('§5 calibration checker', () => {
       () => runCalibration(),
       scriptedJudge({
         sabotageScores: {
-          heroes: ALL_FIVES,
+          center: ALL_FIVES,
           facts: ALL_FIVES,
           peril: ALL_FIVES,
           padding: ALL_FIVES,

@@ -40,7 +40,7 @@ import type { JudgeScoreWithExcerpts } from '@/lib/eval/judge'
  * stands in, and every artifact it produces is stamped `synthetic: true`.
  */
 
-const ALL_FIVES = { heroes: 5, craft: 5, facts: 5, age_fit: 5, continuity: 5, delight: 5 }
+const ALL_FIVES = { center: 5, craft: 5, facts: 5, age_fit: 5, continuity: 5, delight: 5 }
 
 function script(opts: { scenarioScores?: JudgeScoreWithExcerpts['scores'][] } = {}) {
   let score = 0
@@ -51,7 +51,7 @@ function script(opts: { scenarioScores?: JudgeScoreWithExcerpts['scores'][] } = 
   ): string =>
     scoreResponse(scores, {
       evidence: {
-        heroes: 'ok',
+        center: 'ok',
         craft: 'ok',
         facts: 'ok',
         age_fit: 'ok',
@@ -68,7 +68,7 @@ function script(opts: { scenarioScores?: JudgeScoreWithExcerpts['scores'][] } = 
     }
     score += 1
     if (score <= 4) return scoreResponse(ALL_FIVES)
-    if (score === 5) return sabotage({ ...ALL_FIVES, heroes: 2 }, { heroes: 'named once, never acts' })
+    if (score === 5) return sabotage({ ...ALL_FIVES, center: 2 }, { center: 'named once, never acts' })
     if (score === 6) {
       return sabotage({ ...ALL_FIVES, facts: 2 }, { facts: 'wrong years 1847, 1911, 1926' })
     }
@@ -118,7 +118,7 @@ describe('F13 eval harness', () => {
     expect('skipped' in result.calibration).toBe(false)
     if ('skipped' in result.calibration) throw new Error('unreachable')
     expect(result.calibration.passed).toBe(true)
-    expect(result.judge_prompt.version).toBe('judge.v1')
+    expect(result.judge_prompt.version).toBe('judge.v2')
   })
 
   it('reports nothing at all when calibration fails', async () => {
@@ -149,7 +149,7 @@ describe('F13 eval harness', () => {
   })
 
   it('fails when the mean is below 4.0 or any scenario is below 3.5', async () => {
-    const weak = { heroes: 3, craft: 3, facts: 3, age_fit: 3, continuity: 3, delight: 3 }
+    const weak = { center: 3, craft: 3, facts: 3, age_fit: 3, continuity: 3, delight: 3 }
     const { result } = await runOnce({ scenarioScores: [weak] })
     expect(result.summary.mean_overall).toBeCloseTo(3, 2)
     expect(result.summary.passed).toBe(false)
@@ -259,7 +259,7 @@ describe('F13: eval/results/<date>.json and the comparison against the previous 
     const firstPath = writeResultFile(nextResultPath('eval-', 'json', { dir, date: '2026-09-01' }), first)
     expect(existsSync(firstPath)).toBe(true)
 
-    const weak = { heroes: 3, craft: 4, facts: 4, age_fit: 4, continuity: 5, delight: 4 }
+    const weak = { center: 3, craft: 4, facts: 4, age_fit: 4, continuity: 5, delight: 4 }
     const { result: second } = await runOnce({ scenarioScores: [weak] })
 
     const previousPath = previousResultPath('eval-', { dir })

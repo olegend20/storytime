@@ -30,23 +30,30 @@ Question 2 is the important one for choosing a writing model. Absolute scores fr
 
 | # | Criterion | What a 5 looks like | What a 2 looks like |
 |---|---|---|---|
-| 1 | **Children as heroes** | Every named child drives the plot: they solve the chapter's problem, get lines that only they could say, and their stated likes shape *what happens*, not just decoration. | Children are named but mostly watch a guide explain things; likes are mentioned once and forgotten. |
-| 2 | **Story craft** | Cold open in the real world, clear device that launches the adventure, a mini-challenge per chapter, escalating stakes, a satisfying return home with a keepsake or callback, and a last line that lands. Shout-along moments for young bands. | A list of facts with a thin frame; chapters blur together; ending is abrupt. |
+| 1 | **Children at the center** | The named children are present and active in nearly every chapter: they do things (climb, build, kick, grab, test), ask the questions a curious kid would ask, make choices, react in ways that are distinctly theirs, and get lines only they could say. Their stated likes and notes shape how at least one scene plays out. The story would not work with the children removed. Solving a problem is one way to be active, not the only way: discovering, trying, asking, choosing, and joining in all count. | Children are named at the start, then a guide lectures while they nod along; scenes would read the same with the kids deleted; likes are mentioned once and forgotten. |
+| 2 | **Story craft** | Cold open in the child's real world, a clear device that launches the adventure, and a beat in every chapter that gives the kids something to do or find out: a discovery, a surprise, a choice, a hands-on moment, or a challenge. Momentum builds, there's a satisfying return home with a keepsake or callback, and a last line that lands. Shout-along moments for young bands. A learning journey with no villain and no jeopardy can still score 5 if each chapter has a beat and the whole has a shape. | A list of facts with a thin frame; chapters blur together and are interchangeable; ending is abrupt. |
 | 3 | **Factual grounding** | Facts are correct, come from the fact pack, are woven into action, and popular legends are flagged in-story. True Facts list is accurate and matches the story. | Invented dates or names, facts dumped in lectures, unhedged legends, True Facts list contains things not in the story. |
 | 4 | **Age fit** | Vocabulary, sentence length, peril and humour match the band table exactly; mixed-age stories give the older child something in every chapter. Length within target range. | Too scary or too babyish for the band; a 4-year-old story with sarcasm, a 10-year-old story with baby talk; length far off. |
 | 5 | **Series continuity** | Reuses the series' recurring device/guide naturally, references the previous ending in the opening, keeps catchphrases, adds at most one new recurring element and it's a good one. (Score 5 by default for a first story with no bible.) | Contradicts the bible, ignores recurring characters, or reinvents the device. |
 | 6 | **Read-aloud delight** | A parent would be proud to read it: rhythm, jokes that land for both parent and child, sound words, a warm ending. No filler sentences. | Flat prose, repeated phrases, clichés, obvious AI tells ("Little did they know…"). |
 
 **Automatic caps** (applied by the judge regardless of other scores):
+
 - Any content that breaches `GUARDRAILS.md` output rules → overall score 1 and `disqualified: true`.
 - Any invented fact contradicted by the fact pack → Factual grounding ≤ 2.
 - Word count outside target ±15% → Age fit ≤ 3.
 
-**Overall** = weighted mean: Heroes 0.2, Craft 0.2, Facts 0.2, Age fit 0.15, Continuity 0.1, Delight 0.15.
+**How to score criterion 1 (Children at the center).** Count the chapters. For each chapter, mark whether at least one named child does one of the following: performs a physical action that matters to the scene; asks a question that a fact or character then answers; makes a choice or suggests an idea; reacts in a way that is specific to that child (not "the kids gasped"); or is addressed by a historical figure or guide and answers in their own voice. Then: every chapter → 5; all but one → 4; roughly two-thirds → 3; about half → 2; fewer → 1. If any named child goes silent for three consecutive chapters, cap at 3. If the children's stated likes or notes never change a scene, subtract 1.
 
----
+**Worked examples from the reference stories** (these must all land at 4–5, which is the point of the calibration set):
 
-## 4. Judge prompt (store as `prompts/judge.v1.md`)
+- **Shark Submarine** is a guide-led discovery story with no villain. It scores **5** because in every chapter the boys ask a question, press noses to the glass, squeeze their noses to feel cartilage, pick up a tooth with the grabber arm, name the "nightlight shark," or hold hands when the great white appears. Nothing is solved, but nothing would work without them.
+- **The Beautiful Game** mixes both modes: Lennon organizes other kids in the arcade and takes the first penalty in history (problem-solving), but he also just kicks a feathered ball, argues with men in top hats, and scratches a dog's ears (participation). Both kinds count equally.
+- **Brick That Clicked** has Cruz suggest the tubes idea (an idea), Phoenix pull the wooden duck around (an action), and both shout "LEGO!" (a reaction). A younger-band story earns its 5 mostly through actions and shout-lines, not decisions.
+
+**Overall** = weighted mean: Center 0.2, Craft 0.2, Facts 0.2, Age fit 0.15, Continuity 0.1, Delight 0.15.
+
+## 4. Judge prompt (store as `prompts/judge.v2.md` (v1 penalized learning journeys for lacking problems to solve; v2 scores presence and agency))
 
 ```
 You are the Story Judge for StoryTime, a free app where parents read personalized, true-fact bedtime stories to their children. Your job is to score stories with the rigor of a children's book editor and the eye of a fact-checker. You are strict. A 5 is rare and must be earned. You never reward length for its own sake.
@@ -75,8 +82,8 @@ Respond with JSON only, matching the schema you are given. No prose outside the 
 **Output schema (SCORE mode)**
 ```json
 {
-  "scores": {"heroes": 4, "craft": 5, "facts": 4, "age_fit": 5, "continuity": 5, "delight": 4},
-  "evidence": {"heroes": "…", "craft": "…", "facts": "…", "age_fit": "…", "continuity": "…", "delight": "…"},
+  "scores": {"center": 4, "craft": 5, "facts": 4, "age_fit": 5, "continuity": 5, "delight": 4},
+  "evidence": {"center": "…", "craft": "…", "facts": "…", "age_fit": "…", "continuity": "…", "delight": "…"},
   "caps_applied": ["none"],
   "disqualified": false,
   "overall": 4.45,
@@ -85,7 +92,7 @@ Respond with JSON only, matching the schema you are given. No prose outside the 
 ```
 **Output schema (PAIRWISE mode)**
 ```json
-{"per_criterion": {"heroes": "A", "craft": "TIE", "facts": "B", "age_fit": "A", "continuity": "TIE", "delight": "A"},
+{"per_criterion": {"center": "A", "craft": "TIE", "facts": "B", "age_fit": "A", "continuity": "TIE", "delight": "A"},
  "verdict": "A", "confidence": 0.8, "justification": "…"}
 ```
 
@@ -98,7 +105,7 @@ Run before every bake-off and whenever `prompts/judge.*.md` changes.
 | Item | Expected |
 |---|---|
 | The four `reference-stories/` scored with their original requests | each overall ≥ 4.5 |
-| A "sabotaged" copy of the LEGO story with Phoenix's name removed from all but one chapter | heroes ≤ 2 |
+| A "sabotaged" copy of the LEGO story with Phoenix's name removed from all but one chapter | center ≤ 2 |
 | A copy of the soccer story with three invented dates | facts ≤ 2 and the evidence names at least two of them |
 | A copy of the shark story with a chapter where the great white chases the submarine and rams it | age_fit ≤ 2 for band A |
 | A copy of the video-game story padded with 900 words of repeated description | age_fit ≤ 3, and delight not higher than the original |

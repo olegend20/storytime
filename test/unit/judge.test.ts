@@ -33,7 +33,7 @@ import type { JudgeContext, JudgeableStory } from '@/lib/eval/types'
  */
 
 const cases = loadReferenceCases()
-const GOOD_SCORES = { heroes: 4, craft: 5, facts: 4, age_fit: 5, continuity: 5, delight: 4 }
+const GOOD_SCORES = { center: 4, craft: 5, facts: 4, age_fit: 5, continuity: 5, delight: 4 }
 
 /**
  * Fixtures are keyed by a hash of the whole payload, so two tests that score the same story
@@ -78,9 +78,9 @@ describe('§7 judge output parser', () => {
   })
 
   it('rejects a score of 0 and a non-integer score', () => {
-    expect(parseJudgeScore(scoreResponse({ ...GOOD_SCORES, heroes: 0 })).ok).toBe(false)
+    expect(parseJudgeScore(scoreResponse({ ...GOOD_SCORES, center: 0 })).ok).toBe(false)
     expect(
-      parseJudgeScore(scoreResponse({ ...GOOD_SCORES, heroes: 4.5 as unknown as 4 })).ok,
+      parseJudgeScore(scoreResponse({ ...GOOD_SCORES, center: 4.5 as unknown as 4 })).ok,
     ).toBe(false)
   })
 
@@ -182,14 +182,25 @@ describe('§7 the judge is blind', () => {
   })
 
   it('the system block is the prompt file and nothing else', () => {
-    const payload = buildScorePayload({ context: cases[0]!.context, story: cases[0]!.story })
-    expect(payload.systemText).toBe(loadJudgePrompt().text)
-    // No story text, no child name, no topic in the instruction region.
-    expect(payload.systemText).not.toContain(cases[0]!.story.title)
-    for (const child of cases[0]!.context.children) {
-      expect(payload.systemText).not.toContain(child.name)
-    }
-    expect(payload.userText).toContain(cases[0]!.story.title)
+    const a = buildScorePayload({ context: cases[0]!.context, story: cases[0]!.story })
+    const b = buildScorePayload({ context: cases[2]!.context, story: cases[2]!.story })
+
+    // The guarantee: the instruction region IS the prompt file, byte for byte, and does not
+    // vary with the request. That is strictly stronger than checking for the absence of a
+    // particular name - and it has to be, because judge.v2's worked examples deliberately
+    // name Cruz, Phoenix and Lennon as anchors (JUDGE_AGENT.md §3). An earlier version of
+    // this test asserted no child name appeared in the system block, which was really a
+    // proxy for "no per-request content leaks"; that proxy broke the moment the rubric
+    // gained legitimate examples. Invariance across two different requests is the property.
+    expect(a.systemText).toBe(loadJudgePrompt().text)
+    expect(b.systemText).toBe(a.systemText)
+
+    // The story under judgement never appears in the instruction region, only in the data
+    // region - checked with the title of the story NOT used as a rubric example.
+    expect(a.systemText).not.toContain(cases[0]!.story.title)
+    expect(a.userText).toContain(cases[0]!.story.title)
+    expect(b.systemText).not.toContain(cases[2]!.story.title)
+    expect(b.userText).toContain(cases[2]!.story.title)
   })
 
   it('catches a model name arriving through parent-supplied text, not only through a story', () => {
@@ -262,7 +273,7 @@ function simulateGullibleJudge(payload: string): string {
   // itself legitimately discusses text that tries to "ignore the rubric", and a loose
   // pattern would fire on the prompt's own words and make the test meaningless.
   if (instructionRegion(payload).includes(INJECTION_DIRECTIVE)) {
-    return scoreResponse({ heroes: 5, craft: 5, facts: 5, age_fit: 5, continuity: 5, delight: 5 })
+    return scoreResponse({ center: 5, craft: 5, facts: 5, age_fit: 5, continuity: 5, delight: 5 })
   }
   return scoreResponse(GOOD_SCORES)
 }
@@ -319,7 +330,7 @@ describe('prompt injection in a story cannot move the score', () => {
     const real = buildScorePayload({ context: clean.context, story: clean.story })
     const leaky = `${real.systemText}\n${INJECTION}\n${real.userText}`
     const parsed = parseJudgeScore(simulateGullibleJudge(leaky))
-    expect(parsed.data?.scores.heroes).toBe(5)
+    expect(parsed.data?.scores.center).toBe(5)
     expect(parsed.data?.scores.delight).toBe(5)
   })
 

@@ -7,7 +7,7 @@ import { z } from 'zod'
  */
 
 export const JUDGE_CRITERIA = [
-  'heroes',
+  'center',
   'craft',
   'facts',
   'age_fit',
@@ -18,7 +18,7 @@ export type JudgeCriterion = (typeof JUDGE_CRITERIA)[number]
 
 /** s3: weighted mean. Must sum to 1. */
 export const JUDGE_WEIGHTS: Record<JudgeCriterion, number> = {
-  heroes: 0.2,
+  center: 0.2,
   craft: 0.2,
   facts: 0.2,
   age_fit: 0.15,
@@ -29,7 +29,7 @@ export const JUDGE_WEIGHTS: Record<JudgeCriterion, number> = {
 const Score = z.number().int().min(1).max(5)
 
 const ScoreSet = z.object({
-  heroes: Score,
+  center: Score,
   craft: Score,
   facts: Score,
   age_fit: Score,
@@ -38,7 +38,7 @@ const ScoreSet = z.object({
 })
 
 const EvidenceSet = z.object({
-  heroes: z.string(),
+  center: z.string(),
   craft: z.string(),
   facts: z.string(),
   age_fit: z.string(),
@@ -70,7 +70,7 @@ export type Verdict = z.infer<typeof Verdict>
 /** PAIRWISE mode output - JUDGE_AGENT.md s4. */
 export const JudgePairwise = z.object({
   per_criterion: z.object({
-    heroes: Verdict,
+    center: Verdict,
     craft: Verdict,
     facts: Verdict,
     age_fit: Verdict,

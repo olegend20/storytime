@@ -27,7 +27,7 @@ import { models } from '@/lib/ai/pricing'
  * positive costs one scenario and an obvious fix (the harness reports the offending
  * excerpt and the block it came from, so the operator can see in one line that it was a
  * story about poetry and not a leak). We do not soften this into a warning: a check that
- * can be ignored is not a check. `prompts/judge.v1.md` is written to avoid all four words.
+ * can be ignored is not a check. `prompts/judge.v2.md` is written to avoid all four words.
  */
 export const IDENTITY_BRAND_WORDS = ['opus', 'sonnet', 'haiku', 'fable'] as const
 

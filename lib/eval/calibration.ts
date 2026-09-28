@@ -140,7 +140,7 @@ export async function runCalibration(
     ),
   )
 
-  // ---- Row 2: heroes. Phoenix removed from all but one chapter of the LEGO story.
+  // ---- Row 2: center. Phoenix removed from all but one chapter of the LEGO story.
   const lego = referenceCase(cases, REFERENCE_FILES.lego)
   const heroSab = removeChildFromAllButOneChapter(lego.story, {
     remove: 'Phoenix',
@@ -151,10 +151,10 @@ export async function runCalibration(
   expectations.push(
     expectation(
       'sabotage_heroes',
-      "LEGO story with Phoenix's name removed from all but one chapter scores heroes <= 2",
-      heroRes.ok && heroRes.raw.scores.heroes <= 2,
+      "LEGO story with Phoenix's name removed from all but one chapter scores center <= 2",
+      heroRes.ok && heroRes.raw.scores.center <= 2,
       heroRes.ok
-        ? `heroes=${heroRes.raw.scores.heroes} (raw), kept in "${heroSab.keptChapterHeading}", ${heroSab.strippedFrom} mentions removed. Evidence: ${heroRes.raw.evidence.heroes}`
+        ? `center=${heroRes.raw.scores.center} (raw), kept in "${heroSab.keptChapterHeading}", ${heroSab.strippedFrom} mentions removed. Evidence: ${heroRes.raw.evidence.center}`
         : `judge_error: ${heroRes.reason}`,
       heroRes.ok ? { scores_raw: heroRes.raw.scores, kept_chapter: heroSab.keptChapter } : {},
     ),
@@ -284,7 +284,7 @@ export async function runCalibration(
     '§5: if an expectation fails, fix the judge prompt - never the reference stories.',
     'The five sabotage/pairwise rows are checked against the judge\'s RAW criterion scores, before our automatic caps, so no row can pass because of our own arithmetic.',
     'The reference stories predate fact packs, so `unsourced_fact` is recorded as unverifiable rather than passed (see lib/eval/caps.ts).',
-    'Manifest note: references 1 and 3 use British spelling, 2 and 4 American. The app defaults to American; prompts/judge.v1.md instructs the judge not to deduct for either.',
+    'Manifest note: references 1 and 3 use British spelling, 2 and 4 American. The app defaults to American; prompts/judge.v2.md instructs the judge not to deduct for either.',
     `Two of the four references carry 11 headed sections and do not validate against StoryOutput (DECISIONS.md #25), so calibration scores the looser JudgeableStory shape.`,
   ]
 

@@ -218,13 +218,13 @@ describe('JUDGE_AGENT.md s3 rubric arithmetic', () => {
 
   it('computes the weighted overall', () => {
     expect(
-      weightedOverall({ heroes: 4, craft: 5, facts: 4, age_fit: 5, continuity: 5, delight: 4 }),
+      weightedOverall({ center: 4, craft: 5, facts: 4, age_fit: 5, continuity: 5, delight: 4 }),
     ).toBeCloseTo(4.45, 2)
   })
 
   const raw: JudgeScore = {
-    scores: { heroes: 5, craft: 5, facts: 5, age_fit: 5, continuity: 5, delight: 5 },
-    evidence: { heroes: '', craft: '', facts: '', age_fit: '', continuity: '', delight: '' },
+    scores: { center: 5, craft: 5, facts: 5, age_fit: 5, continuity: 5, delight: 5 },
+    evidence: { center: '', craft: '', facts: '', age_fit: '', continuity: '', delight: '' },
     caps_applied: ['none'],
     disqualified: false,
     overall: 5,

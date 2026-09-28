@@ -27,9 +27,9 @@ import type { JudgeScoreWithExcerpts } from '@/lib/eval/judge'
 
 const BASELINE = 'claude-sonnet-5'
 const CHALLENGER = 'claude-fable-5-1'
-const ALL_FIVES = { heroes: 5, craft: 5, facts: 5, age_fit: 5, continuity: 5, delight: 5 }
-const BASELINE_SCORES = { heroes: 4, craft: 4, facts: 4, age_fit: 4, continuity: 5, delight: 3 }
-const CHALLENGER_SCORES = { heroes: 5, craft: 5, facts: 4, age_fit: 5, continuity: 5, delight: 5 }
+const ALL_FIVES = { center: 5, craft: 5, facts: 5, age_fit: 5, continuity: 5, delight: 5 }
+const BASELINE_SCORES = { center: 4, craft: 4, facts: 4, age_fit: 4, continuity: 5, delight: 3 }
+const CHALLENGER_SCORES = { center: 5, craft: 5, facts: 4, age_fit: 5, continuity: 5, delight: 5 }
 
 /**
  * Scripts the whole run in call order. The order is fixed by the protocol: §5 calibration
@@ -47,7 +47,7 @@ function scriptRun(opts: { calibrationPasses?: boolean } = {}): (info: { purpose
   ): string =>
     scoreResponse(calibrationPasses ? scores : ALL_FIVES, {
       evidence: {
-        heroes: 'ok',
+        center: 'ok',
         craft: 'ok',
         facts: 'ok',
         age_fit: 'ok',
@@ -73,8 +73,8 @@ function scriptRun(opts: { calibrationPasses?: boolean } = {}): (info: { purpose
     if (score <= 4) return scoreResponse(ALL_FIVES)
     // 5-8: the four sabotaged variants.
     if (score === 5) {
-      return sabotageScore({ ...ALL_FIVES, heroes: 2 }, {
-        heroes: 'The second child is named once and never acts.',
+      return sabotageScore({ ...ALL_FIVES, center: 2 }, {
+        center: 'The second child is named once and never acts.',
       })
     }
     if (score === 6) {
@@ -167,7 +167,7 @@ describe('§7 bake-off harness: 1 scenario × 2 contestants × 1 sample in fixtu
     expect(result.models[BASELINE]!.input).toBeGreaterThan(0)
     expect(result.models[BASELINE]!.output).toBeGreaterThan(0)
     expect(result.pricing_updated_at).toMatch(/^\d{4}-\d{2}-\d{2}$/)
-    expect(result.judge_prompt.version).toBe('judge.v1')
+    expect(result.judge_prompt.version).toBe('judge.v2')
     expect(result.judge_prompt.sha256).toHaveLength(16)
   })
 

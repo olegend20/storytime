@@ -39,8 +39,8 @@ export interface HeroSabotage {
   keptChapter: number
   keptChapterHeading: string
   strippedFrom: number
-  /** Expected: heroes <= 2 (§5). */
-  expectation: 'heroes<=2'
+  /** Expected: center <= 2 (§5). */
+  expectation: 'center<=2'
 }
 
 /**
@@ -103,7 +103,7 @@ export function removeChildFromAllButOneChapter(
     keptChapter: keep,
     keptChapterHeading: story.chapters[keep]!.heading,
     strippedFrom: stripped,
-    expectation: 'heroes<=2',
+    expectation: 'center<=2',
   }
 }
 
