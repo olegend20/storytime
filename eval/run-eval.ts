@@ -30,6 +30,15 @@ import {
 
 const DEFAULT_BUDGET_CEILING_USD = 20
 
+const FIXTURE_MODE_HINT = [
+  '',
+  'If you are running in fixture mode: the judge still needs recorded fixtures. `pnpm eval`',
+  'and `pnpm bakeoff` replay real judge responses, they do not fabricate them - only the',
+  'test suite does that, into a temp directory (test/helpers/judge-fixtures.ts). To get',
+  'fixtures, record them once with LIVE_API=1 RECORD_FIXTURES=1 and the owner\'s approval.',
+].join('\n')
+
+
 function flag(name: string): boolean {
   return process.argv.includes(`--${name}`)
 }
@@ -91,6 +100,7 @@ async function main(): Promise<void> {
     })
   } catch (err) {
     console.error(err instanceof Error ? err.message : String(err))
+    if (err instanceof Error && /fixture/i.test(err.message)) console.error(FIXTURE_MODE_HINT)
     process.exitCode = 1
     return
   }

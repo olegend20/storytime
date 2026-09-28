@@ -16,6 +16,13 @@ import {
   readResultFile,
   writeResultFile,
 } from '@/lib/eval/results'
+import {
+  PipelineUnavailableError,
+  createFixturePipeline,
+  loadLivePipeline,
+  pipelineModeFromEnv,
+  storyFixturePath,
+} from '@/lib/eval/pipeline'
 import { syntheticProvider } from '@/lib/eval/synthetic'
 import { evalScenarios } from '@/lib/eval/scenarios'
 import { pairwiseResponse, scoreResponse, withScriptedJudge } from '../helpers/judge-fixtures'
@@ -311,5 +318,46 @@ describe('F13 VT: the eval is wired as a manual GitHub Action', () => {
     expect(workflow).toContain('actions/upload-artifact')
     expect(workflow).toContain('path: eval/results/')
     expect(workflow).toContain('if: always()')
+  })
+})
+
+describe('the F6 seam', () => {
+  it('either lane 2 has landed the contract, or the failure is actionable', async () => {
+    // F13 depends on F6. This test is deliberately two-sided so it stays meaningful on both
+    // sides of that landing: today it asserts the error explains itself; once `lib/generate`
+    // exports `createEvalPipeline()` it asserts the shape the harness needs.
+    try {
+      const pipeline = await loadLivePipeline()
+      expect(pipeline.kind).toBe('live')
+      expect(typeof pipeline.generate).toBe('function')
+      expect(typeof pipeline.describe).toBe('string')
+    } catch (err) {
+      expect(err).toBeInstanceOf(PipelineUnavailableError)
+      expect((err as Error).message).toMatch(/F13 depends on F6/)
+      expect((err as Error).message).toMatch(/EVAL_PIPELINE=fixture/)
+      expect((err as Error).message).toMatch(/its scores are NOT eval results/)
+    }
+  })
+
+  it('fixture mode is opt-in through EVAL_PIPELINE, never the default', () => {
+    const env = (v?: string): NodeJS.ProcessEnv =>
+      ({ ...(v === undefined ? {} : { EVAL_PIPELINE: v }) }) as NodeJS.ProcessEnv
+    expect(pipelineModeFromEnv(env())).toBe('live')
+    expect(pipelineModeFromEnv(env('fixture'))).toBe('fixture')
+    expect(pipelineModeFromEnv(env('anything-else'))).toBe('live')
+  })
+
+  it('names the fixture file it wanted when there is none', async () => {
+    const pipeline = createFixturePipeline({ dir: '/nonexistent-eval-fixtures' })
+    const input = {
+      scenario: evalScenarios()[0]!,
+      writingModel: 'claude-sonnet-5',
+      sample: 2,
+      storyId: 'x',
+    }
+    await expect(pipeline.generate(input)).rejects.toThrow(
+      storyFixturePath(input, '/nonexistent-eval-fixtures'),
+    )
+    expect(storyFixturePath(input, '/d')).toBe('/d/lego-band-a-pair.claude-sonnet-5.2.json')
   })
 })
