@@ -8,11 +8,12 @@ import type { ChildProfile } from '@/lib/bible/children'
 /**
  * Seams for the two lanes that own the other halves of this pipeline.
  *
- * Lane 3 owns quotas, the budget cap and the log sink (F8). Lane 6 owns the L1/L2 input
- * guardrails and the L4 output safety review (F15). Lane 2 builds neither - it declares the
- * interface, calls it, and honours the answer. Until a real implementation is injected the
- * defaults here are deliberately transparent about doing nothing, so nobody mistakes a stub
- * for a working quota or a working guardrail.
+ * Lane 3 owns quotas, the budget cap and the log sink (F8/F12) in `lib/limits/` and
+ * `lib/costs/`. Lane 6 owns the L1/L2 input guardrails and the L4 output safety review
+ * (F15). Lane 2 builds neither - it declares the interface, calls it in the right order, and
+ * honours the answer. Until a real implementation is injected the defaults here are
+ * deliberately loud about doing nothing (`isStub`), so nobody mistakes a stub for a working
+ * quota or a working guardrail.
  */
 
 export interface QuotaState {
@@ -27,20 +28,39 @@ export interface QuotaState {
   disabled_reason?: 'service_paused' | 'budget_exceeded'
 }
 
+/**
+ * Lane 3's quota surface, named exactly as they named it so the merge is a wiring change
+ * and not a translation layer.
+ *
+ * The split is the safety property: `preflight` and `quotaStatus` MUST NOT move the counter,
+ * and `consumeQuota` is the only thing that does. F8's AC - "quota is consumed only on a
+ * successful `stories` insert" - is enforced entirely by where lane 2 calls them, which is:
+ *
+ *   prepareGeneration()  -> preflight()      BEFORE the first model call (normalizeTopic)
+ *   runGeneration()      -> consumeQuota()   AFTER the stories insert returns without error
+ *
+ * Nothing between those two points consumes anything, so every refusal, every gate discard
+ * and every model failure is free to the parent.
+ */
 export interface QuotaService {
-  /** Called before any expensive work. Must not consume anything. */
-  check(familyId: string): Promise<QuotaState>
-  /** Called ONLY after a story row is successfully inserted (F8 AC). */
-  consume(familyId: string): Promise<QuotaState>
+  /** Before any expensive work. Never moves the counter. */
+  preflight(familyId: string): Promise<QuotaState>
+  /** Read-only view, for GET /api/quota. Never moves the counter. */
+  quotaStatus?(familyId: string): Promise<QuotaState>
+  /** Called ONLY after a story row is successfully inserted. */
+  consumeQuota(familyId: string): Promise<QuotaState>
 }
 
-/** Lane 3 has not wired F8 yet: allow, and report the limit honestly as not-yet-counted. */
+/** Lane 3 not yet wired on this branch: allow, and be explicit that nothing was counted. */
 export class UnmeteredQuotaService implements QuotaService {
   readonly isStub = true
-  async check(): Promise<QuotaState> {
+  async preflight(): Promise<QuotaState> {
     return this.state(0)
   }
-  async consume(): Promise<QuotaState> {
+  async quotaStatus(): Promise<QuotaState> {
+    return this.state(0)
+  }
+  async consumeQuota(): Promise<QuotaState> {
     return this.state(1)
   }
   private state(used: number): QuotaState {
@@ -67,7 +87,7 @@ export interface InputGuard {
   check(input: GuardInput): Promise<InputClassification>
 }
 
-/** Lane 6 has not wired L1/L2 yet. Allow, and say so rather than implying a check ran. */
+/** Lane 6 not yet wired on this branch. Allow, and say so rather than imply a check ran. */
 export class PermissiveInputGuard implements InputGuard {
   readonly isStub = true
   async check(): Promise<InputClassification> {

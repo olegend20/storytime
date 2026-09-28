@@ -33,7 +33,6 @@ import {
   getOrBuildFactPack,
   normalizeTopic,
   TopicNormalizationError,
-  type FactPackRecord,
 } from '@/lib/topics'
 import { runQualityGate } from '@/lib/quality'
 import { buildPrompt } from './prompt'
@@ -118,9 +117,9 @@ export async function prepareGeneration(
     return { ok: false, ...failure('service_paused', 'service_paused') }
   }
 
-  // ---- 2. quota (lane 3) ----
+  // ---- 2. quota preflight (lane 3), BEFORE the first model call. Consumes nothing. ----
   const quotaService = resolveQuota(deps)
-  const quota = await quotaService.check(familyId)
+  const quota = await quotaService.preflight(familyId)
   if (!quota.generation_enabled) {
     const code: GenerationErrorCode = quota.disabled_reason ?? 'service_paused'
     return { ok: false, ...failure(code, code) }
@@ -437,8 +436,9 @@ export async function runGeneration(
     })
     if (insertError) throw new GenerationFailed(`saving the story failed: ${insertError.message}`)
 
-    // F8 AC: quota is consumed ONLY after a successful stories insert.
-    const quotaAfter = await resolveQuota(deps).consume(prepared.familyId)
+    // F8 AC: quota is consumed ONLY after a successful stories insert. This line and the
+    // `preflight` in prepareGeneration are the whole enforcement - lane 3 cannot check it.
+    const quotaAfter = await resolveQuota(deps).consumeQuota(prepared.familyId)
 
     channel.push({
       type: 'done',
