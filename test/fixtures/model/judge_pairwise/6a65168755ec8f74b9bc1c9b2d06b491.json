@@ -1,0 +1,49 @@
+{
+  "purpose": "judge_pairwise",
+  "model": "claude-opus-5-5",
+  "response": {
+    "model": "claude-opus-5-5",
+    "id": "msg_011CfV6QHyuVffkXtReokG1m",
+    "type": "message",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "thinking",
+        "thinking": "",
+        "signature": "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"
+      },
+      {
+        "type": "text",
+        "text": "{\"per_criterion\": {\"heroes\": \"A\", \"craft\": \"A\", \"facts\": \"TIE\", \"age_fit\": \"A\", \"continuity\": \"A\", \"delight\": \"A\"}, \"verdict\": \"A\", \"confidence\": 0.95, \"justification\": \"The two stories share the same plot, facts, length and ending, so the difference comes down to how they treat the two children. In Story A, Cruz and Phoenix both matter. Phoenix pulls the quacking duck, suggests 'Duck Company', presses the first brick that truly clicks and sums up the adventure at the end. Cruz spots the idea of tubes inside the brick. In Story B, Phoenix almost disappears after the first chapter because nearly all of Phoenix's lines and actions are given to Cruz. That creates confusing, clumsy moments a parent would stumble over aloud, such as 'Cruz grabbed Cruz's hand', 'Cruz carried planks. Cruz handed out nails.', and Cruz offering two name ideas back to back. It also contradicts its own opening, where the two boys acted separately. For a bedtime story meant to make both children feel like heroes, Story A is clearly the better read. The facts are identical in both, so that criterion is a tie.\"}"
+      }
+    ],
+    "container": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "stop_details": null,
+    "usage": {
+      "input_tokens": 8056,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 4130,
+      "cache_creation": {
+        "ephemeral_5m_input_tokens": 0,
+        "ephemeral_1h_input_tokens": 0
+      },
+      "output_tokens": 850,
+      "output_tokens_details": {
+        "thinking_tokens": 443
+      },
+      "service_tier": "standard",
+      "inference_geo": "global"
+    },
+    "diagnostics": null
+  },
+  "usage": {
+    "input_tokens": 8056,
+    "cache_read_tokens": 4130,
+    "cache_write_tokens": 0,
+    "output_tokens": 850
+  },
+  "stop_reason": "end_turn",
+  "recorded_at": "2026-09-28T03:03:03.658Z"
+}
