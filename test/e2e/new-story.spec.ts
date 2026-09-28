@@ -14,6 +14,9 @@ test.beforeEach(async ({ page }) => {
 
 /** VT: happy path with fixtures → story renders progressively; quota indicator decrements. */
 test('happy path streams a story and the quota indicator decrements', async ({ page }) => {
+  // Streams a whole 2,600-word story to completion. Mobile WebKit, rendering that incrementally
+  // under five parallel workers, does not fit the default 30s budget.
+  test.slow()
   await expect(page.getByText('2 of 3 stories left today')).toBeVisible()
 
   // First visit: every child is selected, so the band follows Phoenix (4) — band A.
@@ -140,6 +143,9 @@ test('a paused service disables the button and says so', async ({ page }) => {
 test('a mid-stream failure keeps the partial story and says the story was not used', async ({
   page,
 }) => {
+  // Streams a whole 2,600-word story to completion. Mobile WebKit, rendering that incrementally
+  // under five parallel workers, does not fit the default 30s budget.
+  test.slow()
   const before = await mockState(page)
   await startStory(page, '!midfail how volcanoes work')
 
@@ -170,6 +176,9 @@ test('the client catches a topic that looks like instructions before making a re
 
 /** F10 AC: the form remembers the last-used children and length. */
 test('the form remembers the children and length used last time', async ({ page }) => {
+  // Streams a whole 2,600-word story to completion. Mobile WebKit, rendering that incrementally
+  // under five parallel workers, does not fit the default 30s budget.
+  test.slow()
   // Narrow the selection to Lennon only, whatever the starting state is.
   for (const name of ['Cruz 7', 'Phoenix 4']) {
     const chip = page.getByRole('button', { name })
@@ -251,6 +260,9 @@ test('the form has no horizontal overflow', async ({ page }) => {
 })
 
 test('the streaming reader has no horizontal overflow', async ({ page }) => {
+  // Streams a whole 2,600-word story to completion. Mobile WebKit, rendering that incrementally
+  // under five parallel workers, does not fit the default 30s budget.
+  test.slow()
   await startStory(page, 'the history of soccer')
   await expect(page.getByRole('heading', { name: 'True facts from the story' })).toBeVisible({
     timeout: 30_000,

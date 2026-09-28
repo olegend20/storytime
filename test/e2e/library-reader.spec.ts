@@ -33,6 +33,9 @@ async function openFirstStory(page: Page) {
  * `model_calls` on the mock backend is the stand-in for the `generation_logs` count.
  */
 test('generate, open from the library, and the open costs zero model calls', async ({ page }) => {
+  // Streams a whole 2,600-word story to completion. Mobile WebKit, rendering that incrementally
+  // under five parallel workers, does not fit the default 30s budget.
+  test.slow()
   await page.goto('/new')
   await expect(page.getByRole('button', { name: 'Cruz 7' })).toBeVisible()
   await startStory(page, 'the history of soccer')

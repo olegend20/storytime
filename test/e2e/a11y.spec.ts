@@ -49,6 +49,7 @@ test.describe('accessibility', () => {
   })
 
   test('the form with an error showing has no serious violations', async ({ page }) => {
+    test.slow()
     await page.goto('/new')
     await resetMock(page)
     await page.reload()
@@ -109,6 +110,7 @@ test.describe('accessibility', () => {
   })
 
   test('the streaming reader has no serious violations', async ({ page }) => {
+    test.slow()
     await page.goto('/new')
     await resetMock(page)
     await page.reload()

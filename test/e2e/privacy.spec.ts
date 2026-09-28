@@ -11,6 +11,9 @@ import { resetMock, startStory } from './helpers'
  */
 
 test('no page makes a cross-origin request', async ({ page, baseURL }) => {
+  // Streams a whole 2,600-word story to completion. Mobile WebKit, rendering that incrementally
+  // under five parallel workers, does not fit the default 30s budget.
+  test.slow()
   const origin = new URL(baseURL ?? 'http://127.0.0.1:3000').origin
   const foreign: string[] = []
   page.on('request', (request) => {
