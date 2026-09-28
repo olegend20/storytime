@@ -1,13 +1,45 @@
-export default function LandingPage() {
+import Link from 'next/link'
+
+export default async function LandingPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const params = await searchParams
+  const justDeleted = params.deleted === '1'
+
   return (
-    <main style={{ maxWidth: '38rem', margin: '0 auto', padding: '3rem 1.25rem' }}>
-      <h1 style={{ fontSize: '2rem', lineHeight: 1.15, margin: '0 0 0.75rem' }}>StoryTime</h1>
-      <p style={{ fontSize: '1.05rem', lineHeight: 1.6, opacity: 0.85 }}>
-        A new bedtime story every night, about anything your kids want to learn — with your
-        kids as the heroes, and the true facts at the end.
+    <main className="mx-auto w-full max-w-xl px-5 py-12">
+      <h1 className="m-0 mb-3 text-3xl font-semibold leading-tight tracking-tight">StoryTime</h1>
+      <p className="m-0 text-[1.05rem] leading-relaxed opacity-85">
+        A new bedtime story every night, about anything your kids want to learn — with your kids
+        as the heroes, and the true facts at the end.
       </p>
-      <p style={{ fontSize: '0.9rem', opacity: 0.6, marginTop: '2rem' }}>
-        Scaffold (F1). Auth lands in F2, the nightly form in F10.
+
+      {justDeleted ? (
+        <p
+          role="status"
+          className="mt-6 mb-0 rounded-xl border border-black/10 bg-black/[0.02] p-4 text-sm dark:border-white/15 dark:bg-white/[0.04]"
+        >
+          Your account and everything in it has been deleted. Thank you for trying StoryTime.
+        </p>
+      ) : null}
+
+      <p className="mt-8 mb-0">
+        <Link
+          href="/login"
+          className="inline-block rounded-lg bg-ink px-5 py-2.5 text-base font-medium text-paper dark:bg-paper dark:text-ink"
+        >
+          Sign in
+        </Link>
+      </p>
+
+      <p className="mt-10 mb-0 text-sm leading-relaxed opacity-60">
+        First names only, no photos, no advertising, and one click to delete everything —{' '}
+        <Link href="/privacy" className="underline underline-offset-2">
+          how we handle your family&apos;s data
+        </Link>
+        .
       </p>
     </main>
   )
