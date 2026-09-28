@@ -1,0 +1,14 @@
+{
+  "$comment": "Parent-facing refusal and failure copy. GUARDRAILS.md §5: short, kind, non-judgmental; never echo the offending text back; never reveal which layer or which word fired. The four templates below are the examples given verbatim in §5. Lane 6 (F15) owns the per-category expansion; lane 2 reads this file so the SSE `message` field is never improvised in code.",
+  "updated_at": "2026-09-27",
+  "messages": {
+    "off_mission": "StoryTime makes learning adventures for kids. Try a topic like *how bees make honey* or *the history of bicycles*.",
+    "too_mature_for_band": "That one's a bit much for your youngest. How about *how giant ships float*? Or pick just your older child for tonight.",
+    "topic_refused": "We can't make a story about that. Pick something fun to learn about and we'll get started.",
+    "generation_failed": "We couldn't make a story we're happy with tonight. This didn't use one of your stories — try a different topic or angle.",
+    "quota_exceeded": "That's all three stories for today. Come back tomorrow for the next adventure.",
+    "service_paused": "StoryTime is having a quiet night. Please try again a little later.",
+    "budget_exceeded": "StoryTime is having a quiet night. Please try again a little later.",
+    "invalid_request": "Something about that request didn't look right. Please check the details and try again."
+  }
+}
