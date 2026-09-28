@@ -54,6 +54,13 @@ export const JudgeScore = z.object({
   disqualified: z.boolean(),
   overall: z.number().min(1).max(5),
   editor_notes: z.array(z.string()).max(5).default([]),
+  /**
+   * Verbatim excerpts the judge picks out. JUDGE_AGENT.md §6 requires three per contestant
+   * in the bake-off report ("best moment" and "worst moment"). Optional because SCORE mode
+   * is also used where the report isn't being built.
+   */
+  best_moment: z.string().max(1200).nullable().default(null),
+  worst_moment: z.string().max(1200).nullable().default(null),
 })
 export type JudgeScore = z.infer<typeof JudgeScore>
 

@@ -229,6 +229,8 @@ describe('JUDGE_AGENT.md s3 rubric arithmetic', () => {
     disqualified: false,
     overall: 5,
     editor_notes: [],
+    best_moment: null,
+    worst_moment: null,
   }
 
   it('a guardrail breach forces overall 1 and disqualification', () => {

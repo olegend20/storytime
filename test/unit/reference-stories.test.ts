@@ -8,8 +8,9 @@ import {
   wordCountWithinTolerance,
   MAX_CHAPTER_WORD_SHARE,
   MIN_CHILD_CHAPTER_COVERAGE,
+  StoryOutput,
 } from '@/lib/schemas'
-import { loadManifest, loadReferenceStory } from '@/lib/reference'
+import { asStoryOutput, loadManifest, loadReferenceStory } from '@/lib/reference'
 
 /**
  * The four reference stories are load-bearing - they define the quality bar and are
@@ -195,6 +196,90 @@ describe('reference-stories manifest', () => {
           `${story.file}: ${child.name} appears in ${hits}/${parsed.chapters.length} chapters`,
         ).toBeGreaterThanOrEqual(MIN_CHILD_CHAPTER_COVERAGE)
       }
+    }
+  })
+})
+
+/**
+ * Regression guards for two bugs lane 5 caught in lib/reference.ts.
+ *
+ * `asStoryOutput()` dropped the cold open entirely (110 words of the LEGO story, 251 of the
+ * shark story), and the subtitle leaked into the cold-open prose because a blank line
+ * counted as content. Together they meant the judge would have scored "Story craft" on a
+ * story that began at Chapter 1, and "Series continuity" on a shark story whose opening
+ * callback to the previous night had been deleted - systematically under-scoring the very
+ * stories calibration trusts as the bar.
+ */
+describe('reference stories convert to StoryOutput faithfully', () => {
+  it('every reference validates against StoryOutput', () => {
+    for (const story of loadManifest(DIR).stories) {
+      const out = asStoryOutput(loadReferenceStory(story.file, DIR))
+      const parsed = StoryOutput.safeParse(out)
+      expect(
+        parsed.success,
+        `${story.file}: ${parsed.success ? '' : JSON.stringify(parsed.error.issues[0])}`,
+      ).toBe(true)
+    }
+  })
+
+  it('folds the cold open into chapters[0] rather than dropping it (DECISIONS #18)', () => {
+    for (const story of loadManifest(DIR).stories) {
+      const parsed = loadReferenceStory(story.file, DIR)
+      const out = asStoryOutput(parsed)
+      const firstChapter = out.chapters[0]!.text
+      if (parsed.coldOpen !== '') {
+        expect(firstChapter.startsWith(parsed.coldOpen), `${story.file}`).toBe(true)
+      }
+      // No conversion may lose narrative words.
+      const converted =
+        out.chapters.reduce((n, c) => n + countWords(c.text), 0) + countWords(out.ending_line)
+      expect(converted, `${story.file} words after conversion`).toBeGreaterThanOrEqual(
+        parsed.narrativeWordCount,
+      )
+    }
+  })
+
+  it('keeps the subtitle out of the prose', () => {
+    for (const story of loadManifest(DIR).stories) {
+      const parsed = loadReferenceStory(story.file, DIR)
+      expect(parsed.subtitle, `${story.file} subtitle`).toBeTruthy()
+      expect(parsed.coldOpen, `${story.file} cold open`).not.toContain(parsed.subtitle!)
+      expect(asStoryOutput(parsed).chapters[0]!.text).not.toContain(parsed.subtitle!)
+    }
+  })
+
+  /** Each story opens in the child's real world, not mid-adventure (§4.1.2). */
+  it('opens chapter 1 in the real world', () => {
+    const openings = Object.fromEntries(
+      loadManifest(DIR).stories.map((s) => [
+        s.file,
+        asStoryOutput(loadReferenceStory(s.file, DIR)).chapters[0]!.text.slice(0, 120),
+      ]),
+    )
+    expect(openings['cruz-and-phoenix-lego-story.md']).toContain('rainy Saturday')
+    expect(openings['cruz-and-phoenix-shark-submarine.md']).toContain('magic red brick')
+    expect(openings['lennon-and-the-lost-levels.md']).toContain('supposed to be asleep')
+    expect(openings['lennon-the-beautiful-game.md']).toContain('practicing penalties')
+  })
+
+  /**
+   * The second story of each series must reference a prior recurring element in its
+   * opening - the continuity property F4's eval and the judge's criterion 5 both check.
+   */
+  it('second stories carry a continuity callback in chapter 1', () => {
+    for (const story of loadManifest(DIR).stories.filter((s) => s.sequence === 2)) {
+      const firstChapter = asStoryOutput(loadReferenceStory(story.file, DIR)).chapters[0]!.text
+      const bible = story.bible_before as { recurring?: { name: string }[] } | null
+      const names = (bible?.recurring ?? []).map((r) => r.name)
+      expect(names.length, `${story.file} has no prior recurring elements`).toBeGreaterThan(0)
+      const referenced = names.some((n) =>
+        n
+          .toLowerCase()
+          .split(/\s+/)
+          .filter((w) => w.length > 3)
+          .some((w) => firstChapter.toLowerCase().includes(w)),
+      )
+      expect(referenced, `${story.file} chapter 1 references none of: ${names.join(', ')}`).toBe(true)
     }
   })
 })

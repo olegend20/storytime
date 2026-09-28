@@ -1,7 +1,13 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { z } from 'zod'
-import { AgeBand, LengthMinutes, countWords, type StoryOutput } from '@/lib/schemas'
+import {
+  AgeBand,
+  LengthMinutes,
+  STORY_MAX_CHAPTERS,
+  countWords,
+  type StoryOutput,
+} from '@/lib/schemas'
 
 /**
  * Reader for storytime-plan/reference-stories/.
@@ -169,9 +175,15 @@ export function parseReferenceStory(markdown: string): ParsedReference {
 
     switch (section) {
       case 'coldopen': {
-        // The first italic line after the title is the subtitle.
+        /**
+         * The first italic line after the title is the subtitle. Test for "nothing but
+         * blank lines so far" rather than "no lines so far": there is always a blank line
+         * between the h1 and the subtitle, and counting it as cold-open content leaked the
+         * subtitle into the prose - and from there into chapters[0] and the word count.
+         */
         const italic = /^\*([^*].*)\*$/.exec(line.trim())
-        if (subtitle === null && italic && coldOpenLines.length === 0) {
+        const nothingYet = coldOpenLines.every((l) => l.trim() === '')
+        if (subtitle === null && italic && nothingYet) {
           subtitle = italic[1]!.trim()
           continue
         }
@@ -242,8 +254,45 @@ export function loadReferenceStory(file: string, dir: string = REFERENCE_DIR): P
 }
 
 /**
+ * Fold the cold open into the first chapter, per DECISIONS.md #18: §4.4's schema has no
+ * cold-open field although §4.1.2 mandates one, so it lives at the start of `chapters[0]`.
+ *
+ * The references use the two shapes this has to cope with:
+ *  - LEGO and shark: unheaded prose before "Chapter 1" — prepend it to chapters[0].
+ *  - Both Lennon stories: the cold open has a heading of its own ("Loading...", "Kickoff"),
+ *    giving 11 headed sections against the schema's 10-chapter cap.
+ *
+ * Detecting the second case by heading text would be brittle, so the rule is structural:
+ * when the markdown carries MORE headed sections than StoryOutput allows chapters, the
+ * first section is the cold open and merges into the next one. That leaves all four
+ * references inside the 6-10 range §4.1.2 asks for.
+ */
+function foldColdOpen(parsed: ParsedReference): { heading: string; text: string }[] {
+  let chapters = parsed.chapters.map((c) => ({ heading: c.heading, text: c.text }))
+
+  if (chapters.length > STORY_MAX_CHAPTERS && chapters.length > 1) {
+    const [headedColdOpen, firstStop, ...rest] = chapters as [
+      { heading: string; text: string },
+      { heading: string; text: string },
+      ...{ heading: string; text: string }[],
+    ]
+    chapters = [
+      { heading: firstStop.heading, text: `${headedColdOpen.text}\n\n${firstStop.text}`.trim() },
+      ...rest,
+    ]
+  }
+
+  if (parsed.coldOpen !== '' && chapters.length > 0) {
+    const first = chapters[0]!
+    chapters = [{ heading: first.heading, text: `${parsed.coldOpen}\n\n${first.text}`.trim() }, ...chapters.slice(1)]
+  }
+
+  return chapters
+}
+
+/**
  * Shape a parsed reference into StoryOutput so it can go through the same deterministic
- * gate as a generated story (F7 VT).
+ * gate as a generated story (F7 VT) and be scored by the judge.
  *
  * `true_facts` gets synthetic fact ids: the references predate fact packs, so there is
  * nothing real to map to. A caller checking the `unsourced_fact` rule must supply a
@@ -254,7 +303,7 @@ export function asStoryOutput(parsed: ParsedReference): StoryOutput {
   return {
     title: parsed.title,
     subtitle: parsed.subtitle,
-    chapters: parsed.chapters.map((c) => ({
+    chapters: foldColdOpen(parsed).map((c) => ({
       heading: c.heading,
       text: c.text,
       shout_line: null,
