@@ -365,3 +365,18 @@ has not measured. Two further VTs wait on F8's `daily_usage` (lane 3, now merged
 
 **Gates on `main`:** lint ✅ · typecheck ✅ · **401 tests pass, 0 fail** (was 274).
 API spend **$0.00**.
+
+### 2026-09-27 — lane 6 follow-up
+
+Cherry-picked `6fa6185`: a code comment in `lib/guardrails/classify.ts` cited `DECISIONS.md
+#35`, which the three-way renumber moved to #69. Lane 6 checked the merged file rather than
+assuming the offset held, and flagged the commit rather than assuming I'd notice it landed
+after the merge. Verified #69 is the structured-outputs row before picking it up.
+
+**Recorded three notes from lane 6 as DECISIONS #72–74.** The one that matters is a trap
+inside the sanitizer delegation I'd already decided: `sanitizeText()` *truncates* to the field
+cap and sets `truncated: true`, while `checkField()` *refuses* on that flag. If lane 1's F11
+path takes the truncated string and carries on, an over-cap topic becomes a **silently
+shortened** topic instead of a kind "that's a bit long" message — and nothing fails, because
+the string is valid. **To act on at lane 1's merge:** their sanitizer must consume the flag,
+not just the string.
