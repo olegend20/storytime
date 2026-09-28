@@ -294,3 +294,29 @@ Both CLIs refuse a live run above $20 without an explicit `--budget`.
 mode is the default so this blocks nothing already built, but it blocks every *live* VT:
 judge calibration, `pnpm eval`, F5's live fact packs, F6's cache-read ratio, F15's nightly
 live corpus, and the bake-off. Recorded as open question F.
+
+### 2026-09-27 — lane 5 follow-up: one more defect, fixed
+
+Lane 5 self-reported a defect in their own `lib/eval/synthetic.ts` after the merge and asked
+whether it was worth fixing, noting the file may be deleted once F6 lands. Verified and fixed.
+
+`fitToRange()` guarded chapter trimming at `> 4`, so `bees-band-a-5min` (650–850 words)
+produced **4 chapters** — outside the 6–10 range §4.1.2 requires. 1 of 12 scenarios. No test
+failed, because nothing validated a synthetic story's shape.
+
+Fixed on the merits rather than deferred: a fixture generator that cannot produce a
+schema-valid story means a scenario could fail the real gate for a reason the fixture
+invented, and "the file might be deleted later" is not a reason to leave that in place. The
+guard now stops at `STORY_MIN_CHAPTERS` and shortens chapter text instead of dropping a stop.
+`bees-band-a-5min` is now 6 chapters at 848 words, inside its target; all 12 conform.
+
+Added `test/unit/synthetic-scenarios.test.ts` — the assertion that was missing — covering all
+12 scenarios for chapter count, band word target, non-empty chapters and determinism.
+
+Also recorded a process point from lane 5 worth keeping (DECISIONS #59): §5's "fix the judge
+prompt, never the references" has a third case — **fix the adapter**. With the cold-open bug
+live, a correct judge would have marked the shark story's continuity down, and the rule as
+written points at the judge prompt. Compensating there would have trained the judge to reward
+a missing callback.
+
+**Gates on `main`:** lint ✅ · typecheck ✅ · **274 tests pass, 0 fail**. API spend **$0.00**.

@@ -1,5 +1,5 @@
 import { computeCost, modelForRole } from '@/lib/ai'
-import { targetWords } from '@/lib/schemas'
+import { STORY_MIN_CHAPTERS, targetWords } from '@/lib/schemas'
 import { narrativeWordCount } from './render'
 import { loadReferenceCases, type ReferenceCase } from './references'
 import { scenarioBand, type EvalScenario } from './scenarios'
@@ -76,12 +76,43 @@ const VARIANT_SENTENCES = [
   'For a second, nobody said anything at all, and that was the best part.',
 ]
 
-/** Trim or top up so the story lands inside its band's word range. */
+/**
+ * Trim or top up so the story lands inside its band's word range - WITHOUT leaving the
+ * 6-10 chapter range §4.1.2 requires.
+ *
+ * The guard used to be `chapters.length > 4`, which let a short target trim down to 4
+ * chapters: `bees-band-a-5min` (650-850 words) came out with 4. Nothing failed, because
+ * no test validated a synthetic story against `StoryOutput` - but a fixture generator that
+ * cannot produce a schema-valid story is a trap for whoever adds that assertion next.
+ * Dropping chapters now stops at STORY_MIN_CHAPTERS, and the remaining excess comes out of
+ * chapter text instead.
+ */
 function fitToRange(story: JudgeableStory, target: { min: number; max: number }): JudgeableStory {
   let chapters = story.chapters.map((c) => ({ ...c }))
-  // Too long: drop body chapters from the end, never the first or the last.
-  while (narrativeWordCount({ ...story, chapters }) > target.max && chapters.length > 4) {
+  // Too long: drop body chapters from the end, never the first or the last, and never
+  // below the minimum chapter count.
+  while (
+    narrativeWordCount({ ...story, chapters }) > target.max &&
+    chapters.length > STORY_MIN_CHAPTERS
+  ) {
     chapters.splice(chapters.length - 2, 1)
+  }
+  // Still too long at the minimum chapter count: shorten body chapters sentence by
+  // sentence rather than dropping a stop the schema requires.
+  let shrinkGuard = 0
+  while (narrativeWordCount({ ...story, chapters }) > target.max && shrinkGuard < 600) {
+    const at = 1 + (shrinkGuard % Math.max(1, chapters.length - 2))
+    const chapter = chapters[at]
+    if (!chapter) break
+    const sentences = chapter.text.split(/(?<=[.!?])\s+/)
+    if (sentences.length <= 2) {
+      shrinkGuard += 1
+      continue
+    }
+    chapters = chapters.map((c, i) =>
+      i === at ? { ...c, text: sentences.slice(0, -1).join(' ') } : c,
+    )
+    shrinkGuard += 1
   }
   // Too short: lengthen body chapters with a repeated beat rather than adding stops.
   let guard = 0
