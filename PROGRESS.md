@@ -9,8 +9,8 @@ verification tests named in each feature's section (plus `GUARDRAILS.md` §7 and
 | F | Feature | VTs | Passing | Status | Lane |
 |---|---|---|---|---|---|
 | F1 | Project scaffold and infrastructure | 3 | 3 | ✅ **done** — env, migrations + introspection, CI all green | 0 lead |
-| F2 | Authentication and family account | 4 | 0 | ⬜ not started — RLS isolation pre-verified (16/16 probe checks) | 1 |
-| F3 | Children profiles | 3 | 1 | 🟡 schema VT green; API + e2e pending | 1 |
+| F2 | Authentication and family account | 4 | 4 | ✅ **done** — magic link + family + settings + account deletion, all 4 VTs green | 1 |
+| F3 | Children profiles | 3 | 3 | ✅ **done** — CRUD, 8-child ceiling, client+server validation | 1 |
 | F4 | Series and Story Bible service | 6 | 0 | ⬜ not started | 2 |
 | F5 | Topic normalization and Fact Packs | 6 | 2 | 🟡 schema/review VTs green; service pending | 2 |
 | F6 | Story generation pipeline | 7 | 1 | 🟡 `targetWords` VT green; pipeline pending | 2 |
@@ -18,7 +18,7 @@ verification tests named in each feature's section (plus `GUARDRAILS.md` §7 and
 | F8 | Quotas and cost logging | 6 | 3 | 🟡 cost + freshness VTs green; quota/budget pending | 3 |
 | F9 | Story library and reader | 4 | 0 | ⬜ not started | 4 |
 | F10 | New-story flow (UI) | 5 | 0 | ⬜ not started | 4 |
-| F11 | Safety, privacy and content policy | 5 | 0 | ⬜ not started | 1 + 4 |
+| F11 | Safety, privacy and content policy | 5 | 4 | 🟡 sanitizer, rate limit, privacy page, schema assertion green; the must-refuse topic VT is lane 6's L2 | 1 + 4 + 6 |
 | F12 | Admin dashboard | 3 | 0 | ⬜ not started — SQL views written | 3 |
 | F13 | Quality evaluation harness | 2 + JUDGE §7 | 0 | ⬜ not started — **unblocked**, references arrived | 5 |
 | F14 | Model bake-off | JUDGE §7 (6) | 2 | 🟡 rubric/position-swap VTs green; harness pending. **Budget approval needed** | 5 |
@@ -122,3 +122,38 @@ left untouched. With a database available I verified what was previously unverif
 
 **Still open for you:** the Phase 3 bake-off budget (~$37–55, above your $20 threshold)
 and the production `DAILY_BUDGET_USD`. Neither blocks Phase 1.
+
+### 2026-09-27 — Phase 1, lane 1 (F2, F3, F11 server side)
+
+**Delivered**
+
+- **F2** — magic-link sign-in (`/login`) and Google OAuth wired behind
+  `NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED` (disabled in local config); `/auth/callback` handling
+  both the PKCE `code` and `token_hash` branches; idempotent `ensureFamily`; `/settings`
+  with display name and an IANA-validated timezone (auto-detected at login via a
+  short-lived cookie, and once on the dashboard for a link opened elsewhere); account
+  deletion as a single cascading `delete from families`.
+- **F3** — `/api/children` CRUD with the 8-child ceiling and `ChildInput` validated on both
+  client and server; `/children` UI with likes chips, notes, reading level, inline edit and
+  delete.
+- **F11 (server half)** — `lib/guardrails/sanitize.ts` (HTML, control, zero-width,
+  whitespace, lengths per §3.2); IP rate limit 30/min in `proxy.ts`, ahead of auth; the
+  privacy page; the closed-column-list schema assertion.
+- Auth/route guards for pages and API routes in `proxy.ts` (`middleware.ts` renamed per
+  Next 16).
+
+**Two real bugs the e2e layer caught, both invisible to unit tests** — a session written by
+a route handler was being discarded (`supabaseServer()` writes cookies through
+`next/headers`, which does nothing when the handler returns its own `Response`), and
+`request.nextUrl.origin` resolves to `localhost` whatever host was requested, so the browser
+was redirected to a different cookie jar. See `DECISIONS.md` #33.
+
+**Gates:** lint ✅ · typecheck ✅ · build ✅ · `pnpm test` → **254 passed, 12 skipped**
+(from 98) · `pnpm test:e2e` → **36 passed**.
+
+**CI changed** so these VTs actually run instead of skipping: the `migrations` job now also
+runs `pnpm test` with the live database exported, and the `e2e` job starts Supabase and
+installs WebKit (the `mobile` project is an iPhone 13 and could not launch a browser
+before).
+
+**API spend this session: $0.00.** No model calls — F2/F3/F11's server half touches no model.
