@@ -55,18 +55,21 @@ jobs:
         run: supabase start
       - name: Schema introspection (F1 VT)
         run: pnpm test:schema
-      # The `check` job runs `pnpm test` with placeholder keys and no database, so every
-      # integration VT skips there. This is the job that actually exercises them (F8 quota,
-      # budget cap, log sink; F12 owner gate and admin views). The keys below are the fixed
-      # Supabase CLI demo keys every local `supabase start` produces - public by design and
-      # useless off 127.0.0.1.
-      - name: Integration tests against the local database (F8 / F12 VTs)
-        run: pnpm test:int
+      - name: Export the local Supabase credentials
+        run: |
+          eval "$(supabase status -o env)"
+          {
+            echo "SUPABASE_URL=$API_URL"
+            echo "SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+          } >> "$GITHUB_ENV"
+      # The `check` job runs the same suite with placeholder keys and no database, where
+      # every integration test skips itself. Running it here too is what makes the F2/F3
+      # integration VTs actually execute in CI instead of silently reporting green.
+      - name: Unit + integration tests against the live database
+        run: pnpm test
         env:
           ANTHROPIC_API_KEY: sk-ant-ci-replay-only
-          SUPABASE_URL: http://127.0.0.1:54321
-          SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
-          SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
       - if: always()
         run: supabase stop
 
@@ -102,15 +105,33 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium
+      # The `mobile` project is an iPhone 13, which Playwright drives with WebKit; chromium
+      # alone leaves half the matrix unable to launch a browser.
+      - run: pnpm exec playwright install --with-deps chromium webkit
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      # F2's magic-link VT needs the auth server and its mailbox, and F3's CRUD VT needs the
+      # database. Port 3000 is the only origin in `supabase/config.toml`'s
+      # `additional_redirect_urls`, so the default port also gives the sign-in link its real
+      # GoTrue redirect hop.
+      - name: Start Supabase
+        run: supabase start
+      - name: Export the local Supabase credentials
+        run: |
+          eval "$(supabase status -o env)"
+          {
+            echo "SUPABASE_URL=$API_URL"
+            echo "SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY"
+          } >> "$GITHUB_ENV"
       - run: pnpm test:e2e
         env:
           ANTHROPIC_API_KEY: sk-ant-ci-replay-only
-          SUPABASE_URL: http://127.0.0.1:54321
-          SUPABASE_ANON_KEY: ci-anon
-          SUPABASE_SERVICE_ROLE_KEY: ci-service
-          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon
+      - if: always()
+        run: supabase stop
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
