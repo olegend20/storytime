@@ -20,3 +20,6 @@ supabase/.branches/
 
 # Agent worktrees are separate checkouts, not content of this repo.
 .claude/worktrees/
+
+# Lane scratch space, never committed.
+.scratch/
