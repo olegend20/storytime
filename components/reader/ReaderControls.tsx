@@ -1,6 +1,6 @@
 'use client'
 
-import { usePrefs } from '@/components/PrefsProvider'
+import { usePrefs } from '@/components/usePrefs'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { TEXT_SCALES } from '@/lib/client/storage'
 

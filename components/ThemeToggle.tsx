@@ -1,6 +1,6 @@
 'use client'
 
-import { usePrefs } from './PrefsProvider'
+import { usePrefs } from './usePrefs'
 import type { Theme } from '@/lib/client/storage'
 
 const OPTIONS: ReadonlyArray<{ value: Theme; label: string; hint: string }> = [

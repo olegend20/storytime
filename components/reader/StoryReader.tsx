@@ -33,7 +33,13 @@ export function StoryReader({
   actions?: React.ReactNode
   footer?: React.ReactNode
 }) {
-  const [current, setCurrent] = useState(0)
+  /**
+   * Which chapter the counter shows. While streaming it is derived - the newest chapter, by
+   * definition - and only a finished story tracks the scroll position, so there is no state to
+   * keep in sync with the stream.
+   */
+  const [scrolledTo, setScrolledTo] = useState(0)
+  const current = streaming ? Math.max(0, story.chapters.length - 1) : scrolledTo
   const sectionRefs = useRef<Array<HTMLElement | null>>([])
   const headings = story.chapters.map((c) => c.heading)
 
@@ -53,7 +59,7 @@ export function StoryReader({
           .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0]
         if (!visible) return
         const index = Number((visible.target as HTMLElement).dataset.chapterIndex)
-        if (Number.isInteger(index)) setCurrent(index)
+        if (Number.isInteger(index)) setScrolledTo(index)
       },
       { rootMargin: '0px 0px -66% 0px', threshold: 0 },
     )
@@ -61,16 +67,11 @@ export function StoryReader({
     return () => observer.disconnect()
   }, [story.chapters.length])
 
-  // While streaming, follow the newest chapter rather than the scroll position.
-  useEffect(() => {
-    if (streaming) setCurrent(Math.max(0, story.chapters.length - 1))
-  }, [streaming, story.chapters.length])
-
   const goToChapter = useCallback((index: number) => {
     const node = sectionRefs.current[index]
     if (!node) return
     node.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    setCurrent(index)
+    setScrolledTo(index)
   }, [])
 
   const meta = [

@@ -17,25 +17,36 @@ type Listener = () => void
 const cache = new Map<string, string | null>()
 const listeners = new Map<string, Set<Listener>>()
 
+/**
+ * There is no storage on the server. The explicit check is not belt-and-braces: Node ships a
+ * `localStorage` stub that prints a warning on every access, which would fill the build log.
+ */
+function available(): boolean {
+  return typeof window !== 'undefined'
+}
+
 function safeGet(key: string): string | null {
+  if (!available()) return null
   try {
-    return globalThis.localStorage?.getItem(key) ?? null
+    return window.localStorage?.getItem(key) ?? null
   } catch {
     return null
   }
 }
 
 function safeSet(key: string, value: string): void {
+  if (!available()) return
   try {
-    globalThis.localStorage?.setItem(key, value)
+    window.localStorage?.setItem(key, value)
   } catch {
     /* full or unavailable - a lost preference is not worth breaking the page for */
   }
 }
 
 function safeRemove(key: string): void {
+  if (!available()) return
   try {
-    globalThis.localStorage?.removeItem(key)
+    window.localStorage?.removeItem(key)
   } catch {
     /* ignore */
   }

@@ -11,15 +11,16 @@ import { MAX_TONES, TONE_LABELS } from '@/lib/client/form'
  */
 
 export function ChildPicker({
-  children,
+  options,
   selected,
   onToggle,
 }: {
-  children: readonly Child[]
+  /** Named `options`, not `children`: a React prop called `children` means something else. */
+  options: readonly Child[]
   selected: readonly string[]
   onToggle: (id: string) => void
 }) {
-  const chosen = children.filter((c) => selected.includes(c.id))
+  const chosen = options.filter((c) => selected.includes(c.id))
   // §4.5: vocabulary and peril follow the youngest selected child, so say which band that is.
   const band = chosen.length > 0 ? bandForAges(chosen.map((c) => c.age)) : null
   const youngest = chosen.length > 0 ? Math.min(...chosen.map((c) => c.age)) : null
@@ -28,7 +29,7 @@ export function ChildPicker({
     <fieldset className="m-0 border-0 p-0">
       <legend className="mb-2 p-0 text-base font-semibold">Who&rsquo;s in tonight&rsquo;s story?</legend>
       <div className="flex flex-wrap gap-2">
-        {children.map((child) => {
+        {options.map((child) => {
           const isSelected = selected.includes(child.id)
           return (
             <button

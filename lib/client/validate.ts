@@ -17,7 +17,6 @@ export const TOPIC_MAX_LENGTH = 200
 export const TOPIC_MIN_LENGTH = 2
 
 const HTML_TAG = /<\/?[a-z][^>]*>/gi
-// eslint-disable-next-line no-control-regex -- stripping control characters is the point
 const CONTROL_CHARS = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g
 const ZERO_WIDTH = /[\u00ad\u200b-\u200f\u2060\ufeff]/g
 

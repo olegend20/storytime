@@ -27,6 +27,16 @@ export default defineConfig({
     url: 'http://127.0.0.1:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
-    env: { LIVE_API: '0' },
+    env: {
+      LIVE_API: '0',
+      /**
+       * Lane 4's mock backend serves `/api/mock/*` by replaying recorded stories, so e2e makes
+       * zero model calls while lane 2 builds the real `/api/*`. Both vars are needed: the
+       * `NEXT_PUBLIC_` one is inlined into the client bundle at build time and chooses the base
+       * path, the other switches the routes on at all (they 404 without it).
+       */
+      UI_MOCK_API: '1',
+      NEXT_PUBLIC_API_MOCK: '1',
+    },
   },
 })

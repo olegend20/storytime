@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { fetchLibrary } from '@/lib/client/api'
 import { friendlyDate, groupBySeries, type SeriesGroup } from '@/lib/client/library'
 import { joinNames } from '@/lib/client/reader'
-import { loadScroll } from '@/lib/client/storage'
+import { NullableScrollMemory, scrollKey } from '@/lib/client/storage'
+import { useStoredJson } from '@/lib/client/useStored'
 import { readMinutes, type LibraryStory } from '@/lib/client/types'
 
 /**
@@ -83,12 +84,12 @@ export function LibraryPage() {
   )
 }
 
-function StoryCard({ story }: { story: LibraryStory }) {
-  const [resume, setResume] = useState(false)
+/** A story is "in progress" when the remembered position is far enough in to be worth resuming. */
+const RESUME_THRESHOLD_PX = 200
 
-  useEffect(() => {
-    setResume((loadScroll(story.id)?.y ?? 0) > 200)
-  }, [story.id])
+function StoryCard({ story }: { story: LibraryStory }) {
+  const saved = useStoredJson(scrollKey(story.id), NullableScrollMemory, null)
+  const resume = (saved?.y ?? 0) > RESUME_THRESHOLD_PX
 
   return (
     <Link

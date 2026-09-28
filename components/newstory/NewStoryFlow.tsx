@@ -78,22 +78,24 @@ export function NewStoryFlow() {
     return () => controller.abort()
   }, [refreshQuota])
 
-  // Restore the remembered children, dropping any that no longer exist.
-  useEffect(() => {
-    if (!children) return
-    setForm((current) => {
-      const valid = current.childIds.filter((id) => children.some((c) => c.id === id))
-      return valid.length === current.childIds.length ? current : { ...current, childIds: valid }
-    })
-  }, [children])
+  /**
+   * The remembered selection can name a child who has since been removed, so the effective
+   * selection is derived rather than corrected in an effect - `form.childIds` stays the parent's
+   * stated intent, and this is what we act on.
+   */
+  const selectedIds = useMemo(
+    () => (children ? form.childIds.filter((id) => children.some((c) => c.id === id)) : []),
+    [children, form.childIds],
+  )
 
-  // Focus the topic field once, and only when there is nothing else to decide first.
+  // Focus the topic field once, and only when there is nothing else to decide first: this is what
+  // turns the returning-parent case into zero taps before typing.
   useEffect(() => {
     if (focusedOnce.current || !children || stream.phase !== 'idle') return
-    if (form.childIds.length === 0) return
+    if (selectedIds.length === 0) return
     focusedOnce.current = true
     topicRef.current?.focus({ preventScroll: true })
-  }, [children, form.childIds.length, stream.phase])
+  }, [children, selectedIds.length, stream.phase])
 
   const chips = useMemo(
     () => suggestedChips({ fromServer: serverTopics, offset: chipOffset }),
@@ -101,8 +103,13 @@ export function NewStoryFlow() {
   )
 
   // ------------------------------------------------------------------ submit
+  /** The form as it will actually be submitted: stated intent minus children that are gone. */
+  const effectiveForm = useMemo<StoryFormState>(
+    () => ({ ...form, childIds: selectedIds }),
+    [form, selectedIds],
+  )
   const topicCheck = checkTopic(form.topic)
-  const blocker = formBlocker(form)
+  const blocker = formBlocker(effectiveForm)
   const quotaLeft = quota ? Math.max(0, quota.limit - quota.used) : null
   const quotaBlocked = quotaLeft === 0 || quota?.generation_enabled === false
   const resetLabel = resetTimeLabel(quota?.resets_at)
@@ -110,14 +117,15 @@ export function NewStoryFlow() {
 
   const submit = useCallback(async () => {
     if (busy) return
-    const body = formToBody(form)
+    const body = formToBody(effectiveForm)
     if (!body) {
       setShowTopicError(true)
       topicRef.current?.focus()
       return
     }
     setShowTopicError(false)
-    saveFormMemory({ childIds: form.childIds, lengthMinutes: form.lengthMinutes })
+    // F10 AC: "the form remembers the last-used children and length".
+    saveFormMemory({ childIds: effectiveForm.childIds, lengthMinutes: effectiveForm.lengthMinutes })
 
     dispatch({ kind: 'start' })
     const controller = new AbortController()
@@ -134,7 +142,7 @@ export function NewStoryFlow() {
       dispatch(action)
     }
     void refreshQuota()
-  }, [busy, form, refreshQuota])
+  }, [busy, effectiveForm, refreshQuota])
 
   useEffect(() => () => abortRef.current?.abort(), [])
 
@@ -144,7 +152,7 @@ export function NewStoryFlow() {
   }, [])
 
   // ------------------------------------------------------------------ views
-  const selectedChildren = (children ?? []).filter((c) => form.childIds.includes(c.id))
+  const selectedChildren = (children ?? []).filter((c) => selectedIds.includes(c.id))
   const readerStory = readerFromStream(stream, {
     childNames: selectedChildren.map((c) => c.first_name),
     tones: form.tones,
@@ -230,8 +238,8 @@ export function NewStoryFlow() {
           </p>
         ) : (
           <ChildPicker
-            children={children}
-            selected={form.childIds}
+            options={children}
+            selected={selectedIds}
             onToggle={(id) => setForm((f) => toggleChild(f, id))}
           />
         )}
