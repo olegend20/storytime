@@ -37,6 +37,11 @@ export default defineConfig({
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
+    /**
+     * `next start` does not always exit on SIGTERM, and Playwright then waits on it forever - the
+     * whole suite passes and the command never returns. Force the kill after 5s.
+     */
+    gracefulShutdown: { signal: 'SIGTERM', timeout: 5_000 },
     env: {
       LIVE_API: '0',
       /**
