@@ -25,13 +25,13 @@
       "env_override": "FACTPACK_MODEL"
     },
     "judge_primary": {
-      "model": "claude-fable-5-1",
-      "why": "JUDGE_AGENT.md s2 requires the strongest available model as judge.",
+      "model": "claude-opus-5-5",
+      "why": "OWNER'S DECISION, 2026-09-27. JUDGE_AGENT.md s2 asks for the strongest available model; the owner chose Opus 5.5 over Fable 5.1, which halves the judging cost of a bake-off ($16.90 vs $40.44) at the price of a slightly weaker primary instrument. Fable 5.1 remains the SECOND judge on the highest-stakes comparisons, so the strongest model still cross-checks the verdicts that decide the outcome.",
       "env_override": "JUDGE_MODEL"
     },
     "judge_secondary": {
-      "model": "claude-opus-5-5",
-      "why": "JUDGE_AGENT.md s2/s6 step 5: second judge for agreement rate. Both judges are also bake-off contestants, so self-preference bias is reported, not assumed away. See DECISIONS.md.",
+      "model": "claude-fable-5-1",
+      "why": "JUDGE_AGENT.md s6 step 5: a second judge on the 12 highest-stakes comparisons, with the agreement rate reported. Now the strongest model, which keeps s2's intent alive where it matters most. Both judges are also contestants, so self-preference bias is reported on their own rows rather than engineered away - see DECISIONS.md #3.",
       "env_override": "JUDGE_MODEL_SECONDARY"
     }
   },
