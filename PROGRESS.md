@@ -568,3 +568,67 @@ Getting here took three owner decisions and one correction of my own:
 
 Next, in order: lane 2's pipeline fixtures ($0.75), `pnpm eval` ($3.44), `pnpm bakeoff` ($33.08,
 owner-approved, Opus 5.5 judging with Fable 5.1 as second judge).
+
+### 2026-09-28 — fact packs: three defects found, then blocked on machine resources
+
+**Live spend: $1.19 auditable** in `generation_logs`, plus ~$10–11.50 from before the logging
+fix that cannot be recovered. **Nothing further has run.**
+
+#### Three real defects in F5, all found by trying it for real
+
+1. **Packs were 2× the size cap and rejected.** The first build produced a `history-of-lego`
+   pack of **4,190 tokens** against §4.3's 2,000. Cause: `prompts/factpack.v1.md` asked for
+   "20 to 40 facts" and **never mentioned a token budget**, so the model was judged against a
+   constraint it was never given. §4.3's own two targets also conflict at the top of the range.
+   Fixed: the prompt now carries the budget, the arithmetic (~120 chars/fact) and the reason —
+   a pack is pasted into every story prompt on that topic forever, so its size is a permanent
+   per-story cost.
+
+2. **The builder was set up to time out.** `maxTokens: 16_000` on a **non-streaming** call
+   running a web-search tool loop, with three retries: 902s spent, nothing produced. Fixed
+   with an explicit 600s timeout and one retry. My own follow-up error: cutting `maxTokens` to
+   6k to save time **truncated the JSON** and produced `unparseable`, because a server-tool
+   response interleaves narration, search results and the answer across turns. Restored to 16k.
+
+3. **Fact packs cost 6.6× the estimate, and the input is uncappable.** Measured: **506,414
+   input tokens, $1.19** for one pack, because every web-search result set is billed as input —
+   which the estimator had put at **3,000**. So the fact-pack line of every figure I quoted was
+   ~6.6× low. `max_content_tokens` would bound it directly but that is a **web_fetch**
+   parameter; `web_search` rejects it (400) and accepts only `max_uses`, domain filters and
+   location. **The only lever is the search count**, now 5 instead of 8.
+   *Consequence for launch:* §8's ten pre-built chip packs are ~$7.50, not ~$1.80, and an
+   obscure topic the model researches broadly could cost more with no way to cap it.
+
+#### Four places the cost measurement was leaking — all mine
+
+`generation_logs` held **one row worth $0.0005** after ~$10 of real calls. §1.6 says "measure
+everything" and the most expensive activity in the project was the one thing unmeasured.
+Fixed in four places, patched one at a time rather than looked for at once: Next.js boot
+(existing), the eval CLIs, the test suite, and finally `TeeLogSink` — because passing a
+`MemoryLogSink` to count a run's cost silently **replaced** the sink that persists it.
+
+#### Blocked: the machine, not the code
+
+`pnpm factpacks` fails on this laptop — three OOM kills, then two 600s timeouts on a build
+that took 164s earlier the same day. State: **RAM free ~60MB, swap 41GB used of 43GB.** Disk
+is irrelevant (744GB free). Stopping Supabase freed nothing: Docker Desktop's VM holds 2.88GB
+whether containers run or not, and only quitting the app releases it. Chrome, RobloxStudio
+(215% CPU) and Zoom (51%) hold the rest.
+
+Supabase is left **stopped** so nothing of mine is holding memory. `supabase start` reapplies
+all four migrations in ~30s.
+
+#### Also this session
+- `pnpm factpacks` added (`--chips`, `--status`) — building a pack is an operation, not a test.
+  Covers §8's "ten fact packs pre-built for the suggested-topic chips", which had no home.
+- Live test timeout 180s → 900s; 180s severed four builds mid-flight.
+- 3.6GB reclaimed by removing the six merged agent worktrees (branches kept).
+- `.gitignore` widened to `.env.local.*` and `*.env.sh`: a `.env.local.sh` helper holding the
+  API key matched neither existing pattern. Caught before staging — never tracked, never in
+  history.
+
+**Gates:** lint ✅ · typecheck ✅ · **894 pass, 0 fail** · judge calibration **6/6**.
+
+**Queued, in order, once the machine has headroom:** 4 fact packs (~$3) → `pnpm eval` (~$1.40
+on top of packs) → `pnpm bakeoff` (~$34, owner-approved). The bake-off is 144 generations over
+roughly an hour and is the run most likely to be lost to another OOM kill.
