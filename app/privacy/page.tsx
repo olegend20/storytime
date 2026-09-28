@@ -11,7 +11,7 @@ export const metadata: Metadata = {
  *
  *  - "first names only"      -> `children` has no last_name/birthdate column (F11 VT,
  *                              test/int/schema.test.ts) and the field list is closed.
- *  - "behind your account"   -> every page showing child data is behind `middleware.ts`.
+ *  - "behind your account"   -> every page showing child data is behind `proxy.ts`.
  *  - "one click to delete"   -> DELETE /api/account, verified by the F2 deletion VT.
  *  - "no third-party         -> there is no analytics script in `app/layout.tsx`.
  *     analytics"

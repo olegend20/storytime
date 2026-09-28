@@ -48,6 +48,28 @@ export function apiOk<T>(data: T, init: { status?: number } = {}): Response {
   })
 }
 
+/**
+ * A redirect whose `Location` is a RELATIVE path.
+ *
+ * `NextResponse.redirect()` needs an absolute URL, and the only origin a route handler has
+ * to hand is `request.nextUrl.origin` - which resolves to `http://localhost:<port>`
+ * whatever host the request actually used. On 127.0.0.1 that sends the browser to a
+ * different origin, and therefore a different cookie jar, so a session just written is
+ * invisible on the very next request and the parent bounces back to /login. A relative
+ * Location is resolved by the browser against the URL it asked for, which is always right.
+ *
+ * @param path must start with `/` and must not start with `//` (open redirect)
+ */
+export function redirectTo(path: string, init: { status?: number } = {}): Response {
+  if (!path.startsWith('/') || path.startsWith('//')) {
+    throw new Error(`redirectTo: refusing a non-relative destination: ${path}`)
+  }
+  return new Response(null, {
+    status: init.status ?? 307,
+    headers: { location: path, 'cache-control': 'no-store' },
+  })
+}
+
 /** A body that is not valid JSON is a client bug, not a parent's mistake. */
 export async function readJsonBody(request: Request): Promise<unknown> {
   try {

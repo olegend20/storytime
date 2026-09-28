@@ -79,7 +79,20 @@ export interface SanitizeReport {
   controlChars: boolean
   zeroWidth: boolean
   whitespaceCollapsed: boolean
+  /** The value was longer than the field's maximum, whether or not it was cut. */
+  overLength: boolean
+  /** The value was actually cut to the maximum. False when `cap: false` was passed. */
   truncated: boolean
+}
+
+export interface SanitizeOptions {
+  /**
+   * Cut the value to the field maximum (the default, and what GUARDRAILS.md s3.2 asks
+   * for). Pass `false` at a parent-facing API boundary, where an over-long value should
+   * come back as a message the parent can act on instead of being silently shortened -
+   * see the note on `sanitizeChildPayload`.
+   */
+  cap?: boolean
 }
 
 export interface SanitizeResult {
@@ -97,6 +110,7 @@ const EMPTY_REPORT: SanitizeReport = {
   controlChars: false,
   zeroWidth: false,
   whitespaceCollapsed: false,
+  overLength: false,
   truncated: false,
 }
 
@@ -141,10 +155,15 @@ function stripHtml(input: string): { value: string; removed: boolean } {
 /**
  * Sanitize one free-text field.
  *
- * @param field the s3.2 field, which fixes the max length and whether newlines survive
- * @param raw   whatever arrived from the client; a non-string sanitizes to `''`
+ * @param field   the s3.2 field, which fixes the max length and whether newlines survive
+ * @param raw     whatever arrived from the client; a non-string sanitizes to `''`
+ * @param options `cap: false` to report an over-long value instead of cutting it
  */
-export function sanitize(field: SanitizableField, raw: unknown): SanitizeResult {
+export function sanitize(
+  field: SanitizableField,
+  raw: unknown,
+  options: SanitizeOptions = {},
+): SanitizeResult {
   const original = typeof raw === 'string' ? raw : ''
   if (original === '') {
     return { value: '', original, changed: false, removed: emptyReport() }
@@ -183,16 +202,23 @@ export function sanitize(field: SanitizableField, raw: unknown): SanitizeResult 
 
   const max = FIELD_MAX_LENGTH[field]
   if (charLength(out) > max) {
-    out = truncateChars(out, max).trim()
-    removed.truncated = true
+    removed.overLength = true
+    if (options.cap !== false) {
+      out = truncateChars(out, max).trim()
+      removed.truncated = true
+    }
   }
 
   return { value: out, original, changed: out !== original.trim(), removed }
 }
 
 /** Convenience wrapper when only the cleaned string is wanted. */
-export function sanitizeField(field: SanitizableField, raw: unknown): string {
-  return sanitize(field, raw).value
+export function sanitizeField(
+  field: SanitizableField,
+  raw: unknown,
+  options: SanitizeOptions = {},
+): string {
+  return sanitize(field, raw, options).value
 }
 
 /** Sanitize a `likes[]` array: clean each tag, drop blanks, de-duplicate, keep order. */
@@ -207,6 +233,7 @@ export function sanitizeLikes(raw: unknown): { value: string[]; removed: Sanitiz
     removed.controlChars ||= r.removed.controlChars
     removed.zeroWidth ||= r.removed.zeroWidth
     removed.whitespaceCollapsed ||= r.removed.whitespaceCollapsed
+    removed.overLength ||= r.removed.overLength
     removed.truncated ||= r.removed.truncated
     if (r.value === '') continue
     const key = r.value.toLocaleLowerCase()

@@ -12,7 +12,7 @@ import { clientIp, rateLimitHeaders, checkRateLimit, RATE_LIMITED_BODY } from '@
  *  3. F2 AC - "Unauthenticated users can only see the landing page and login."
  *     Protected pages redirect to /login; protected API routes get a 401 JSON body.
  *
- * Reads the NEXT_PUBLIC_ mirrors rather than `lib/env.ts`: middleware must not pull the
+ * Reads the NEXT_PUBLIC_ mirrors rather than `lib/env.ts`: this must not pull the
  * server secret schema into the edge bundle.
  */
 
@@ -26,7 +26,7 @@ function isUnder(pathname: string, prefixes: readonly string[]): boolean {
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`))
 }
 
-export async function middleware(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // ---------------------------------------------------------------- 1. rate limit
