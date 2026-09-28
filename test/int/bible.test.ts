@@ -93,6 +93,55 @@ describe.skipIf(!available)(`F4 series and bible (int) ${available ? '' : `- SKI
     await family.db.from('children').update({ age: child.age, likes: ['LEGO', 'sharks'] }).eq('id', child.id)
   })
 
+  it.skipIf(RECORDING)('F4 VT: two stories for the same children share one series, one version bump each', async () => {
+    const ids = family.children.map((c) => c.id)
+    const series = await getOrCreateSeries(family.familyId, ids, family.db)
+    const before = await reloadBible(series.id, family.db)
+
+    // Two nights, same children. Both stories must land on the same series row.
+    const storyIds: string[] = []
+    for (const [index, topic] of ['history of LEGO', 'sharks'].entries()) {
+      const { data, error } = await family.db
+        .from('stories')
+        .insert({
+          family_id: family.familyId,
+          series_id: series.id,
+          topic_input: topic,
+          topic_key: topic.replace(/\s+/g, '-').toLowerCase(),
+          tones: ['funny'],
+          length_minutes: 10,
+          age_band: 'A',
+          title: `Night ${index + 1}`,
+          content: goodStory(),
+          word_count: 1500,
+          quality: {},
+          status: 'ready',
+        })
+        .select('id, series_id')
+        .single()
+      if (error) throw new Error(error.message)
+      storyIds.push((data as { id: string }).id)
+      expect((data as { series_id: string }).series_id).toBe(series.id)
+
+      // One bible update per story, one version bump per update.
+      const result = await updateBibleFromStory(series.id, goodStory(), {
+        db: family.db,
+        sink: new MemoryLogSink(),
+        topic,
+        tones: ['funny'],
+        date: `2026-09-2${6 + index}`,
+      })
+      expect(result.record.version).toBe(before.version + index + 1)
+    }
+
+    const after = await reloadBible(series.id, family.db)
+    expect(after.version).toBe(before.version + 2)
+    expect(after.content.topics_covered.map((t) => t.topic)).toEqual(
+      expect.arrayContaining(['history of LEGO', 'sharks']),
+    )
+    await family.db.from('stories').delete().in('id', storyIds)
+  })
+
   it('F4 VT: two concurrent writes at the same version - one wins, the loser conflicts', async () => {
     const series = await getOrCreateSeries(family.familyId, family.children.map((c) => c.id), family.db)
     const before = await reloadBible(series.id, family.db)
