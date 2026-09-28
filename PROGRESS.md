@@ -15,11 +15,11 @@ verification tests named in each feature's section (plus `GUARDRAILS.md` §7 and
 | F5 | Topic normalization and Fact Packs | 6 | 2 | 🟡 schema/review VTs green; service pending | 2 |
 | F6 | Story generation pipeline | 7 | 1 | 🟡 `targetWords` VT green; pipeline pending | 2 |
 | F7 | Quality gate | 5 | 0 | ⬜ not started | 2 |
-| F8 | Quotas and cost logging | 6 | 3 | 🟡 cost + freshness VTs green; quota/budget pending | 3 |
+| F8 | Quotas and cost logging | 6 | 6 | ✅ **done** — quota, tz boundary, cost, freshness, budget cap, failure logging | 3 |
 | F9 | Story library and reader | 4 | 0 | ⬜ not started | 4 |
 | F10 | New-story flow (UI) | 5 | 0 | ⬜ not started | 4 |
 | F11 | Safety, privacy and content policy | 5 | 0 | ⬜ not started | 1 + 4 |
-| F12 | Admin dashboard | 3 | 0 | ⬜ not started — SQL views written | 3 |
+| F12 | Admin dashboard | 3 | 3 | ✅ **done** — owner gate 404s, view arithmetic, 80% hit rate | 3 |
 | F13 | Quality evaluation harness | 2 + JUDGE §7 | 0 | ⬜ not started — **unblocked**, references arrived | 5 |
 | F14 | Model bake-off | JUDGE §7 (6) | 2 | 🟡 rubric/position-swap VTs green; harness pending. **Budget approval needed** | 5 |
 | F15 | Guardrails | GUARDRAILS §7 (9) | 1 | 🟡 corpus contract locked; L1–L4 pending | 6 |
@@ -145,3 +145,58 @@ incompatible event shapes and only discovered it at integration.
 
 Standing instruction given to every lane: report each feature's VTs individually with real
 pass/fail, and an honest red beats an optimistic green.
+### 2026-09-27 — lane 3: F8 quotas and cost logging, F12 admin dashboard
+
+**Features:** F8 ✅ 6/6 VTs · F12 ✅ 3/3 VTs. **API spend: $0.00** (the SDK is stubbed in
+the failure/budget tests; no network call was made).
+
+**F8 built**
+- `lib/limits/timezone.ts` — the day boundary in the family's own zone, `Intl`-only, correct
+  across DST transitions and 30/45-minute offsets.
+- `lib/limits/quota.ts` — `quotaStatus()` (read, never consumes) and `consumeQuota()` (atomic
+  claim). The increment is one statement in the new `consume_daily_quota` Postgres function,
+  revoked from `anon`/`authenticated`.
+- `lib/limits/switches.ts` — `GENERATION_ENABLED` / `DAILY_BUDGET_USD`, re-read from the
+  environment on every call.
+- `lib/limits/guard.ts` — `preflight()`, the gate lane 2's generate route calls first:
+  503 `service_paused` → 503 `budget_exceeded` → 429 `quota_exceeded` with the local reset
+  time. Consumes nothing, so refusals and failures stay free.
+- `lib/costs/sink.ts` — the Supabase `GenerationLogSink`, installed at server boot from
+  `instrumentation.ts`. `lib/costs/budget.ts` reads today's spend from a view.
+- `lib/costs/expected.ts` — expected cost per story derived from §5 + `config/pricing.json`.
+- `app/api/quota/route.ts` — `GET /api/quota` for F10's "2 of 3 stories left today" chip.
+
+**F12 built**
+- `app/admin/page.tsx` + `lib/admin/{gate,metrics}.ts`. Non-owner → `notFound()`, verified
+  404 over real HTTP. Every number is a read of a `v_*` view; nothing is accumulated in
+  process. The kill switch and budget cap are displayed read-only, and the page renders no
+  form control at all.
+- Migration `20260927000005` adds `v_budget_today`, `v_story_cost_summary`, `v_story_writer`,
+  `v_story_cost_by_writer`, `v_story_health`, `v_latency_summary`,
+  `v_fact_pack_hit_rate_daily`.
+
+**Two findings worth other lanes' attention**
+1. **The F12 admin views were world-readable.** `curl` with the anon key returned
+   `v_daily_costs` — the day's spend, call counts and token totals — because the views are
+   owned by `postgres` (so they bypass RLS on `generation_logs`) and the public schema's
+   default grants give every client SELECT. Migration `20260927000005` revokes them from
+   `anon`/`authenticated` and sets `security_invoker = on`. `v_top_topics` stays readable by
+   signed-in parents for F10's topic chips, now with `fact_packs`' own `status='ready'`
+   policy applied. RLS on a table does not protect a view over it.
+2. **"Output tokens are ~70% of a story" is Sonnet-specific.** Measured from the §5 token
+   table: 66% (Haiku 4.5) → 76% (Sonnet 5) → 84% (Opus 5.5) → 90% (Fable 5.1), because the
+   input-heavy helper calls stay on Haiku whatever the writer is. The 70% figure is Sonnet's
+   *write-call* output share. Anyone reasoning about cost per model should use
+   `v_story_cost_by_writer` (measured tokens), not a share constant — Haiku 4.5's older
+   tokenizer runs ~30% shorter for identical text.
+
+Expected medians, derived from config and matching the brief: **$0.0445** Haiku 4.5 ·
+**$0.0714** Sonnet 5 · **$0.1244** Opus 5.5 · **$0.2836** Fable 5.1. /admin flags a measured
+median more than 35% off its writer's figure rather than shipping it quietly.
+
+**Gates:** lint ✅ · typecheck ✅ · build ✅ · `pnpm test` → **161 passed, 12 skipped, 0
+failed**. Integration VTs now also run in CI's `migrations` job (`pnpm test:int`), where a
+database exists — the `check` job's placeholder keys skip them.
+
+**Note for the lead:** `/api/quota` was not assigned to a lane. It is pure quota, so I built
+it against `QuotaResponse`; move it if that collides with lane 4.
