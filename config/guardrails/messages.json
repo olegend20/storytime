@@ -1,0 +1,40 @@
+{
+  "$comment": "GUARDRAILS.md s5. Parent-facing copy. Short, kind, non-judgmental. NEVER echo the offending text, NEVER name the layer, the category or the triggering word. Placeholders: {age}, {child}, {alternative}, {reset_time}. Anything not in that list is a bug (asserted in test/unit/guardrail-messages.test.ts).",
+  "updated_at": "2026-09-27",
+  "refuse": {
+    "default": "We can't make a story about that. Pick something fun to learn about and we'll get started.",
+    "off_mission": "StoryTime makes learning adventures for kids. Try a topic like how bees make honey or the history of bicycles.",
+    "commercial_ip_character": "We can't put characters from films and games into a story, but we can tell the real story behind them - try the history of LEGO or how video games were invented.",
+    "real_private_person": "Our stories are about the wider world rather than people you know. Try a place, an animal, an invention or a moment in history.",
+    "prompt_injection": "Something in that request didn't look like a story topic. Try describing it in a few plain words, like volcanoes or the history of flight.",
+    "sexual": "We can't make a story about that. Pick something fun to learn about and we'll get started.",
+    "violence_graphic": "We can't make a story about that. Pick something fun to learn about and we'll get started.",
+    "self_harm": "We can't make a story about that. If something is worrying you or someone at home, please talk to a doctor or another grown-up you trust.",
+    "drugs_alcohol": "That's not one for a bedtime story. Pick something fun to learn about and we'll get started.",
+    "hate_extremism": "We can't make a story about that. Pick something fun to learn about and we'll get started.",
+    "weapons_instructions": "We can't make a story about that. How about how bridges stay up, or how a lock actually works inside?",
+    "horror_scary": "That one's built to give people a fright, and we keep bedtimes gentle. How about deep-sea creatures or the story of the pyramids?",
+    "adult_relationships": "That's more of a grown-up subject. Try an animal, a place, an invention or a moment in history.",
+    "other": "We can't make a story about that. Pick something fun to learn about and we'll get started."
+  },
+  "too_mature_for_band": {
+    "default": "That one's a bit much for a {age}-year-old. How about {alternative}? Or pick just your older child for tonight.",
+    "with_child": "That one's a bit much for a {age}-year-old. For {child}, how about {alternative}? Or pick just your older child for tonight.",
+    "fallback_alternative": "something a bit gentler"
+  },
+  "profile": {
+    "likes": "Something in your child's likes stopped us tonight. Have a quick look at their profile and we'll try again.",
+    "notes": "Something in your child's notes stopped us tonight. Have a quick look at their profile and we'll try again.",
+    "first_name": "That name didn't look quite right - please use letters only.",
+    "display_name": "That name didn't look quite right - please use letters only."
+  },
+  "input_invalid": {
+    "too_long": "That's a bit long for us. Try saying it in a few words.",
+    "too_short": "Tell us a little more - a few words is plenty, like sharks or the Great Fire of London.",
+    "empty": "Type a topic and we'll get started - try volcanoes or how bees make honey.",
+    "contains_contact_details": "Best to leave out addresses, phone numbers, emails and links. Just the topic is plenty.",
+    "markup": "Try describing it in plain words, with no code or symbols."
+  },
+  "output_failure": "We couldn't make a story we're happy with tonight. This didn't use one of your stories - try a different topic or angle.",
+  "output_retry": "We're giving that another go..."
+}
