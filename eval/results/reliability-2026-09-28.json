@@ -1,0 +1,191 @@
+{
+  "ran_at": "2026-09-28T03:46:44.921Z",
+  "judge_model": "claude-opus-5-5",
+  "repeats": 3,
+  "references": {
+    "cruz-and-phoenix-lego-story.md": {
+      "overalls": [
+        3.95,
+        3.95,
+        3.95
+      ],
+      "byCriterion": {
+        "heroes": [
+          4,
+          4,
+          4
+        ],
+        "craft": [
+          4,
+          4,
+          4
+        ],
+        "facts": [
+          4,
+          4,
+          4
+        ],
+        "age_fit": [
+          3,
+          3,
+          3
+        ],
+        "continuity": [
+          5,
+          5,
+          5
+        ],
+        "delight": [
+          4,
+          4,
+          4
+        ]
+      },
+      "overall": {
+        "median": 3.95,
+        "min": 3.95,
+        "max": 3.95,
+        "spread": 0
+      }
+    },
+    "lennon-and-the-lost-levels.md": {
+      "overalls": [
+        4.25,
+        4.45,
+        4.25
+      ],
+      "byCriterion": {
+        "heroes": [
+          4,
+          4,
+          4
+        ],
+        "craft": [
+          4,
+          4,
+          4
+        ],
+        "facts": [
+          4,
+          5,
+          4
+        ],
+        "age_fit": [
+          5,
+          5,
+          5
+        ],
+        "continuity": [
+          5,
+          5,
+          5
+        ],
+        "delight": [
+          4,
+          4,
+          4
+        ]
+      },
+      "overall": {
+        "median": 4.25,
+        "min": 4.25,
+        "max": 4.45,
+        "spread": 0.20000000000000018
+      }
+    },
+    "cruz-and-phoenix-shark-submarine.md": {
+      "overalls": [
+        3.05,
+        3.25,
+        3.05
+      ],
+      "byCriterion": {
+        "heroes": [
+          2,
+          2,
+          2
+        ],
+        "craft": [
+          3,
+          3,
+          3
+        ],
+        "facts": [
+          3,
+          4,
+          3
+        ],
+        "age_fit": [
+          3,
+          3,
+          3
+        ],
+        "continuity": [
+          4,
+          4,
+          4
+        ],
+        "delight": [
+          4,
+          4,
+          4
+        ]
+      },
+      "overall": {
+        "median": 3.05,
+        "min": 3.05,
+        "max": 3.25,
+        "spread": 0.20000000000000018
+      }
+    },
+    "lennon-the-beautiful-game.md": {
+      "overalls": [
+        4.15,
+        3.95,
+        4.15
+      ],
+      "byCriterion": {
+        "heroes": [
+          4,
+          4,
+          4
+        ],
+        "craft": [
+          4,
+          4,
+          4
+        ],
+        "facts": [
+          4,
+          3,
+          4
+        ],
+        "age_fit": [
+          5,
+          5,
+          5
+        ],
+        "continuity": [
+          4,
+          4,
+          4
+        ],
+        "delight": [
+          4,
+          4,
+          4
+        ]
+      },
+      "overall": {
+        "median": 4.15,
+        "min": 3.95,
+        "max": 4.15,
+        "spread": 0.20000000000000018
+      }
+    }
+  },
+  "mean_of_medians": 3.85,
+  "worst_spread": 1,
+  "worst_where": "lennon-and-the-lost-levels.md facts",
+  "cost_usd": 1.237141
+}
