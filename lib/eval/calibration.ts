@@ -226,16 +226,30 @@ export async function runCalibration(
   )
   const padRes = await scoreCase(videoGames, padSab.story)
   const original = scored.get(REFERENCE_FILES.videoGames)
+  /**
+   * Padding is penalised on DELIGHT, not age fit (§5, owner's decision 2026-09-28).
+   *
+   * §3 already gives age fit a mechanical claim on length - outside target ±15% caps it at 3 -
+   * and this sabotage deliberately lands INSIDE the tolerance, so docking age fit as well
+   * would duplicate that rule and blur the criterion. Delight's own anchor ends "No filler
+   * sentences", and 900 words of repeated description is filler. A 10-year-old story padded
+   * to 3,390 words is still pitched at a 10-year-old; it is just worse to read aloud.
+   *
+   * The drop must be REAL: the previous expectation was "no higher than the original", which
+   * a tie would satisfy, so it tested almost nothing.
+   */
+  const PADDING_MIN_DELIGHT_DROP = 2
   const originalDelight = original?.ok === true ? original.raw.scores.delight : null
-  const delightOk =
-    padRes.ok && originalDelight !== null && padRes.raw.scores.delight <= originalDelight
+  const delightDrop =
+    padRes.ok && originalDelight !== null ? originalDelight - padRes.raw.scores.delight : null
+  const delightOk = delightDrop !== null && delightDrop >= PADDING_MIN_DELIGHT_DROP
   expectations.push(
     expectation(
       'sabotage_padding',
-      'Video-game story padded with 900 words of repeated description scores age_fit <= 3, and delight no higher than the original',
-      padRes.ok && padRes.raw.scores.age_fit <= 3 && delightOk,
+      'Video-game story padded with 900 words of repeated description drops delight by >= 2 versus the original',
+      padRes.ok && delightOk,
       padRes.ok
-        ? `age_fit=${padRes.raw.scores.age_fit} (raw), delight=${padRes.raw.scores.delight} vs original ${originalDelight ?? 'n/a'}; ${padSab.wordCountBefore} -> ${padSab.wordCountAfter} words, ${padSab.stillWithinLengthTolerance ? 'STILL inside the ±15% tolerance, so the word-count cap does not fire and this row rests entirely on the judge noticing the padding' : 'outside the tolerance, so the cap would also fire'}`
+        ? `delight=${padRes.raw.scores.delight} vs original ${originalDelight ?? 'n/a'} (drop ${delightDrop ?? 'n/a'}, need >= ${PADDING_MIN_DELIGHT_DROP}); age_fit=${padRes.raw.scores.age_fit} recorded but not asserted; ${padSab.wordCountBefore} -> ${padSab.wordCountAfter} words, ${padSab.stillWithinLengthTolerance ? 'STILL inside the ±15% tolerance, so the word-count cap does not fire and this row rests entirely on the judge noticing the padding' : 'outside the tolerance, so the cap would also fire'}`
         : `judge_error: ${padRes.reason}`,
       padRes.ok
         ? {

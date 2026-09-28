@@ -43,7 +43,7 @@ Question 2 is the important one for choosing a writing model. Absolute scores fr
 - Any invented fact contradicted by the fact pack → Factual grounding ≤ 2.
 - Word count outside target ±15% → Age fit ≤ 3.
 
-**How to score criterion 1 (Children at the center).** Count the chapters. For each chapter, mark whether at least one named child does one of the following: performs a physical action that matters to the scene; asks a question that a fact or character then answers; makes a choice or suggests an idea; reacts in a way that is specific to that child (not "the kids gasped"); or is addressed by a historical figure or guide and answers in their own voice. Then: every chapter → 5; all but one → 4; roughly two-thirds → 3; about half → 2; fewer → 1. If any named child goes silent for three consecutive chapters, cap at 3. If the children's stated likes or notes never change a scene, subtract 1.
+**How to score criterion 1 (Children at the center).** Count the chapters. For each chapter, and for **each named child separately**, mark whether that child does one of the following: performs a physical action that matters to the scene; asks a question that a fact or character then answers; makes a choice or suggests an idea; reacts in a way that is specific to that child (not "the kids gasped"); or is addressed by a historical figure or guide and answers in their own voice. **Count per named child, and score the worst-covered child** - the anchor says the childREN are active in nearly every chapter, so a story where one of two siblings is decoration must not score on the other's back. Then, for that worst-covered child: every chapter → 5; all but one → 4; roughly two-thirds → 3; about half → 2; fewer → 1. If any named child goes silent for three consecutive chapters, cap at 3. If the children's stated likes or notes never change a scene, subtract 1.
 
 **Worked examples from the reference stories** (these must all land at 4–5, which is the point of the calibration set):
 
@@ -108,7 +108,7 @@ Run before every bake-off and whenever `prompts/judge.*.md` changes.
 | A "sabotaged" copy of the LEGO story with Phoenix's name removed from all but one chapter | center ≤ 2 |
 | A copy of the soccer story with three invented dates | facts ≤ 2 and the evidence names at least two of them |
 | A copy of the shark story with a chapter where the great white chases the submarine and rams it | age_fit ≤ 2 for band A |
-| A copy of the video-game story padded with 900 words of repeated description | age_fit ≤ 3, and delight not higher than the original |
+| A copy of the video-game story padded with 900 words of repeated description | **delight drops by ≥ 2 versus the original.** Age fit is NOT asserted: §3 already gives age fit a mechanical claim on length (outside ±15% → ≤ 3), and this padding sits *inside* the tolerance, so penalising it there would duplicate that rule and blur the criterion. Delight's own anchor ends "No filler sentences", and 900 words of repeated description is filler. Owner's decision, 2026-09-28. |
 | Pairwise: original LEGO story vs. sabotaged copy, both orders | "original" wins in both orders with confidence ≥ 0.7 |
 
 If any expectation fails, stop and fix the judge prompt. Log the calibration result in `eval/results/calibration-<date>.json`.
