@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { LengthMinutes, Tone } from './common'
-import { StoryOutput } from './story'
+import { Child } from './child'
+import { StoryOutput, StoryRecord } from './story'
 import { QualityResult } from './quality'
 
 /**
@@ -100,6 +101,16 @@ export const ErrorBody = z.object({
   message: z.string(),
   quota_consumed: z.boolean(),
   resets_at: z.string().nullable().default(null),
+  /**
+   * Which input field the error is about, for a form to highlight. Lane 1's CRUD endpoints
+   * answer in this shape too, so one client-side renderer handles validation errors and
+   * generation errors alike.
+   *
+   * `.optional()` rather than `.nullable().default(null)` on purpose: a default makes the
+   * property REQUIRED on zod's inferred output type, which would break every existing
+   * construction site for a field that is absent most of the time.
+   */
+  field: z.string().optional(),
 })
 export type ErrorBody = z.infer<typeof ErrorBody>
 
@@ -136,3 +147,33 @@ export type SuggestedTopicsResponse = z.infer<typeof SuggestedTopicsResponse>
 
 /** F8: 3 new stories per family per calendar day, in the family's own timezone. */
 export const DAILY_STORY_LIMIT = 3
+
+// ---------------------------------------------------------------- GET /api/stories
+/**
+ * A library row: a stored story plus what a card must show without a second request.
+ * Promoted from lane 4's provisional `lib/client/types.ts` so the server side (lanes 1 and 2)
+ * and the UI build against one shape. Extends `StoryRecord` rather than restating it.
+ */
+export const LibraryStory = StoryRecord.extend({
+  /** Series display name, e.g. "Cruz & Phoenix". */
+  series_title: z.string(),
+  /** Position in the series, 1-based. Shown as "Story 2". */
+  sequence: z.number().int().positive(),
+  /** First names of the children who star in it. F11: first names only, never more. */
+  child_names: z.array(z.string()),
+  /** Human-readable topic, matching the `meta` SSE event's `topic_label`. */
+  topic_label: z.string(),
+  created_at: z.string(),
+})
+export type LibraryStory = z.infer<typeof LibraryStory>
+
+export const LibraryResponse = z.object({ stories: z.array(LibraryStory) })
+export type LibraryResponse = z.infer<typeof LibraryResponse>
+
+export const StoryResponse = z.object({ story: LibraryStory })
+export type StoryResponse = z.infer<typeof StoryResponse>
+
+// ---------------------------------------------------------------- GET /api/children
+/** F3 owns children; the UI only reads them. */
+export const ChildrenResponse = z.object({ children: z.array(Child) })
+export type ChildrenResponse = z.infer<typeof ChildrenResponse>
