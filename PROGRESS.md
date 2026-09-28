@@ -465,3 +465,31 @@ recorded. Rather than fake them: the F6/F7 pipeline tests run against synthetic 
 the temp `FIXTURE_DIR` (which proves our plumbing and says so), and the four tests that need
 real model judgement moved to `test/blocked/` with a README naming each VT and the ~$0.75
 one-off recording cost. **Five VTs are therefore unverified, not green.**
+
+### 2026-09-27 — all six lanes merged; live verification blocked on account credits
+
+**Every lane is merged.** `main`: lint ✅ · typecheck ✅ · **890 tests pass, 0 fail**.
+
+**API spend: $0.00.** Not by choice. The owner supplied a key and it authenticates —
+`GET /v1/models` returns 200 with all 12 models, `claude-fable-5-1` among them, which
+confirms the reference-story model is available as bake-off contestant 4. But **every
+inference call returns HTTP 400: "Your credit balance is too low to access the Anthropic
+API."** Confirmed account-wide with 1-token calls on both Haiku and Sonnet 5, so it is
+billing and not a config or model-id problem.
+
+The owner approved Opus 5.5 as the bake-off judge (DECISIONS #100) and I moved Fable 5.1 to
+the second-judge slot so the strongest model still cross-checks the 12 decisive comparisons
+(#101, +$1.81, flagged). Bake-off now estimates **$33.08**.
+
+**Queued and ready to run the moment credits exist**, in this order — calibration first
+because §5 gates everything judge-related:
+| Step | Cost | Why it is first/blocked |
+|---|---|---|
+| Judge calibration (§5) | $0.51 | Gates every other judge number. Four sabotaged variants + the four references. |
+| Guardrail L1+L2 corpus | $0.19 | The headline ≥99% refuse recall — currently the only unverified **safety** figure. |
+| Lane 2 pipeline fixtures | $0.75 | Unblocks 5 VTs across F4/F5/F6. |
+| `pnpm eval` (8 scenarios) | $3.44 | The ≥4.0 quality gate. |
+| `pnpm bakeoff` | $33.08 | **Owner-approved.** Chooses the writing model. |
+
+Worth noting the wrapper behaved correctly on the failure: it treated the 400 as
+non-retryable rather than burning three attempts on a billing error, and logged it.
