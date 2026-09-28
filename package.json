@@ -18,6 +18,8 @@
     "test:int": "vitest run test/int",
     "test:guardrails": "vitest run test/guardrails",
     "test:e2e": "playwright test",
+    "dev:mock": "UI_MOCK_API=1 NEXT_PUBLIC_API_MOCK=1 next dev",
+    "fixtures:ui": "tsx scripts/dev/build-ui-fixtures.ts",
     "migrate": "supabase db push --local",
     "db:reset": "supabase db reset",
     "seed": "tsx scripts/seed.ts",
@@ -39,11 +41,13 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.56.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^24.9.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "axe-core": "^4.13.0",
     "eslint": "^9.39.0",
     "eslint-config-next": "^16.3.6",
     "tailwindcss": "^4.3.3",
