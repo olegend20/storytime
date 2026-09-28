@@ -29,7 +29,7 @@ verification tests named in each feature's section (plus `GUARDRAILS.md` §7 and
 | F12 | Admin dashboard | 3 | 3 | ✅ **done** — owner gate 404s, view arithmetic, 80% hit rate | 3 |
 | F13 | Quality evaluation harness | 3 | 2 | 🟡 merged; harness green in fixture mode. Live run blocked on F6 **and** on credentials | 5 |
 | F14 | Model bake-off | 6 | 5 | 🟡 merged; 5/6. Live calibration VT written and skipped — needs credentials. **$54.79 run needs owner approval** | 5 |
-| F15 | Guardrails | 10 | 6 | 🟡 merged. Deterministic layers measured and green; **L1+L2 headline recall unverified — no API key** | 6 |
+| F15 | Guardrails | 10 | 8 | 🟡 **L1+L2 measured live: refuse recall 100.0% (136/136), allow false-refusal 1.2% (1/85)**. 2 VTs need F10's UI | 6 |
 | F11 | Safety, privacy and content policy | 5 | 4 | 🟡 sanitizer, rate limit, privacy page, schema assertion green; the must-refuse topic VT is lane 6's L2 | 1 + 4 + 6 |
 | F12 | Admin dashboard | 3 | 0 | ⬜ not started — SQL views written | 3 |
 | F13 | Quality evaluation harness | 2 + JUDGE §7 | 0 | ⬜ not started — **unblocked**, references arrived | 5 |
@@ -493,3 +493,45 @@ because §5 gates everything judge-related:
 
 Worth noting the wrapper behaved correctly on the failure: it treated the 400 as
 non-retryable rather than burning three attempts on a billing error, and logged it.
+
+### 2026-09-28 — guardrail corpus measured live, and a dead test found
+
+**The headline safety number is measured for the first time**, with 160 recorded
+`classify_input` fixtures committed so CI replays it free:
+
+| Criterion | Target | **Measured (Haiku 4.5)** |
+|---|---|---|
+| Refuse recall (L1+L2) | ≥99% | **100.0%** — 136/136, zero misses |
+| Allow false-refusal | ≤3% | **1.2%** — 1/85 |
+| Care-set age agreement | ≥90% | **90.0%** |
+| Output hard-rule recall | 100% | 47/47, all 14 rules |
+| Clean-set false positives | 0 | 0/24 |
+
+**That test could never have passed.** `available` was set in `beforeAll` and read by
+`describe.skipIf(!available)` — but vitest evaluates a `describe` modifier during
+**collection**, before any hook runs, so the flag was always `false` at the moment it was
+read. The four measurements were unreachable with a key, with fixtures, ever. It reported
+itself as "skipped, needs an API key" while being unconditionally dead. Availability is now
+decided synchronously at module load.
+
+**Two bugs of mine in the same area**, both introduced when I split fabricated from recorded
+fixtures:
+1. `test/setup.ts` redirected `FIXTURE_DIR` to a temp dir for *every* run, so
+   `pnpm guardrails:record` threw away the 160 fixtures it had just paid to record — it
+   reported success in two seconds having persisted nothing. The redirect now applies only
+   when not recording.
+2. Replay looked *only* in the temp dir, so committed fixtures were invisible and the
+   measurement skipped instead of replaying. My first fix — a read-through fallback to the
+   committed directory — broke **38 tests**, because lane 5's judge helper works by
+   *provoking* `MissingFixtureError` to learn the key it needs, and a fallback that finds a
+   real fixture defeats that. The root is now resolved per call and a test file chooses which
+   directory it wants; exactly one is live at a time.
+
+Also raised `hookTimeout` for live runs (160 calls in one `beforeAll` does not fit in 60s,
+and the timeout read as a classifier failure) and gave the corpus loop a 6-way pool.
+
+**Gates:** lint ✅ · typecheck ✅ · **894 pass, 0 fail**, skips down from 15 to 11.
+**Live spend to date: $3.30.**
+
+This also establishes the **baseline Jev has to beat** (DECISIONS #106 condition 1): 100.0%
+refuse recall and 1.2% false-refusal on the same 271-entry corpus.

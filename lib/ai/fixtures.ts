@@ -10,13 +10,28 @@ import { dirname, join } from 'node:path'
  * Replay with:  pnpm test        (the default)
  */
 
+/** Fixtures recorded from real responses. Committed (kickoff rule 3). */
+export const RECORDED_ROOT = join(process.cwd(), 'test', 'fixtures', 'model')
+
 /**
- * Fixtures recorded from real responses live here and are committed (kickoff rule 3).
- * FIXTURE_DIR lets the test suite redirect synthetic, test-fabricated fixtures to a temp
- * directory, so hand-made payloads can never be mistaken for recorded ones.
+ * Where a fixture is WRITTEN. `FIXTURE_DIR` lets the suite send test-fabricated payloads to a
+ * temp directory so a hand-made response can never be mistaken for a recorded one.
  */
-export const FIXTURE_ROOT =
-  process.env.FIXTURE_DIR ?? join(process.cwd(), 'test', 'fixtures', 'model')
+export const FIXTURE_ROOT = process.env.FIXTURE_DIR ?? RECORDED_ROOT
+
+/**
+ * Resolved PER CALL, not at module load.
+ *
+ * A test file that wants the committed fixtures deletes `FIXTURE_DIR` at its top; one that
+ * fabricates payloads keeps the temp directory `test/setup.ts` provides. Reading the env once
+ * at import time made that depend on module order, and a read-through fallback is worse: the
+ * judge-fixture helper works by PROVOKING MissingFixtureError to learn the key it needs, so a
+ * fallback that finds a recorded fixture instead breaks 38 tests. Exactly one directory is
+ * live at a time, and the test file decides which.
+ */
+function fixtureRoot(): string {
+  return process.env.FIXTURE_DIR ?? RECORDED_ROOT
+}
 
 export interface FixturePayload {
   /** Echoed for human readability when reviewing a diff; not part of the key. */
@@ -77,14 +92,19 @@ function sortKeys(value: unknown): unknown {
   return value
 }
 
-function fixturePath(purpose: string, key: string): string {
-  return join(FIXTURE_ROOT, purpose, `${key}.json`)
+function fixturePath(purpose: string, key: string, root: string = fixtureRoot()): string {
+  return join(root, purpose, `${key}.json`)
 }
 
 export function readFixture(purpose: string, key: string): FixturePayload | null {
   const path = fixturePath(purpose, key)
   if (!existsSync(path)) return null
   return JSON.parse(readFileSync(path, 'utf8')) as FixturePayload
+}
+
+/** The directory a replay would search right now. */
+export function fixtureReadRoots(): readonly string[] {
+  return [fixtureRoot()]
 }
 
 export function writeFixture(purpose: string, key: string, payload: FixturePayload): string {

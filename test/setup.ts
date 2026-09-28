@@ -12,12 +12,19 @@ process.env.SUPABASE_ANON_KEY ??= 'test-anon-key'
 process.env.SUPABASE_SERVICE_ROLE_KEY ??= 'test-service-role-key'
 
 /**
- * Tests that fabricate a fixture write into a temp directory, so `test/fixtures/model/`
+ * Tests that FABRICATE a fixture write into a temp directory, so `test/fixtures/model/`
  * stays reserved for fixtures recorded from real API responses (kickoff rule 3).
- * A test that needs a *recorded* fixture unsets FIXTURE_DIR for itself.
+ *
+ * But a RECORDING run must write to the real directory, or the fixtures it just paid for are
+ * thrown away - which is what happened on the first attempt at `pnpm guardrails:record`: it
+ * reported success in two seconds having persisted nothing. So the redirect applies only when
+ * we are not recording.
  */
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-process.env.FIXTURE_DIR ??= mkdtempSync(join(tmpdir(), 'storytime-fixtures-'))
+const RECORDING = process.env.RECORD_FIXTURES === '1' || process.env.RECORD_FIXTURES === 'true'
+if (!RECORDING) {
+  process.env.FIXTURE_DIR ??= mkdtempSync(join(tmpdir(), 'storytime-fixtures-'))
+}
