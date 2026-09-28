@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { countWords, wordCountWithinTolerance } from '@/lib/schemas'
+import { EVAL_PASS_CRITERIA, countWords, wordCountWithinTolerance } from '@/lib/schemas'
 import { runCalibration } from '@/lib/eval/calibration'
 import { narrativeWordCount } from '@/lib/eval/render'
 import { REFERENCE_FILES, loadReferenceCases, referenceCase, toJudgeable } from '@/lib/eval/references'
@@ -28,6 +28,7 @@ import type { JudgeScoreWithExcerpts } from '@/lib/eval/judge'
  */
 
 const cases = loadReferenceCases()
+const REFERENCE_COUNT = cases.length
 const ALL_FIVES = { center: 5, craft: 5, facts: 5, age_fit: 5, continuity: 5, delight: 5 }
 
 describe('§5 sabotage: a child removed from all but one chapter', () => {
@@ -210,6 +211,19 @@ function scriptedJudge(opts: {
   let scoreCall = 0
   let pairwiseCall = 0
   const s = opts.sabotageScores ?? {}
+  /**
+   * Counted in UNIQUE PAYLOAD KEYS, not in calls.
+   *
+   * `withScriptedJudge` fabricates one fixture per key and replays it thereafter, and the
+   * `calibration_repeats` repeats of a reference send an identical payload - so all three
+   * collapse to one fabrication plus two replays. The script is therefore consulted once per
+   * reference, and the sabotage rows begin at REFERENCE_COUNT + 1 however many repeats run.
+   *
+   * Which is the honest limit of repeating in fixture mode: it buys nothing here, because a
+   * replay cannot disagree with itself. The repeat only measures anything LIVE, where the
+   * judge is nondeterministic - which is exactly where the 0.35 spread came from.
+   */
+  const REF_CALLS = REFERENCE_COUNT
   return ({ purpose }) => {
     if (purpose === 'judge_pairwise') {
       const verdicts = opts.pairwise ?? ['A', 'B']
@@ -218,8 +232,8 @@ function scriptedJudge(opts: {
       return pairwiseResponse(verdict, opts.pairwiseConfidence ?? 0.85)
     }
     scoreCall += 1
-    if (scoreCall <= 4) return scoreResponse(ALL_FIVES)
-    if (scoreCall === 5) {
+    if (scoreCall <= REF_CALLS) return scoreResponse(ALL_FIVES)
+    if (scoreCall === REF_CALLS + 1) {
       return scoreResponse(s.center ?? { ...ALL_FIVES, center: 2 }, {
         evidence: {
           center: 'Phoenix is named in the goodnight line and in one chapter, and does nothing anywhere else.',
@@ -231,7 +245,7 @@ function scriptedJudge(opts: {
         },
       })
     }
-    if (scoreCall === 6) {
+    if (scoreCall === REF_CALLS + 2) {
       return scoreResponse(s.facts ?? { ...ALL_FIVES, facts: 2 }, {
         evidence: {
           center: 'ok',
@@ -245,7 +259,7 @@ function scriptedJudge(opts: {
         },
       })
     }
-    if (scoreCall === 7) {
+    if (scoreCall === REF_CALLS + 3) {
       return scoreResponse(s.peril ?? { ...ALL_FIVES, age_fit: 2 }, {
         evidence: {
           center: 'ok',
@@ -257,6 +271,8 @@ function scriptedJudge(opts: {
         },
       })
     }
+    // delight must drop by >= 2 from the original's 5 (§5, owner's decision): 5 -> 3 is only
+    // 2 if the original is 5, so keep this at 3 and let the assertion do the arithmetic.
     return scoreResponse(s.padding ?? { ...ALL_FIVES, age_fit: 3, delight: 3 })
   }
 }
@@ -268,9 +284,12 @@ describe('§5 calibration checker', () => {
       result.expectations.filter((e) => !e.passed).map((e) => `${e.id}: ${e.detail}`),
     ).toEqual([])
     expect(result.passed).toBe(true)
-    expect(result.judge_calls).toBe(10)
+    // Calls, not unique keys: the repeats replay a cached fixture but still count as calls.
+    expect(result.judge_calls).toBe(
+      REFERENCE_COUNT * EVAL_PASS_CRITERIA.calibration_repeats + 4 + 2,
+    )
     expect(result.expectations.map((e) => e.id)).toEqual([
-      'references_score_at_least_4_5',
+      'references_above_floor',
       'sabotage_heroes',
       'sabotage_facts',
       'sabotage_age_fit_peril',

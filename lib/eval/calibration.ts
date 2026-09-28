@@ -42,7 +42,11 @@ export interface CalibrationReferenceScore {
   word_count: number
   scores_raw: JudgeScore['scores'] | null
   overall_raw: number | null
+  /** Median of `overall_samples`. Null when every run errored. */
   overall_final: number | null
+  /** Every repeat's overall, so a reader can see the spread rather than trust one draw. */
+  overall_samples: number[]
+  overall_spread: number | null
   caps_applied: string[]
   disqualified: boolean
   cap_context: CapContext | null
@@ -103,40 +107,85 @@ export async function runCalibration(
     return res
   }
 
-  // ---- Row 1: the four references, each with its real request. Each overall >= 4.5.
+  /**
+   * ---- Row 1: the four references, each with its real request.
+   *
+   * Scored CALIBRATION_REPEATS times and reduced to a median, because §2 says "report medians
+   * and spreads, not single samples" and the judge's measured overall spread is 0.35 - a
+   * single-sample threshold flapped (the LEGO story scored 4.65 then 4.45 on identical runs).
+   * A floor catches a broken judge; the mean catches drift. Owner's decision 2026-09-28.
+   */
+  const repeats = EVAL_PASS_CRITERIA.calibration_repeats
+  const floor = EVAL_PASS_CRITERIA.calibration_reference_floor
   const scored = new Map<string, Awaited<ReturnType<typeof scoreStory>>>()
+
+  const median = (xs: number[]): number => {
+    const a = [...xs].sort((x, y) => x - y)
+    const m = Math.floor(a.length / 2)
+    return a.length % 2 ? a[m]! : (a[m - 1]! + a[m]!) / 2
+  }
+
   for (const c of cases) {
-    const res = await scoreCase(c)
-    scored.set(c.entry.file, res)
+    const runs: Awaited<ReturnType<typeof scoreStory>>[] = []
+    for (let i = 0; i < repeats; i += 1) runs.push(await scoreCase(c))
+    const ok = runs.filter((r) => r.ok)
+    // The median run is what the other calibration rows compare against.
+    const overalls = ok.map((r) => (r.ok ? r.final.overall : 0))
+    const med = overalls.length > 0 ? median(overalls) : null
+    const representative =
+      ok.find((r) => r.ok && r.final.overall === med) ?? runs.find((r) => r.ok) ?? runs[0]!
+    scored.set(c.entry.file, representative)
     referenceScores.push({
       file: c.entry.file,
       band: c.entry.request.age_band,
       word_count: c.wordCount,
-      scores_raw: res.ok ? res.raw.scores : null,
-      overall_raw: res.ok ? res.raw.overall : null,
-      overall_final: res.ok ? res.final.overall : null,
-      caps_applied: res.ok ? res.final.caps_applied : [],
-      disqualified: res.ok ? res.final.disqualified : false,
-      cap_context: res.ok ? res.capContext : null,
-      judge_error: res.ok ? null : res.reason,
+      scores_raw: representative.ok ? representative.raw.scores : null,
+      overall_raw: representative.ok ? representative.raw.overall : null,
+      overall_final: med,
+      overall_samples: overalls,
+      overall_spread: overalls.length > 0 ? Math.max(...overalls) - Math.min(...overalls) : null,
+      caps_applied: representative.ok ? representative.final.caps_applied : [],
+      disqualified: representative.ok ? representative.final.disqualified : false,
+      cap_context: representative.ok ? representative.capContext : null,
+      judge_error: representative.ok ? null : representative.reason,
     })
   }
 
-  const minRef = EVAL_PASS_CRITERIA.calibration_reference_min
-  const failing = referenceScores.filter(
-    (r) => r.overall_final === null || r.overall_final < minRef,
+  const belowFloor = referenceScores.filter(
+    (r) => r.overall_final === null || r.overall_final < floor,
   )
+  const medians = referenceScores.map((r) => r.overall_final ?? 0)
+  const refMean = medians.reduce((a, b) => a + b, 0) / Math.max(1, medians.length)
+  const drift = Math.abs(refMean - EVAL_PASS_CRITERIA.calibration_baseline_mean)
+  const drifted = drift > EVAL_PASS_CRITERIA.calibration_mean_tolerance
+  const detail = referenceScores
+    .map((r) => `${r.file}=${r.overall_final ?? r.judge_error}[${(r.overall_samples ?? []).join('/')}]`)
+    .join(', ')
+
   expectations.push(
     expectation(
-      'references_score_at_least_4_5',
-      `The four reference stories scored with their original requests each reach overall >= ${minRef}`,
-      failing.length === 0,
-      failing.length === 0
-        ? referenceScores.map((r) => `${r.file}=${r.overall_final}`).join(', ')
-        : `below the bar: ${failing
-            .map((r) => `${r.file}=${r.overall_final ?? r.judge_error}`)
-            .join('; ')}. §5: fix the judge prompt, never the references.`,
-      { per_story: referenceScores.map((r) => ({ file: r.file, overall: r.overall_final })) },
+      'references_above_floor',
+      `Each of the four references medians >= ${floor} over ${repeats} runs (the mean is reported, not gated)`,
+      belowFloor.length === 0,
+      belowFloor.length === 0
+        ? `mean of medians ${refMean.toFixed(3)} vs ${EVAL_PASS_CRITERIA.calibration_baseline_mean} baseline (drift ${drift.toFixed(3)}); ${detail}` +
+            (drifted
+              ? ` — WARNING: the mean moved ${drift.toFixed(2)}, beyond the ${EVAL_PASS_CRITERIA.calibration_mean_tolerance} measured spread. A human should look before trusting this run.`
+              : '')
+        : `below the ${floor} floor: ${belowFloor.map((r) => `${r.file}=${r.overall_final ?? r.judge_error}`).join('; ')}. §5: fix the judge prompt, never the references.`,
+      {
+        per_story: referenceScores.map((r) => ({
+          file: r.file,
+          median: r.overall_final,
+          samples: r.overall_samples,
+          spread: r.overall_spread,
+        })),
+        mean_of_medians: Number(refMean.toFixed(3)),
+        baseline_mean: EVAL_PASS_CRITERIA.calibration_baseline_mean,
+        drift_from_baseline: Number(drift.toFixed(3)),
+        mean_is_gated: false,
+        drift_warning: drifted,
+      },
     ),
   )
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { EVAL_PASS_CRITERIA } from '@/lib/schemas'
 import { mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -10,6 +11,9 @@ import { nextResultPath, writeResultFile } from '@/lib/eval/results'
 import { syntheticProvider } from '@/lib/eval/synthetic'
 import { pairwiseResponse, scoreResponse, withScriptedJudge } from '../helpers/judge-fixtures'
 import type { JudgeScoreWithExcerpts } from '@/lib/eval/judge'
+
+/** The four reference stories the §5 calibration set scores. */
+const REFERENCE_FILE_COUNT = 4
 
 /**
  * JUDGE_AGENT.md §7:
@@ -176,8 +180,13 @@ describe('§7 bake-off harness: 1 scenario × 2 contestants × 1 sample in fixtu
     expect('skipped' in result.calibration).toBe(false)
     if ('skipped' in result.calibration) throw new Error('unreachable')
     expect(result.calibration.passed).toBe(true)
-    expect(result.calibration.judge_calls).toBe(10)
-    expect(renderBakeoffReport(result)).toContain('**PASS** — 10 judge calls')
+    // 4 references x calibration_repeats (§2: medians, not single samples) + 4 sabotages
+    // + 2 pairwise orders. Derived so a change to the repeat count does not silently pass.
+    expect(result.calibration.judge_calls).toBe(
+      REFERENCE_FILE_COUNT * EVAL_PASS_CRITERIA.calibration_repeats + 4 + 2,
+    )
+    const calls = REFERENCE_FILE_COUNT * EVAL_PASS_CRITERIA.calibration_repeats + 4 + 2
+    expect(renderBakeoffReport(result)).toContain(`**PASS** — ${calls} judge calls`)
   })
 
   it('refuses to produce any numbers when calibration fails', async () => {

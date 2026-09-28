@@ -27,7 +27,7 @@ verification tests named in each feature's section (plus `GUARDRAILS.md` §7 and
 | F10 | New-story flow (UI) | 5 | 0 | ⬜ not started | 4 |
 | F11 | Safety, privacy and content policy | 5 | 0 | ⬜ not started | 1 + 4 |
 | F12 | Admin dashboard | 3 | 3 | ✅ **done** — owner gate 404s, view arithmetic, 80% hit rate | 3 |
-| F13 | Quality evaluation harness | 3 | 2 | 🟡 merged; harness green in fixture mode. Live run blocked on F6 **and** on credentials | 5 |
+| F13 | Quality evaluation harness | 3 | 2 | 🟡 **judge calibration PASSES 6/6 live.** Full eval run still to do | 5 |
 | F14 | Model bake-off | 6 | 5 | 🟡 merged; 5/6. Live calibration VT written and skipped — needs credentials. **$54.79 run needs owner approval** | 5 |
 | F15 | Guardrails | 10 | 8 | 🟡 **L1+L2 measured live: refuse recall 100.0% (136/136), allow false-refusal 1.2% (1/85)**. 2 VTs need F10's UI | 6 |
 | F11 | Safety, privacy and content policy | 5 | 4 | 🟡 sanitizer, rate limit, privacy page, schema assertion green; the must-refuse topic VT is lane 6's L2 | 1 + 4 + 6 |
@@ -535,3 +535,36 @@ and the timeout read as a classifier failure) and gave the corpus loop a 6-way p
 
 This also establishes the **baseline Jev has to beat** (DECISIONS #106 condition 1): 100.0%
 refuse recall and 1.2% false-refusal on the same 271-entry corpus.
+
+### 2026-09-28 — judge calibration PASSES, 6/6
+
+| Row | Result |
+|---|---|
+| references above floor | ✅ medians 4.65 / 4.50 / 4.25 / 4.25, mean 4.412 vs 4.37 baseline (drift 0.042) |
+| `center ≤ 2` (Phoenix removed) | ✅ **center=1** |
+| `facts ≤ 2` (3 invented dates) | ✅ named 3/3 unprompted |
+| `age_fit ≤ 2` (band A chase) | ✅ **age_fit=1** |
+| padding | ✅ delight **4→2** |
+| pairwise, both orders | ✅ 0.95 / 0.95 |
+
+Getting here took three owner decisions and one correction of my own:
+
+1. **The owner rewrote §3** — criterion 1 became "Children at the center", scoring presence and
+   agency rather than problem-solving, with a counting procedure and worked examples. That
+   alone moved the references from a 3.95 mean to 4.55, sharks from 3.25 to 4.55. **My earlier
+   claim that the references were flawed and the bar was wrong was mistaken**: I read the
+   judge's faithful application of a bad rubric as evidence about the stories.
+2. **Per-child counting** (owner-approved): the old rule marked a chapter if *any* named child
+   acted, so with Cruz active throughout, the Phoenix-removed sabotage could not score below
+   the silence cap's floor of 3 and §5's `≤2` was unreachable.
+3. **Padding scored on delight, not age fit** (owner-approved): §3 already owns length
+   mechanically, and this padding sits inside the tolerance.
+4. **My own error, corrected**: I gated on "mean of medians ≥ 4.4" because one measurement read
+   4.413 — and the next read 4.325 and failed. Exactly the fitted-threshold mistake I had
+   argued against two decisions earlier. The floor now gates (4.0, principled, ~0.25 headroom)
+   and the mean only reports against a baseline with a drift warning.
+
+**Live spend: $10.84.** `main`: lint ✅ typecheck ✅ **894 pass, 0 fail.**
+
+Next, in order: lane 2's pipeline fixtures ($0.75), `pnpm eval` ($3.44), `pnpm bakeoff` ($33.08,
+owner-approved, Opus 5.5 judging with Fable 5.1 as second judge).

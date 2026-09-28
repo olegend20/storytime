@@ -1,0 +1,352 @@
+{
+  "ran_at": "2026-09-28T16:10:20.547Z",
+  "judge_model": "claude-opus-5-5",
+  "judge_prompt": {
+    "version": "judge.v2",
+    "sha256": "62b723f2fbaec7b2"
+  },
+  "passed": true,
+  "expectations": [
+    {
+      "id": "references_above_floor",
+      "description": "Each of the four references medians >= 4 over 3 runs (the mean is reported, not gated)",
+      "passed": true,
+      "detail": "mean of medians 4.412 vs 4.37 baseline (drift 0.042); cruz-and-phoenix-lego-story.md=4.25[4.25/4.1/4.45], lennon-and-the-lost-levels.md=4.65[4.65/4.65/4.65], cruz-and-phoenix-shark-submarine.md=4.5[4.65/4.4/4.5], lennon-the-beautiful-game.md=4.25[4.25/4.15/4.35]",
+      "observed": {
+        "per_story": [
+          {
+            "file": "cruz-and-phoenix-lego-story.md",
+            "median": 4.25,
+            "samples": [
+              4.25,
+              4.1,
+              4.45
+            ],
+            "spread": 0.35000000000000053
+          },
+          {
+            "file": "lennon-and-the-lost-levels.md",
+            "median": 4.65,
+            "samples": [
+              4.65,
+              4.65,
+              4.65
+            ],
+            "spread": 0
+          },
+          {
+            "file": "cruz-and-phoenix-shark-submarine.md",
+            "median": 4.5,
+            "samples": [
+              4.65,
+              4.4,
+              4.5
+            ],
+            "spread": 0.25
+          },
+          {
+            "file": "lennon-the-beautiful-game.md",
+            "median": 4.25,
+            "samples": [
+              4.25,
+              4.15,
+              4.35
+            ],
+            "spread": 0.1999999999999993
+          }
+        ],
+        "mean_of_medians": 4.412,
+        "baseline_mean": 4.37,
+        "drift_from_baseline": 0.042,
+        "mean_is_gated": false,
+        "drift_warning": false
+      }
+    },
+    {
+      "id": "sabotage_heroes",
+      "description": "LEGO story with Phoenix's name removed from all but one chapter scores center <= 2",
+      "passed": true,
+      "detail": "center=1 (raw), kept in \"Chapter 1: The Carpenter in Billund\", 12 mentions removed. Evidence: Cruz acts in nearly every chapter, but Phoenix is the worst-covered child and appears by name only in Chapter 1 (\"Uh oh,\" \"What are you making?\", pulling the duck). From Chapter 2 onward, lines that should be his go to Cruz: \"said Cruz... said Cruz\", \"Cruz grabbed Cruz's hand\", \"Cruz carried planks. Cruz handed out nails.\" and \"said Cruz, with a big grin.\" Phoenix is active in 1 of 10 chapters, which scores 1. The rule capping a child silent for three or more consecutive chapters also applies. No likes were stated, so there is no likes deduction.",
+      "observed": {
+        "scores_raw": {
+          "center": 1,
+          "craft": 4,
+          "facts": 4,
+          "age_fit": 3,
+          "continuity": 4,
+          "delight": 3
+        },
+        "kept_chapter": 0
+      }
+    },
+    {
+      "id": "sabotage_facts",
+      "description": "Soccer story with three invented dates scores facts <= 2 and the evidence names at least two of them",
+      "passed": true,
+      "detail": "facts=2 (raw); named 3/3 injected dates (1847, 1911, 1926). Evidence: Three headline dates are wrong, and the True Facts list repeats them. The Football Association was founded in 1863, not '1847'. The penalty kick entered the Laws in 1891, not '1911', which also misdates the goal-net aside. The first World Cup was in 1930, not '1926'. The 'Newspapers... thought there must have been a typo' story is a popular legend told without a hedge. Much else is right and well woven into action: the two balls in the Uruguay–Argentina final, the 4–2 score, Pickles, the traffic-light cards, the Dick, Kerr Ladies ban and Messi in 2022.",
+      "observed": {
+        "scores_raw": {
+          "center": 5,
+          "craft": 4,
+          "facts": 2,
+          "age_fit": 5,
+          "continuity": 5,
+          "delight": 4
+        },
+        "injected": [
+          {
+            "wrong": "1847",
+            "right": "1863",
+            "what": "the founding of the Football Association"
+          },
+          {
+            "wrong": "1911",
+            "right": "1891",
+            "what": "the penalty kick entering the rules"
+          },
+          {
+            "wrong": "1926",
+            "right": "1930",
+            "what": "the first World Cup"
+          }
+        ],
+        "named_dates": [
+          "1847",
+          "1911",
+          "1926"
+        ],
+        "fact_sourcing": "unverifiable_no_fact_pack"
+      }
+    },
+    {
+      "id": "sabotage_age_fit_peril",
+      "description": "Shark story where the great white chases and rams the submarine scores age_fit <= 2 for band A",
+      "passed": true,
+      "detail": "age_fit=1 (raw); word count 1851 -> 1826, length effectively unchanged so this is peril and not padding. Evidence: For band A the rule is that nothing chases anyone, yet Chapter 6 has a great white that \"chased them through the dark\". It also includes an injury (\"Cruz smashed his shoulder into the wall\"), a cracked window, water leaking in, and silent dread. This is far past the peril level for a 4-year-old. The word count of 1826 is within the ±15% tolerance.",
+      "observed": {
+        "scores_raw": {
+          "center": 5,
+          "craft": 3,
+          "facts": 3,
+          "age_fit": 1,
+          "continuity": 4,
+          "delight": 3
+        },
+        "disqualified_by_judge": true,
+        "word_count_before": 1851,
+        "word_count_after": 1826
+      }
+    },
+    {
+      "id": "sabotage_padding",
+      "description": "Video-game story padded with 900 words of repeated description drops delight by >= 2 versus the original",
+      "passed": true,
+      "detail": "delight=2 vs original 4 (drop 2, need >= 2); age_fit=4 recorded but not asserted; 2471 -> 3390 words, STILL inside the ±15% tolerance, so the word-count cap does not fire and this row rests entirely on the judge noticing the padding",
+      "observed": {
+        "scores_raw": {
+          "center": 5,
+          "craft": 3,
+          "facts": 5,
+          "age_fit": 4,
+          "continuity": 5,
+          "delight": 2
+        },
+        "original_delight": 4,
+        "words_added": 919,
+        "still_within_tolerance": true
+      }
+    },
+    {
+      "id": "pairwise_original_beats_sabotage",
+      "description": "Pairwise: the original LEGO story beats the sabotaged copy in both orders with confidence >= 0.7",
+      "passed": true,
+      "detail": "original won both orders; confidences 0.95 and 0.95",
+      "observed": {
+        "verdict": "A",
+        "flipped": false,
+        "first_order_verdict": "A",
+        "swapped_order_verdict": "B",
+        "swapped_as_first_terms": "A",
+        "confidences": [
+          0.95,
+          0.95
+        ]
+      }
+    }
+  ],
+  "reference_scores": [
+    {
+      "file": "cruz-and-phoenix-lego-story.md",
+      "band": "A",
+      "word_count": 1540,
+      "scores_raw": {
+        "center": 4,
+        "craft": 4,
+        "facts": 4,
+        "age_fit": 4,
+        "continuity": 5,
+        "delight": 5
+      },
+      "overall_raw": 4.25,
+      "overall_final": 4.25,
+      "overall_samples": [
+        4.25,
+        4.1,
+        4.45
+      ],
+      "overall_spread": 0.35000000000000053,
+      "caps_applied": [
+        "none"
+      ],
+      "disqualified": false,
+      "cap_context": {
+        "guardrailBreach": false,
+        "inventedFact": false,
+        "wordCountOutOfRange": false,
+        "narrativeWordCount": 1540,
+        "target": {
+          "min": 1300,
+          "max": 1700
+        },
+        "factSourcing": "unverifiable_no_fact_pack",
+        "notes": [
+          "no F7 gate result available: guardrail breach rests on the judge alone",
+          "unsourced_fact NOT evaluated: no fact pack, so true_facts fact_ids are unverifiable (synthetic for the reference stories). Only the judge's own reading of the facts counts."
+        ]
+      },
+      "judge_error": null
+    },
+    {
+      "file": "lennon-and-the-lost-levels.md",
+      "band": "C",
+      "word_count": 2471,
+      "scores_raw": {
+        "center": 5,
+        "craft": 4,
+        "facts": 5,
+        "age_fit": 5,
+        "continuity": 5,
+        "delight": 4
+      },
+      "overall_raw": 4.65,
+      "overall_final": 4.65,
+      "overall_samples": [
+        4.65,
+        4.65,
+        4.65
+      ],
+      "overall_spread": 0,
+      "caps_applied": [
+        "none"
+      ],
+      "disqualified": false,
+      "cap_context": {
+        "guardrailBreach": false,
+        "inventedFact": false,
+        "wordCountOutOfRange": false,
+        "narrativeWordCount": 2471,
+        "target": {
+          "min": 2200,
+          "max": 3200
+        },
+        "factSourcing": "unverifiable_no_fact_pack",
+        "notes": [
+          "no F7 gate result available: guardrail breach rests on the judge alone",
+          "unsourced_fact NOT evaluated: no fact pack, so true_facts fact_ids are unverifiable (synthetic for the reference stories). Only the judge's own reading of the facts counts."
+        ]
+      },
+      "judge_error": null
+    },
+    {
+      "file": "cruz-and-phoenix-shark-submarine.md",
+      "band": "A",
+      "word_count": 1851,
+      "scores_raw": {
+        "center": 5,
+        "craft": 5,
+        "facts": 4,
+        "age_fit": 4,
+        "continuity": 5,
+        "delight": 4
+      },
+      "overall_raw": 4.5,
+      "overall_final": 4.5,
+      "overall_samples": [
+        4.65,
+        4.4,
+        4.5
+      ],
+      "overall_spread": 0.25,
+      "caps_applied": [
+        "none"
+      ],
+      "disqualified": false,
+      "cap_context": {
+        "guardrailBreach": false,
+        "inventedFact": false,
+        "wordCountOutOfRange": false,
+        "narrativeWordCount": 1851,
+        "target": {
+          "min": 1300,
+          "max": 1700
+        },
+        "factSourcing": "unverifiable_no_fact_pack",
+        "notes": [
+          "no F7 gate result available: guardrail breach rests on the judge alone",
+          "unsourced_fact NOT evaluated: no fact pack, so true_facts fact_ids are unverifiable (synthetic for the reference stories). Only the judge's own reading of the facts counts."
+        ]
+      },
+      "judge_error": null
+    },
+    {
+      "file": "lennon-the-beautiful-game.md",
+      "band": "C",
+      "word_count": 2633,
+      "scores_raw": {
+        "center": 4,
+        "craft": 4,
+        "facts": 4,
+        "age_fit": 5,
+        "continuity": 5,
+        "delight": 4
+      },
+      "overall_raw": 4.25,
+      "overall_final": 4.25,
+      "overall_samples": [
+        4.25,
+        4.15,
+        4.35
+      ],
+      "overall_spread": 0.1999999999999993,
+      "caps_applied": [
+        "none"
+      ],
+      "disqualified": false,
+      "cap_context": {
+        "guardrailBreach": false,
+        "inventedFact": false,
+        "wordCountOutOfRange": false,
+        "narrativeWordCount": 2633,
+        "target": {
+          "min": 2200,
+          "max": 3200
+        },
+        "factSourcing": "unverifiable_no_fact_pack",
+        "notes": [
+          "no F7 gate result available: guardrail breach rests on the judge alone",
+          "unsourced_fact NOT evaluated: no fact pack, so true_facts fact_ids are unverifiable (synthetic for the reference stories). Only the judge's own reading of the facts counts."
+        ]
+      },
+      "judge_error": null
+    }
+  ],
+  "judge_calls": 18,
+  "cost_usd": 1.565068,
+  "notes": [
+    "§5: if an expectation fails, fix the judge prompt - never the reference stories.",
+    "The five sabotage/pairwise rows are checked against the judge's RAW criterion scores, before our automatic caps, so no row can pass because of our own arithmetic.",
+    "The reference stories predate fact packs, so `unsourced_fact` is recorded as unverifiable rather than passed (see lib/eval/caps.ts).",
+    "Manifest note: references 1 and 3 use British spelling, 2 and 4 American. The app defaults to American; prompts/judge.v2.md instructs the judge not to deduct for either.",
+    "Two of the four references carry 11 headed sections and do not validate against StoryOutput (DECISIONS.md #25), so calibration scores the looser JudgeableStory shape."
+  ]
+}
