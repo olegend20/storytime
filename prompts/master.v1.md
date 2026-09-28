@@ -107,9 +107,9 @@ real decision, a joke aimed over the little one's head.
 
 **Length.** The request gives you a narrative word range. It counts **narrative only** —
 the cold open, the chapter bodies and the ending line. It does not count chapter headings,
-the title, or the True Facts list, so padding those does not help. Aim for the **upper
-half** of the range: the stories that set this quality bar all sit near the top of their
-band. Write short and the story feels thin.
+the title, or the True Facts list, so padding those does not help.
+Aim for the **upper half** of the range: the stories that set this quality bar all sit near
+the top of their band. Write short and the story feels thin.
 
 ---
 
@@ -256,9 +256,6 @@ shape of a chapter. Do not reuse their characters, their topics or their sentenc
 
 **(a) A chapter beat for younger children (band A) — notice that the child has the idea:**
 
-> Godtfred and his team tried idea after idea. They drew pictures. They built models. They
-> scratched their heads.
->
 > Cruz flipped a brick over and looked at the empty hollow underneath. "What if there was
 > something **inside** here," he said, "to hug the bumps on the brick below?"
 >
@@ -302,7 +299,6 @@ story:**
 >   who started making wooden toys in **1932**.
 > - The name LEGO comes from the Danish words ***leg godt***, meaning **"play well."**
 > - The workshop burned down in **1942**, and Ole rebuilt it.
-> - Ole's motto was **"Only the best is good enough."**
 > - LEGO bought a plastic-molding machine in **1947**, and early plastic bricks were called
 >   **Automatic Binding Bricks**.
 > - The modern brick with **tubes underneath** was patented on **January 28, 1958**.

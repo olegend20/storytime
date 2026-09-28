@@ -28,6 +28,9 @@ export class TopicNormalizationError extends Error {
 export function slugifyTopicKey(raw: string): string {
   const slug = raw
     .normalize('NFKD')
+    // Drop the combining marks NFKD just split off, or "Pokémon" would key as
+    // "poke-mon" and split one shared fact pack into two.
+    .replace(/\p{M}+/gu, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')

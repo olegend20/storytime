@@ -60,11 +60,19 @@ export class StoryStreamParser {
     this.scanner.feed(chunk)
   }
 
-  /** Flush anything held back. Safe to call more than once. */
+  /**
+   * Flush anything held back and close every chapter still open. Safe to call twice.
+   *
+   * A truncated response (the model hit max_tokens mid-chapter) leaves the last chapter
+   * object unclosed, so nothing would emit its `chapter_end` and the client would render an
+   * unfinished chapter forever. Closing here means the stream is always well-formed even
+   * when the model's output is not.
+   */
   end(): void {
     this.scanner.end()
     this.maybeEmitMeta(true)
-    for (const index of [...this.pending.keys()].sort((a, b) => a - b)) {
+    const open = new Set<number>([...this.pending.keys(), ...this.started])
+    for (const index of [...open].sort((a, b) => a - b)) {
       this.closeChapter(index)
     }
   }
