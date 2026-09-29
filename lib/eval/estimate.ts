@@ -41,11 +41,16 @@ export const STORY_CALL_TOKENS = {
    *
    * `max_content_tokens` would bound the input directly, but it is a **web_fetch** parameter -
    * web_search rejects it with a 400. So the only lever is the search COUNT, now 5 instead of
-   * 8, which scales the measured 506k to roughly 320k. Re-measure after the next build and
-   * correct this again if it is still off: an estimate that is quietly wrong about its largest
-   * term is worse than no estimate.
+   * 8. Re-measure after the next build and correct this again if it is still off: an estimate
+   * that is quietly wrong about its largest term is worse than no estimate.
+   *
+   * RE-MEASURED 2026-09-28 evening, at 5 searches: the 320k guess was low because the only
+   * builds that had ever finished were the ones under undici's 300s headers timeout. With
+   * that fixed (calls over 300s stream), full-length builds measured 772,072 / 31,004 and
+   * 768,614 / 23,317 input/output - ~$1.85 each. Input grows faster than the search count,
+   * since every search result is re-read on each later turn of the tool loop.
    */
-  factpack: { input: 320_000, output: 8_000, webSearches: 5 },
+  factpack: { input: 770_000, output: 27_000, webSearches: 5 },
 } as const
 
 export interface CostLine {
@@ -155,16 +160,23 @@ export function estimateCalibrationCost(judge: string = modelForRole('judge_prim
 }
 
 export function estimateEvalCost(
-  opts: { writer?: string; judge?: string; scenarios?: EvalScenario[]; includeCalibration?: boolean } = {},
+  opts: {
+    writer?: string
+    judge?: string
+    scenarios?: EvalScenario[]
+    includeCalibration?: boolean
+    /** Topics whose pack is already `ready`: shared, so this run pays nothing for them. */
+    builtTopics?: ReadonlySet<string>
+  } = {},
 ): CostEstimate {
   const writer = opts.writer ?? modelForRole('writer')
   const judge = opts.judge ?? modelForRole('judge_primary')
   const scenarios = opts.scenarios ?? evalScenarios()
   const lines: CostLine[] = []
 
-  const topics = new Set(scenarios.map((s) => s.topic_key))
+  const topics = new Set(scenarios.map((s) => s.topic_key).filter((t) => !opts.builtTopics?.has(t)))
   lines.push({
-    what: `fact packs for ${topics.size} distinct topic(s)`,
+    what: `fact packs for ${topics.size} distinct topic(s) not yet built`,
     calls: topics.size,
     model: modelForRole('factpack'),
     usd:
@@ -194,7 +206,9 @@ export function estimateEvalCost(
   })
 
   const assumptions = [
-    'Every topic needs a new fact pack. Once the library is warm this term goes to near zero.',
+    opts.builtTopics
+      ? `Fact packs already \`ready\` are shared and cost nothing (${opts.builtTopics.size} found).`
+      : 'Every topic needs a new fact pack (no library lookup was passed).',
     'Story length assumed at the middle of each scenario\'s target range.',
   ]
   if (opts.includeCalibration !== false) {
@@ -217,6 +231,8 @@ export function estimateBakeoffCost(
     judge?: string
     secondJudge?: string
     includeCalibration?: boolean
+    /** Topics whose pack is already `ready`: shared, so this run pays nothing for them. */
+    builtTopics?: ReadonlySet<string>
   } = {},
 ): CostEstimate {
   const contestants = opts.contestants ?? models.bakeoff_contestants
@@ -228,9 +244,9 @@ export function estimateBakeoffCost(
   const pairwiseVsBest = opts.pairwiseVsBest ?? true
   const lines: CostLine[] = []
 
-  const topics = new Set(scenarios.map((s) => s.topic_key))
+  const topics = new Set(scenarios.map((s) => s.topic_key).filter((t) => !opts.builtTopics?.has(t)))
   lines.push({
-    what: `fact packs for ${topics.size} distinct topic(s), built once and shared`,
+    what: `fact packs for ${topics.size} distinct topic(s) not yet built, built once and shared`,
     calls: topics.size,
     model: modelForRole('factpack'),
     usd:
@@ -311,7 +327,9 @@ export function estimateBakeoffCost(
   })
 
   const assumptions = [
-    'Every topic needs a new fact pack; in a warm library this term goes to near zero.',
+    opts.builtTopics
+      ? `Fact packs already \`ready\` are shared and cost nothing (${opts.builtTopics.size} found).`
+      : 'Every topic needs a new fact pack (no library lookup was passed).',
     'Story length assumed at the middle of each scenario\'s target range.',
     'No prompt-cache discount assumed on the judge system block; the real figure will be lower.',
     `Rewrites are not included: a gate failure adds one more writing call. A 10% rewrite rate adds roughly 10% to the generation lines.`,

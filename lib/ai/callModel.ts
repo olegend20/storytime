@@ -53,7 +53,8 @@ export interface CallModelOptions<T = string> {
   /**
    * Per-call HTTP timeout in ms. The SDK default is 10 minutes, which a long server-tool loop
    * can exceed - the fact-pack builder runs web search and timed out three times in a row,
-   * burning 902s. Set generously for tool-loop calls.
+   * burning 902s. Set generously for tool-loop calls. Above 300s the call streams
+   * (see UNDICI_HEADERS_TIMEOUT_MS), or Node's fetch cuts it off at 300s regardless.
    */
   timeoutMs?: number
   /** Log correlation. */
@@ -98,6 +99,28 @@ export function getDefaultLogSink(): GenerationLogSink {
   return defaultSink
 }
 
+/**
+ * Counts a run's rows (a `MemoryLogSink`) AND forwards each one to the default sink, which a
+ * CLI has pointed at `generation_logs`. Passing a plain `MemoryLogSink` as `sink` REPLACES
+ * the default, so the run's spend is counted locally and never persisted - the leak that hid
+ * the eval, bake-off and reliability CLIs from /admin.
+ */
+export class MeteredLogSink extends MemoryLogSink {
+  private readonly forward: GenerationLogSink
+  constructor(forward: GenerationLogSink = getDefaultLogSink()) {
+    super()
+    this.forward = forward
+  }
+  override async write(row: GenerationLogRow): Promise<void> {
+    await super.write(row)
+    try {
+      await this.forward.write(row)
+    } catch (err) {
+      console.warn(`[costs] forwarding a log row failed: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+}
+
 let client: Anthropic | null = null
 function anthropic(): Anthropic {
   if (!client) {
@@ -106,6 +129,9 @@ function anthropic(): Anthropic {
   }
   return client
 }
+
+/** undici's default `headersTimeout`. Calls allowed longer than this must stream. */
+const UNDICI_HEADERS_TIMEOUT_MS = 300_000
 
 function isLive(): boolean {
   return process.env.LIVE_API === '1' || process.env.LIVE_API === 'true'
@@ -261,14 +287,31 @@ export async function callModel<T = string>(
   // ---- Live path, with per-attempt logging. ----
   for (let attempt = 1; attempt <= maxRetries + 1; attempt += 1) {
     const started = Date.now()
+    let stream: ReturnType<Anthropic['messages']['stream']> | null = null
+    let deadline: AbortSignal | null = null
     try {
-      const response = (await anthropic().messages.create(
-        request as unknown as Anthropic.MessageCreateParamsNonStreaming,
-        {
-          signal: opts.signal,
-          ...(opts.timeoutMs ? { timeout: opts.timeoutMs } : {}),
-        },
-      )) as unknown as Record<string, unknown>
+      const reqOpts = { signal: opts.signal, ...(opts.timeoutMs ? { timeout: opts.timeoutMs } : {}) }
+      const params = request as unknown as Anthropic.MessageCreateParamsNonStreaming
+      // Node's fetch (undici) gives up on a response whose HEADERS take longer than 300s, and a
+      // non-streaming response sends none until it is complete - so any call over five minutes
+      // died at exactly 300.0s as "Request timed out.", whatever `timeoutMs` said. Streaming
+      // sends headers at once; finalMessage() is the same Message, usage included.
+      //
+      // But the SDK's `timeout` only bounds the wait for headers, so a stream has no total
+      // limit: one fact-pack build ran 50 minutes before the connection dropped. `deadline`
+      // enforces `timeoutMs` over the whole call.
+      let response: Record<string, unknown>
+      if ((opts.timeoutMs ?? 0) > UNDICI_HEADERS_TIMEOUT_MS) {
+        deadline = AbortSignal.timeout(opts.timeoutMs!)
+        const signal = opts.signal ? AbortSignal.any([opts.signal, deadline]) : deadline
+        stream = anthropic().messages.stream(params, { ...reqOpts, signal })
+        response = (await stream.finalMessage()) as unknown as Record<string, unknown>
+      } else {
+        response = (await anthropic().messages.create(params, reqOpts)) as unknown as Record<
+          string,
+          unknown
+        >
+      }
 
       const latencyMs = Date.now() - started
       const usage = normalizeUsage(response.usage)
@@ -316,25 +359,36 @@ export async function callModel<T = string>(
       })
     } catch (err) {
       if (err instanceof ModelRefusalError) throw err
-      const { retryable, status } = isRetryable(err)
+      // Hitting our own deadline is not retried: a second full-length attempt doubles the
+      // cost of a call that has already run long.
+      const timedOut = deadline?.aborted === true && opts.signal?.aborted !== true
+      const { retryable, status } = timedOut ? { retryable: false, status: undefined } : isRetryable(err)
       const latencyMs = Date.now() - started
+      const message = timedOut
+        ? `deadline: exceeded timeoutMs=${opts.timeoutMs}`
+        : err instanceof Error
+          ? err.message
+          : String(err)
 
-      // F8 AC: every call gets a log row, including failures.
+      // F8 AC: every call gets a log row, including failures. A stream that dies partway has
+      // already consumed tokens: log what it reported so far, a LOWER BOUND on what was billed
+      // (the final usage totals only arrive at the end), rather than $0.
+      const partial = stream?.currentMessage?.usage
       await logRow(
         sink,
         opts,
         model,
-        { input_tokens: 0, cache_read_tokens: 0, cache_write_tokens: 0, output_tokens: 0, web_searches: 0 },
+        partial
+          ? normalizeUsage(partial)
+          : { input_tokens: 0, cache_read_tokens: 0, cache_write_tokens: 0, output_tokens: 0, web_searches: 0 },
         latencyMs,
         false,
-        err instanceof Error ? err.message.slice(0, 500) : String(err),
+        `${partial ? '[partial usage, lower bound] ' : ''}${message}`.slice(0, 500),
       )
 
       if (!retryable || attempt === maxRetries + 1) {
         throw new ModelCallError(
-          `${opts.purpose} call to ${model} failed after ${attempt} attempt(s): ${
-            err instanceof Error ? err.message : String(err)
-          }`,
+          `${opts.purpose} call to ${model} failed after ${attempt} attempt(s): ${message}`,
           { purpose: opts.purpose, model, attempts: attempt, retryable, status },
         )
       }

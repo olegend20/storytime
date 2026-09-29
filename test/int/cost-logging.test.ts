@@ -173,6 +173,36 @@ describe.runIf(reachable)('F8 Supabase generation log sink', () => {
     expect(sink.lastError).toMatch(/relation does not exist/)
   })
 
+  it.each([
+    ['a non-uuid story id (the eval harness correlates by `eval:<scenario>`)', 'eval:titanic-band-b'],
+    ['a story id whose row no longer exists', '00000000-0000-4000-8000-000000000000'],
+  ])('keeps the cost when a reference is bad: %s', async (_why, storyId) => {
+    const sink = new SupabaseLogSink(db)
+    const marker = `sink-ref-${Math.random().toString(36).slice(2)}`
+    await sink.write({
+      family_id: null,
+      story_id: storyId,
+      fact_pack_id: null,
+      purpose: 'judge_score' as never,
+      model: 'claude-opus-5-5',
+      input_tokens: 10,
+      cache_read_tokens: 0,
+      cache_write_tokens: 0,
+      output_tokens: 5,
+      cost_usd: 0.123456,
+      latency_ms: 1,
+      ok: true,
+      error: marker,
+    })
+    expect(sink.failedWrites, sink.lastError ?? '').toBe(0)
+
+    const { data } = await db.from('generation_logs').select('id, story_id, cost_usd').eq('error', marker)
+    world.trackLogIds((data ?? []).map((r) => r.id as string))
+    expect(data).toHaveLength(1)
+    expect(data![0]!.story_id).toBeNull()
+    expect(Number(data![0]!.cost_usd)).toBeCloseTo(0.123456, 6)
+  })
+
   it('keeps generation_logs invisible to a client key', async () => {
     const { data, error } = await anon().from('generation_logs').select('id').limit(1)
     // RLS on with no policy: no rows, no error. Never a leak.

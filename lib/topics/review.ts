@@ -113,6 +113,48 @@ export function reviewFactPackDeterministic(candidate: unknown): DeterministicRe
   }
 }
 
+/**
+ * Bring an over-budget candidate under FACT_PACK_TOKEN_LIMIT by dropping facts from the END
+ * (the prompt asks for most-important-first), never below FACT_PACK_MIN_FACTS, then pruning
+ * sources nothing cites any more. Free, and it runs before review.
+ *
+ * Why salvage rather than reject: a build is ~$0.80 of web-search input, and the model cannot
+ * count its own tokens — the first live build landed at 2,092 against 2,000, and rejection
+ * threw all of that research away to fix a 5% overshoot. The cap itself is unchanged: a pack
+ * that is still over budget at the fact floor is rejected by review exactly as before.
+ *
+ * Returns the input untouched when it is not a shape this can safely edit.
+ */
+export function trimFactPackToBudget(candidate: unknown): { candidate: unknown; dropped: number } {
+  const size = (c: unknown) => estimateTokens(JSON.stringify(c ?? null))
+  if (!candidate || typeof candidate !== 'object' || size(candidate) <= FACT_PACK_TOKEN_LIMIT) {
+    return { candidate, dropped: 0 }
+  }
+  const obj = candidate as Record<string, unknown>
+  if (!Array.isArray(obj.facts) || !Array.isArray(obj.sources)) return { candidate, dropped: 0 }
+
+  const facts = [...obj.facts]
+  const withFacts = (kept: unknown[]) => {
+    const cited = new Set(
+      kept.flatMap((f) => {
+        const ids = (f as Record<string, unknown>)?.source_ids
+        return Array.isArray(ids) ? ids : []
+      }),
+    )
+    const sources = (obj.sources as unknown[]).filter((s) =>
+      cited.has((s as Record<string, unknown>)?.id),
+    )
+    return { ...obj, facts: kept, sources }
+  }
+
+  let trimmed = withFacts(facts)
+  while (facts.length > FACT_PACK_MIN_FACTS && size(trimmed) > FACT_PACK_TOKEN_LIMIT) {
+    facts.pop()
+    trimmed = withFacts(facts)
+  }
+  return { candidate: trimmed, dropped: (obj.facts as unknown[]).length - facts.length }
+}
+
 export interface ModelReviewOptions {
   sink?: GenerationLogSink
   factPackId?: string | null

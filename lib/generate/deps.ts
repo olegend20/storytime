@@ -81,6 +81,9 @@ export interface GuardInput {
   topicInput: string
   children: readonly ChildProfile[]
   youngestAge: number
+  /** For `guardrail_events` and cost attribution. */
+  familyId?: string | null
+  sink?: GenerationLogSink
 }
 
 export interface InputGuard {
@@ -120,6 +123,11 @@ export interface GenerationDeps {
   factPackBuilder?: GetOrBuildOptions['builder']
   factPackReviewer?: GetOrBuildOptions['reviewer']
   now?: () => Date
+  /**
+   * The writing model for this run, for the F14 bake-off (each contestant writes through the
+   * real pipeline). Unset in production, where `config/models.json`'s `writer` role decides.
+   */
+  writingModel?: string
 }
 
 export function resolveQuota(deps: GenerationDeps): QuotaService {

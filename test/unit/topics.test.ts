@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   reviewFactPackDeterministic,
+  trimFactPackToBudget,
   slugifyTopicKey,
   parseNormalization,
   webSearchTool,
@@ -92,6 +93,61 @@ describe('F5 VT: the review pass rejects a bad pack, for free', () => {
     expect(review.accept).toBe(true)
     expect(review.reasons).toEqual([])
     expect(review.pack?.topic_key).toBe('history-of-lego')
+  })
+})
+
+describe('F5: an over-budget pack is trimmed from the end, not thrown away', () => {
+  /** 40 one-sentence facts, each citing its own source: realistic shape, well over 2,000. */
+  const oversized = () => {
+    const pack = structuredClone(goodFactPack())
+    pack.facts = Array.from({ length: 40 }, (_, i) => ({
+      ...pack.facts[0]!,
+      id: `f${i + 1}`,
+      text: `Fact number ${i + 1} is one plain sentence of roughly the length a real one runs to.`,
+      source_ids: [`s${i + 1}`],
+    }))
+    pack.sources = pack.facts.map((_, i) => ({
+      id: `s${i + 1}`,
+      title: `Source ${i + 1}`,
+      url: `https://example.com/source/${i + 1}`,
+    }))
+    return pack
+  }
+
+  it('leaves a pack that fits exactly as it was', () => {
+    const pack = goodFactPack()
+    const { candidate, dropped } = trimFactPackToBudget(pack)
+    expect(dropped).toBe(0)
+    expect(candidate).toBe(pack)
+  })
+
+  it('drops facts from the end until review accepts it, and prunes orphaned sources', () => {
+    const pack = oversized()
+    expect(reviewFactPackDeterministic(pack).reasons.join()).toMatch(/pack_too_large/)
+
+    const { candidate, dropped } = trimFactPackToBudget(pack)
+    const review = reviewFactPackDeterministic(candidate)
+    expect(dropped).toBeGreaterThan(0)
+    expect(review.accept).toBe(true)
+    expect(review.tokenEstimate).toBeLessThanOrEqual(FACT_PACK_TOKEN_LIMIT)
+    // A prefix: the model was told the last facts are the ones it would miss least.
+    const kept = review.pack!.facts
+    expect(kept.map((f) => f.id)).toEqual(pack.facts.slice(0, kept.length).map((f) => f.id))
+    expect(review.pack!.sources.map((s) => s.id)).toEqual(kept.map((f) => f.source_ids[0]))
+  })
+
+  it('stops at the fact floor and lets review reject what still does not fit', () => {
+    const pack = structuredClone(goodFactPack())
+    pack.summary = 'x '.repeat(3000)
+    const { candidate } = trimFactPackToBudget(pack)
+    expect((candidate as typeof pack).facts).toHaveLength(12)
+    expect(reviewFactPackDeterministic(candidate).reasons.join()).toMatch(/pack_too_large:\d+/)
+  })
+
+  it('does not touch input it cannot safely edit', () => {
+    expect(trimFactPackToBudget(null)).toEqual({ candidate: null, dropped: 0 })
+    const noFacts = { summary: 'x '.repeat(3000) }
+    expect(trimFactPackToBudget(noFacts).candidate).toBe(noFacts)
   })
 })
 

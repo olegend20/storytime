@@ -4,6 +4,7 @@ import { parentMessage } from '@/lib/messages'
 import type { ErrorBody } from '@/lib/schemas'
 import {
   prepareGeneration,
+  productionDeps,
   runGeneration,
   SseChannel,
   SSE_HEADERS,
@@ -82,11 +83,14 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const body = await request.json().catch(() => null)
-  const prepared = await prepareGeneration((family as { id: string }).id, body)
+  // Quota, budget cap, L1/L2 and L4. Without these the pipeline falls back to stubs that
+  // allow everything (lib/generate/deps.ts) - this line is what makes the guardrails real.
+  const deps = productionDeps()
+  const prepared = await prepareGeneration((family as { id: string }).id, body, deps)
   if (!prepared.ok) return json(prepared.error, prepared.status)
 
   const channel = new SseChannel()
-  const run = runGeneration(prepared.prepared, channel, {}).catch(() => null)
+  const run = runGeneration(prepared.prepared, channel, deps).catch(() => null)
 
   // The bible update is started after `done` and must outlive the streamed response.
   try {

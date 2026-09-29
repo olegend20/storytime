@@ -21,22 +21,19 @@ export class SupabaseLogSink implements GenerationLogSink {
   }
 
   async write(row: GenerationLogRow): Promise<void> {
-    const db = this.client ?? supabaseService()
-    const { error } = await db.from('generation_logs').insert({
-      family_id: row.family_id,
-      story_id: row.story_id,
-      fact_pack_id: row.fact_pack_id,
-      purpose: row.purpose,
-      model: row.model,
-      input_tokens: row.input_tokens,
-      cache_read_tokens: row.cache_read_tokens,
-      cache_write_tokens: row.cache_write_tokens,
-      output_tokens: row.output_tokens,
-      cost_usd: row.cost_usd,
-      latency_ms: row.latency_ms,
-      ok: row.ok,
-      error: row.error,
-    })
+    let { error } = await this.insert(row, true)
+    if (error && (error.code === INVALID_TEXT_REPRESENTATION || error.code === FOREIGN_KEY_VIOLATION)) {
+      /**
+       * A reference that is not a UUID (the eval harness correlates by ids like
+       * `eval:titanic-band-b`) or no longer exists (an eval family cleaned up before its
+       * judge call was logged). The COST is the point of this table: keep the row and drop
+       * the references rather than lose the spend.
+       */
+      console.warn(
+        `[costs] generation_logs: ${error.message} - logging ${row.purpose}/${row.model} without family/story/pack references`,
+      )
+      ;({ error } = await this.insert(row, false))
+    }
 
     if (error) {
       /**
@@ -53,7 +50,30 @@ export class SupabaseLogSink implements GenerationLogSink {
       )
     }
   }
+
+  private insert(row: GenerationLogRow, withReferences: boolean) {
+    const db = this.client ?? supabaseService()
+    return db.from('generation_logs').insert({
+      family_id: withReferences ? row.family_id : null,
+      story_id: withReferences ? row.story_id : null,
+      fact_pack_id: withReferences ? row.fact_pack_id : null,
+      purpose: row.purpose,
+      model: row.model,
+      input_tokens: row.input_tokens,
+      cache_read_tokens: row.cache_read_tokens,
+      cache_write_tokens: row.cache_write_tokens,
+      output_tokens: row.output_tokens,
+      cost_usd: row.cost_usd,
+      latency_ms: row.latency_ms,
+      ok: row.ok,
+      error: row.error,
+    })
+  }
 }
+
+/** Postgres SQLSTATEs for a malformed uuid and a dangling foreign key. */
+const INVALID_TEXT_REPRESENTATION = '22P02'
+const FOREIGN_KEY_VIOLATION = '23503'
 
 let installed: SupabaseLogSink | null = null
 

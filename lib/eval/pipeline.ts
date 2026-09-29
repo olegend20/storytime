@@ -76,10 +76,11 @@ export class PipelineUnavailableError extends Error {
 }
 
 /**
- * Lane 2's module, loaded through a non-literal specifier so TypeScript does not try to
- * resolve a path that does not exist yet and the build stays green in the meantime.
+ * The live adapter over lane 2's pipeline. Loaded dynamically so fixture mode never pulls in
+ * Supabase or the SDK. It lives in lib/eval, not lib/generate: the request path must not
+ * import the eval harness (test/unit/judge-not-in-runtime.test.ts).
  */
-const LIVE_PIPELINE_MODULE = '@/lib/generate'
+const LIVE_PIPELINE_MODULE = '@/lib/eval/live-pipeline'
 
 interface LivePipelineModule {
   createEvalPipeline?: () => StoryPipeline

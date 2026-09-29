@@ -1,11 +1,12 @@
 #!/usr/bin/env tsx
-import { MemoryLogSink, models } from '@/lib/ai'
+import { MeteredLogSink, models } from '@/lib/ai'
 import { runBakeoff, type BakeoffResult } from '@/lib/eval/bakeoff'
 import { estimateBakeoffCost, formatEstimate } from '@/lib/eval/estimate'
 import { renderBakeoffReport } from '@/lib/eval/report'
 import { nextResultPath, writeResultFile } from '@/lib/eval/results'
 import { bakeoffScenarios, selectScenarios } from '@/lib/eval/scenarios'
 import { installCliCostLogging } from '@/lib/costs/cli'
+import { readyFactPackTopics } from '@/lib/topics/factpack'
 
 /**
  * `pnpm bakeoff` - F14 / JUDGE_AGENT.md §6.
@@ -75,6 +76,7 @@ async function main(): Promise<void> {
     samples,
     secondJudgeLimit,
     pairwiseVsBest,
+    builtTopics: await readyFactPackTopics(),
   })
   console.log(
     formatEstimate(
@@ -107,7 +109,9 @@ async function main(): Promise<void> {
     return
   }
 
-  const sink = new MemoryLogSink()
+  // Counted here AND persisted: a bare MemoryLogSink passed to callModel() replaces the
+  // Supabase sink, and this run's spend would never reach generation_logs.
+  const sink = new MeteredLogSink()
   let result: BakeoffResult
   try {
     result = await runBakeoff({

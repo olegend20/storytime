@@ -11,30 +11,18 @@ verification tests named in each feature's section (plus `GUARDRAILS.md` §7 and
 | F1 | Project scaffold and infrastructure | 3 | 3 | ✅ **done** — env, migrations + introspection, CI all green | 0 lead |
 | F2 | Authentication and family account | 4 | 4 | ✅ **done** — magic link + family + settings + account deletion, all 4 VTs green | 1 |
 | F3 | Children profiles | 3 | 3 | ✅ **done** — CRUD, 8-child ceiling, client+server validation | 1 |
-| F4 | Series and Story Bible service | 6 | 0 | ⬜ not started | 2 |
-| F5 | Topic normalization and Fact Packs | 6 | 2 | 🟡 schema/review VTs green; service pending | 2 |
-| F6 | Story generation pipeline | 7 | 1 | 🟡 `targetWords` VT green; pipeline pending | 2 |
-| F7 | Quality gate | 5 | 0 | ⬜ not started | 2 |
-| F8 | Quotas and cost logging | 6 | 6 | ✅ **done** — quota, tz boundary, cost, freshness, budget cap, failure logging | 3 |
-| F2 | Authentication and family account | 4 | 0 | ⬜ not started — RLS isolation pre-verified (16/16 probe checks) | 1 |
-| F3 | Children profiles | 3 | 1 | 🟡 schema VT green; API + e2e pending | 1 |
 | F4 | Series and Story Bible service | 6 | 4 | 🟡 4/6 green; VT4 blocked on an API key, VT6 is lane 5's eval | 2 |
-| F5 | Topic normalization and Fact Packs | 6 | 3 | 🟡 3/6 green; VT1/VT2/VT5 blocked on an API key | 2 |
+| F5 | Topic normalization and Fact Packs | 6 | 3 | 🟡 3/6 green; **8 real packs built live** (all under 2,000 tok); VT fixtures not yet recorded | 2 |
 | F6 | Story generation pipeline | 7 | 5 | 🟡 5/7 green; cache-read VT blocked on an API key, e2e is lane 4's | 2 |
 | F7 | Quality gate | 5 | 5 | ✅ **done** — all 5 VTs green, references pass the gate | 2 |
-| F8 | Quotas and cost logging | 6 | 3 | 🟡 cost + freshness VTs green; quota/budget pending | 3 |
+| F8 | Quotas and cost logging | 6 | 6 | ✅ **done** — quota, tz boundary, cost, freshness, budget cap, failure logging | 3 |
 | F9 | Story library and reader | 4 | 0 | ⬜ not started | 4 |
 | F10 | New-story flow (UI) | 5 | 0 | ⬜ not started | 4 |
-| F11 | Safety, privacy and content policy | 5 | 0 | ⬜ not started | 1 + 4 |
+| F11 | Safety, privacy and content policy | 5 | 4 | 🟡 sanitizer, rate limit, privacy page, schema assertion green; the must-refuse topic VT is lane 6's L2 | 1 + 4 + 6 |
 | F12 | Admin dashboard | 3 | 3 | ✅ **done** — owner gate 404s, view arithmetic, 80% hit rate | 3 |
-| F13 | Quality evaluation harness | 3 | 2 | 🟡 **judge calibration PASSES 6/6 live.** Full eval run still to do | 5 |
+| F13 | Quality evaluation harness | 3 | 2 | 🟡 calibration 6/6 live; all 8 packs built; live pipeline adapter written. **Eval blocked: account out of credits** | 5 |
 | F14 | Model bake-off | 6 | 5 | 🟡 merged; 5/6. Live calibration VT written and skipped — needs credentials. **$54.79 run needs owner approval** | 5 |
 | F15 | Guardrails | 10 | 8 | 🟡 **L1+L2 measured live: refuse recall 100.0% (136/136), allow false-refusal 1.2% (1/85)**. 2 VTs need F10's UI | 6 |
-| F11 | Safety, privacy and content policy | 5 | 4 | 🟡 sanitizer, rate limit, privacy page, schema assertion green; the must-refuse topic VT is lane 6's L2 | 1 + 4 + 6 |
-| F12 | Admin dashboard | 3 | 0 | ⬜ not started — SQL views written | 3 |
-| F13 | Quality evaluation harness | 2 + JUDGE §7 | 0 | ⬜ not started — **unblocked**, references arrived | 5 |
-| F14 | Model bake-off | JUDGE §7 (6) | 2 | 🟡 rubric/position-swap VTs green; harness pending. **Budget approval needed** | 5 |
-| F15 | Guardrails | GUARDRAILS §7 (9) | 1 | 🟡 corpus contract locked; L1–L4 pending | 6 |
 
 Legend: ⬜ not started · 🟡 in progress · 🔴 blocked · ✅ done
 
@@ -632,3 +620,95 @@ all four migrations in ~30s.
 **Queued, in order, once the machine has headroom:** 4 fact packs (~$3) → `pnpm eval` (~$1.40
 on top of packs) → `pnpm bakeoff` (~$34, owner-approved). The bake-off is 144 generations over
 roughly an hour and is the run most likely to be lost to another OOM kill.
+
+### 2026-09-28 (evening) — 3 of 8 eval fact packs built; two transport defects fixed; stopped on spend
+
+**Built and `ready`:** `history-of-lego` (22 facts, ~1,684 tok), `history-of-video-games`
+(20, ~1,696), `sharks` (22, ~1,747). **Still needed for `pnpm eval`:** soccer, volcanoes, bees,
+space-race, titanic.
+
+**Spend: $5.18 logged**, plus three failed attempts logged at $0 whose billing is unknown —
+two 300s non-streaming attempts and one **50-minute** stream (see 3). True figure is probably
+$5–11; the Anthropic console is the only place to see it.
+
+#### Defects found and fixed
+1. **Packs landed ~5% over the 2,000 cap and were thrown away.** `factpack.v1` did its size
+   arithmetic at 4 chars/token over *content*; the reviewer measures the *whole JSON* (≈90
+   chars of keys per fact) at 3.6. New `prompts/factpack.v2.md` gives the real arithmetic,
+   targets 20–24 facts, asks for most-important-first. `trimFactPackToBudget` now drops facts
+   from the end (floor 12, orphaned sources pruned) before review, so paid-for research is
+   salvaged; the cap is unchanged. All three packs since fit without trimming.
+2. **Every call over 300s died at exactly 300.0s** despite `timeoutMs: 600_000`: undici's
+   default `headersTimeout`, and a non-streaming response sends no headers until done
+   (reproduced locally: `HeadersTimeoutError` at 301s; the SDK's `/timed? ?out/` renders it as
+   "Request timed out."). `callModel` now streams any call whose `timeoutMs` exceeds 300s.
+3. **A stream then had no total limit** — the SDK `timeout` covers headers only — and one
+   soccer build ran 2,991s before the connection dropped. `timeoutMs` is now enforced over
+   the whole stream, hitting it is **not retried**, and a failed stream logs the usage it had
+   reported (a lower bound, flagged in `error`) instead of $0.
+
+**The fact-pack cost estimate is still ~2.4× low.** Before fix 2, only builds that happened to
+finish under 300s survived to be measured ($0.63–0.82). The true typical build is ~600s,
+~770k input, **~$1.85**. `lib/eval/estimate.ts` (320k input) needs updating; §8's ten chip
+packs are ~$18.50, not ~$7.50.
+
+**Gates:** lint ✅ · typecheck ✅ · **901 pass, 0 fail**.
+
+**Owner approved continuing** at ~$1.85/pack (see the continuation below).
+
+### 2026-09-28 (night) — all 8 packs built; the route had no guardrails; eval blocked on credits
+
+**All 8 eval packs `ready`**, 20–24 facts, 1,642–1,747 tokens each. `bees` needed three tries:
+one hit the 600s deadline (as designed), one ran through two idle-sleeps on battery (pmset
+log: 16:17–16:21 and 16:27–16:45) and lost its connection. Long runs now go under
+`caffeinate -i`. Cheaper than feared once measured across all eight: **$0.90–1.90, ~$1.30 mean.**
+
+**Logged spend since 21:00 UTC: $10.29**, plus 7 failed calls logged at $0 — among them a
+50-minute stream and a 30-minute one the server may have finished and billed. **The account
+then ran out of credits** on the first eval judge call (HTTP 400, "credit balance is too low").
+The console is the only place to see the true total.
+
+#### 🔴 Found: `/api/stories/generate` ran with NO guardrails, quota or budget cap
+`lib/generate/deps.ts` ships stubs that allow everything so lanes 2/3/6 could land apart, and
+says "the merge is a wiring change". The wiring never happened: the route passed no deps, so
+production would have run **no L1/L2 input guard, no L4 output review, no daily quota and no
+budget cap**. Every test passed, because a stub that allows is indistinguishable from a guard
+that allowed. Fixed: `lib/generate/production-deps.ts` adapts `lib/limits` and
+`lib/guardrails` onto the seams; the route passes `productionDeps()` to both halves.
+`test/unit/generate-route-wiring.test.ts` drives the real route handler and fails if the
+wiring is ever removed. **F8 and F15 were marked done without this — their VTs test the
+libraries, not the route.** Worth an F10 e2e VT that a refused topic is refused through the UI.
+
+#### Also found and fixed
+- **The eval could never have run live.** `lib/eval/pipeline.ts` loads `createEvalPipeline()`
+  and nobody wrote it. Now `lib/eval/live-pipeline.ts` (in lib/eval, not lib/generate: the
+  request path may not import the harness): a throwaway family per story with the scenario's
+  children and starting bible, the real `runGeneration` with lane 6's L4 review, the bible
+  update awaited, cost metered per story, family cascade-deleted after (cost rows survive via
+  `set null`). `GenerationDeps.writingModel` lets each bake-off contestant write.
+- **The eval, bake-off and reliability CLIs never persisted their spend** — a bare
+  `MemoryLogSink` replaces the Supabase sink, the same leak fixed for fact packs last session.
+  `MeteredLogSink` counts and forwards. Confirmed live: the first `judge_score` rows ever in
+  `generation_logs`.
+- **Judge rows would have been dropped anyway**: the harness correlates by `eval:<scenario>`,
+  which `generation_logs.story_id` (uuid) rejects. The sink now retries without references on a
+  malformed or dangling id, keeping the cost.
+- Estimates now skip packs already `ready` (`pnpm eval` read $16.31 with every pack built).
+
+**Gates:** lint ✅ · typecheck ✅ · **919 pass, 0 fail**.
+
+#### ⚠️ The real spend: **$58.93**, per the owner's Anthropic console
+Every figure above and in earlier entries is an UNDERCOUNT. `generation_logs` held $11.49 at
+the end of this session and the entries above sum to roughly $25–35; the console says $58.93.
+The ~$24–34 gap is spend this project never recorded: calls made before cost logging worked,
+and failed or timed-out calls the server completed and billed while we logged $0 (two 300s
+first attempts per early pack build, a 50-minute and a 30-minute stream). A large share of
+the $58.93 bought nothing usable. The console is the source of truth; `generation_logs` is
+only trustworthy from this session's fixes onward.
+
+**Owner decision (2026-09-28): no further API credits for evals or the bake-off.** The owner
+will try the app directly. No live call without explicit approval and a cost figure first.
+
+**Next, if credits are ever added:** `pnpm eval --scenarios=titanic-band-b` as a smoke test
+(~$0.66), then `pnpm eval` (~$1.43), then the bake-off — now **$37.71**, above the ~$34 approved,
+so it needs a fresh OK.

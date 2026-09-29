@@ -3,7 +3,7 @@ import { supabaseService } from '@/lib/supabase/service'
 import type { GenerationLogSink } from '@/lib/ai'
 import { FactPack, type FactPackRecord, type FactSource } from '@/lib/schemas'
 import { buildFactPack, sourcesOf } from './build'
-import { reviewFactPack } from './review'
+import { reviewFactPack, trimFactPackToBudget } from './review'
 
 /**
  * `getOrBuildFactPack` (F5). One pack per topic, shared by every family, built at most
@@ -253,14 +253,16 @@ export async function getOrBuildFactPack(
       ...(opts.sink ? { sink: opts.sink } : {}),
       ...(opts.signal ? { signal: opts.signal } : {}),
     })
-    const { deterministic, model } = await (opts.reviewer ?? reviewFactPack)(build.candidate, {
+    const { candidate } = trimFactPackToBudget(build.candidate)
+    const { deterministic, model } = await (opts.reviewer ?? reviewFactPack)(candidate, {
       factPackId: ownedId,
       ...(opts.sink ? { sink: opts.sink } : {}),
       ...(opts.signal ? { signal: opts.signal } : {}),
     })
 
     if (!deterministic.accept || !deterministic.pack || !model.accept) {
-      const reasons = [...deterministic.reasons, ...model.reasons]
+      // A deterministic rejection skips the model and echoes its reasons into `model`.
+      const reasons = [...new Set([...deterministic.reasons, ...model.reasons])]
       await db
         .from('fact_packs')
         .update({
@@ -305,4 +307,21 @@ export async function findFactPack(
   const row = await readRow(topicKey, db)
   if (!row || row.status !== 'ready') return null
   return toRecord(row)
+}
+
+/**
+ * Topic keys with a `ready` pack, for cost estimates: a built pack is shared, so a run that
+ * uses it pays nothing to research it. Empty (never throws) when the database is unreachable,
+ * which makes the estimate err high rather than low.
+ */
+export async function readyFactPackTopics(
+  db: SupabaseClient = supabaseService(),
+): Promise<Set<string>> {
+  try {
+    const { data, error } = await db.from('fact_packs').select('topic_key').eq('status', 'ready')
+    if (error) return new Set()
+    return new Set((data ?? []).map((r) => r.topic_key as string))
+  } catch {
+    return new Set()
+  }
 }

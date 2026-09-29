@@ -149,6 +149,8 @@ export async function prepareGeneration(
     topicInput: body.topic_input,
     children,
     youngestAge,
+    familyId,
+    ...(sink ? { sink } : {}),
   })
   if (guard.decision === 'refuse') {
     const code: GenerationErrorCode =
@@ -309,6 +311,7 @@ export async function runGeneration(
     const streamed = await streamModel({
       purpose: 'write',
       role: 'writer',
+      ...(deps.writingModel ? { model: deps.writingModel } : {}),
       system: prompt.system,
       messages: prompt.messages,
       maxTokens: 16_000,
@@ -360,6 +363,7 @@ export async function runGeneration(
       const rewritten = await callModel({
         purpose: 'rewrite',
         role: 'writer',
+        ...(deps.writingModel ? { model: deps.writingModel } : {}),
         system: rewritePrompt.system,
         messages: rewritePrompt.messages,
         maxTokens: 16_000,

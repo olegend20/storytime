@@ -1,5 +1,5 @@
 #!/usr/bin/env tsx
-import { MemoryLogSink } from '@/lib/ai'
+import { MeteredLogSink } from '@/lib/ai'
 import { estimateEvalCost, formatEstimate } from '@/lib/eval/estimate'
 import { compareEvalRuns, formatEval, runEval, type EvalResult } from '@/lib/eval/harness'
 import { evalScenarios, selectScenarios } from '@/lib/eval/scenarios'
@@ -11,6 +11,7 @@ import {
   writeResultFile,
 } from '@/lib/eval/results'
 import { installCliCostLogging } from '@/lib/costs/cli'
+import { readyFactPackTopics } from '@/lib/topics/factpack'
 
 /**
  * `pnpm eval` - F13.
@@ -57,7 +58,7 @@ async function main(): Promise<void> {
   const live = process.env.LIVE_API === '1' || process.env.LIVE_API === 'true'
   const scenarios = selectScenarios(evalScenarios(), scenarioSpec)
 
-  const estimate = estimateEvalCost({ scenarios })
+  const estimate = estimateEvalCost({ scenarios, builtTopics: await readyFactPackTopics() })
   console.log(formatEstimate(`pnpm eval (${scenarios.length} scenarios)`, estimate))
   console.log('')
 
@@ -81,7 +82,9 @@ async function main(): Promise<void> {
     return
   }
 
-  const sink = new MemoryLogSink()
+  // Counted here AND persisted: a bare MemoryLogSink passed to callModel() replaces the
+  // Supabase sink, and this run's spend would never reach generation_logs.
+  const sink = new MeteredLogSink()
 
   if (flag('calibration-only')) {
     const calibration = await runCalibration({ sink })

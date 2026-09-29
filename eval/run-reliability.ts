@@ -17,7 +17,7 @@ import { JUDGE_CRITERIA, type JudgeCriterion } from '@/lib/schemas'
 import { loadReferenceCases } from '@/lib/eval/references'
 import { scoreStory } from '@/lib/eval/judge'
 import { modelForRole } from '@/lib/ai/pricing'
-import { MemoryLogSink } from '@/lib/ai/types'
+import { MeteredLogSink } from '@/lib/ai/callModel'
 import { installCliCostLogging } from '@/lib/costs/cli'
 
 function arg(name: string, fallback: number): number {
@@ -53,7 +53,9 @@ async function main(): Promise<void> {
     throw new Error(`Estimated $${estimate.toFixed(2)}; re-run with --budget=${Math.ceil(estimate)}`)
   }
 
-  const sink = new MemoryLogSink()
+  // Counted here AND persisted: a bare MemoryLogSink passed to callModel() replaces the
+  // Supabase sink, and this run's spend would never reach generation_logs.
+  const sink = new MeteredLogSink()
   const out: Record<string, unknown> = {}
   let worstSpread = 0
   let worstWhere = ''
