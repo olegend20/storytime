@@ -21,19 +21,34 @@ import { supabaseService } from '@/lib/supabase/service'
 import { MemoryLogSink, TeeLogSink } from '@/lib/ai/types'
 import { getDefaultLogSink } from '@/lib/ai/callModel'
 
-/** §8 / F10: the suggested-topic chips, so a first user gets an instant cache hit. */
-const CHIP_TOPICS = [
-  'history-of-lego',
-  'sharks',
-  'history-of-soccer',
-  'history-of-video-games',
-  'volcanoes',
-  'bees',
-  'space-race',
-  'the-titanic',
-  'how-magnets-work',
-  'dinosaurs',
+/**
+ * §8 / F10: the suggested-topic chips, so a first user gets an instant cache hit.
+ *
+ * The label is what a parent sees on the chip and in the library, and the builder is told to
+ * keep it unchanged - so it must be written for people. Passing the key as the label stored
+ * "history-of-lego" as the display name of all eight packs built on 2026-09-28.
+ * Keys and labels match `EVERGREEN_TOPICS` in lib/client/topics.ts so a chip is never shown twice.
+ */
+export const CHIP_TOPICS: ReadonlyArray<{ key: string; label: string }> = [
+  { key: 'history-of-lego', label: 'The history of LEGO' },
+  { key: 'sharks', label: 'Sharks' },
+  { key: 'history-of-soccer', label: 'The history of soccer' },
+  { key: 'history-of-video-games', label: 'The history of video games' },
+  { key: 'volcanoes', label: 'How volcanoes work' },
+  { key: 'bees', label: 'How bees make honey' },
+  { key: 'space-race', label: 'The space race' },
+  { key: 'the-titanic', label: 'The Titanic' },
+  { key: 'how-magnets-work', label: 'How magnets work' },
+  { key: 'dinosaurs', label: 'Dinosaurs' },
 ]
+
+/** A readable label for a key given on the command line: "how-magnets-work" -> "How magnets work". */
+function labelFor(key: string): string {
+  const known = CHIP_TOPICS.find((t) => t.key === key)
+  if (known) return known.label
+  const words = key.split('-').join(' ')
+  return words.charAt(0).toUpperCase() + words.slice(1)
+}
 
 const estTokens = (content: unknown): number => Math.round(JSON.stringify(content).length / 4)
 
@@ -67,7 +82,9 @@ async function main(): Promise<void> {
     return
   }
 
-  const topics = args.includes('--chips') ? CHIP_TOPICS : args.filter((a) => !a.startsWith('--'))
+  const topics = args.includes('--chips')
+    ? CHIP_TOPICS.map((t) => t.key)
+    : args.filter((a) => !a.startsWith('--'))
   if (topics.length === 0) {
     console.error('usage: tsx scripts/build-fact-packs.ts <topic-key…> | --chips | --status')
     process.exit(1)
@@ -92,7 +109,7 @@ async function main(): Promise<void> {
   for (const topic of topics) {
     const started = Date.now()
     try {
-      const { record, built: wasBuilt } = await getOrBuildFactPack(topic, topic, { sink })
+      const { record, built: wasBuilt } = await getOrBuildFactPack(topic, labelFor(topic), { sink })
       const tokens = estTokens(record.content)
       const facts = record.content.facts.length
       if (wasBuilt) built += 1

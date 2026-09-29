@@ -45,7 +45,8 @@ lanes are building against it. If you need a shape that isn't there, ask.
 pnpm dev              # local dev server
 pnpm test             # unit + int, fixture mode (excludes test/blocked)
 pnpm test:blocked     # tests waiting on an external dependency
-pnpm test:e2e         # Playwright
+pnpm test:e2e         # Playwright, mock backend
+pnpm test:e2e:real    # Playwright, real app + Supabase, model calls disabled
 pnpm test:guardrails  # red-team corpus
 pnpm test:schema      # DB introspection (needs `supabase start`)
 pnpm eval             # F13 golden set — LIVE, costs money

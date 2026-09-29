@@ -16,15 +16,19 @@ verification tests named in each feature's section (plus `GUARDRAILS.md` §7 and
 | F6 | Story generation pipeline | 7 | 5 | 🟡 5/7 green; cache-read VT blocked on an API key, e2e is lane 4's | 2 |
 | F7 | Quality gate | 5 | 5 | ✅ **done** — all 5 VTs green, references pass the gate | 2 |
 | F8 | Quotas and cost logging | 6 | 6 | ✅ **done** — quota, tz boundary, cost, freshness, budget cap, failure logging | 3 |
-| F9 | Story library and reader | 4 | 0 | ⬜ not started | 4 |
-| F10 | New-story flow (UI) | 5 | 0 | ⬜ not started | 4 |
-| F11 | Safety, privacy and content policy | 5 | 4 | 🟡 sanitizer, rate limit, privacy page, schema assertion green; the must-refuse topic VT is lane 6's L2 | 1 + 4 + 6 |
+| F9 | Story library and reader | 4 | 4 | ✅ **done** — e2e (mock + real), 375px, scroll memory, int delete; real `/api/stories` routes built 2026-09-28 | 4 |
+| F10 | New-story flow (UI) | 5 | 5 | ✅ **done** — all 5 e2e VTs incl. axe a11y; real-mode flow rehearsed in `test:e2e:real` | 4 |
+| F11 | Safety, privacy and content policy | 5 | 5 | ✅ **done** — must-refuse VT now runs through the production route wiring | 1 + 4 + 6 |
 | F12 | Admin dashboard | 3 | 3 | ✅ **done** — owner gate 404s, view arithmetic, 80% hit rate | 3 |
-| F13 | Quality evaluation harness | 3 | 2 | 🟡 calibration 6/6 live; all 8 packs built; live pipeline adapter written. **Eval blocked: account out of credits** | 5 |
-| F14 | Model bake-off | 6 | 5 | 🟡 merged; 5/6. Live calibration VT written and skipped — needs credentials. **$54.79 run needs owner approval** | 5 |
-| F15 | Guardrails | 10 | 8 | 🟡 **L1+L2 measured live: refuse recall 100.0% (136/136), allow false-refusal 1.2% (1/85)**. 2 VTs need F10's UI | 6 |
+| F13 | Quality evaluation harness | 3 | 2 | ⏸ calibration 6/6; live adapter built. **Owner: no further eval spend** | 5 |
+| F14 | Model bake-off | 6 | 5 | ⏸ **Owner: not running** ($37.71). Writing model to be chosen by reading stories | 5 |
+| F15 | Guardrails | 10 | 10 | ✅ VTs green (fixture mode). Route wiring, event audit and 24h purge schedule were missing until 2026-09-28. Launch still needs a live corpus run within 7 days | 6 |
 
 Legend: ⬜ not started · 🟡 in progress · 🔴 blocked · ✅ done
+
+> **"Done" here means the full local gate run** (lint, typecheck, unit+int, guardrails, schema,
+> e2e mock + real). The repo has no git remote, so the GitHub Actions CI in `.github/` has never
+> actually run. The first push should be treated as the first real CI run.
 
 ---
 
@@ -712,3 +716,31 @@ will try the app directly. No live call without explicit approval and a cost fig
 **Next, if credits are ever added:** `pnpm eval --scenarios=titanic-band-b` as a smoke test
 (~$0.66), then `pnpm eval` (~$1.43), then the bake-off — now **$37.71**, above the ~$34 approved,
 so it needs a fresh OK.
+
+### 2026-09-29 — section 1: everything verified without spending; the real app works
+
+**Spend: $0.00.** Every check below ran in fixture or mock mode, confirmed from
+`generation_logs` (no new cost rows).
+
+The plan's own tests were green for lanes in isolation and never run together, so most of
+this session was integration defects - things a parent would have hit in the first minute:
+
+| Found | Effect in the real app | Fixed |
+|---|---|---|
+| Real `/api/stories`, `/api/stories/:id`, `/api/topics/suggested` never built (UI only ever ran on `/api/mock`) | Library, reader, delete and topic chips all broken | `lib/stories/library.ts` + routes, RLS-scoped; `test/int/library.test.ts` incl. cross-family isolation |
+| `.env.local` had placeholder Supabase keys | Every service-role read failed ("Expected 3 parts in JWT") on the new-story form | Real local keys; `lib/env.ts` now rejects unusable keys at boot |
+| Guardrail refusals audited to process memory (Supabase sink never installed) | No refusal ever recorded | Installed in `instrumentation.ts`. **Open question for the owner:** if the audit insert fails, the refusal becomes a 500 (lane 6 made that fatal on purpose, so no refusal goes unrecorded); left as designed |
+| 24h raw-text purge existed but was never scheduled | Refused text kept forever | `pg_cron` hourly (migration 20260928000001) + a test that it stays scheduled |
+| All 8 fact packs labelled with their key | Chips read "history-of-lego" | Labels fixed in the DB; script now passes human labels |
+| F11 rate limiter throttled the mock e2e suite; auth guard blocked lane 4's pages; tests contradicted each other | 86 of 118 e2e failing | Mock routes exempt (mock mode only); story URLs need a session even in mock mode, matching F11 |
+| `/library` not behind auth; landing page had no Sign in; privacy page failed contrast and lacked the "doesn't use a story" promise | — | Fixed; privacy copy states the 24h retention honestly |
+| `pnpm dev` without `LIVE_API=1` cannot make a story, undocumented | Owner's trial would fail | README "Try it yourself" |
+
+**New:** `pnpm test:e2e:real` - sign in, add a child, the form, a refused topic (no model
+call, no quota), library, reader, delete, against the real app with `LIVE_API=0`. Its chip
+check was proven by re-breaking a label and watching it fail.
+
+**Gates:** lint ✅ · typecheck ✅ · unit+int 938 ✅ · guardrails 29/29 ✅ · schema 6/6 ✅ ·
+e2e (mock) 118/118 ✅ · e2e (real) 2/2 ✅.
+
+**Next (owner):** try the app per README. Writing model is still the Sonnet 5 placeholder.

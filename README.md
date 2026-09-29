@@ -21,6 +21,33 @@ pnpm dev
 
 Magic-link emails land in the local mailbox at <http://127.0.0.1:54324>.
 
+## Try it yourself (real stories, real cost)
+
+`pnpm dev` alone **cannot make a story**: without `LIVE_API=1` every model call looks for a
+recorded test fixture and fails, and the form says it couldn't make a story. To generate for
+real:
+
+```bash
+supabase start
+LIVE_API=1 DAILY_BUDGET_USD=2 pnpm dev   # the cap stops new stories once today's spend hits $2
+```
+
+1. Open <http://localhost:3000>, **Sign in**, and open the link from the local mailbox
+   (<http://127.0.0.1:54324>).
+2. **Add a child** on the Children page.
+3. **New story** → pick the child, a tone and a length, and **pick one of the suggested chips
+   marked "starts straight away"**.
+
+**What it costs.** A story on a topic whose fact pack already exists is about **$0.05–0.07**.
+A topic with no fact pack first runs a web-research build costing **~$1–2** and taking several
+minutes. Built so far: LEGO, sharks, soccer, video games, volcanoes and the Titanic (these map
+reliably to their packs), plus bees and the space race (usually do). Typing your own topic
+will very likely trigger a build. Real spend is on the Anthropic console; `/admin` shows what
+the app recorded.
+
+**Rehearsed without spending:** `pnpm test:e2e:real` runs sign-in → add a child → the form →
+a refused topic → library, reader and delete against the real app with model calls disabled.
+
 ## Tests, eval and bake-off
 
 Model-calling tests replay **recorded fixtures** by default; nothing reaches the live API
@@ -28,7 +55,8 @@ unless you ask it to.
 
 ```bash
 pnpm test             # unit + integration, fixture mode
-pnpm test:e2e         # Playwright, desktop + 375px mobile
+pnpm test:e2e         # Playwright, desktop + 375px mobile, against the mock backend
+pnpm test:e2e:real    # Playwright against the REAL app and Supabase, model calls disabled
 pnpm test:guardrails  # red-team corpus (GUARDRAILS.md §6)
 pnpm test:schema      # DB introspection — needs `supabase start`
 pnpm test:blocked     # tests waiting on an external dependency (see below)

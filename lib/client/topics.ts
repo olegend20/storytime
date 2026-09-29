@@ -20,7 +20,7 @@ export type SuggestedTopic = SuggestedTopicsResponse['topics'][number]
  * parent would type it.
  */
 export const EVERGREEN_TOPICS: readonly SuggestedTopic[] = [
-  { label: 'How bees make honey', topic_key: 'how-bees-make-honey', warm: false },
+  { label: 'How bees make honey', topic_key: 'bees', warm: false },
   { label: 'The history of LEGO', topic_key: 'history-of-lego', warm: false },
   { label: 'How volcanoes work', topic_key: 'volcanoes', warm: false },
   { label: 'Sharks', topic_key: 'sharks', warm: false },

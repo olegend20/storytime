@@ -2,6 +2,9 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // `pnpm test:e2e:real` builds into its own directory, so it never overwrites the mock-mode
+  // build `pnpm test:e2e` serves (NEXT_PUBLIC_API_MOCK is inlined at build time).
+  ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
   // Plan docs and the archive are content, not source; keep them out of the build graph.
   outputFileTracingExcludes: { '*': ['./storytime-plan/**', './.archive/**'] },
 }

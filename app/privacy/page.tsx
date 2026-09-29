@@ -32,11 +32,23 @@ export default function PrivacyPage() {
         </Link>
       </p>
       <h1 className="mt-3 mb-1 text-3xl font-semibold tracking-tight">Privacy</h1>
-      <p className="mt-0 mb-8 text-sm opacity-60">Last updated 27 September 2026</p>
+      {/* --fg-muted, not opacity: 60% opacity failed the WCAG contrast check (axe, F10 VT). */}
+      <p className="mt-0 mb-8 text-sm" style={{ color: 'var(--fg-muted)' }}>
+        Last updated 28 September 2026
+      </p>
 
       <section className="mb-8">
-        <h2 className="mb-2 text-lg font-semibold">The short version</h2>
+        <h2 className="mb-2 text-lg font-semibold">Our privacy promise</h2>
         <PrivacyPromises />
+      </section>
+
+      <section className="mb-8">
+        <h2 className="mb-2 text-lg font-semibold">If we can&apos;t make a story</h2>
+        <p className="mt-0 mb-0 text-[0.95rem] leading-relaxed">
+          If we turn a topic down, or a story fails partway through, it does not use one of your
+          three stories for the day. The words that were turned down are kept for at most 24 hours,
+          only to improve our safety checks, and then deleted.
+        </p>
       </section>
 
       <section className="mb-8">

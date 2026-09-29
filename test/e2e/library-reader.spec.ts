@@ -284,6 +284,9 @@ test('the library has no horizontal overflow', async ({ page }) => {
 })
 
 test('a story URL that does not exist says so kindly', async ({ page }) => {
+  // "Kindly" is for a signed-in parent. With no session at all, F11 redirects to login
+  // instead (api-guards.spec.ts) - so establish the mock session first.
+  await resetMock(page)
   await page.goto('/stories/00000000-0000-4000-8000-000000000999')
   await expect(page.getByRole('heading', { name: /isn.t here any more/i })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Back to the library' })).toBeVisible()

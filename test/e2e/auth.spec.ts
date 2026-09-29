@@ -24,7 +24,7 @@ test.describe('F2 authentication', () => {
   test('the privacy page is readable without an account', async ({ page }) => {
     await page.goto('/privacy')
     await expect(page.getByRole('heading', { name: 'Privacy', exact: true })).toBeVisible()
-    await expect(page.getByText('first name only', { exact: false }).first()).toBeVisible()
+    await expect(page.getByText('first names only', { exact: false }).first()).toBeVisible()
   })
 
   test.describe('protected pages redirect to login', () => {

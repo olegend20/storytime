@@ -18,6 +18,7 @@
     "test:int": "vitest run test/int",
     "test:guardrails": "vitest run test/guardrails",
     "test:e2e": "playwright test",
+    "test:e2e:real": "playwright test --config playwright.real.config.ts",
     "dev:mock": "UI_MOCK_API=1 NEXT_PUBLIC_API_MOCK=1 next dev",
     "fixtures:ui": "tsx scripts/dev/build-ui-fixtures.ts",
     "migrate": "supabase db push --local",

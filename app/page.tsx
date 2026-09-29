@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { PrivacyNote } from '@/components/PrivacyCopy'
+import { currentUser } from '@/lib/auth/session'
 
 /**
  * Home. One primary action, because at 7pm there is only one thing a parent came here to do.
@@ -17,6 +18,9 @@ export default async function LandingPage({
 }) {
   const params = await searchParams
   const justDeleted = params.deleted === '1'
+  // F2 AC: a signed-out visitor can reach login from here. Signed in, there is nothing to sign
+  // in to - and /login would only bounce them to the dashboard.
+  const signedIn = (await currentUser().catch(() => null)) !== null
 
   return (
     <main id="main" className="mx-auto max-w-2xl px-4 py-10">
@@ -42,6 +46,11 @@ export default async function LandingPage({
         <Link href="/library" className="btn btn-quiet no-underline">
           Story library
         </Link>
+        {signedIn ? null : (
+          <Link href="/login" className="btn btn-quiet no-underline">
+            Sign in
+          </Link>
+        )}
       </div>
 
       <ul className="mt-10 list-none space-y-3 p-0" style={{ color: 'var(--fg-muted)' }}>

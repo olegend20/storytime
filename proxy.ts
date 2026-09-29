@@ -17,10 +17,28 @@ import { clientIp, rateLimitHeaders, checkRateLimit, RATE_LIMITED_BODY } from '@
  */
 
 /** Page prefixes that require a session. `/stories` is lane 4's reader (F11 VT). */
-const PROTECTED_PAGES = ['/dashboard', '/children', '/settings', '/stories', '/new', '/admin']
+const PROTECTED_PAGES = ['/dashboard', '/children', '/settings', '/stories', '/new', '/library', '/admin']
+
+/**
+ * Mock mode (`UI_MOCK_API=1`, e2e only): lane 4's pages run against `/api/mock/*`, which has
+ * no Supabase users. The form and the library open freely. A story URL needs the mock
+ * backend's session cookie - the mock stand-in for being signed in - so a visitor with no
+ * session is still redirected, exactly as the F11 VT requires. Real mode protects all three.
+ */
+const MOCK_OPEN_PAGES = ['/new', '/library']
+const MOCK_SESSION_PAGES = ['/stories']
+/** `MOCK_SESSION_COOKIE` in lib/mock/store.ts, inlined to keep the mock store out of the proxy. */
+const MOCK_SESSION_COOKIE = 'st_mock_sid'
 
 /** API prefixes that require a session. `/api/health` and friends stay public. */
-const PROTECTED_API = ['/api/children', '/api/family', '/api/account', '/api/stories', '/api/quota']
+const PROTECTED_API = [
+  '/api/children',
+  '/api/family',
+  '/api/account',
+  '/api/stories',
+  '/api/quota',
+  '/api/topics',
+]
 
 function isUnder(pathname: string, prefixes: readonly string[]): boolean {
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`))
@@ -30,7 +48,11 @@ export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // ---------------------------------------------------------------- 1. rate limit
-  if (pathname.startsWith('/api/')) {
+  // Lane 4's mock backend is exempt, and only when it is switched on (it 404s otherwise, so
+  // this can never open a hole in production). The whole e2e suite reaches it from one IP,
+  // and 30/min turned 66 of 118 e2e tests into 429s the day the limiter and the UI merged.
+  const mockApi = process.env.UI_MOCK_API === '1' && isUnder(pathname, ['/api/mock'])
+  if (pathname.startsWith('/api/') && !mockApi) {
     const verdict = checkRateLimit(clientIp(request.headers))
     if (!verdict.allowed) {
       return NextResponse.json(RATE_LIMITED_BODY, {
@@ -80,7 +102,11 @@ export default async function proxy(request: NextRequest) {
         { status: 401, headers: response.headers },
       )
     }
-    if (isUnder(pathname, PROTECTED_PAGES)) {
+    const mockUi =
+      process.env.UI_MOCK_API === '1' &&
+      (isUnder(pathname, MOCK_OPEN_PAGES) ||
+        (isUnder(pathname, MOCK_SESSION_PAGES) && request.cookies.has(MOCK_SESSION_COOKIE)))
+    if (isUnder(pathname, PROTECTED_PAGES) && !mockUi) {
       const login = request.nextUrl.clone()
       login.pathname = '/login'
       login.search = ''

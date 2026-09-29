@@ -83,3 +83,30 @@ export function supabaseGuardrailSink(client: {
     },
   }
 }
+
+let installedSupabase = false
+
+/**
+ * Point `logGuardrailEvent()` at `guardrail_events`. Called once from `instrumentation.ts`,
+ * next to the cost-log sink; idempotent.
+ *
+ * The default sink is in memory, and until 2026-09-28 nothing installed this one: every
+ * refusal in the running app was "audited" into process memory and lost, while the lane's
+ * tests - which inject their own sink - stayed green.
+ */
+export async function installSupabaseGuardrailSink(): Promise<void> {
+  if (installedSupabase) return
+  const { supabaseService } = await import('@/lib/supabase/service')
+  const db = supabaseService()
+  setGuardrailSink(
+    supabaseGuardrailSink({
+      from: (table) => ({
+        insert: async (rows) => {
+          const { error } = await db.from(table).insert(rows as Record<string, unknown>)
+          return { error }
+        },
+      }),
+    }),
+  )
+  installedSupabase = true
+}

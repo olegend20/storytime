@@ -11,6 +11,7 @@ const config = [
       // lane's branch, not to this one.
       '.claude/**',
       '.next/**',
+      '.next-real/**',
       'storytime-plan/**',
       '.archive/**',
       'test/fixtures/**',

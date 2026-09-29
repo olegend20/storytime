@@ -10,11 +10,35 @@ const Booleanish = z
   .enum(['true', 'false', '1', '0'])
   .transform((v) => v === 'true' || v === '1')
 
+/**
+ * A Supabase key must be one Supabase can actually use: a JWT (three dot-separated parts, the
+ * `supabase start` demo keys and legacy project keys) or a new-style `sb_publishable_` /
+ * `sb_secret_` key. `test-` and `ci-` are the explicit placeholders of runs that never reach a
+ * database (test/setup.ts, the CI check job).
+ *
+ * Why: `.env.local` shipped with `local-anon-key` / `local-service-role-key`. They passed a
+ * "non-empty" check, sign-in even worked, and then every service-role read failed with
+ * "Expected 3 parts in JWT" - on the new-story form, in front of a parent.
+ */
+const supabaseKey = (name: string, newPrefix: string) =>
+  z
+    .string()
+    .min(1, `${name} is required`)
+    .refine(
+      (k) =>
+        k.split('.').length === 3 ||
+        k.startsWith(newPrefix) ||
+        k.startsWith('test-') ||
+        k.startsWith('ci-'),
+      `${name} is not a usable Supabase key (expected a JWT or ${newPrefix}...). ` +
+        'For local dev, copy the keys from `supabase status`.',
+    )
+
 const ServerEnv = z.object({
   ANTHROPIC_API_KEY: z.string().min(1, 'ANTHROPIC_API_KEY is required'),
   SUPABASE_URL: z.string().url('SUPABASE_URL must be a URL'),
-  SUPABASE_ANON_KEY: z.string().min(1, 'SUPABASE_ANON_KEY is required'),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
+  SUPABASE_ANON_KEY: supabaseKey('SUPABASE_ANON_KEY', 'sb_publishable_'),
+  SUPABASE_SERVICE_ROLE_KEY: supabaseKey('SUPABASE_SERVICE_ROLE_KEY', 'sb_secret_'),
 
   /** F8: kill switch and budget cap. Both take effect without a deploy. */
   GENERATION_ENABLED: Booleanish.default(true),
