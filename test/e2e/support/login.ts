@@ -38,7 +38,7 @@ interface MailpitMessage {
 }
 
 /** Fetch the body of the most recent message sent to `address`, polling until it lands. */
-async function fetchLatestEmailBody(address: string, timeoutMs = 20_000): Promise<string> {
+export async function fetchLatestEmailBody(address: string, timeoutMs = 20_000): Promise<string> {
   const deadline = Date.now() + timeoutMs
   let lastError = 'no message arrived'
 

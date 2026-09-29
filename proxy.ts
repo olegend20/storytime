@@ -47,6 +47,15 @@ function isUnder(pathname: string, prefixes: readonly string[]): boolean {
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // A sign-in code that lands on the home page (Supabase falls back to `site_url` when the
+  // requested redirect is not allow-listed) is forwarded to the callback that can use it,
+  // instead of leaving the parent signed out on the landing page.
+  if (pathname === '/' && request.nextUrl.searchParams.has('code')) {
+    const callback = request.nextUrl.clone()
+    callback.pathname = '/auth/callback'
+    return NextResponse.redirect(callback)
+  }
+
   // ---------------------------------------------------------------- 1. rate limit
   // Lane 4's mock backend is exempt, and only when it is switched on (it 404s otherwise, so
   // this can never open a hole in production). The whole e2e suite reaches it from one IP,

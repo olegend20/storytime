@@ -11,7 +11,8 @@ import { defineConfig, devices } from '@playwright/test'
  * deterministic). Needs `supabase start`.
  */
 const PORT = Number(process.env.E2E_REAL_PORT ?? 3100)
-const BASE_URL = `http://127.0.0.1:${PORT}`
+// localhost, as a parent types it: the sign-in bug only reproduced on this spelling.
+const BASE_URL = `http://localhost:${PORT}`
 
 export default defineConfig({
   testDir: './test/e2e-real',
