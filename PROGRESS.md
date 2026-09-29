@@ -744,3 +744,32 @@ check was proven by re-breaking a label and watching it fail.
 e2e (mock) 118/118 ✅ · e2e (real) 2/2 ✅.
 
 **Next (owner):** try the app per README. Writing model is still the Sonnet 5 placeholder.
+
+### 2026-09-29 — Supabase security audit
+
+**Spend: $0.00.** Every finding below was attacked through the public API before and/or
+after the fix; `test/int/security-hardening.test.ts` keeps them closed.
+
+| # | Severity | Finding | Fix |
+|---|---|---|---|
+| 1 | 🔴 Critical | Every local Supabase port (Postgres `postgres`/`postgres`, Studio, the mailbox, the API with the public demo keys) and the Next dev server listened on all interfaces, macOS firewall off: **anyone on the same Wi-Fi could read/write the whole DB or sign in as anyone** | Colima forwarded guest `0.0.0.0` → host `0.0.0.0`; `~/.colima/_lima/_config/override.yaml` now forwards to `127.0.0.1`. `pnpm dev`/`start` bind `127.0.0.1`. Verified closed on the LAN IP |
+| 2 | 🟠 High | Email confirmations off with password sign-up enabled: anyone could sign up with **any** email + a password and get a session without owning the inbox | `enable_confirmations = true`. Magic-link round trip re-verified |
+| 3 | 🟠 High | Signed-in users could INSERT/UPDATE `stories`, `series`, `story_bibles` directly via REST. The bible is pasted into every prompt: an unbounded bible = unbounded cost per story, unseen by guardrails | Policies dropped, grants revoked; the pipeline writes with the service role. SELECT kept; stories DELETE kept (F9) |
+| 4 | 🟡 Medium | Child likes capped at 10 but not in length: same prompt-cost route | `children_likes_items_check` (1–40 chars, matches `ChildLike`) |
+| 5 | 🟡 Medium | `anon` held every privilege on every table, incl. TRUNCATE (not covered by RLS) | All revoked from anon (+ default privileges); TRUNCATE/TRIGGER/REFERENCES revoked from authenticated |
+| 6 | 🟡 Medium | `purge_guardrail_raw_text()` is SECURITY DEFINER and callable by anyone | EXECUTE revoked from public/anon/authenticated (pg_cron and service role still run it) |
+| 7 | 🟢 Low | `owned_family_ids()` (used by every RLS policy) and `set_updated_at()` had a mutable `search_path` | Pinned |
+
+Checked and fine: RLS on all 9 tables with ownership-scoped policies; admin `v_*` views are
+`security_invoker` and not granted to clients; service-role key absent from the browser
+bundle; no storage buckets; extensions outside `public`.
+
+**Not fixable locally - for the production project:** its own JWT secret and DB password
+(the local ones are public demo values, safe only because they are now localhost-only);
+Supabase Security Advisor clean; leaked-password protection; custom SMTP; auth rate limits;
+SSL enforcement and network restrictions; MFA on the Supabase account; PITR backups.
+**Owner action:** turn the macOS firewall on (System Settings → Network → Firewall).
+
+Also: library series titles are now oldest-child-first (uuid order flipped them randomly).
+
+**Gates:** lint ✅ · typecheck ✅ · unit+int 945 ✅ · e2e mock 118 ✅ · e2e real 4 ✅.

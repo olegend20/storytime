@@ -41,7 +41,10 @@ enable_signup = true
 [auth.email]
 enable_signup = true
 double_confirm_changes = true
-enable_confirmations = false
+# StoryTime signs in by magic link only, but Supabase's password sign-up endpoint stays
+# enabled underneath it. With confirmations off, anyone could POST /auth/v1/signup with ANY
+# email and a password and be signed in without owning that inbox (2026-09-29 audit).
+enable_confirmations = true
 
 [auth.external.google]
 enabled = false

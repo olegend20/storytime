@@ -264,7 +264,7 @@ describe.runIf(dbUp)('F3 deleting a child does not break an existing series', ()
     keptChildId = cruz.id
     removedChildId = phoenix.id
 
-    const series = await user.client
+    const series = await serviceClient()
       .from('series')
       .insert({
         family_id: family.id,
@@ -277,13 +277,13 @@ describe.runIf(dbUp)('F3 deleting a child does not break an existing series', ()
     expect(series.error).toBeNull()
     seriesId = series.data!.id
 
-    await user.client.from('story_bibles').insert({
+    await serviceClient().from('story_bibles').insert({
       series_id: seriesId,
       family_id: family.id,
       content: { children: [] },
       token_estimate: 100,
     })
-    const story = await user.client
+    const story = await serviceClient()
       .from('stories')
       .insert({
         family_id: family.id,

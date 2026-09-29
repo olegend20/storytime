@@ -57,9 +57,11 @@ async function decorate(db: SupabaseClient, rows: StoryRow[]): Promise<LibrarySt
   const childIds = [...new Set((series ?? []).flatMap((s) => (s.child_ids as string[]) ?? []))]
   const { data: children } =
     childIds.length > 0
-      ? await db.from('children').select('id, first_name').in('id', childIds)
-      : { data: [] as { id: string; first_name: string }[] }
-  const nameOf = new Map((children ?? []).map((c) => [c.id as string, c.first_name as string]))
+      ? await db.from('children').select('id, first_name, age').in('id', childIds)
+      : { data: [] as { id: string; first_name: string; age: number }[] }
+  const childById = new Map(
+    (children ?? []).map((c) => [c.id as string, { name: c.first_name as string, age: c.age as number }]),
+  )
 
   const seriesById = new Map((series ?? []).map((s) => [s.id as string, s]))
   const labelOf = new Map((packs ?? []).map((p) => [p.id as string, p.topic_label as string]))
@@ -73,9 +75,13 @@ async function decorate(db: SupabaseClient, rows: StoryRow[]): Promise<LibrarySt
 
   return rows.map((row) => {
     const s = seriesById.get(row.series_id)
+    // Oldest first, then by name: `child_ids` is stored in uuid order, which is random, so
+    // "Cruz & Phoenix" would otherwise flip to "Phoenix & Cruz" between families and runs.
     const names = ((s?.child_ids as string[] | undefined) ?? [])
-      .map((id) => nameOf.get(id))
-      .filter((n): n is string => !!n)
+      .map((id) => childById.get(id))
+      .filter((c): c is { name: string; age: number } => !!c)
+      .sort((a, b) => b.age - a.age || a.name.localeCompare(b.name))
+      .map((c) => c.name)
     return LibraryStory.parse({
       ...row,
       series_title: (s?.title as string | null) || joinNames(names) || 'Your stories',

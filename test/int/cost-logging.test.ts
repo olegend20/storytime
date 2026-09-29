@@ -205,9 +205,10 @@ describe.runIf(reachable)('F8 Supabase generation log sink', () => {
 
   it('keeps generation_logs invisible to a client key', async () => {
     const { data, error } = await anon().from('generation_logs').select('id').limit(1)
-    // RLS on with no policy: no rows, no error. Never a leak.
-    expect(error).toBeNull()
-    expect(data).toEqual([])
+    // Never a leak. Since the 2026-09-29 hardening anon holds no grant at all, so this is a
+    // permission error rather than RLS's empty result - stricter, and either way no rows.
+    expect(error?.code).toBe('42501')
+    expect(data ?? []).toEqual([])
   })
 })
 

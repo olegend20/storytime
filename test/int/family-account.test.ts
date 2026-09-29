@@ -139,7 +139,7 @@ describe.runIf(dbUp)('F2 RLS isolation between families', () => {
       .single()
     expect(child.error).toBeNull()
 
-    const series = await b.client
+    const series = await serviceClient()
       .from('series')
       .insert({
         family_id: bFamilyId,
@@ -150,7 +150,7 @@ describe.runIf(dbUp)('F2 RLS isolation between families', () => {
       .single()
     expect(series.error).toBeNull()
 
-    const bible = await b.client.from('story_bibles').insert({
+    const bible = await serviceClient().from('story_bibles').insert({
       series_id: series.data!.id,
       family_id: bFamilyId,
       content: { children: [] },
@@ -158,7 +158,7 @@ describe.runIf(dbUp)('F2 RLS isolation between families', () => {
     })
     expect(bible.error).toBeNull()
 
-    const story = await b.client.from('stories').insert({
+    const story = await serviceClient().from('stories').insert({
       family_id: bFamilyId,
       series_id: series.data!.id,
       topic_input: 'the Titanic',
@@ -231,7 +231,7 @@ describe.runIf(dbUp)('F2 account deletion', () => {
       .select('id')
     expect(children.error).toBeNull()
 
-    const series = await user.client
+    const series = await serviceClient()
       .from('series')
       .insert({
         family_id: familyId,
@@ -242,13 +242,13 @@ describe.runIf(dbUp)('F2 account deletion', () => {
       .single()
     expect(series.error).toBeNull()
 
-    await user.client.from('story_bibles').insert({
+    await serviceClient().from('story_bibles').insert({
       series_id: series.data!.id,
       family_id: familyId,
       content: { children: [] },
       token_estimate: 42,
     })
-    await user.client.from('stories').insert({
+    await serviceClient().from('stories').insert({
       family_id: familyId,
       series_id: series.data!.id,
       topic_input: 'volcanoes',
