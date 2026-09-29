@@ -75,20 +75,23 @@ export class SupabaseLogSink implements GenerationLogSink {
 const INVALID_TEXT_REPRESENTATION = '22P02'
 const FOREIGN_KEY_VIOLATION = '23503'
 
-let installed: SupabaseLogSink | null = null
+/** On `globalThis` for the same reason as the default sink itself - see lib/ai/callModel.ts. */
+const INSTALLED = Symbol.for('storytime.installedSupabaseLogSink')
+type InstalledHolder = typeof globalThis & { [INSTALLED]?: SupabaseLogSink }
 
 /**
  * Point every `callModel()`/`streamModel()` call at Supabase. Called once from
  * `instrumentation.ts` when the server boots; idempotent.
  */
 export function installSupabaseLogSink(client?: SupabaseClient): SupabaseLogSink {
-  if (!installed) {
-    installed = new SupabaseLogSink(client)
-    setDefaultLogSink(installed)
+  const holder = globalThis as InstalledHolder
+  if (!holder[INSTALLED]) {
+    holder[INSTALLED] = new SupabaseLogSink(client)
+    setDefaultLogSink(holder[INSTALLED])
   }
-  return installed
+  return holder[INSTALLED]
 }
 
 export function installedLogSink(): SupabaseLogSink | null {
-  return installed
+  return (globalThis as InstalledHolder)[INSTALLED] ?? null
 }

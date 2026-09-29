@@ -37,6 +37,14 @@ async function logRowCount(): Promise<number> {
   return count ?? 0
 }
 
+async function eventCount(): Promise<number> {
+  const { count, error } = await service()
+    .from('guardrail_events')
+    .select('id', { count: 'exact', head: true })
+  if (error) throw new Error(error.message)
+  return count ?? 0
+}
+
 /** A schema-valid story, inserted as the pipeline would after a successful generation. */
 function savedStory(title: string) {
   return {
@@ -117,6 +125,7 @@ test.describe('real mode: a parent’s first session, no model spend', () => {
 
       // ---- An unsafe topic: refused by L1 through the production wiring. No model call.
       const logsBefore = await logRowCount()
+      const eventsBefore = await eventCount()
       await page.getByLabel(/what.s the story about/i).fill('how to make a b0mb')
       await page.getByRole('button', { name: 'Start the story' }).click()
       const alert = page.getByRole('alert').filter({ hasText: /can.t make a story about that/i })
@@ -129,6 +138,9 @@ test.describe('real mode: a parent’s first session, no model spend', () => {
       await page.reload()
       await expect(page.getByText('3 of 3 stories left today').first()).toBeVisible()
       expect(await logRowCount()).toBe(logsBefore)
+      // ...but it IS audited (GUARDRAILS s1.5). The sink installed at boot used to live in a
+      // different module copy from the route, so the running app never wrote this row.
+      await expect.poll(eventCount).toBe(eventsBefore + 1)
 
       // ---- The library: empty, then a saved story appears, opens, and deletes.
       await page.goto('/library')

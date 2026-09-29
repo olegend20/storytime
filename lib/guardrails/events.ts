@@ -31,13 +31,19 @@ export class MemoryGuardrailSink implements GuardrailEventSink {
   }
 }
 
-let sink: GuardrailEventSink = new MemoryGuardrailSink()
+/**
+ * On `globalThis`, not a module variable: `instrumentation.ts` and the route handlers load
+ * separate copies of this module in Next.js, so a module-level sink installed at boot was
+ * never the one the input guard wrote to - refusals in the running app were never audited.
+ */
+const GUARDRAIL_SINK = Symbol.for('storytime.guardrailSink')
+type GuardrailSinkHolder = typeof globalThis & { [GUARDRAIL_SINK]?: GuardrailEventSink }
 
 export function setGuardrailSink(next: GuardrailEventSink): void {
-  sink = next
+  ;(globalThis as GuardrailSinkHolder)[GUARDRAIL_SINK] = next
 }
 export function getGuardrailSink(): GuardrailEventSink {
-  return sink
+  return ((globalThis as GuardrailSinkHolder)[GUARDRAIL_SINK] ??= new MemoryGuardrailSink())
 }
 
 export interface LogGuardrailInput {
@@ -63,7 +69,7 @@ export async function logGuardrailEvent(input: LogGuardrailInput): Promise<Guard
     family_id: input.familyId ?? null,
     raw_text: input.retainRawText === false ? null : input.text,
   }
-  await sink.write(event)
+  await getGuardrailSink().write(event)
   return event
 }
 
@@ -84,7 +90,8 @@ export function supabaseGuardrailSink(client: {
   }
 }
 
-let installedSupabase = false
+const INSTALLED_SUPABASE = Symbol.for('storytime.guardrailSinkInstalled')
+type InstalledFlag = typeof globalThis & { [INSTALLED_SUPABASE]?: boolean }
 
 /**
  * Point `logGuardrailEvent()` at `guardrail_events`. Called once from `instrumentation.ts`,
@@ -95,7 +102,7 @@ let installedSupabase = false
  * tests - which inject their own sink - stayed green.
  */
 export async function installSupabaseGuardrailSink(): Promise<void> {
-  if (installedSupabase) return
+  if ((globalThis as InstalledFlag)[INSTALLED_SUPABASE]) return
   const { supabaseService } = await import('@/lib/supabase/service')
   const db = supabaseService()
   setGuardrailSink(
@@ -108,5 +115,5 @@ export async function installSupabaseGuardrailSink(): Promise<void> {
       }),
     }),
   )
-  installedSupabase = true
+  ;(globalThis as InstalledFlag)[INSTALLED_SUPABASE] = true
 }

@@ -329,7 +329,13 @@ export async function runGeneration(
       ...(sink ? { sink } : {}),
     })
     if (!parsed.ok) {
-      throw new GenerationFailed(`story output unusable: ${parsed.reason}`)
+      // Field paths and rule messages only - never story text. Without them a
+      // `repair_failed:schema_invalid` in the owner's first real session was undiagnosable:
+      // it could equally have been a count, a length cap or a truncated response.
+      throw new GenerationFailed(
+        `story output unusable: ${parsed.reason}; stop_reason=${streamed.stopReason ?? 'unknown'}; ` +
+          `output_tokens=${streamed.usage.output_tokens}; issues: ${parsed.issues.slice(0, 8).join(' | ')}`,
+      )
     }
     let story = parsed.story
 

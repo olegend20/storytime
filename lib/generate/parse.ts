@@ -85,5 +85,8 @@ export async function parseStoryOutput(
 ): Promise<ParseOutcome> {
   const local = parseStoryOutputLocal(text)
   if (local.ok || opts.allowRepair === false) return local
+  // Field paths and rule messages only, never story text: the writer needed repair on every
+  // attempt of the owner's first real stories, and which rule it breaks is the whole question.
+  console.warn(`[generate] story JSON needs repair (${local.reason}): ${local.issues.slice(0, 8).join(' | ')}`)
   return repairStoryOutput(text, local.issues, opts)
 }

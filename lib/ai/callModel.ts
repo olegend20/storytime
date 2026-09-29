@@ -89,14 +89,25 @@ export interface CallModelResult<T = string> {
 const DEFAULT_MAX_TOKENS = 16_000
 const DEFAULT_MAX_RETRIES = 2
 
-let defaultSink: GenerationLogSink = new MemoryLogSink()
+/**
+ * The process-wide default sink lives on `globalThis`, not in a module variable.
+ *
+ * Next.js loads `instrumentation.ts` in a different module graph from the route handlers, so
+ * each has its own copy of this file. With a module variable, the boot hook pointed ITS copy
+ * at Supabase while every route kept logging to memory: the running app never wrote one
+ * `generation_logs` row, `/admin` saw nothing, and the daily budget cap could never trip.
+ * `Symbol.for` gives every copy the same key.
+ */
+const DEFAULT_SINK = Symbol.for('storytime.defaultLogSink')
+type SinkHolder = typeof globalThis & { [DEFAULT_SINK]?: GenerationLogSink }
 
 /** Lane 3 (F8) calls this once at startup to point logs at Supabase. */
 export function setDefaultLogSink(sink: GenerationLogSink): void {
-  defaultSink = sink
+  ;(globalThis as SinkHolder)[DEFAULT_SINK] = sink
 }
 export function getDefaultLogSink(): GenerationLogSink {
-  return defaultSink
+  const holder = globalThis as SinkHolder
+  return (holder[DEFAULT_SINK] ??= new MemoryLogSink())
 }
 
 /**
@@ -236,7 +247,7 @@ export async function callModel<T = string>(
   opts: CallModelOptions<T>,
 ): Promise<CallModelResult<T>> {
   const model = opts.model ?? modelForRole(opts.role ?? 'helper')
-  const sink = opts.sink ?? defaultSink
+  const sink = opts.sink ?? getDefaultLogSink()
   const maxTokens = opts.maxTokens ?? DEFAULT_MAX_TOKENS
   const maxRetries = opts.maxRetries ?? DEFAULT_MAX_RETRIES
 
