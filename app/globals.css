@@ -77,6 +77,32 @@
 }
 
 /*
+ * Night (DECISIONS #146): for a dark bedroom. Near-black, nothing white, warm dimmed text.
+ * Contrast stays above 7:1 for the prose, so it is still a legible page, just a quiet one.
+ */
+:root[data-theme='night'] {
+  color-scheme: dark;
+  --bg: oklch(0.1 0.01 60);
+  --bg-raised: oklch(0.14 0.012 60);
+  --bg-sunken: oklch(0.08 0.008 60);
+  --fg: oklch(0.8 0.03 75);
+  --fg-muted: oklch(0.62 0.025 75);
+  --border: oklch(0.22 0.015 60);
+  --accent: oklch(0.72 0.1 60);
+  --accent-fg: oklch(0.12 0.01 60);
+  --accent-soft: oklch(0.2 0.03 60);
+  --accent-warm: oklch(0.72 0.13 30); /* the O in tic-tac-toe */
+  --danger: oklch(0.72 0.13 25);
+  --danger-soft: oklch(0.2 0.04 25);
+  --focus: oklch(0.78 0.11 60);
+}
+:root[data-theme='night'][data-reading='on'] {
+  --bg: oklch(0.07 0.008 60);
+  --bg-raised: oklch(0.07 0.008 60);
+  --fg: oklch(0.76 0.03 75);
+}
+
+/*
  * Reading mode: the page dims and the text grows.
  *
  * "Dims the UI" is done by removing chrome from the layout (see ReadingModeToggle) and by
@@ -229,6 +255,11 @@ body {
 .tap {
   min-height: 44px;
   min-width: 44px;
+}
+/* The chapter bar is used one-handed in the dark: bigger than the usual minimum. */
+.tap-big {
+  min-height: 52px;
+  min-width: 56px;
 }
 
 .chip {

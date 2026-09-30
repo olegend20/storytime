@@ -64,7 +64,7 @@ export function ChapterNav({
         <div className="mx-auto flex max-w-3xl items-center gap-2 px-2 py-2">
           <button
             type="button"
-            className="btn btn-quiet tap"
+            className="btn btn-quiet tap tap-big"
             onClick={() => go(currentIndex - 1)}
             disabled={currentIndex <= 0}
             aria-label="Previous chapter"
@@ -86,7 +86,7 @@ export function ChapterNav({
 
           <button
             type="button"
-            className="btn btn-quiet tap"
+            className="btn btn-quiet tap tap-big"
             onClick={() => go(currentIndex + 1)}
             disabled={currentIndex >= total - 1}
             aria-label="Next chapter"

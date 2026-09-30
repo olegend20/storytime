@@ -40,7 +40,7 @@ export function writeJson(key: string, value: unknown): void {
 }
 
 // ------------------------------------------------------------------ reading preferences
-export const Theme = z.enum(['system', 'light', 'dark'])
+export const Theme = z.enum(['system', 'light', 'dark', 'night'])
 export type Theme = z.infer<typeof Theme>
 
 /** Step multipliers for the reader's text-size control. 1 = the comfortable default. */

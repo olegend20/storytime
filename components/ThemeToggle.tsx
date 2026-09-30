@@ -7,12 +7,15 @@ const OPTIONS: ReadonlyArray<{ value: Theme; label: string; hint: string }> = [
   { value: 'system', label: 'Auto', hint: 'Follow the device setting' },
   { value: 'light', label: 'Light', hint: 'Light theme' },
   { value: 'dark', label: 'Dark', hint: 'Dark theme, easier at bedtime' },
+  { value: 'night', label: 'Night', hint: 'Near-black with dimmed, warm text for a dark bedroom' },
 ]
 
 /**
- * Three-state theme control (F9: "a night-friendly dark theme").
+ * Theme control (F9: "a night-friendly dark theme"). Night (DECISIONS #146) is dark taken
+ * further: near-black, no white anywhere, the text warm and dimmed - as close as a web page
+ * can get to turning the phone's brightness down in a dark bedroom.
  *
- * Three states rather than a switch, because "follow my phone" is the setting most parents
+ * Radio states rather than a switch, because "follow my phone" is the setting most parents
  * already have configured for the evening, and a two-state switch silently overrides it.
  * Built as a radiogroup so the whole thing is one tab stop with arrow-key movement inside.
  */

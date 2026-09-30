@@ -867,3 +867,12 @@ DECISIONS #141). The fact cards did not land with the owner; tic-tac-toe by name
 three, gone when the title arrives. **Gates:** lint ✅ · typecheck ✅ · unit+int 1008 ✅ ·
 e2e mock 124 ✅ · e2e real 4 ✅.
 
+### 2026-09-30 — reading on a phone (DECISIONS #143–#147)
+
+Screen wake lock while a story is open; installable (manifest, generated icons, iOS
+full-screen, safe-area viewport); saved stories read offline via a small service worker
+(production builds); a Night theme; swipe to turn chapters with bigger chapter-bar targets.
+Each has an e2e test on desktop and phone (the wake lock and offline tests stub or use the real
+browser APIs). **Gates:** lint ✅ · typecheck ✅ · unit+int 1013 ✅ · e2e mock **132** ✅ ·
+e2e real 4 ✅.
+

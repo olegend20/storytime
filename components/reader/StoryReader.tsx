@@ -5,6 +5,8 @@ import { describeTones, joinNames, type ReaderStory } from '@/lib/client/reader'
 import { friendlyDate } from '@/lib/client/library'
 import { ChapterNav } from './ChapterNav'
 import { Prose } from './Prose'
+import { useWakeLock } from './useWakeLock'
+import { swipeDirection, type Point } from '@/lib/client/swipe'
 import { ReaderControls } from './ReaderControls'
 import { TrueFactsChecklist } from './TrueFactsChecklist'
 import { useScrollMemory } from './useScrollMemory'
@@ -46,6 +48,8 @@ export function StoryReader({
   // Scroll memory only for a finished, saved story: restoring into a stream would fight the
   // prose still arriving underneath.
   useScrollMemory(streaming ? null : story.id, !streaming && story.chapters.length > 0)
+  // The screen stays on while a story is open - a chapter is longer than a phone's lock timer.
+  useWakeLock(story.chapters.length > 0)
 
   // Which chapter the parent is actually looking at. Top-third rootMargin so the heading
   // becoming visible is what changes the counter, not the section's midpoint.
@@ -73,6 +77,25 @@ export function StoryReader({
     node.scrollIntoView({ behavior: 'smooth', block: 'start' })
     setScrolledTo(index)
   }, [])
+
+  // Swipe to turn the page, once the story is complete (while streaming the newest chapter
+  // is the one being read, and there is nothing to turn to). Pointer events, fingers only:
+  // a mouse drag is how a parent selects text, and must not turn the page.
+  const swipeStart = useRef<Point | null>(null)
+  const onPointerDown = (e: React.PointerEvent) => {
+    swipeStart.current =
+      e.pointerType === 'touch' || e.pointerType === 'pen'
+        ? { x: e.clientX, y: e.clientY, t: Date.now() }
+        : null
+  }
+  const onPointerUp = (e: React.PointerEvent) => {
+    const start = swipeStart.current
+    swipeStart.current = null
+    if (!start || streaming) return
+    const dir = swipeDirection(start, { x: e.clientX, y: e.clientY, t: Date.now() })
+    if (dir === 'next' && current < story.chapters.length - 1) goToChapter(current + 1)
+    if (dir === 'prev' && current > 0) goToChapter(current - 1)
+  }
 
   const meta = [
     joinNames([...story.childNames]),
@@ -118,7 +141,13 @@ export function StoryReader({
         </p>
       )}
 
-      <div aria-live={streaming ? 'polite' : 'off'} aria-busy={streaming}>
+      <div
+        aria-live={streaming ? 'polite' : 'off'}
+        aria-busy={streaming}
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+        data-testid="chapters"
+      >
         {story.chapters.map((chapter, index) => (
           <section
             key={index}

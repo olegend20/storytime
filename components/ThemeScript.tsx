@@ -15,7 +15,7 @@ const script = `(function(){try{
 var raw = localStorage.getItem(${JSON.stringify(PREFS_KEY)});
 var p = raw ? JSON.parse(raw) : {};
 var root = document.documentElement;
-if (p && (p.theme === 'dark' || p.theme === 'light')) root.setAttribute('data-theme', p.theme);
+if (p && (p.theme === 'dark' || p.theme === 'light' || p.theme === 'night')) root.setAttribute('data-theme', p.theme);
 if (p && p.readingMode === true) root.setAttribute('data-reading', 'on');
 var scales = ${JSON.stringify(TEXT_SCALES)};
 var i = p && typeof p.textScaleIndex === 'number' ? p.textScaleIndex : ${DEFAULT_TEXT_SCALE_INDEX};

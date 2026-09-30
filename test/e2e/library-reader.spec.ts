@@ -291,3 +291,119 @@ test('a story URL that does not exist says so kindly', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /isn.t here any more/i })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Back to the library' })).toBeVisible()
 })
+
+// ---------------------------------------------------------------------------------------
+// Reading on a phone in a dark bedroom (DECISIONS #143-#147)
+// ---------------------------------------------------------------------------------------
+
+test('the screen stays awake while a story is open, and is released on leaving', async ({ page }) => {
+  // The Wake Lock API, recorded: a real lock cannot be observed from a test.
+  await page.addInitScript(() => {
+    const log: string[] = []
+    ;(window as unknown as { __wake: string[] }).__wake = log
+    Object.defineProperty(navigator, 'wakeLock', {
+      configurable: true,
+      value: {
+        async request(type: string) {
+          log.push(`request:${type}`)
+          const listeners: (() => void)[] = []
+          return {
+            released: false,
+            async release() {
+              this.released = true
+              log.push('release')
+              listeners.forEach((l) => l())
+            },
+            addEventListener(_t: string, l: () => void) {
+              listeners.push(l)
+            },
+          }
+        },
+      },
+    })
+  })
+  await page.reload() // the init script applies from the next navigation
+  await openFirstStory(page)
+  const log = () => page.evaluate(() => (window as unknown as { __wake: string[] }).__wake)
+  await expect.poll(log).toContain('request:screen')
+  await page.getByRole('link', { name: 'Library' }).first().click()
+  await expect(page.getByRole('heading', { name: 'Story library' })).toBeVisible()
+  await expect.poll(log).toContain('release')
+})
+
+test('the night theme is near-black with warm text, and persists', async ({ page }) => {
+  await openFirstStory(page)
+  await page.getByRole('radio', { name: 'Night' }).first().click()
+  expect(await page.getAttribute('html', 'data-theme')).toBe('night')
+  const bg = await bodyBackgroundRgb(page)
+  expect(relativeLuminance(bg)).toBeLessThan(25)
+  const fg = await page.evaluate(() => getComputedStyle(document.querySelector('.prose')!).color)
+  // Warm: more red than blue, and dimmed: not white.
+  const [r, , b] = fg.match(/\d+/g)!.map(Number) as [number, number, number]
+  expect(r).toBeGreaterThan(b)
+  expect(r).toBeLessThan(235)
+  await page.reload()
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  expect(await page.getAttribute('html', 'data-theme')).toBe('night')
+})
+
+test('a sideways swipe turns the chapter; a vertical one does not', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'touch only')
+  await openFirstStory(page)
+  await expect(page.getByText(/^Chapter 1 of \d+$/)).toBeVisible()
+  const swipe = (from: [number, number], to: [number, number]) =>
+    page.evaluate(
+      ([a, b]) => {
+        const el = document.querySelector('[data-testid="chapters"]')!
+        const ev = (type: string, x: number, y: number) =>
+          new PointerEvent(type, { bubbles: true, pointerType: 'touch', pointerId: 1, clientX: x, clientY: y })
+        el.dispatchEvent(ev('pointerdown', a[0], a[1]))
+        el.dispatchEvent(ev('pointerup', b[0], b[1]))
+      },
+      [from, to] as const,
+    )
+  await swipe([300, 400], [300, 200]) // a scroll
+  await expect(page.getByText(/^Chapter 1 of \d+$/)).toBeVisible()
+  await swipe([300, 400], [120, 404]) // a page turn
+  await expect(page.getByText(/^Chapter 2 of \d+$/)).toBeVisible()
+  await swipe([100, 400], [300, 396]) // and back
+  await expect(page.getByText(/^Chapter 1 of \d+$/)).toBeVisible()
+})
+
+test('installable: a manifest, icons, and full-screen on iOS', async ({ page, request }) => {
+  await page.goto('/library')
+  await expect(page.locator('link[rel="manifest"]')).toHaveAttribute('href', /manifest\.webmanifest/)
+  // Next emits the current name; iOS 16.4+ honours it, older iOS reads the apple- prefix.
+  await expect(page.locator('meta[name="mobile-web-app-capable"], meta[name="apple-mobile-web-app-capable"]').first()).toHaveAttribute('content', 'yes')
+  await expect(page.locator('meta[name="apple-mobile-web-app-title"]')).toHaveAttribute('content', 'StoryTime')
+  await expect(page.locator('meta[name="viewport"]')).toHaveAttribute('content', /viewport-fit=cover/)
+  const manifest = await request.get('/manifest.webmanifest')
+  expect(manifest.ok()).toBe(true)
+  const body = (await manifest.json()) as { display: string; start_url: string; icons: { src: string }[] }
+  expect(body.display).toBe('standalone')
+  expect(body.start_url).toBe('/library')
+  for (const icon of body.icons) {
+    const res = await request.get(icon.src)
+    expect(res.ok(), icon.src).toBe(true)
+    expect(res.headers()['content-type'], icon.src).toContain('image/png')
+  }
+})
+
+test('a saved story reads with no signal', async ({ page, context, browserName }) => {
+  test.skip(browserName !== 'chromium', 'service workers are exercised on Chromium')
+  await page.goto('/library')
+  await resetMock(page)
+  await page.reload()
+  // The worker registers on a production build; wait until it controls this page.
+  await page.waitForFunction(() => navigator.serviceWorker?.controller !== null, null, { timeout: 15_000 })
+  await openFirstStory(page) // waits for the story itself, not the library's own heading
+  const title = (await page.getByRole('heading', { level: 1 }).innerText()).trim()
+  await page.reload() // once more, controlled, so the story and its page are cached
+  await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible()
+
+  await context.setOffline(true)
+  await page.reload()
+  await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('heading', { name: 'True facts from the story' })).toBeVisible({ timeout: 15_000 })
+  await context.setOffline(false)
+})
