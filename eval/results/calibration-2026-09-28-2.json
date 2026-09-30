@@ -11,23 +11,23 @@
       "id": "references_score_at_least_4_5",
       "description": "The four reference stories scored with their original requests each reach overall >= 4.5",
       "passed": false,
-      "detail": "below the bar: cruz-and-phoenix-lego-story.md=3.95; lennon-and-the-lost-levels.md=4.45; cruz-and-phoenix-shark-submarine.md=3.25; lennon-the-beautiful-game.md=4.15. §5: fix the judge prompt, never the references.",
+      "detail": "below the bar: milo-and-juno-lego-story.md=3.95; theo-and-the-lost-levels.md=4.45; milo-and-juno-shark-submarine.md=3.25; theo-the-beautiful-game.md=4.15. §5: fix the judge prompt, never the references.",
       "observed": {
         "per_story": [
           {
-            "file": "cruz-and-phoenix-lego-story.md",
+            "file": "milo-and-juno-lego-story.md",
             "overall": 3.95
           },
           {
-            "file": "lennon-and-the-lost-levels.md",
+            "file": "theo-and-the-lost-levels.md",
             "overall": 4.45
           },
           {
-            "file": "cruz-and-phoenix-shark-submarine.md",
+            "file": "milo-and-juno-shark-submarine.md",
             "overall": 3.25
           },
           {
-            "file": "lennon-the-beautiful-game.md",
+            "file": "theo-the-beautiful-game.md",
             "overall": 4.15
           }
         ]
@@ -35,9 +35,9 @@
     },
     {
       "id": "sabotage_heroes",
-      "description": "LEGO story with Phoenix's name removed from all but one chapter scores heroes <= 2",
+      "description": "LEGO story with Juno's name removed from all but one chapter scores heroes <= 2",
       "passed": true,
-      "detail": "heroes=2 (raw), kept in \"Chapter 1: The Carpenter in Billund\", 12 mentions removed. Evidence: Cruz gets the story's key moment by inventing the tubes (\"What if there was something inside here... to hug the bumps\"). Phoenix disappears after Chapter 1. Nearly every later line is given to Cruz, including \"'How about Super Awesome Toy Company?' said Cruz. 'How about Duck Company?' said Cruz\" and \"Kjeld looked at Cruz.\" So one of the two named heroes gets no share of the plot.",
+      "detail": "heroes=2 (raw), kept in \"Chapter 1: The Carpenter in Billund\", 12 mentions removed. Evidence: Milo gets the story's key moment by inventing the tubes (\"What if there was something inside here... to hug the bumps\"). Juno disappears after Chapter 1. Nearly every later line is given to Milo, including \"'How about Super Awesome Toy Company?' said Milo. 'How about Duck Company?' said Milo\" and \"Kjeld looked at Milo.\" So one of the two named heroes gets no share of the plot.",
       "observed": {
         "scores_raw": {
           "heroes": 2,
@@ -93,7 +93,7 @@
       "id": "sabotage_age_fit_peril",
       "description": "Shark story where the great white chases and rams the submarine scores age_fit <= 2 for band A",
       "passed": true,
-      "detail": "age_fit=1 (raw); word count 1851 -> 1826, length effectively unchanged so this is peril and not padding. Evidence: Band A (youngest is 4) requires that nothing chases anyone, yet Chapter 6 is titled 'The Chase': 'The shark chased them through the dark', with ramming, an injury ('Cruz smashed his shoulder into the wall'), a flooding cabin and 'It's right behind us.' The length of 1826 words is above the 1300-1700 target but inside the ±15% tolerance.",
+      "detail": "age_fit=1 (raw); word count 1851 -> 1826, length effectively unchanged so this is peril and not padding. Evidence: Band A (youngest is 4) requires that nothing chases anyone, yet Chapter 6 is titled 'The Chase': 'The shark chased them through the dark', with ramming, an injury ('Milo smashed his shoulder into the wall'), a flooding cabin and 'It's right behind us.' The length of 1826 words is above the 1300-1700 target but inside the ±15% tolerance.",
       "observed": {
         "scores_raw": {
           "heroes": 2,
@@ -147,7 +147,7 @@
   ],
   "reference_scores": [
     {
-      "file": "cruz-and-phoenix-lego-story.md",
+      "file": "milo-and-juno-lego-story.md",
       "band": "A",
       "word_count": 1540,
       "scores_raw": {
@@ -182,7 +182,7 @@
       "judge_error": null
     },
     {
-      "file": "lennon-and-the-lost-levels.md",
+      "file": "theo-and-the-lost-levels.md",
       "band": "C",
       "word_count": 2471,
       "scores_raw": {
@@ -217,7 +217,7 @@
       "judge_error": null
     },
     {
-      "file": "cruz-and-phoenix-shark-submarine.md",
+      "file": "milo-and-juno-shark-submarine.md",
       "band": "A",
       "word_count": 1851,
       "scores_raw": {
@@ -252,7 +252,7 @@
       "judge_error": null
     },
     {
-      "file": "lennon-the-beautiful-game.md",
+      "file": "theo-the-beautiful-game.md",
       "band": "C",
       "word_count": 2633,
       "scores_raw": {

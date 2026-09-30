@@ -9,7 +9,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/new')
   await resetMock(page)
   await page.reload()
-  await expect(page.getByRole('button', { name: 'Cruz 7' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Milo 7' })).toBeVisible()
 })
 
 /** VT: happy path with fixtures → story renders progressively; quota indicator decrements. */
@@ -19,8 +19,8 @@ test('happy path streams a story and the quota indicator decrements', async ({ p
   test.slow()
   await expect(page.getByText('2 of 3 stories left today')).toBeVisible()
 
-  // First visit: every child is selected, so the band follows Phoenix (4) — band A.
-  for (const name of ['Cruz 7', 'Phoenix 4', 'Lennon 10']) {
+  // First visit: every child is selected, so the band follows Juno (4) — band A.
+  for (const name of ['Milo 7', 'Juno 4', 'Theo 10']) {
     await expect(page.getByRole('button', { name })).toHaveAttribute('aria-pressed', 'true')
   }
   await expect(page.getByText(/written for a 4-year-old \(band A\)/i)).toBeVisible()
@@ -179,13 +179,13 @@ test('the form remembers the children and length used last time', async ({ page 
   // Streams a whole 2,600-word story to completion. Mobile WebKit, rendering that incrementally
   // under five parallel workers, does not fit the default 30s budget.
   test.slow()
-  // Narrow the selection to Lennon only, whatever the starting state is.
-  for (const name of ['Cruz 7', 'Phoenix 4']) {
+  // Narrow the selection to Theo only, whatever the starting state is.
+  for (const name of ['Milo 7', 'Juno 4']) {
     const chip = page.getByRole('button', { name })
     if ((await chip.getAttribute('aria-pressed')) === 'true') await chip.click()
   }
-  const lennon = page.getByRole('button', { name: 'Lennon 10' })
-  if ((await lennon.getAttribute('aria-pressed')) !== 'true') await lennon.click()
+  const theo = page.getByRole('button', { name: 'Theo 10' })
+  if ((await theo.getAttribute('aria-pressed')) !== 'true') await theo.click()
   await page.getByRole('radio', { name: '15 min' }).click()
   await startStory(page, 'the deepest part of the ocean')
   await expect(page.getByRole('heading', { name: 'Saved to your library' })).toBeVisible({
@@ -193,11 +193,11 @@ test('the form remembers the children and length used last time', async ({ page 
   })
 
   await page.goto('/new')
-  await expect(page.getByRole('button', { name: 'Lennon 10' })).toHaveAttribute(
+  await expect(page.getByRole('button', { name: 'Theo 10' })).toHaveAttribute(
     'aria-pressed',
     'true',
   )
-  await expect(page.getByRole('button', { name: 'Phoenix 4' })).toHaveAttribute(
+  await expect(page.getByRole('button', { name: 'Juno 4' })).toHaveAttribute(
     'aria-pressed',
     'false',
   )
@@ -216,11 +216,11 @@ test('reaching the topic field costs at most three taps from the home page', asy
   // Nothing is remembered on a first visit, so every child starts selected and no tap is spent
   // here. If that default ever changes, one tap is still inside the budget.
   const selectedChildren = await page
-    .locator('fieldset', { has: page.getByRole('button', { name: 'Cruz 7' }) })
+    .locator('fieldset', { has: page.getByRole('button', { name: 'Milo 7' }) })
     .locator('button[aria-pressed="true"]')
     .count()
   if (selectedChildren === 0) {
-    await page.getByRole('button', { name: 'Cruz 7' }).click()
+    await page.getByRole('button', { name: 'Milo 7' }).click()
     taps += 1
   }
 
@@ -285,27 +285,27 @@ test('the children play tic-tac-toe by name while the writer thinks, and the sto
   // The board is there at once - no blank form, no spinner - with the first two children.
   const board = page.getByTestId('ttt-board')
   await expect(board).toBeVisible()
-  await expect(page.getByRole('heading', { name: /Cruz vs Phoenix/ })).toBeVisible()
-  await expect(page.getByTestId('ttt-status')).toHaveText("Cruz's turn")
+  await expect(page.getByRole('heading', { name: /Milo vs Juno/ })).toBeVisible()
+  await expect(page.getByTestId('ttt-status')).toHaveText("Milo's turn")
   await expect(page.getByTestId('story-status')).toContainText(/play while you wait/)
 
-  // Cruz takes the top row while Phoenix takes the middle.
+  // Milo takes the top row while Juno takes the middle.
   const cell = (i: number) => page.getByTestId(`ttt-cell-${i}`)
   await cell(0).click()
-  await expect(page.getByTestId('ttt-status')).toHaveText("Phoenix's turn")
+  await expect(page.getByTestId('ttt-status')).toHaveText("Juno's turn")
   await expect(cell(0)).toHaveAttribute('data-mark', 'X')
   await cell(3).click()
   await cell(1).click()
   await cell(4).click()
   await cell(2).click()
-  await expect(page.getByTestId('ttt-status')).toHaveText('Cruz wins!')
-  await expect(page.getByTestId('ttt-score')).toContainText('Cruz 1 – 0 Phoenix')
-  await expect(page.getByTestId('ttt-score')).toContainText('next up: Lennon')
+  await expect(page.getByTestId('ttt-status')).toHaveText('Milo wins!')
+  await expect(page.getByTestId('ttt-score')).toContainText('Milo 1 – 0 Juno')
+  await expect(page.getByTestId('ttt-score')).toContainText('next up: Theo')
 
-  // Play again: Lennon takes the loser's seat, Cruz keeps X and starts.
+  // Play again: Theo takes the loser's seat, Milo keeps X and starts.
   await page.getByRole('button', { name: 'Play again' }).click()
-  await expect(page.getByRole('heading', { name: /Cruz vs Lennon/ })).toBeVisible()
-  await expect(page.getByTestId('ttt-status')).toHaveText("Cruz's turn")
+  await expect(page.getByRole('heading', { name: /Milo vs Theo/ })).toBeVisible()
+  await expect(page.getByTestId('ttt-status')).toHaveText("Milo's turn")
   await expect(cell(0)).toHaveAttribute('data-mark', '')
 
   // When the title arrives the reader takes over and the game is gone.
@@ -315,19 +315,19 @@ test('the children play tic-tac-toe by name while the writer thinks, and the sto
 })
 
 test('one child plays StoryTime, which blocks a win', async ({ page }) => {
-  // Deselect Phoenix and Lennon: Cruz alone.
-  for (const name of ['Phoenix 4', 'Lennon 10']) {
+  // Deselect Juno and Theo: Milo alone.
+  for (const name of ['Juno 4', 'Theo 10']) {
     await page.getByRole('button', { name }).click()
     await expect(page.getByRole('button', { name })).toHaveAttribute('aria-pressed', 'false')
   }
   await startStory(page, '!thinking the history of soccer')
-  await expect(page.getByRole('heading', { name: /Cruz vs StoryTime/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Milo vs StoryTime/ })).toBeVisible()
   const cell = (i: number) => page.getByTestId(`ttt-cell-${i}`)
   await cell(0).click()
   // The house replies by itself; the centre is its first choice.
   await expect(cell(4)).toHaveAttribute('data-mark', 'O', { timeout: 5_000 })
-  await expect(page.getByTestId('ttt-status')).toHaveText("Cruz's turn")
+  await expect(page.getByTestId('ttt-status')).toHaveText("Milo's turn")
   await cell(1).click()
-  // Two in a row for Cruz: the house must block at 2.
+  // Two in a row for Milo: the house must block at 2.
   await expect(cell(2)).toHaveAttribute('data-mark', 'O', { timeout: 5_000 })
 })

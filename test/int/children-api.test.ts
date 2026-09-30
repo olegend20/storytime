@@ -58,7 +58,7 @@ describe.runIf(dbUp)('F3 children endpoint', () => {
 
   it('creates a child and returns 201', async () => {
     const response = await handleCreateChild(ctx, {
-      first_name: 'Cruz',
+      first_name: 'Milo',
       age: 7,
       likes: ['football', 'LEGO'],
       notes: 'Loves goalkeeping',
@@ -66,32 +66,32 @@ describe.runIf(dbUp)('F3 children endpoint', () => {
     })
     expect(response.status).toBe(201)
     const created = (await body(response)).child!
-    expect(created.first_name).toBe('Cruz')
+    expect(created.first_name).toBe('Milo')
     expect(created.likes).toEqual(['football', 'LEGO'])
   })
 
   it('sanitizes on the way in - the stored name has no stray whitespace', async () => {
-    const response = await handleCreateChild(ctx, { first_name: '  Phoenix  ', age: 4 })
+    const response = await handleCreateChild(ctx, { first_name: '  Juno  ', age: 4 })
     expect(response.status).toBe(201)
-    expect((await body(response)).child!.first_name).toBe('Phoenix')
+    expect((await body(response)).child!.first_name).toBe('Juno')
   })
 
   it('lists the family children', async () => {
     const listed = (await body(await handleListChildren(ctx))).children!
-    expect(listed.map((c) => c.first_name)).toEqual(['Cruz', 'Phoenix'])
+    expect(listed.map((c) => c.first_name)).toEqual(['Milo', 'Juno'])
   })
 
   it.each([
-    [{ first_name: 'Cruz', age: 0 }, 'age 0'],
-    [{ first_name: 'Cruz', age: 18 }, 'age 18'],
+    [{ first_name: 'Milo', age: 0 }, 'age 0'],
+    [{ first_name: 'Milo', age: 18 }, 'age 18'],
     [{ first_name: 'a'.repeat(31), age: 7 }, 'a 31-character name'],
-    [{ first_name: 'Cruz9', age: 7 }, 'digits in a name'],
+    [{ first_name: 'Milo9', age: 7 }, 'digits in a name'],
     [{ first_name: '', age: 7 }, 'an empty name'],
     [
-      { first_name: 'Cruz', age: 7, likes: Array.from({ length: 11 }, (_, i) => `l${i}`) },
+      { first_name: 'Milo', age: 7, likes: Array.from({ length: 11 }, (_, i) => `l${i}`) },
       '11 likes',
     ],
-    [{ first_name: 'Cruz', age: 7, notes: 'x'.repeat(301) }, 'a 301-character note'],
+    [{ first_name: 'Milo', age: 7, notes: 'x'.repeat(301) }, 'a 301-character note'],
   ])('rejects %j (%s) with 400 and a message the parent can act on', async (payload, _why) => {
     const response = await handleCreateChild(ctx, payload)
     expect(response.status).toBe(400)
@@ -108,7 +108,7 @@ describe.runIf(dbUp)('F3 children endpoint', () => {
     expect(tooLongName.message).toBe('First names can be up to 30 characters.')
 
     const tooLongNote = await body(
-      await handleCreateChild(ctx, { first_name: 'Lennon', age: 10, notes: 'y'.repeat(400) }),
+      await handleCreateChild(ctx, { first_name: 'Theo', age: 10, notes: 'y'.repeat(400) }),
     )
     expect(tooLongNote.field).toBe('notes')
     expect(tooLongNote.message).toBe('Notes can be up to 300 characters.')
@@ -116,9 +116,9 @@ describe.runIf(dbUp)('F3 children endpoint', () => {
 
   it('rejects HTML in a text field with 400 html_not_allowed (F11 AC)', async () => {
     for (const payload of [
-      { first_name: '<script>alert(1)</script>Cruz', age: 7 },
-      { first_name: 'Cruz', age: 7, notes: 'Loves <b>football</b>' },
-      { first_name: 'Cruz', age: 7, likes: ['<iframe src=x></iframe>'] },
+      { first_name: '<script>alert(1)</script>Milo', age: 7 },
+      { first_name: 'Milo', age: 7, notes: 'Loves <b>football</b>' },
+      { first_name: 'Milo', age: 7, likes: ['<iframe src=x></iframe>'] },
     ]) {
       const response = await handleCreateChild(ctx, payload)
       expect(response.status).toBe(400)
@@ -153,8 +153,8 @@ describe.runIf(dbUp)('F3 children endpoint', () => {
 
   it('updates one field without blanking the others', async () => {
     const listed = (await body(await handleListChildren(ctx))).children!
-    const cruz = listed.find((c) => c.first_name === 'Cruz')!
-    const response = await handleUpdateChild(ctx, cruz.id, { age: 8 })
+    const milo = listed.find((c) => c.first_name === 'Milo')!
+    const response = await handleUpdateChild(ctx, milo.id, { age: 8 })
     expect(response.status).toBe(200)
     const updated = (await body(response)).child!
     expect(updated.age).toBe(8)
@@ -258,19 +258,19 @@ describe.runIf(dbUp)('F3 deleting a child does not break an existing series', ()
     const family = await ensureFamily(user.client, user.userId)
     ctx = { db: user.client, familyId: family.id }
 
-    const cruz = (await body(await handleCreateChild(ctx, { first_name: 'Cruz', age: 7 }))).child!
-    const phoenix = (await body(await handleCreateChild(ctx, { first_name: 'Phoenix', age: 4 })))
+    const milo = (await body(await handleCreateChild(ctx, { first_name: 'Milo', age: 7 }))).child!
+    const juno = (await body(await handleCreateChild(ctx, { first_name: 'Juno', age: 4 })))
       .child!
-    keptChildId = cruz.id
-    removedChildId = phoenix.id
+    keptChildId = milo.id
+    removedChildId = juno.id
 
     const series = await serviceClient()
       .from('series')
       .insert({
         family_id: family.id,
-        child_ids: [cruz.id, phoenix.id].sort(),
+        child_ids: [milo.id, juno.id].sort(),
         child_key: `lane1-intact-${Date.now()}`,
-        title: 'Cruz and Phoenix',
+        title: 'Milo and Juno',
       })
       .select('id')
       .single()
@@ -320,7 +320,7 @@ describe.runIf(dbUp)('F3 deleting a child does not break an existing series', ()
     expect(error).toBeNull()
     expect(data!.child_ids).toContain(removedChildId)
     expect(data!.child_ids).toContain(keptChildId)
-    expect(data!.title).toBe('Cruz and Phoenix')
+    expect(data!.title).toBe('Milo and Juno')
   })
 
   it('leaves the story and its bible readable (F3 AC)', async () => {

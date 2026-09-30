@@ -1,18 +1,18 @@
-# Cruz, Phoenix and the Brick That Clicked
+# Milo, Juno and the Brick That Clicked
 
 *A bedtime adventure through the true story of LEGO*
 
 ---
 
-It was a rainy Saturday, and Cruz and Phoenix had built the biggest LEGO tower their house had ever seen. It wobbled. It swayed. It nearly touched the ceiling.
+It was a rainy Saturday, and Milo and Juno had built the biggest LEGO tower their house had ever seen. It wobbled. It swayed. It nearly touched the ceiling.
 
-"One more brick," said Cruz, holding up a tiny red piece. "Then it's a world record."
+"One more brick," said Milo, holding up a tiny red piece. "Then it's a world record."
 
-But when Phoenix pressed the brick on top, something strange happened. The brick went *click*... and then it began to **glow**.
+But when Juno pressed the brick on top, something strange happened. The brick went *click*... and then it began to **glow**.
 
-"Uh oh," said Phoenix.
+"Uh oh," said Juno.
 
-"Cool," said Cruz.
+"Cool," said Milo.
 
 The glow grew brighter and brighter until the whole room turned red and gold, and with a great big **WHOOOOSH**, the boys were pulled right into the brick!
 
@@ -24,25 +24,25 @@ When they opened their eyes, the boys were standing in a snowy little village. T
 
 A sign on a workshop door said: **BILLUND, DENMARK.**
 
-"Denmark?" whispered Phoenix. "That's really far from home."
+"Denmark?" whispered Juno. "That's really far from home."
 
-"And look," said Cruz, pointing at a calendar on the wall. "It says **1932**. That's almost a hundred years ago!"
+"And look," said Milo, pointing at a calendar on the wall. "It says **1932**. That's almost a hundred years ago!"
 
 Inside the workshop, a man with a kind face and sawdust on his sleeves was sanding a piece of wood. His name was **Ole Kirk Christiansen**, and he was a carpenter. He looked up and smiled.
 
 "Well, hello! Are you two lost?"
 
-"Sort of," said Phoenix. "What are you making?"
+"Sort of," said Juno. "What are you making?"
 
 Ole sighed. "I used to build houses and furniture. But times are hard right now. Nobody has money to buy big things. So..." He held up a small wooden truck. "I've started making toys. Because even when times are hard, children still need to play."
 
-Cruz and Phoenix looked around. There were wooden yo-yos, wooden trains, and a funny wooden **duck on wheels** that went *quack-clack, quack-clack* when you pulled it along.
+Milo and Juno looked around. There were wooden yo-yos, wooden trains, and a funny wooden **duck on wheels** that went *quack-clack, quack-clack* when you pulled it along.
 
-"Can we help?" asked Cruz.
+"Can we help?" asked Milo.
 
 "Of course!" laughed Ole. "Every toy maker needs toy testers."
 
-So the boys tested yo-yos. They raced trucks across the floor. Phoenix pulled the wooden duck all around the workshop until everybody was laughing.
+So the boys tested yo-yos. They raced trucks across the floor. Juno pulled the wooden duck all around the workshop until everybody was laughing.
 
 ---
 
@@ -52,9 +52,9 @@ A couple of years later, Ole gathered everyone around a table.
 
 "Our toys need a name," he said. "A special name."
 
-"How about *Super Awesome Toy Company*?" said Cruz.
+"How about *Super Awesome Toy Company*?" said Milo.
 
-"How about *Duck Company*?" said Phoenix.
+"How about *Duck Company*?" said Juno.
 
 Ole chuckled. "Good ideas! But I've been thinking of two Danish words: **leg godt**. It means **play well**."
 
@@ -76,17 +76,17 @@ One night, the boys woke up to shouting.
 
 "FIRE! The workshop is on fire!"
 
-Orange flames danced in the dark. Cruz grabbed Phoenix's hand, and they ran outside with everyone else. They watched as the workshop, and all the toys inside, burned away.
+Orange flames danced in the dark. Milo grabbed Juno's hand, and they ran outside with everyone else. They watched as the workshop, and all the toys inside, burned away.
 
 In the morning, Ole stood in the ashes. His shoulders were slumped.
 
-Phoenix tugged his sleeve. "Are you going to stop making toys?"
+Juno tugged his sleeve. "Are you going to stop making toys?"
 
 Ole was quiet for a long moment. Then he picked up a burned piece of wood and turned it over in his hands.
 
 "No," he said. "We will build again. And we'll build it even better."
 
-And they did. Cruz carried planks. Phoenix handed out nails. And soon a brand-new, bigger workshop stood right where the old one had been.
+And they did. Milo carried planks. Juno handed out nails. And soon a brand-new, bigger workshop stood right where the old one had been.
 
 "You know what I always say?" said Ole, patting the new wall. "**Only the best is good enough.**"
 
@@ -98,7 +98,7 @@ The years flew by like pages in a flip book. Soon it was **1947**, and a huge cr
 
 Inside was a giant, clanking, hissing **machine**.
 
-"What IS that?" asked Cruz.
+"What IS that?" asked Milo.
 
 "It's a plastic-molding machine," said Ole, his eyes sparkling. "You melt plastic, squirt it into a shape, and out pops a toy! It cost a LOT of money. Some people think I'm silly for buying it."
 
@@ -106,9 +106,9 @@ The machine rumbled. **CLUNK. HISSSS. POP!**
 
 Out came a little plastic block with round bumps on top.
 
-Phoenix picked it up. "It's a brick!"
+Juno picked it up. "It's a brick!"
 
-Cruz picked up another one and pressed it on top. It stayed... sort of. "It sits on top," he said. "But if I shake it..." He wiggled his hand. The top brick fell right off. *Plink!*
+Milo picked up another one and pressed it on top. It stayed... sort of. "It sits on top," he said. "But if I shake it..." He wiggled his hand. The top brick fell right off. *Plink!*
 
 Ole nodded. "Yes. That's our problem. We call them **Automatic Binding Bricks**, but they don't bind very well. Towers tumble. Castles crumble. Some shops even send them back."
 
@@ -124,7 +124,7 @@ Ole had a son named **Godtfred**, who worked in the toy company too. One day, Go
 
 "So what if," said Godtfred, grabbing a handful of bricks, "every LEGO set could connect to **every other** LEGO set? A house, a car, a fire station, a whole town! You could build anything, and then build it again into something new!"
 
-"Like a LEGO city!" cried Phoenix.
+"Like a LEGO city!" cried Juno.
 
 "EXACTLY like a LEGO city!" said Godtfred.
 
@@ -136,11 +136,11 @@ There was just one teeny problem. The bricks still fell apart.
 
 Godtfred and his team tried idea after idea. They drew pictures. They built models. They scratched their heads.
 
-Cruz flipped a brick over and looked at the empty hollow underneath. "What if there was something **inside** here," he said, "to hug the bumps on the brick below?"
+Milo flipped a brick over and looked at the empty hollow underneath. "What if there was something **inside** here," he said, "to hug the bumps on the brick below?"
 
 Godtfred stared at him. Then he grabbed a pencil and drew little round **tubes** inside the bottom of the brick.
 
-They made a new brick with tubes. Phoenix held one brick in each hand, lined them up, and pressed.
+They made a new brick with tubes. Juno held one brick in each hand, lined them up, and pressed.
 
 **CLICK!**
 
@@ -162,7 +162,7 @@ A little boy came running into the workshop. It was Godtfred's son, **Kjeld**.
 
 "Of course," said Godtfred. "You're our most important toy tester. And today you have two helpers."
 
-Kjeld looked at Cruz and Phoenix. "Want to build something?"
+Kjeld looked at Milo and Juno. "Want to build something?"
 
 Did they ever!
 
@@ -184,7 +184,7 @@ Now it was **1968**, and the boys were standing in front of a gate with a giant 
 
 Inside was a whole world made of LEGO bricks: tiny towns, boats, trains, and even famous buildings from all over the world, built from millions of pieces.
 
-"Somebody built a whole PARK out of bricks!" said Phoenix.
+"Somebody built a whole PARK out of bricks!" said Juno.
 
 "People were coming to Billund just to see LEGO," explained Godtfred. "So we built them something amazing to see."
 
@@ -198,9 +198,9 @@ Whoooosh! **1978**.
 
 On a table sat a tiny figure with a smiling yellow face, little claw hands and legs that bent so it could sit down.
 
-"A LEGO person!" said Cruz. "It's a **minifigure**!"
+"A LEGO person!" said Milo. "It's a **minifigure**!"
 
-Phoenix made the little figure walk across the table. "Now our LEGO towns have people in them. Firefighters, and police officers, and knights, and astronauts!"
+Juno made the little figure walk across the table. "Now our LEGO towns have people in them. Firefighters, and police officers, and knights, and astronauts!"
 
 "Every town needs somebody to live in it," said Kjeld with a grin.
 
@@ -208,9 +208,9 @@ Phoenix made the little figure walk across the table. "Now our LEGO towns have p
 
 ## Chapter 10: Home Again
 
-Suddenly the red brick in Phoenix's pocket began to glow again.
+Suddenly the red brick in Juno's pocket began to glow again.
 
-"I think it's time to go home," said Cruz.
+"I think it's time to go home," said Milo.
 
 Kjeld waved. "Thanks for helping! Remember the rule!"
 
@@ -220,11 +220,11 @@ Kjeld waved. "Thanks for helping! Remember the rule!"
 
 And there they were, back in their own living room, right next to their giant wobbly tower. It was still raining outside. Everything looked the same, but it didn't *feel* the same.
 
-Phoenix picked up a brick and turned it over. He looked at the little round tubes inside.
+Juno picked up a brick and turned it over. He looked at the little round tubes inside.
 
 "A carpenter who never gave up," he said. "A fire that couldn't stop him. A machine that made plastic bricks. And a click that took years to figure out."
 
-"And kids who tested it all," said Cruz, with a big grin. "Kids like us."
+"And kids who tested it all," said Milo, with a big grin. "Kids like us."
 
 The boys got back to building. This time, when the last brick went on top of the tower, it didn't glow.
 
@@ -238,7 +238,7 @@ And it held.
 
 ## The End
 
-*Goodnight, Cruz. Goodnight, Phoenix. Play well.*
+*Goodnight, Milo. Goodnight, Juno. Play well.*
 
 ---
 

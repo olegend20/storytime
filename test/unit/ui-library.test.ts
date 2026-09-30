@@ -74,9 +74,9 @@ describe('readMinutes', () => {
 
 describe('joinNames', () => {
   it('uses first names only (F11)', () => {
-    expect(joinNames(['Cruz'])).toBe('Cruz')
-    expect(joinNames(['Cruz', 'Phoenix'])).toBe('Cruz & Phoenix')
-    expect(joinNames(['Cruz', 'Phoenix', 'Lennon'])).toBe('Cruz, Phoenix & Lennon')
+    expect(joinNames(['Milo'])).toBe('Milo')
+    expect(joinNames(['Milo', 'Juno'])).toBe('Milo & Juno')
+    expect(joinNames(['Milo', 'Juno', 'Theo'])).toBe('Milo, Juno & Theo')
     expect(joinNames([])).toBe('')
   })
 })

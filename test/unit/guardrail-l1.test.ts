@@ -72,7 +72,7 @@ describe('s3.2 sanitizer', () => {
   })
 
   it('rejects a name with digits, and agrees with ChildInput on shape', () => {
-    for (const name of ['Cruz2', 'Cruz!', 'a_b', '###']) {
+    for (const name of ['Milo2', 'Milo!', 'a_b', '###']) {
       expect(checkField({ field: 'first_name', value: name }).ok, name).toBe(false)
       expect(ChildInput.safeParse({ first_name: name, age: 5 }).success, name).toBe(false)
     }
@@ -258,23 +258,23 @@ describe('checkPayload covers every s3.1 field', () => {
   it('fails fast on the first offending field and still sanitizes the rest', () => {
     const r = checkPayload({
       topic_input: '<b>sharks</b>',
-      first_name: 'Cruz',
+      first_name: 'Milo',
       likes: ['dinosaurs'],
       notes: 'loves the sea',
     })
     expect(r.ok).toBe(false)
     expect(r.failure?.field).toBe('topic_input')
-    expect(r.sanitized.first_name).toBe('Cruz')
+    expect(r.sanitized.first_name).toBe('Milo')
   })
 
   it('passes a clean payload and returns the sanitized values', () => {
     const r = checkPayload({
       topic_input: '  how bees   make honey ',
-      first_name: 'Phoenix',
+      first_name: 'Juno',
       likes: ['bees', 'digging'],
       notes: 'scared of loud noises',
       title: 'Ocean Adventures',
-      display_name: 'The Murrays',
+      display_name: 'The Okafors',
     })
     expect(r.ok).toBe(true)
     expect(r.sanitized.topic_input).toBe('how bees make honey')
@@ -285,8 +285,8 @@ describe('checkPayload covers every s3.1 field', () => {
     const r = checkPayload({
       topic_input: 'sharks',
       children: [
-        { first_name: 'Cruz', likes: ['sharks'] },
-        { first_name: 'Phoenix', likes: ['how to make a bomb'] },
+        { first_name: 'Milo', likes: ['sharks'] },
+        { first_name: 'Juno', likes: ['how to make a bomb'] },
       ],
     })
     expect(r.ok).toBe(false)

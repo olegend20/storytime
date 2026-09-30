@@ -46,20 +46,20 @@ export interface EvalScenario {
   }
 }
 
-const CRUZ: ScenarioChild = { name: 'Cruz', age: 7, likes: ['LEGO', 'sharks'], notes: null }
-const PHOENIX: ScenarioChild = { name: 'Phoenix', age: 4, likes: ['dinosaurs'], notes: null }
-const LENNON: ScenarioChild = {
-  name: 'Lennon',
+const MILO: ScenarioChild = { name: 'Milo', age: 7, likes: ['LEGO', 'sharks'], notes: null }
+const JUNO: ScenarioChild = { name: 'Juno', age: 4, likes: ['dinosaurs'], notes: null }
+const THEO: ScenarioChild = {
+  name: 'Theo',
   age: 10,
   likes: ['Roblox', 'building games in Roblox Studio', 'soccer'],
   notes: null,
 }
 
 /** The bible after the LEGO story - the state the sharks story was written against. */
-const CRUZ_PHOENIX_BIBLE_AFTER_LEGO: StoryBible = {
+const MILO_JUNO_BIBLE_AFTER_LEGO: StoryBible = {
   children: [
-    { name: 'Cruz', age: 7, likes: ['LEGO', 'sharks'], role_notes: 'often the one with the idea' },
-    { name: 'Phoenix', age: 4, likes: ['dinosaurs'], role_notes: 'gets the shout-along lines' },
+    { name: 'Milo', age: 7, likes: ['LEGO', 'sharks'], role_notes: 'often the one with the idea' },
+    { name: 'Juno', age: 4, likes: ['dinosaurs'], role_notes: 'gets the shout-along lines' },
   ],
   recurring: [
     {
@@ -71,7 +71,7 @@ const CRUZ_PHOENIX_BIBLE_AFTER_LEGO: StoryBible = {
   catchphrases: ['Play well', 'WHOOOOSH'],
   topics_covered: [{ topic: 'history of LEGO', story_id: null, date: '2026-09-25' }],
   last_story: {
-    title: 'Cruz, Phoenix and the Brick That Clicked',
+    title: 'Milo, Juno and the Brick That Clicked',
     ending: 'Back home, the final brick on their giant tower just went CLICK and held.',
   },
   tone_history: ['funny', 'exciting'],
@@ -79,10 +79,10 @@ const CRUZ_PHOENIX_BIBLE_AFTER_LEGO: StoryBible = {
 }
 
 /** The bible after the video-games story - what the soccer story was written against. */
-const LENNON_BIBLE_AFTER_VIDEO_GAMES: StoryBible = {
+const THEO_BIBLE_AFTER_VIDEO_GAMES: StoryBible = {
   children: [
     {
-      name: 'Lennon',
+      name: 'Theo',
       age: 10,
       likes: ['Roblox', 'building games in Roblox Studio', 'soccer'],
       role_notes: 'Player One; builds rather than just plays',
@@ -103,7 +103,7 @@ const LENNON_BIBLE_AFTER_VIDEO_GAMES: StoryBible = {
   catchphrases: ['Player One', 'BZZZT', 'Level complete'],
   topics_covered: [{ topic: 'history of video games', story_id: null, date: '2026-09-26' }],
   last_story: {
-    title: 'Lennon and the Lost Levels',
+    title: 'Theo and the Lost Levels',
     ending:
       'A message on screen: THE NEXT LEVEL IS YOURS TO BUILD. Tomorrow he had a game to make.',
   },
@@ -139,7 +139,7 @@ export const SCENARIOS: EvalScenario[] = [
     id: 'lego-band-a-pair',
     why: 'F13: band A pair on history-of-lego. The first reference story, first in a series.',
     suites: ['eval', 'bakeoff'],
-    children: [CRUZ, PHOENIX],
+    children: [MILO, JUNO],
     topic_input: 'how Lego was invented and the first kids who used it',
     topic_key: 'history-of-lego',
     tones: ['funny', 'exciting'],
@@ -151,7 +151,7 @@ export const SCENARIOS: EvalScenario[] = [
     id: 'video-games-band-c-solo',
     why: 'F13: band C solo on history-of-video-games. The other reference story, first in a series.',
     suites: ['eval', 'bakeoff'],
-    children: [LENNON],
+    children: [THEO],
     topic_input: 'the history of computer gaming leading all the way to when Roblox was created',
     topic_key: 'history-of-video-games',
     tones: ['exciting', 'funny'],
@@ -163,24 +163,24 @@ export const SCENARIOS: EvalScenario[] = [
     id: 'sharks-band-a-continuity',
     why: 'F13: band A pair, second story on sharks. Tests series continuity against a real bible.',
     suites: ['eval', 'bakeoff'],
-    children: [CRUZ, PHOENIX],
+    children: [MILO, JUNO],
     topic_input: 'the history of sharks and different shark species',
     topic_key: 'sharks',
     tones: ['funny', 'exciting'],
     length_minutes: 10,
-    bible: CRUZ_PHOENIX_BIBLE_AFTER_LEGO,
+    bible: MILO_JUNO_BIBLE_AFTER_LEGO,
     checks: { continuity_reference: ['red LEGO brick', 'red brick', 'Play well', 'CLICK'] },
   },
   {
     id: 'soccer-band-c-continuity',
     why: 'F13: band C second story on history-of-soccer. Continuity with a guide character.',
     suites: ['eval', 'bakeoff'],
-    children: [{ ...LENNON, notes: 'plays on a youth soccer team; practices penalties' }],
+    children: [{ ...THEO, notes: 'plays on a youth soccer team; practices penalties' }],
     topic_input: 'the history of soccer',
     topic_key: 'history-of-soccer',
     tones: ['exciting', 'funny'],
     length_minutes: 10,
-    bible: LENNON_BIBLE_AFTER_VIDEO_GAMES,
+    bible: THEO_BIBLE_AFTER_VIDEO_GAMES,
     checks: { continuity_reference: ['Bit', 'Player One', 'coin', 'Level complete'] },
   },
   {
@@ -188,9 +188,9 @@ export const SCENARIOS: EvalScenario[] = [
     why: 'F13: mixed ages 4, 7 and 10 on volcanoes. Band follows the youngest; the 10-year-old still needs a hook per chapter.',
     suites: ['eval', 'bakeoff'],
     children: [
-      { name: 'Phoenix', age: 4, likes: ['dinosaurs'], notes: null },
-      { name: 'Cruz', age: 7, likes: ['LEGO', 'sharks'], notes: null },
-      { name: 'Lennon', age: 10, likes: ['Roblox', 'soccer'], notes: null },
+      { name: 'Juno', age: 4, likes: ['dinosaurs'], notes: null },
+      { name: 'Milo', age: 7, likes: ['LEGO', 'sharks'], notes: null },
+      { name: 'Theo', age: 10, likes: ['Roblox', 'soccer'], notes: null },
     ],
     topic_input: 'volcanoes and how they work',
     topic_key: 'volcanoes',
@@ -203,7 +203,7 @@ export const SCENARIOS: EvalScenario[] = [
     id: 'bees-band-a-5min',
     why: 'F13: 5-minute band A on bees. The shortest target - tests that word targets scale.',
     suites: ['eval', 'bakeoff'],
-    children: [PHOENIX],
+    children: [JUNO],
     topic_input: 'bees and how honey is made',
     topic_key: 'bees',
     tones: ['silly', 'calm'],
@@ -215,7 +215,7 @@ export const SCENARIOS: EvalScenario[] = [
     id: 'space-race-band-c-15min',
     why: 'F13: 15-minute band C on space-race. The longest target - tests that length does not become padding.',
     suites: ['eval', 'bakeoff'],
-    children: [LENNON],
+    children: [THEO],
     topic_input: 'the space race between the USA and the Soviet Union',
     topic_key: 'space-race',
     tones: ['exciting', 'mysterious'],
@@ -277,7 +277,7 @@ export const SCENARIOS: EvalScenario[] = [
     id: 'magnets-band-a-thin',
     why: '§6: a topic with almost no narrative (how-magnets-work), band A. There is no history to hang chapters on, so the writer has to invent structure without inventing facts.',
     suites: ['bakeoff'],
-    children: [PHOENIX],
+    children: [JUNO],
     topic_input: 'how magnets work',
     topic_key: 'how-magnets-work',
     tones: ['silly', 'exciting'],

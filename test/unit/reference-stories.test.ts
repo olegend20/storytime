@@ -102,7 +102,7 @@ describe('reference-stories manifest', () => {
     for (const s of m.stories) {
       bySeries.set(s.series, [...(bySeries.get(s.series) ?? []), s.sequence])
     }
-    expect([...bySeries.keys()].sort()).toEqual(['cruz-phoenix', 'lennon'])
+    expect([...bySeries.keys()].sort()).toEqual(['milo-juno', 'theo'])
     for (const [series, sequences] of bySeries) {
       expect(sequences.sort(), series).toEqual([1, 2])
     }
@@ -256,10 +256,10 @@ describe('reference stories convert to StoryOutput faithfully', () => {
         asStoryOutput(loadReferenceStory(s.file, DIR)).chapters[0]!.text.slice(0, 120),
       ]),
     )
-    expect(openings['cruz-and-phoenix-lego-story.md']).toContain('rainy Saturday')
-    expect(openings['cruz-and-phoenix-shark-submarine.md']).toContain('magic red brick')
-    expect(openings['lennon-and-the-lost-levels.md']).toContain('supposed to be asleep')
-    expect(openings['lennon-the-beautiful-game.md']).toContain('practicing penalties')
+    expect(openings['milo-and-juno-lego-story.md']).toContain('rainy Saturday')
+    expect(openings['milo-and-juno-shark-submarine.md']).toContain('magic red brick')
+    expect(openings['theo-and-the-lost-levels.md']).toContain('supposed to be asleep')
+    expect(openings['theo-the-beautiful-game.md']).toContain('practicing penalties')
   })
 
   /**

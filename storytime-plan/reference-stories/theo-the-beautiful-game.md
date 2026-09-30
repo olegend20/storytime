@@ -1,4 +1,4 @@
-# Lennon and the Lost Levels: The Beautiful Game
+# Theo and the Lost Levels: The Beautiful Game
 
 *Player One returns, in a true-history adventure through the story of soccer*
 
@@ -6,7 +6,7 @@
 
 ## Kickoff
 
-Lennon was in the backyard, long after dinner, practicing penalties against the fence.
+Theo was in the backyard, long after dinner, practicing penalties against the fence.
 
 Left corner. *Thud.* Right corner. *Thud.* Top corner... *CLANG*, off the gutter.
 
@@ -18,19 +18,19 @@ Then a tiny square of green pixels popped out of the ball like a piece of toast 
 
 "PLAYER ONE!" it squeaked. "Long time no see!"
 
-"**Bit?!**" Lennon nearly fell over. "What are you doing in my soccer ball?"
+"**Bit?!**" Theo nearly fell over. "What are you doing in my soccer ball?"
 
 "Emergency," said Bit, bouncing up and down in the air. "Remember how the history of video games started breaking? Well, now it's happening to **soccer**. Somebody's deleting the levels. If they disappear, there's no World Cup, no Messi, no penalty kicks... no soccer at all."
 
-Lennon looked at the ball in his hands. He looked at his cleats. He thought about his team, his coach, and practice on Saturday.
+Theo looked at the ball in his hands. He looked at his cleats. He thought about his team, his coach, and practice on Saturday.
 
 "Nobody," he said slowly, "deletes soccer."
 
 "That's the spirit!" said Bit. "Put the ball down and take one more penalty. Aim for the top corner."
 
-Lennon placed the ball. He took three steps back. He ran up and struck it as sweetly as he'd ever struck anything.
+Theo placed the ball. He took three steps back. He ran up and struck it as sweetly as he'd ever struck anything.
 
-The ball didn't hit the fence. It flew straight through it, and the fence opened like a doorway into a swirling tunnel of green light. Before he could think, Lennon was running after it.
+The ball didn't hit the fence. It flew straight through it, and the fence opened like a doorway into a swirling tunnel of green light. Before he could think, Theo was running after it.
 
 **BZZZT-WHOOSH!**
 
@@ -38,9 +38,9 @@ The ball didn't hit the fence. It flew straight through it, and the fence opened
 
 ## Level 1: The Emperor's Game (China, over 2,000 years ago)
 
-Lennon skidded to a stop on a dusty field. Around him stood rows of soldiers in armor, with banners flapping in the wind. At one end of the field, two tall bamboo poles held up a net... and in the middle of the net was a small round **hole**.
+Theo skidded to a stop on a dusty field. Around him stood rows of soldiers in armor, with banners flapping in the wind. At one end of the field, two tall bamboo poles held up a net... and in the middle of the net was a small round **hole**.
 
-"Where are we?" whispered Lennon.
+"Where are we?" whispered Theo.
 
 "**Ancient China**," said Bit. "More than two thousand years ago. And that," he said, pointing at a group of soldiers kicking a ball between them, "is **cuju**. It means *kick ball*. FIFA, the people who run world soccer, say it's the oldest form of the game they know of."
 
@@ -56,13 +56,13 @@ The net began to fizz. The hole in the middle flickered and started shrinking, *
 
 "The deletion!" squeaked Bit. "If nobody scores through that hole before it closes, the level's gone!"
 
-A soldier rolled the feathery ball to Lennon. It was lighter than his ball at home, and wobblier. He juggled it once, twice, three times, then let it drop and hit a clean volley.
+A soldier rolled the feathery ball to Theo. It was lighter than his ball at home, and wobblier. He juggled it once, twice, three times, then let it drop and hit a clean volley.
 
 The ball flew straight through the tiny hole.
 
-The soldiers roared. The hole grew back to full size. And a shiny golden coin dropped from the sky into Lennon's hand with a very familiar **ding**.
+The soldiers roared. The hole grew back to full size. And a shiny golden coin dropped from the sky into Theo's hand with a very familiar **ding**.
 
-"Oh, I missed that sound," grinned Lennon.
+"Oh, I missed that sound," grinned Theo.
 
 ---
 
@@ -70,13 +70,13 @@ The soldiers roared. The hole grew back to full size. And a shiny golden coin dr
 
 **BZZZT!**
 
-The first thing Lennon heard was shouting. Hundreds of voices. The second thing he heard was the thundering of feet.
+The first thing Theo heard was shouting. Hundreds of voices. The second thing he heard was the thundering of feet.
 
 He looked up just in time to see a gigantic crowd of people charging down a muddy village street straight toward him, pushing, shoving and yelling, all chasing one battered leather ball.
 
 "DUCK!" yelled Bit.
 
-Lennon dove into a hay cart. The crowd stampeded past like a herd of cows.
+Theo dove into a hay cart. The crowd stampeded past like a herd of cows.
 
 "What on earth was THAT?" he spluttered, picking straw out of his hair.
 
@@ -90,15 +90,15 @@ A window smashed somewhere down the street. A pig ran past, squealing.
 
 "Of course they kept playing," said Bit. "You can't stop people from wanting to kick a ball. In fact, some English towns still play mob football once a year, even today."
 
-The ball came bouncing out of the crowd, straight toward Lennon, and began to flicker.
+The ball came bouncing out of the crowd, straight toward Theo, and began to flicker.
 
 "Grab it and keep it alive!" squeaked Bit.
 
-Lennon trapped the ball, spun past three farmers and a very confused goose, and kept it moving all the way to the village church, which was one of the goals.
+Theo trapped the ball, spun past three farmers and a very confused goose, and kept it moving all the way to the village church, which was one of the goals.
 
 **Ding.** Coin two.
 
-"One thing's clear," panted Lennon. "Soccer really, *really* needs rules."
+"One thing's clear," panted Theo. "Soccer really, *really* needs rules."
 
 "Funny you should say that," said Bit.
 
@@ -124,7 +124,7 @@ Another man stood up. "Kicking an opponent in the shins is a proud tradition!"
 
 In the end, the people who wanted to carry the ball and keep the hacking walked out. They went off and played their own game, which turned into **rugby**. The ones who stayed started a group called **The Football Association**, and wrote down the rules of what they called **association football**.
 
-"Hang on," said Lennon. "Association football. As-SOC-iation..."
+"Hang on," said Theo. "Association football. As-SOC-iation..."
 
 "You got it," said Bit. "Students in England started calling it '**soccer**' for short. That's where the word comes from! Most of the world still calls it football, but America kept the nickname."
 
@@ -132,7 +132,7 @@ Suddenly the pages of the rule book on the table began to fade. The ink was disa
 
 "The rules are being deleted!"
 
-Lennon grabbed a pen and a fresh sheet of paper. "Okay, gentlemen. Quick vote. No carrying the ball?"
+Theo grabbed a pen and a fresh sheet of paper. "Okay, gentlemen. Quick vote. No carrying the ball?"
 
 "Aye!"
 
@@ -162,11 +162,11 @@ William McCrum stopped pacing, marched to a spot twelve yards out from the goal,
 
 "If a player is fouled in front of goal," he announced, "the other team gets one free shot. From here. Just the kicker and the goalkeeper."
 
-Lennon's jaw dropped. "He invented... the **penalty kick**?"
+Theo's jaw dropped. "He invented... the **penalty kick**?"
 
 "In **1891**, soccer's rule makers said yes," said Bit. "And ever since, it's been the most nerve-wracking moment in the whole sport."
 
-Lennon thought about practicing penalties against the fence, and about the penalty shootout game he was building at home.
+Theo thought about practicing penalties against the fence, and about the penalty shootout game he was building at home.
 
 "Mr. McCrum," he said, "I owe you a lot."
 
@@ -174,9 +174,9 @@ The penalty spot began to flicker.
 
 "Only one way to save this level," said Bit.
 
-William McCrum tossed Lennon the ball and stepped into goal, rubbing his gloves together. "Go on, then. Let's see if my idea works."
+William McCrum tossed Theo the ball and stepped into goal, rubbing his gloves together. "Go on, then. Let's see if my idea works."
 
-Lennon placed the ball on the very first penalty spot in history. He took three steps back. He looked left. He hit it right.
+Theo placed the ball on the very first penalty spot in history. He took three steps back. He looked left. He hit it right.
 
 The goalkeeper dived the wrong way. The net rippled. *Nets were new too*, Bit mentioned. They had been invented around the same time, so people could stop arguing about whether the ball had gone in.
 
@@ -196,11 +196,11 @@ A gigantic, brand-new stadium in **Montevideo, Uruguay**, packed with tens of th
 
 The two teams walked out onto the field... and started arguing with the referee.
 
-"What's going on?" asked Lennon.
+"What's going on?" asked Theo.
 
 "They can't agree on which **ball** to use," said Bit. "Each team wants its own ball. So the referee has a solution: one ball for the first half and the other ball for the second half."
 
-"That's the most sensible silly idea I've ever heard," said Lennon.
+"That's the most sensible silly idea I've ever heard," said Theo.
 
 Argentina's ball went first, and at halftime, Argentina was winning 2–1. Then out came Uruguay's ball for the second half. The crowd sang louder. And Uruguay scored, and scored, and scored again.
 
@@ -208,7 +208,7 @@ Argentina's ball went first, and at halftime, Argentina was winning 2–1. Then 
 
 Right at the final whistle, the golden trophy on its stand started to flicker.
 
-Lennon sprinted over and grabbed hold of it with both hands, not letting go until it stopped glitching. The Uruguay captain gave him a very strange look, then a very big hug.
+Theo sprinted over and grabbed hold of it with both hands, not letting go until it stopped glitching. The Uruguay captain gave him a very strange look, then a very big hug.
 
 **Ding.** Coin five.
 
@@ -222,7 +222,7 @@ Another World Cup, this time in **Brazil**. On one side stood **England**, one o
 
 "That's the **United States**," said Bit. "A bunch of part-time players. One of them works as a mailman, and one washes dishes in a restaurant. People are betting England will win by ten."
 
-Lennon cracked his knuckles. "Not on my watch."
+Theo cracked his knuckles. "Not on my watch."
 
 For the whole first half, England attacked and attacked. They hit the post. They hit the bar. They didn't score.
 
@@ -244,7 +244,7 @@ And somehow, even though England tried everything, that's how it stayed.
 
 This time they were standing in a garden in London, in the dark, next to a small black-and-white dog who was sniffing a hedge very seriously.
 
-"Uh, Bit," said Lennon. "Why are we in a random garden with a dog?"
+"Uh, Bit," said Theo. "Why are we in a random garden with a dog?"
 
 "Because in **1966**, just before England hosted the World Cup, the **World Cup trophy was stolen**," said Bit. "The police searched everywhere. Nobody could find it."
 
@@ -252,9 +252,9 @@ The dog began to dig and whine at a bundle wrapped in newspaper under the hedge.
 
 "This is **Pickles**," said Bit. "And Pickles is about to become a national hero."
 
-Lennon knelt down and unwrapped the newspaper. Inside was the gleaming golden trophy.
+Theo knelt down and unwrapped the newspaper. Inside was the gleaming golden trophy.
 
-"Good boy, Pickles," said Lennon, scratching the dog's ears. "Seriously. The best boy."
+"Good boy, Pickles," said Theo, scratching the dog's ears. "Seriously. The best boy."
 
 Pickles wagged his tail so hard his whole body wiggled. **Ding.** Coin seven.
 
@@ -274,7 +274,7 @@ Now the levels were flashing by faster and faster, like a highlight reel.
 
 **Flash!** A stadium full of cheering people in 1920s England, watching a women's team called the **Dick, Kerr Ladies**. "More than **fifty thousand** people came to watch one of their games," said Bit. "Then, in 1921, England's football association banned women's teams from playing at its members' grounds. The ban lasted **fifty years**."
 
-"Fifty YEARS?" said Lennon. "That's so unfair."
+"Fifty YEARS?" said Theo. "That's so unfair."
 
 "It was," said Bit. "But the women never stopped playing. And look..."
 
@@ -282,7 +282,7 @@ Now the levels were flashing by faster and faster, like a highlight reel.
 
 **Flash!** A small, quiet Argentine player lifting the World Cup in 2022, after one of the wildest finals ever played. It was 3–3 against France, and then it went to penalties. "**Lionel Messi**," said Bit. "Finally."
 
-Coins rained down, **ding-ding-ding-ding-ding**, until Lennon's pockets were heavy with gold.
+Coins rained down, **ding-ding-ding-ding-ding**, until Theo's pockets were heavy with gold.
 
 ---
 
@@ -292,7 +292,7 @@ Coins rained down, **ding-ding-ding-ding-ding**, until Lennon's pockets were hea
 
 Silence.
 
-Lennon was standing on a field he knew. The grass was cut the same way. The lines were painted the same way. The goal had the same slightly bent corner.
+Theo was standing on a field he knew. The grass was cut the same way. The lines were painted the same way. The goal had the same slightly bent corner.
 
 It was **his** field. The one where his team played on Saturdays.
 
@@ -302,11 +302,11 @@ But everything around the edges was dissolving into green static. The stands. Th
 
 In the middle of the field, on the penalty spot, sat one ball. In goal stood a shimmering figure made of static, arms spread wide, blocking the whole net.
 
-Lennon walked to the ball. His coins began to float out of his pockets and spin around him in a big golden circle.
+Theo walked to the ball. His coins began to float out of his pockets and spin around him in a big golden circle.
 
 He thought about the soldiers in China, the muddy village mob, the men in top hats arguing over hacking, and William McCrum stamping a spot into the grass. He thought about the part-time players who beat England, a dog called Pickles, and a woman taking the most important penalty of her life.
 
-"Soccer's over two thousand years old," Lennon said to the static goalkeeper. "Kings tried to ban it. Rules got argued about for decades. People said women couldn't play it. And it's still here."
+"Soccer's over two thousand years old," Theo said to the static goalkeeper. "Kings tried to ban it. Rules got argued about for decades. People said women couldn't play it. And it's still here."
 
 He placed the ball.
 
@@ -318,7 +318,7 @@ And he hit it **top corner**.
 
 The static goalkeeper dived, but it wasn't even close. The ball smashed into the net, and the whole world **exploded** into color. The trees came back. The stands came back. The sky turned bright blue. And from every direction came the roar of a crowd that sounded like every soccer fan in history cheering at once.
 
-The golden coins spun faster and faster, then fused into one gleaming trophy that dropped into Lennon's hands.
+The golden coins spun faster and faster, then fused into one gleaming trophy that dropped into Theo's hands.
 
 "Level complete," said Bit, and his pixel eyes looked suspiciously watery again. "History saved. Again."
 
@@ -328,7 +328,7 @@ The golden coins spun faster and faster, then fused into one gleaming trophy tha
 
 **BZZZT!**
 
-Lennon was standing in his own backyard, holding his own soccer ball. The fence was just a fence again. It was dark, and the kitchen light was on.
+Theo was standing in his own backyard, holding his own soccer ball. The fence was just a fence again. It was dark, and the kitchen light was on.
 
 He'd almost decided the whole thing was a dream when he looked down at the ball. On one panel, in tiny green pixel letters, a message glowed for just a second before fading away:
 
@@ -337,7 +337,7 @@ He'd almost decided the whole thing was a dream when he looked down at the ball.
 > SEE YOU AT THE NEXT LEVEL.
 ```
 
-Lennon grinned, tucked the ball under his arm, and headed inside.
+Theo grinned, tucked the ball under his arm, and headed inside.
 
 Saturday couldn't come soon enough.
 

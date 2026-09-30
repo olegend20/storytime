@@ -185,7 +185,7 @@ export const DAILY_STORY_LIMIT = 3
  * and the UI build against one shape. Extends `StoryRecord` rather than restating it.
  */
 export const LibraryStory = StoryRecord.extend({
-  /** Series display name, e.g. "Cruz & Phoenix". */
+  /** Series display name, e.g. "Milo & Juno". */
   series_title: z.string(),
   /** Position in the series, 1-based. Shown as "Story 2". */
   sequence: z.number().int().positive(),

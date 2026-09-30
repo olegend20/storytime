@@ -59,14 +59,14 @@ async function main() {
   record('one family per user (unique index)', !!dup.error, dup.error?.code ?? 'NO ERROR')
 
   if (famA.data && famB.data) {
-    await a.client.from('children').insert({ family_id: famA.data.id, first_name: 'Cruz', age: 7 })
-    await b.client.from('children').insert({ family_id: famB.data.id, first_name: 'Lennon', age: 10 })
+    await a.client.from('children').insert({ family_id: famA.data.id, first_name: 'Milo', age: 7 })
+    await b.client.from('children').insert({ family_id: famB.data.id, first_name: 'Theo', age: 10 })
 
     // The core isolation check: zero rows, not an error (F2 VT).
     const seen = await a.client.from('children').select('first_name')
     record(
       'user A sees only their own children (0 rows of B, no error)',
-      !seen.error && seen.data?.length === 1 && seen.data[0]!.first_name === 'Cruz',
+      !seen.error && seen.data?.length === 1 && seen.data[0]!.first_name === 'Milo',
       seen.error ? seen.error.message : JSON.stringify(seen.data),
     )
 

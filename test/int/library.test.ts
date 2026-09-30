@@ -48,12 +48,12 @@ describe.runIf(dbUp)('F9 library, reader and delete (real routes, RLS)', () => {
     const { data: kids, error: kidsErr } = await db
       .from('children')
       .insert([
-        { family_id: family.id, first_name: 'Cruz', age: 7, likes: ['LEGO'] },
-        { family_id: family.id, first_name: 'Phoenix', age: 4, likes: [] },
+        { family_id: family.id, first_name: 'Milo', age: 7, likes: ['LEGO'] },
+        { family_id: family.id, first_name: 'Juno', age: 4, likes: [] },
       ])
       .select('id, first_name')
     if (kidsErr || !kids) throw new Error(kidsErr?.message)
-    const ids = ['Cruz', 'Phoenix'].map((n) => kids.find((k) => k.first_name === n)!.id as string)
+    const ids = ['Milo', 'Juno'].map((n) => kids.find((k) => k.first_name === n)!.id as string)
     seriesId = (await getOrCreateSeries(family.id, ids, db)).id
     await loadBible(seriesId, { db })
 
@@ -98,8 +98,8 @@ describe.runIf(dbUp)('F9 library, reader and delete (real routes, RLS)', () => {
     for (const s of stories) expect(LibraryStory.safeParse(s).success).toBe(true)
 
     const [newest, oldest] = stories
-    expect(newest!.series_title).toBe('Cruz & Phoenix')
-    expect(newest!.child_names).toEqual(['Cruz', 'Phoenix'])
+    expect(newest!.series_title).toBe('Milo & Juno')
+    expect(newest!.child_names).toEqual(['Milo', 'Juno'])
     expect(oldest!.sequence).toBe(1)
     expect(newest!.sequence).toBe(2)
     // No fact pack on these rows: the label falls back to what the parent typed.

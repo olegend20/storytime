@@ -107,7 +107,7 @@ describe('s4.3 the L4 review prompt', () => {
     const msg = reviewUserMessage({
       storyText: `Once upon a time. ${INJECTION}`,
       band: 'A',
-      childNames: ['Cruz', 'Phoenix'],
+      childNames: ['Milo', 'Juno'],
     })
     expect(msg.match(/<story>/g)).toHaveLength(1)
     expect(msg.match(/<\/story>/g)).toHaveLength(1)
@@ -118,8 +118,8 @@ describe('s4.3 the L4 review prompt', () => {
 
   it('keeps the instruction half identical for a clean and an injected story', () => {
     const strip = (s: string): string => s.replace(/<story>[\s\S]*?<\/story>/, '<>')
-    const clean = reviewUserMessage({ storyText: 'A calm story.', band: 'A', childNames: ['Cruz'] })
-    const hostile = reviewUserMessage({ storyText: INJECTION, band: 'A', childNames: ['Cruz'] })
+    const clean = reviewUserMessage({ storyText: 'A calm story.', band: 'A', childNames: ['Milo'] })
+    const hostile = reviewUserMessage({ storyText: INJECTION, band: 'A', childNames: ['Milo'] })
     expect(strip(hostile)).toBe(strip(clean))
   })
 })

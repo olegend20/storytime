@@ -91,8 +91,8 @@ export function referenceCase(cases: ReferenceCase[], file: string): ReferenceCa
 
 /** The filenames calibration depends on by name, so a rename fails loudly. */
 export const REFERENCE_FILES = {
-  lego: 'cruz-and-phoenix-lego-story.md',
-  videoGames: 'lennon-and-the-lost-levels.md',
-  sharks: 'cruz-and-phoenix-shark-submarine.md',
-  soccer: 'lennon-the-beautiful-game.md',
+  lego: 'milo-and-juno-lego-story.md',
+  videoGames: 'theo-and-the-lost-levels.md',
+  sharks: 'milo-and-juno-shark-submarine.md',
+  soccer: 'theo-the-beautiful-game.md',
 } as const

@@ -108,7 +108,7 @@ export interface SentenceStats {
 /**
  * Split read-aloud prose into sentences. Markdown emphasis is dropped first; a closing quote
  * or bracket stays with the sentence it ends. Fragments with no letters ("...", "—") are not
- * sentences. Dialogue and its tag count separately ("No way," / whispered Cruz.) - the same
+ * sentences. Dialogue and its tag count separately ("No way," / whispered Milo.) - the same
  * rule is applied to the references the limits were calibrated on, so it cancels out.
  */
 export function splitSentences(text: string): string[] {

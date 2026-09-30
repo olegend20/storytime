@@ -189,18 +189,18 @@ export async function runCalibration(
     ),
   )
 
-  // ---- Row 2: center. Phoenix removed from all but one chapter of the LEGO story.
+  // ---- Row 2: center. Juno removed from all but one chapter of the LEGO story.
   const lego = referenceCase(cases, REFERENCE_FILES.lego)
   const heroSab = removeChildFromAllButOneChapter(lego.story, {
-    remove: 'Phoenix',
-    keepWith: 'Cruz',
+    remove: 'Juno',
+    keepWith: 'Milo',
     keepChapter: 0,
   })
   const heroRes = await scoreCase(lego, heroSab.story)
   expectations.push(
     expectation(
       'sabotage_heroes',
-      "LEGO story with Phoenix's name removed from all but one chapter scores center <= 2",
+      "LEGO story with Juno's name removed from all but one chapter scores center <= 2",
       heroRes.ok && heroRes.raw.scores.center <= 2,
       heroRes.ok
         ? `center=${heroRes.raw.scores.center} (raw), kept in "${heroSab.keptChapterHeading}", ${heroSab.strippedFrom} mentions removed. Evidence: ${heroRes.raw.evidence.center}`

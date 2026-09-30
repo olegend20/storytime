@@ -134,7 +134,7 @@ describe.runIf(dbUp)('F2 RLS isolation between families', () => {
     // B fills every family-scoped table the VT names.
     const child = await b.client
       .from('children')
-      .insert({ family_id: bFamilyId, first_name: 'Lennon', age: 10 })
+      .insert({ family_id: bFamilyId, first_name: 'Theo', age: 10 })
       .select('id')
       .single()
     expect(child.error).toBeNull()
@@ -225,8 +225,8 @@ describe.runIf(dbUp)('F2 account deletion', () => {
     const children = await user.client
       .from('children')
       .insert([
-        { family_id: familyId, first_name: 'Cruz', age: 7 },
-        { family_id: familyId, first_name: 'Phoenix', age: 4 },
+        { family_id: familyId, first_name: 'Milo', age: 7 },
+        { family_id: familyId, first_name: 'Juno', age: 4 },
       ])
       .select('id')
     expect(children.error).toBeNull()

@@ -147,8 +147,8 @@ describe('the True Facts list names only what the story said', () => {
     const gate = runDeterministicChecks({
       story: value,
       children: [
-        { name: 'Cruz', age: 7 },
-        { name: 'Phoenix', age: 4 },
+        { name: 'Milo', age: 7 },
+        { name: 'Juno', age: 4 },
       ],
       band: 'A',
       minutes: 10,
@@ -165,8 +165,8 @@ describe('sentence length is a deterministic check', () => {
     const gate = runDeterministicChecks({
       story: salvageTrueFacts(firstRealStory, null).value,
       children: [
-        { name: 'Cruz', age: 4 },
-        { name: 'Phoenix', age: 7 },
+        { name: 'Milo', age: 4 },
+        { name: 'Juno', age: 7 },
       ],
       band: 'A',
       minutes: 10,

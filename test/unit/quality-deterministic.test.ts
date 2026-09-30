@@ -24,8 +24,8 @@ function check(story: unknown, opts: Case = {}) {
   return runDeterministicChecks({
     story,
     children: opts.children ?? [
-      { name: 'Cruz', age: 7 },
-      { name: 'Phoenix', age: 4 },
+      { name: 'Milo', age: 7 },
+      { name: 'Juno', age: 4 },
     ],
     band,
     minutes,
@@ -95,16 +95,16 @@ describe('word_count_in_range', () => {
 })
 
 describe('child_missing and child_name_coverage', () => {
-  it('fails with child_missing:Phoenix when Phoenix is never named', () => {
-    const story = goodStory({ titleNames: 'Cruz' })
+  it('fails with child_missing:Juno when Juno is never named', () => {
+    const story = goodStory({ titleNames: 'Milo' })
     story.subtitle = 'A bedtime adventure through the true story of LEGO'
     story.chapters = story.chapters.map((c) => ({
       ...c,
-      text: c.text.replace(/Phoenix/g, 'Cruz'),
+      text: c.text.replace(/Juno/g, 'Milo'),
     }))
-    story.ending_line = 'Goodnight, Cruz. Play well.'
+    story.ending_line = 'Goodnight, Milo. Play well.'
     const result = check(story)
-    expect(details(result)).toContain('child_missing:Phoenix')
+    expect(details(result)).toContain('child_missing:Juno')
     // A missing child is not also reported as low coverage: one problem, one code.
     expect(codes(result)).not.toContain('child_name_coverage')
   })
@@ -113,17 +113,17 @@ describe('child_missing and child_name_coverage', () => {
     const story = goodStory()
     story.chapters = story.chapters.map((c, i) => ({
       ...c,
-      text: i < 5 ? c.text.replace(/Phoenix/g, 'Cruz') : c.text,
+      text: i < 5 ? c.text.replace(/Juno/g, 'Milo') : c.text,
     }))
     const result = check(story)
-    expect(details(result)).toContain('child_name_coverage:Phoenix:4/9')
+    expect(details(result)).toContain('child_name_coverage:Juno:4/9')
   })
 
   it('passes at exactly 60% coverage', () => {
     const story = goodStory({ chapters: 10 })
     story.chapters = story.chapters.map((c, i) => ({
       ...c,
-      text: i < 4 ? c.text.replace(/Phoenix/g, 'Cruz') : c.text,
+      text: i < 4 ? c.text.replace(/Juno/g, 'Milo') : c.text,
     }))
     expect(codes(check(story))).not.toContain('child_name_coverage')
   })
@@ -131,19 +131,19 @@ describe('child_missing and child_name_coverage', () => {
 
 describe('child_has_action', () => {
   it('fails when a child only watches and speaks', () => {
-    // Phoenix appears in every chapter, but never with a verb after their name.
+    // Juno appears in every chapter, but never with a verb after their name.
     const story = goodStory({
       body: [
-        'Cruz pressed the red brick and it went CLICK.',
-        '"Wow," said Phoenix.',
+        'Milo pressed the red brick and it went CLICK.',
+        '"Wow," said Juno.',
         'In **1932** a carpenter in **Billund, Denmark** began making wooden toys.',
-        'Cruz built a tower and it held together perfectly.',
-        'Phoenix, meanwhile, was nowhere near any of it.',
+        'Milo built a tower and it held together perfectly.',
+        'Juno, meanwhile, was nowhere near any of it.',
       ].join(' '),
     })
     const result = check(story)
-    expect(details(result)).toContain('child_has_action:Phoenix')
-    expect(details(result)).not.toContain('child_has_action:Cruz')
+    expect(details(result)).toContain('child_has_action:Juno')
+    expect(details(result)).not.toContain('child_has_action:Milo')
   })
 
   it('passes when the child does one decisive thing', () => {
@@ -154,13 +154,13 @@ describe('child_has_action', () => {
 describe('unknown_child_name', () => {
   it('fails when a sibling nobody asked for is introduced', () => {
     const story = goodStory()
-    story.chapters[2]!.text += ' Cruz turned to his little sister Willow and grinned.'
+    story.chapters[2]!.text += ' Milo turned to his little sister Willow and grinned.'
     expect(details(check(story))).toContain('unknown_child_name:Willow')
   })
 
   it('does not flag a selected child described as a brother', () => {
     const story = goodStory()
-    story.chapters[2]!.text += ' Cruz turned to his brother Phoenix and grinned.'
+    story.chapters[2]!.text += ' Milo turned to his brother Juno and grinned.'
     expect(codes(check(story))).not.toContain('unknown_child_name')
   })
 })
@@ -243,7 +243,7 @@ describe('banned_word', () => {
     const band: AgeBand = 'A'
     const result = runDeterministicChecks({
       story,
-      children: [{ name: 'Cruz', age: 7 }, { name: 'Phoenix', age: 4 }],
+      children: [{ name: 'Milo', age: 7 }, { name: 'Juno', age: 4 }],
       band,
       minutes: 10,
       targetWords: targetWords({ band, minutes: 10 }),

@@ -273,7 +273,7 @@ mean-≥4.0 numbers cannot exist before F6 generates anything.
 open — 110 words of the LEGO story, 251 of the shark story — so the judge would have scored
 "Story craft" on a story beginning at Chapter 1. The part they didn't spot is worse: it also
 deleted the shark story's opening continuity callback ("It had been a whole week since the
-magic red brick had taken Cruz and Phoenix…"), which is precisely what rubric criterion 5
+magic red brick had taken Milo and Juno…"), which is precisely what rubric criterion 5
 looks for in chapter 1. Calibration would have under-scored the stories it treats as the bar,
 on two criteria at once. Fixing it surfaced a second bug: the subtitle was leaking into the
 cold-open prose and into the word count. Both fixed, with five regression tests including one
@@ -533,7 +533,7 @@ refuse recall and 1.2% false-refusal on the same 271-entry corpus.
 | Row | Result |
 |---|---|
 | references above floor | ✅ medians 4.65 / 4.50 / 4.25 / 4.25, mean 4.412 vs 4.37 baseline (drift 0.042) |
-| `center ≤ 2` (Phoenix removed) | ✅ **center=1** |
+| `center ≤ 2` (Juno removed) | ✅ **center=1** |
 | `facts ≤ 2` (3 invented dates) | ✅ named 3/3 unprompted |
 | `age_fit ≤ 2` (band A chase) | ✅ **age_fit=1** |
 | padding | ✅ delight **4→2** |
@@ -547,7 +547,7 @@ Getting here took three owner decisions and one correction of my own:
    claim that the references were flawed and the bar was wrong was mistaken**: I read the
    judge's faithful application of a bad rubric as evidence about the stories.
 2. **Per-child counting** (owner-approved): the old rule marked a chapter if *any* named child
-   acted, so with Cruz active throughout, the Phoenix-removed sabotage could not score below
+   acted, so with Milo active throughout, the Juno-removed sabotage could not score below
    the silence cap's floor of 3 and §5's `≤2` was unreachable.
 3. **Padding scored on delight, not age fit** (owner-approved): §3 already owns length
    mechanically, and this padding sits inside the tolerance.

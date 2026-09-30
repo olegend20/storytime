@@ -90,7 +90,7 @@ export interface ParsedReference {
    * Which convention the story uses for its closing line. The references use two,
    * split cleanly by band:
    *  - 'bedtime_address' (band A): an italic line AFTER "The End", spoken to the child -
-   *    "Goodnight, Cruz. Goodnight, Phoenix. Play well."
+   *    "Goodnight, Milo. Goodnight, Juno. Play well."
    *  - 'final_beat' (band C): the last prose line of the closing section, forward-looking
    *    rather than a goodnight - "Tomorrow, he had a game to make."
    * A direct bedtime address suits a 4-year-old; an older child gets a last beat instead.
@@ -259,7 +259,7 @@ export function loadReferenceStory(file: string, dir: string = REFERENCE_DIR): P
  *
  * The references use the two shapes this has to cope with:
  *  - LEGO and shark: unheaded prose before "Chapter 1" — prepend it to chapters[0].
- *  - Both Lennon stories: the cold open has a heading of its own ("Loading...", "Kickoff"),
+ *  - Both Theo stories: the cold open has a heading of its own ("Loading...", "Kickoff"),
  *    giving 11 headed sections against the schema's 10-chapter cap.
  *
  * Detecting the second case by heading text would be brittle, so the rule is structural:

@@ -42,7 +42,7 @@ create table series (
   title text check (char_length(title) <= 60),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  -- A series is keyed by the EXACT set of children: "Cruz + Phoenix" and "Lennon"
+  -- A series is keyed by the EXACT set of children: "Milo + Juno" and "Theo"
   -- are different series with different recurring characters (s3).
   unique (family_id, child_key)
 );

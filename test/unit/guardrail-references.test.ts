@@ -75,7 +75,7 @@ describe('s4.2 deterministic output checks vs the reference stories', () => {
   }
 
   it('does not flag the rule 7 factual-mention boundary', () => {
-    const allowed = 'Mario started life as Jumpman, and Lennon jumped Jumpman over the barrels.'
+    const allowed = 'Mario started life as Jumpman, and Theo jumped Jumpman over the barrels.'
     expect(scanStoryText(allowed).hardViolations).toEqual([])
     const breach = 'Then Mario waved at them and said hello.'
     expect(scanStoryText(breach).hardViolations.map((v) => v.rule)).toContain(7)
@@ -83,8 +83,8 @@ describe('s4.2 deterministic output checks vs the reference stories', () => {
 
   it('does not flag a gently-told historical fire for band A', () => {
     const lego =
-      '"FIRE! The workshop is on fire!" Orange flames danced in the dark. Cruz grabbed ' +
-      "Phoenix's hand, and they ran outside with everyone else."
+      '"FIRE! The workshop is on fire!" Orange flames danced in the dark. Milo grabbed ' +
+      "Juno's hand, and they ran outside with everyone else."
     expect(scanStoryText(lego).hardViolations).toEqual([])
   })
 

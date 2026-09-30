@@ -96,9 +96,9 @@ describe('child-action heuristic, validated on the references', () => {
   })
 
   it('speech and thought verbs alone do not count as an action', () => {
-    expect(hasChildAction('"Sharks are the coolest," said Cruz.', 'Cruz')).toBe(false)
-    expect(hasChildAction('Cruz wondered about the tubes. Cruz watched.', 'Cruz')).toBe(false)
-    expect(hasChildAction('Cruz flipped a brick over.', 'Cruz')).toBe(true)
+    expect(hasChildAction('"Sharks are the coolest," said Milo.', 'Milo')).toBe(false)
+    expect(hasChildAction('Milo wondered about the tubes. Milo watched.', 'Milo')).toBe(false)
+    expect(hasChildAction('Milo flipped a brick over.', 'Milo')).toBe(true)
   })
 })
 

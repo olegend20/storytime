@@ -85,12 +85,12 @@ function session(id: string) {
   }
 }
 
-const CRUZ = 'c1111111-1111-4111-8111-111111111111'
-const PHOENIX = 'c2222222-2222-4222-8222-222222222222'
+const MILO = 'c1111111-1111-4111-8111-111111111111'
+const JUNO = 'c2222222-2222-4222-8222-222222222222'
 
 function generateBody(topic: string, extra: Record<string, unknown> = {}) {
   return {
-    child_ids: [CRUZ, PHOENIX],
+    child_ids: [MILO, JUNO],
     topic_input: topic,
     tones: ['funny', 'exciting'],
     length_minutes: 10,
@@ -300,7 +300,7 @@ describe('generate: the happy path follows the event order in lib/schemas/api.ts
     const { events } = await collect(await s.generate(generateBody('volcanoes')))
     const meta = events[1]
     if (meta?.type !== 'meta') throw new Error('expected meta')
-    // Phoenix is 4, so the youngest sets band A (§4.5).
+    // Juno is 4, so the youngest sets band A (§4.5).
     expect(meta.age_band).toBe('A')
     expect(meta.target_words).toEqual({ min: 1300, max: 1700 })
   })

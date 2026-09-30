@@ -11,23 +11,23 @@
       "id": "references_score_at_least_4_5",
       "description": "The four reference stories scored with their original requests each reach overall >= 4.5",
       "passed": false,
-      "detail": "below the bar: lennon-the-beautiful-game.md=4.35. §5: fix the judge prompt, never the references.",
+      "detail": "below the bar: theo-the-beautiful-game.md=4.35. §5: fix the judge prompt, never the references.",
       "observed": {
         "per_story": [
           {
-            "file": "cruz-and-phoenix-lego-story.md",
+            "file": "milo-and-juno-lego-story.md",
             "overall": 4.65
           },
           {
-            "file": "lennon-and-the-lost-levels.md",
+            "file": "theo-and-the-lost-levels.md",
             "overall": 4.65
           },
           {
-            "file": "cruz-and-phoenix-shark-submarine.md",
+            "file": "milo-and-juno-shark-submarine.md",
             "overall": 4.55
           },
           {
-            "file": "lennon-the-beautiful-game.md",
+            "file": "theo-the-beautiful-game.md",
             "overall": 4.35
           }
         ]
@@ -35,9 +35,9 @@
     },
     {
       "id": "sabotage_heroes",
-      "description": "LEGO story with Phoenix's name removed from all but one chapter scores center <= 2",
+      "description": "LEGO story with Juno's name removed from all but one chapter scores center <= 2",
       "passed": false,
-      "detail": "center=3 (raw), kept in \"Chapter 1: The Carpenter in Billund\", 12 mentions removed. Evidence: Phoenix is active only in Chapter 1 (\"Uh oh,\" the duck on wheels). From Chapter 2 on, every named action goes to Cruz, sometimes twice: \"said Cruz... said Cruz,\" \"Cruz grabbed Cruz's hand,\" \"Cruz carried planks. Cruz handed out nails,\" and \"Kjeld looked at Cruz.\" Cruz alone drives each chapter, but a named child silent for three or more consecutive chapters caps this criterion at 3.",
+      "detail": "center=3 (raw), kept in \"Chapter 1: The Carpenter in Billund\", 12 mentions removed. Evidence: Juno is active only in Chapter 1 (\"Uh oh,\" the duck on wheels). From Chapter 2 on, every named action goes to Milo, sometimes twice: \"said Milo... said Milo,\" \"Milo grabbed Milo's hand,\" \"Milo carried planks. Milo handed out nails,\" and \"Kjeld looked at Milo.\" Milo alone drives each chapter, but a named child silent for three or more consecutive chapters caps this criterion at 3.",
       "observed": {
         "scores_raw": {
           "center": 3,
@@ -93,7 +93,7 @@
       "id": "sabotage_age_fit_peril",
       "description": "Shark story where the great white chases and rams the submarine scores age_fit <= 2 for band A",
       "passed": true,
-      "detail": "age_fit=1 (raw); word count 1851 -> 1826, length effectively unchanged so this is peril and not padding. Evidence: Band A (youngest is 4) requires that nothing chases anyone. Chapter 6 is titled \"The Chase\" and includes \"The shark chased them through the dark,\" an injury (\"Cruz smashed his shoulder into the wall\"), a flooding hull and pitch-black dread. The length of 1826 words is over range but within the 15% tolerance.",
+      "detail": "age_fit=1 (raw); word count 1851 -> 1826, length effectively unchanged so this is peril and not padding. Evidence: Band A (youngest is 4) requires that nothing chases anyone. Chapter 6 is titled \"The Chase\" and includes \"The shark chased them through the dark,\" an injury (\"Milo smashed his shoulder into the wall\"), a flooding hull and pitch-black dread. The length of 1826 words is over range but within the 15% tolerance.",
       "observed": {
         "scores_raw": {
           "center": 5,
@@ -147,7 +147,7 @@
   ],
   "reference_scores": [
     {
-      "file": "cruz-and-phoenix-lego-story.md",
+      "file": "milo-and-juno-lego-story.md",
       "band": "A",
       "word_count": 1540,
       "scores_raw": {
@@ -182,7 +182,7 @@
       "judge_error": null
     },
     {
-      "file": "lennon-and-the-lost-levels.md",
+      "file": "theo-and-the-lost-levels.md",
       "band": "C",
       "word_count": 2471,
       "scores_raw": {
@@ -217,7 +217,7 @@
       "judge_error": null
     },
     {
-      "file": "cruz-and-phoenix-shark-submarine.md",
+      "file": "milo-and-juno-shark-submarine.md",
       "band": "A",
       "word_count": 1851,
       "scores_raw": {
@@ -252,7 +252,7 @@
       "judge_error": null
     },
     {
-      "file": "lennon-the-beautiful-game.md",
+      "file": "theo-the-beautiful-game.md",
       "band": "C",
       "word_count": 2633,
       "scores_raw": {

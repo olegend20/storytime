@@ -156,7 +156,7 @@ daily_usage (
 )
 ```
 
-**Why a series is keyed by the exact set of children:** "Cruz + Phoenix" and "Lennon" are different series with different recurring characters (the magic brick vs. Bit). "Cruz + Phoenix + Lennon" would be a third series. This matches how the reference stories worked.
+**Why a series is keyed by the exact set of children:** "Milo + Juno" and "Theo" are different series with different recurring characters (the magic brick vs. Bit). "Milo + Juno + Theo" would be a third series. This matches how the reference stories worked.
 
 ---
 
@@ -181,8 +181,8 @@ One static block, ~3,000–5,000 tokens, identical for every story call. Marked 
 ```json
 {
   "children": [
-    {"name": "Cruz", "age": 7, "likes": ["LEGO", "sharks"], "role_notes": "often the one with the idea"},
-    {"name": "Phoenix", "age": 4, "likes": ["dinosaurs"], "role_notes": "gets the shout-along lines"}
+    {"name": "Milo", "age": 7, "likes": ["LEGO", "sharks"], "role_notes": "often the one with the idea"},
+    {"name": "Juno", "age": 4, "likes": ["dinosaurs"], "role_notes": "gets the shout-along lines"}
   ],
   "recurring": [
     {"name": "The magic red LEGO brick", "type": "device", "rule": "glows and clicks to start an adventure; returns them home at the end"},
@@ -190,7 +190,7 @@ One static block, ~3,000–5,000 tokens, identical for every story call. Marked 
   ],
   "catchphrases": ["Play well", "WHOOOOSH"],
   "topics_covered": [{"topic": "history of LEGO", "story_id": "...", "date": "2026-09-25"}, {"topic": "sharks", "story_id": "...", "date": "2026-09-26"}],
-  "last_story": {"title": "Cruz, Phoenix and the Shark Submarine", "ending": "A shark tooth appeared on the bedroom floor; they whispered goodnight to Grandpa Greenie."},
+  "last_story": {"title": "Milo, Juno and the Shark Submarine", "ending": "A shark tooth appeared on the bedroom floor; they whispered goodnight to Grandpa Greenie."},
   "tone_history": ["funny", "exciting"],
   "avoid": ["repeating the submarine device two nights in a row"]
 }
@@ -221,12 +221,12 @@ One static block, ~3,000–5,000 tokens, identical for every story call. Marked 
 ### 4.4 Story output schema (from the writing model)
 ```json
 {
-  "title": "Cruz, Phoenix and the Shark Submarine",
+  "title": "Milo, Juno and the Shark Submarine",
   "subtitle": "The next adventure of the magic LEGO brick",
   "chapters": [
     {"heading": "Chapter 1: Grandpa Greenie", "text": "markdown body", "shout_line": "WHOOOOSH!"}
   ],
-  "ending_line": "Goodnight, Cruz. Goodnight, Phoenix. Swim well.",
+  "ending_line": "Goodnight, Milo. Goodnight, Juno. Swim well.",
   "true_facts": [{"text": "...", "fact_id": "f1"}],
   "bible_suggestions": {
     "new_recurring": [{"name": "Grandpa Greenie", "type": "character", "rule": "..."}],
@@ -319,7 +319,7 @@ Notation: **AC** = acceptance criteria, **VT** = verification tests. Test layers
 - int: generate story 1 then story 2 for same children → `stories[1].series_id === stories[0].series_id`; bible `version` increments by 1 per story.
 - int (fixture): given old bible + reference story "Shark Submarine", the Haiku update output includes a recurring entry whose name contains "Greenie" and `last_story.ending` mentions a tooth.
 - int: two concurrent updates with the same `version` → exactly one succeeds, the other retries and succeeds with merged content.
-- eval (F13): continuity test — a third story for Cruz+Phoenix references the brick or a prior recurring element in its first chapter.
+- eval (F13): continuity test — a third story for Milo+Juno references the brick or a prior recurring element in its first chapter.
 
 ### F5 — Topic normalization and Fact Packs
 **Scope:** `lib/topics`: `normalizeTopic(text)` (Haiku, structured), `getOrBuildFactPack(topicKey)` with a `building` lock to prevent duplicate builds, fact pack builder (writing model + web search tool), Haiku review pass, `use_count` increment.
@@ -352,7 +352,7 @@ Notation: **AC** = acceptance criteria, **VT** = verification tests. Test layers
 - unit: parser accepts a valid story JSON, rejects one missing `true_facts`, repairs a JSON wrapped in ```json fences.
 - int (fixture): full pipeline with recorded model responses → `stories` row saved with `word_count`, `status='ready'`, `quality` populated; exactly one `write` log row.
 - int (fixture): simulated model timeout → response 502, no `stories` row, `daily_usage` unchanged.
-- int (LIVE_API): generate one story for children `[{Cruz,7},{Phoenix,4}]` on `sharks`; on the second call the `cache_read_tokens` ≥ 0.9 × master prompt tokens.
+- int (LIVE_API): generate one story for children `[{Milo,7},{Juno,4}]` on `sharks`; on the second call the `cache_read_tokens` ≥ 0.9 × master prompt tokens.
 - e2e: request a story and assert the first chapter renders before the SSE stream closes (progressive rendering).
 
 ### F7 — Quality gate
@@ -362,7 +362,7 @@ Notation: **AC** = acceptance criteria, **VT** = verification tests. Test layers
 - Deterministic checks run before any model call; a deterministic failure skips the Haiku review.
 - Total gate latency ≤ 8 s p95.
 **VT**
-- unit: each deterministic check has a passing and failing fixture (e.g. story with Phoenix missing → fail with reason `child_missing:Phoenix`).
+- unit: each deterministic check has a passing and failing fixture (e.g. story with Juno missing → fail with reason `child_missing:Juno`).
 - unit: a true fact whose `fact_id` is not in the pack → fail `unsourced_fact`.
 - int (fixture): Haiku review returns `scary_level: 3` for band A → rewrite is triggered and the rewrite request contains the reasons text.
 - int (fixture): two consecutive failures → `status='flagged'`, story visible, banner rendered (e2e).

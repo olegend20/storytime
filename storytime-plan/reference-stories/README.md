@@ -33,7 +33,7 @@ quality bar becomes instead.
 
 Four markdown files, roughly:
 
-- `01-history-of-lego.md` — band A pair (Cruz 7, Phoenix 4); anchors "leg godt", 1958 patent
+- `01-history-of-lego.md` — band A pair (Milo 7, Juno 4); anchors "leg godt", 1958 patent
 - `02-sharks.md` — band A pair, continuity story (Grandpa Greenie, the magic red brick)
 - `03-history-of-soccer.md` — band C; anchors William McCrum, Pickles the dog
 - `04-history-of-video-games.md` — band C; contains a flagged popular legend

@@ -20,8 +20,8 @@ import { request } from '../helpers/story'
 
 const bible = StoryBible.parse({
   children: [
-    { name: 'Cruz', age: 7, likes: ['LEGO', 'sharks'], role_notes: 'often has the idea' },
-    { name: 'Phoenix', age: 4, likes: ['dinosaurs'], role_notes: 'gets the shout-along lines' },
+    { name: 'Milo', age: 7, likes: ['LEGO', 'sharks'], role_notes: 'often has the idea' },
+    { name: 'Juno', age: 4, likes: ['dinosaurs'], role_notes: 'gets the shout-along lines' },
   ],
   recurring: [],
   catchphrases: [],

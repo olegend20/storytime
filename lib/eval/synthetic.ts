@@ -56,7 +56,7 @@ function pickSource(scenario: EvalScenario): ReferenceCase {
 
 /**
  * Simultaneous rename via sentinels. A naive sequential pass collapses a swap: renaming
- * Cruz→Phoenix and then Phoenix→Cruz would turn both children into Cruz, which is exactly
+ * Milo→Juno and then Juno→Milo would turn both children into Milo, which is exactly
  * the mixed-ages scenario.
  */
 function renameChildren(story: JudgeableStory, from: string[], to: string[]): JudgeableStory {

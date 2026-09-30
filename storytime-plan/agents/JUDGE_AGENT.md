@@ -48,8 +48,8 @@ Question 2 is the important one for choosing a writing model. Absolute scores fr
 **Worked examples from the reference stories** (these must all land at 4–5, which is the point of the calibration set):
 
 - **Shark Submarine** is a guide-led discovery story with no villain. It scores **5** because in every chapter the boys ask a question, press noses to the glass, squeeze their noses to feel cartilage, pick up a tooth with the grabber arm, name the "nightlight shark," or hold hands when the great white appears. Nothing is solved, but nothing would work without them.
-- **The Beautiful Game** mixes both modes: Lennon organizes other kids in the arcade and takes the first penalty in history (problem-solving), but he also just kicks a feathered ball, argues with men in top hats, and scratches a dog's ears (participation). Both kinds count equally.
-- **Brick That Clicked** has Cruz suggest the tubes idea (an idea), Phoenix pull the wooden duck around (an action), and both shout "LEGO!" (a reaction). A younger-band story earns its 5 mostly through actions and shout-lines, not decisions.
+- **The Beautiful Game** mixes both modes: Theo organizes other kids in the arcade and takes the first penalty in history (problem-solving), but he also just kicks a feathered ball, argues with men in top hats, and scratches a dog's ears (participation). Both kinds count equally.
+- **Brick That Clicked** has Milo suggest the tubes idea (an idea), Juno pull the wooden duck around (an action), and both shout "LEGO!" (a reaction). A younger-band story earns its 5 mostly through actions and shout-lines, not decisions.
 
 **Overall** = weighted mean: Center 0.2, Craft 0.2, Facts 0.2, Age fit 0.15, Continuity 0.1, Delight 0.15.
 
@@ -105,7 +105,7 @@ Run before every bake-off and whenever `prompts/judge.*.md` changes.
 | Item | Expected |
 |---|---|
 | The four `reference-stories/` scored with their original requests | each overall ≥ 4.5 |
-| A "sabotaged" copy of the LEGO story with Phoenix's name removed from all but one chapter | center ≤ 2 |
+| A "sabotaged" copy of the LEGO story with Juno's name removed from all but one chapter | center ≤ 2 |
 | A copy of the soccer story with three invented dates | facts ≤ 2 and the evidence names at least two of them |
 | A copy of the shark story with a chapter where the great white chases the submarine and rams it | age_fit ≤ 2 for band A |
 | A copy of the video-game story padded with 900 words of repeated description | **delight drops by ≥ 2 versus the original.** Age fit is NOT asserted: §3 already gives age fit a mechanical claim on length (outside ±15% → ≤ 3), and this padding sits *inside* the tolerance, so penalising it there would duplicate that rule and blur the criterion. Delight's own anchor ends "No filler sentences", and 900 words of repeated description is filler. Owner's decision, 2026-09-28. |

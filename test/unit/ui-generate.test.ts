@@ -20,7 +20,7 @@ const META: SseEvent = {
   type: 'meta',
   story_id: '00000000-0000-4000-8000-000000000001',
   series_id: '00000000-0000-4000-8000-000000000002',
-  title: 'Cruz, Phoenix and the Brick That Clicked',
+  title: 'Milo, Juno and the Brick That Clicked',
   subtitle: 'A bedtime adventure',
   age_band: 'A',
   target_words: { min: 1300, max: 1700 },

@@ -76,8 +76,8 @@ export interface CreateFamilyOptions {
 }
 
 const DEFAULT_CHILDREN = [
-  { first_name: 'Cruz', age: 7, likes: ['LEGO', 'sharks'], notes: 'often the one with the idea' },
-  { first_name: 'Phoenix', age: 4, likes: ['dinosaurs'], notes: 'loves shouting the sound words' },
+  { first_name: 'Milo', age: 7, likes: ['LEGO', 'sharks'], notes: 'often the one with the idea' },
+  { first_name: 'Juno', age: 4, likes: ['dinosaurs'], notes: 'loves shouting the sound words' },
 ]
 
 export async function createTestFamily(opts: CreateFamilyOptions = {}): Promise<TestFamily> {

@@ -12,13 +12,13 @@ import { ChildPatch, sanitizeChildPayload } from '@/lib/children/service'
 
 describe('F3 child payload sanitization', () => {
   it('cleans a first name and reports nothing suspicious', () => {
-    const { input, htmlField } = sanitizeChildPayload({ first_name: '  Cruz  ', age: 7 })
-    expect(input.first_name).toBe('Cruz')
+    const { input, htmlField } = sanitizeChildPayload({ first_name: '  Milo  ', age: 7 })
+    expect(input.first_name).toBe('Milo')
     expect(htmlField).toBeNull()
   })
 
   it('reports the field that contained HTML (F11 AC: reject those payloads)', () => {
-    expect(sanitizeChildPayload({ first_name: '<b>Cruz</b>' }).htmlField).toBe('first_name')
+    expect(sanitizeChildPayload({ first_name: '<b>Milo</b>' }).htmlField).toBe('first_name')
     expect(sanitizeChildPayload({ notes: '<script>x()</script>hi' }).htmlField).toBe('notes')
     expect(sanitizeChildPayload({ likes: ['<i>lego</i>'] }).htmlField).toBe('likes')
   })
@@ -30,12 +30,12 @@ describe('F3 child payload sanitization', () => {
 
   it('coerces an age posted as a string, so the schema message is the one shown', () => {
     expect(sanitizeChildPayload({ age: '7' }).input.age).toBe(7)
-    const parsed = ChildInput.safeParse(sanitizeChildPayload({ first_name: 'Cruz', age: '7' }).input)
+    const parsed = ChildInput.safeParse(sanitizeChildPayload({ first_name: 'Milo', age: '7' }).input)
     expect(parsed.success).toBe(true)
   })
 
   it('leaves a non-numeric age alone for the schema to reject', () => {
-    const { input } = sanitizeChildPayload({ first_name: 'Cruz', age: 'seven' })
+    const { input } = sanitizeChildPayload({ first_name: 'Milo', age: 'seven' })
     expect(ChildInput.safeParse(input).success).toBe(false)
   })
 
@@ -66,7 +66,7 @@ describe('F3 child payload sanitization', () => {
     expect(parsedName.success).toBe(false)
     expect(parsedName.error?.issues[0]?.message).toBe('First names can be up to 30 characters.')
 
-    const note = sanitizeChildPayload({ first_name: 'Cruz', age: 7, notes: 'x'.repeat(400) })
+    const note = sanitizeChildPayload({ first_name: 'Milo', age: 7, notes: 'x'.repeat(400) })
     expect((note.input.notes as string).length).toBe(400)
     const parsedNote = ChildInput.safeParse(note.input)
     expect(parsedNote.success).toBe(false)
@@ -80,7 +80,7 @@ describe('F3 child payload sanitization', () => {
 
   it('still rejects an 11th like - truncation is for length, not for count', () => {
     const { input } = sanitizeChildPayload({
-      first_name: 'Cruz',
+      first_name: 'Milo',
       age: 7,
       likes: Array.from({ length: 11 }, (_, i) => `like-${i}`),
     })
@@ -93,7 +93,7 @@ describe('F3 child payload sanitization', () => {
 describe('F3 child patch schema', () => {
   it('accepts a single field', () => {
     expect(ChildPatch.safeParse({ age: 8 }).success).toBe(true)
-    expect(ChildPatch.safeParse({ first_name: 'Phoenix' }).success).toBe(true)
+    expect(ChildPatch.safeParse({ first_name: 'Juno' }).success).toBe(true)
     expect(ChildPatch.safeParse({ notes: null }).success).toBe(true)
     expect(ChildPatch.safeParse({ reading_level: 'older' }).success).toBe(true)
   })
@@ -106,7 +106,7 @@ describe('F3 child patch schema', () => {
     expect(ChildPatch.safeParse({ age: 0 }).success).toBe(false)
     expect(ChildPatch.safeParse({ age: 18 }).success).toBe(false)
     expect(ChildPatch.safeParse({ first_name: 'a'.repeat(31) }).success).toBe(false)
-    expect(ChildPatch.safeParse({ first_name: 'Cruz9' }).success).toBe(false)
+    expect(ChildPatch.safeParse({ first_name: 'Milo9' }).success).toBe(false)
     expect(ChildPatch.safeParse({ notes: 'x'.repeat(301) }).success).toBe(false)
     expect(
       ChildPatch.safeParse({ likes: Array.from({ length: 11 }, (_, i) => `l${i}`) }).success,

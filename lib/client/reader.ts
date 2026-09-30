@@ -62,7 +62,7 @@ export function readerFromStream(
   }
 }
 
-/** "Cruz & Phoenix" - first names only (F11). */
+/** "Milo & Juno" - first names only (F11). */
 export function joinNames(names: readonly string[]): string {
   if (names.length === 0) return ''
   if (names.length === 1) return names[0] ?? ''

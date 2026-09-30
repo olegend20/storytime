@@ -37,7 +37,7 @@ test('generate, open from the library, and the open costs zero model calls', asy
   // under five parallel workers, does not fit the default 30s budget.
   test.slow()
   await page.goto('/new')
-  await expect(page.getByRole('button', { name: 'Cruz 7' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Milo 7' })).toBeVisible()
   await startStory(page, 'the history of soccer')
   await expect(page.getByRole('heading', { name: 'Saved to your library' })).toBeVisible({
     timeout: 30_000,
@@ -75,8 +75,8 @@ test('generate, open from the library, and the open costs zero model calls', asy
 test('the library groups stories by series, newest first', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Story library' })).toBeVisible()
   // The fixture family has two series.
-  await expect(page.getByRole('heading', { name: 'Cruz & Phoenix' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Lennon', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Milo & Juno' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Theo', exact: true })).toBeVisible()
 
   const seriesSections = page.locator('section[aria-labelledby^="series-"]')
   await expect(seriesSections).toHaveCount(2)

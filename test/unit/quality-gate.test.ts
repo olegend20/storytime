@@ -159,16 +159,16 @@ describe('F7: outcomes', () => {
   it('allows scary_level 2 for band C, which is inside that band limit', async () => {
     const story = goodStory({
       wordsPerChapter: 300,
-      titleNames: 'Lennon',
+      titleNames: 'Theo',
       body: [
-        'Lennon placed the ball on the very first penalty spot in history. He took three steps back.',
+        'Theo placed the ball on the very first penalty spot in history. He took three steps back.',
         'In **1891**, soccer\'s rule makers agreed. The penalty kick became part of the game.',
-        'Lennon hit it top corner. The goalkeeper dived the wrong way entirely.',
+        'Theo hit it top corner. The goalkeeper dived the wrong way entirely.',
       ].join(' '),
     })
     story.ending_line = 'Tomorrow, he had a game to make.'
     const outcome = await gate({
-      request: request({ band: 'C', children: [{ name: 'Lennon', age: 10 }] }),
+      request: request({ band: 'C', children: [{ name: 'Theo', age: 10 }] }),
       story,
       reviewOverride: { ...PASSING, scary_level: 2 },
     })
@@ -256,9 +256,9 @@ describe('F7: reviewer notes alone do not force a rewrite', () => {
 
   it('but carries those notes into the rewrite when a verdict did fail', async () => {
     const outcome = await gate({
-      reviewOverride: { ...PASSING, kids_are_active_participants: false, reasons: ['Phoenix only watches'] },
+      reviewOverride: { ...PASSING, kids_are_active_participants: false, reasons: ['Juno only watches'] },
     })
-    expect(outcome.result.rewrite_reasons).toContain('Phoenix only watches')
+    expect(outcome.result.rewrite_reasons).toContain('Juno only watches')
     expect(outcome.result.rewrite_reasons.join(' ')).toContain('must DO things')
   })
 })

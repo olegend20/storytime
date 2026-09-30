@@ -76,7 +76,7 @@ async function decorate(db: SupabaseClient, rows: StoryRow[]): Promise<LibrarySt
   return rows.map((row) => {
     const s = seriesById.get(row.series_id)
     // Oldest first, then by name: `child_ids` is stored in uuid order, which is random, so
-    // "Cruz & Phoenix" would otherwise flip to "Phoenix & Cruz" between families and runs.
+    // "Milo & Juno" would otherwise flip to "Juno & Milo" between families and runs.
     const names = ((s?.child_ids as string[] | undefined) ?? [])
       .map((id) => childById.get(id))
       .filter((c): c is { name: string; age: number } => !!c)

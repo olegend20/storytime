@@ -113,7 +113,7 @@ test.describe('F2 authentication', () => {
 
       // Something to delete.
       await page.goto('/children')
-      await page.getByLabel('First name').fill('Cruz')
+      await page.getByLabel('First name').fill('Milo')
       await page.getByLabel('Age').fill('7')
       await page.getByRole('button', { name: 'Add child' }).click()
       await expect(page.getByTestId('child-row')).toHaveCount(1)

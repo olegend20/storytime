@@ -100,7 +100,7 @@ Returns `{safe: bool, violations: [{rule: 3, quote: "…", severity: "hard"|"sof
 ## 5. Parent-facing messages
 Refusals must be short, kind and non-judgmental, and must not echo the offending text back. Templates in `config/guardrails/messages.json`. Examples:
 - off-mission: "StoryTime makes learning adventures for kids. Try a topic like *how bees make honey* or *the history of bicycles*."
-- too mature for youngest: "That one's a bit much for a 4-year-old. For Phoenix, how about *how giant ships float*? Or pick just your older child for tonight."
+- too mature for youngest: "That one's a bit much for a 4-year-old. For Juno, how about *how giant ships float*? Or pick just your older child for tonight."
 - refuse (any unsafe category): "We can't make a story about that. Pick something fun to learn about and we'll get started."
 - output failure: "We couldn't make a story we're happy with tonight. This didn't use one of your stories — try a different topic or angle."
 

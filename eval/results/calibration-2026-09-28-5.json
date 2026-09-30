@@ -11,11 +11,11 @@
       "id": "references_floor_and_mean",
       "description": "Each of the four references medians >= 4 over 3 runs, and their mean >= 4.4",
       "passed": false,
-      "detail": "mean of medians 4.325 < 4.4; cruz-and-phoenix-lego-story.md=4.3[4.25/4.45/4.3], lennon-and-the-lost-levels.md=4.45[4.45/4.45/4.45], cruz-and-phoenix-shark-submarine.md=4.4[4.55/4.4/4.4], lennon-the-beautiful-game.md=4.15[4.35/4.15/4.15]. §5: fix the judge prompt, never the references.",
+      "detail": "mean of medians 4.325 < 4.4; milo-and-juno-lego-story.md=4.3[4.25/4.45/4.3], theo-and-the-lost-levels.md=4.45[4.45/4.45/4.45], milo-and-juno-shark-submarine.md=4.4[4.55/4.4/4.4], theo-the-beautiful-game.md=4.15[4.35/4.15/4.15]. §5: fix the judge prompt, never the references.",
       "observed": {
         "per_story": [
           {
-            "file": "cruz-and-phoenix-lego-story.md",
+            "file": "milo-and-juno-lego-story.md",
             "median": 4.3,
             "samples": [
               4.25,
@@ -25,7 +25,7 @@
             "spread": 0.20000000000000018
           },
           {
-            "file": "lennon-and-the-lost-levels.md",
+            "file": "theo-and-the-lost-levels.md",
             "median": 4.45,
             "samples": [
               4.45,
@@ -35,7 +35,7 @@
             "spread": 0
           },
           {
-            "file": "cruz-and-phoenix-shark-submarine.md",
+            "file": "milo-and-juno-shark-submarine.md",
             "median": 4.4,
             "samples": [
               4.55,
@@ -45,7 +45,7 @@
             "spread": 0.14999999999999947
           },
           {
-            "file": "lennon-the-beautiful-game.md",
+            "file": "theo-the-beautiful-game.md",
             "median": 4.15,
             "samples": [
               4.35,
@@ -62,9 +62,9 @@
     },
     {
       "id": "sabotage_heroes",
-      "description": "LEGO story with Phoenix's name removed from all but one chapter scores center <= 2",
+      "description": "LEGO story with Juno's name removed from all but one chapter scores center <= 2",
       "passed": true,
-      "detail": "center=1 (raw), kept in \"Chapter 1: The Carpenter in Billund\", 12 mentions removed. Evidence: Counted per child, Phoenix is active only in Chapter 1 (presses the brick, says \"Uh oh\" and \"Denmark?\", pulls the duck). Across Chapters 2-10 every individual line and action goes to Cruz: \"said Cruz. ... said Cruz.\", \"Cruz grabbed Cruz's hand\", \"Cruz carried planks. Cruz handed out nails.\", \"Kjeld looked at Cruz.\" Phoenix appears only inside group lines like \"shouted the boys\". That is 1 of 10 chapters for the worst-covered child, and nine consecutive silent chapters. Cruz alone would score well, but the rubric scores the worst-covered child.",
+      "detail": "center=1 (raw), kept in \"Chapter 1: The Carpenter in Billund\", 12 mentions removed. Evidence: Counted per child, Juno is active only in Chapter 1 (presses the brick, says \"Uh oh\" and \"Denmark?\", pulls the duck). Across Chapters 2-10 every individual line and action goes to Milo: \"said Milo. ... said Milo.\", \"Milo grabbed Milo's hand\", \"Milo carried planks. Milo handed out nails.\", \"Kjeld looked at Milo.\" Juno appears only inside group lines like \"shouted the boys\". That is 1 of 10 chapters for the worst-covered child, and nine consecutive silent chapters. Milo alone would score well, but the rubric scores the worst-covered child.",
       "observed": {
         "scores_raw": {
           "center": 1,
@@ -120,7 +120,7 @@
       "id": "sabotage_age_fit_peril",
       "description": "Shark story where the great white chases and rams the submarine scores age_fit <= 2 for band A",
       "passed": true,
-      "detail": "age_fit=1 (raw); word count 1851 -> 1826, length effectively unchanged so this is peril and not padding. Evidence: Band A requires \"nothing chases anyone,\" yet Chapter 6 is titled \"The Chase.\" A great white rams the sub, Cruz is hurt (\"smashed his shoulder into the wall\"), water hisses in, and the boys are herded into pitch darkness. The length (1826) is within tolerance, and the vocabulary is otherwise well pitched.",
+      "detail": "age_fit=1 (raw); word count 1851 -> 1826, length effectively unchanged so this is peril and not padding. Evidence: Band A requires \"nothing chases anyone,\" yet Chapter 6 is titled \"The Chase.\" A great white rams the sub, Milo is hurt (\"smashed his shoulder into the wall\"), water hisses in, and the boys are herded into pitch darkness. The length (1826) is within tolerance, and the vocabulary is otherwise well pitched.",
       "observed": {
         "scores_raw": {
           "center": 4,
@@ -174,7 +174,7 @@
   ],
   "reference_scores": [
     {
-      "file": "cruz-and-phoenix-lego-story.md",
+      "file": "milo-and-juno-lego-story.md",
       "band": "A",
       "word_count": 1540,
       "scores_raw": {
@@ -215,7 +215,7 @@
       "judge_error": null
     },
     {
-      "file": "lennon-and-the-lost-levels.md",
+      "file": "theo-and-the-lost-levels.md",
       "band": "C",
       "word_count": 2471,
       "scores_raw": {
@@ -256,7 +256,7 @@
       "judge_error": null
     },
     {
-      "file": "cruz-and-phoenix-shark-submarine.md",
+      "file": "milo-and-juno-shark-submarine.md",
       "band": "A",
       "word_count": 1851,
       "scores_raw": {
@@ -297,7 +297,7 @@
       "judge_error": null
     },
     {
-      "file": "lennon-the-beautiful-game.md",
+      "file": "theo-the-beautiful-game.md",
       "band": "C",
       "word_count": 2633,
       "scores_raw": {

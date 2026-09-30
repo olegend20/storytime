@@ -18,14 +18,14 @@ Return one JSON object and nothing else, exactly this shape:
 ```json
 {
   "children": [
-    { "name": "Cruz", "age": 7, "likes": ["LEGO", "sharks"], "role_notes": "often the one with the idea" }
+    { "name": "Milo", "age": 7, "likes": ["LEGO", "sharks"], "role_notes": "often the one with the idea" }
   ],
   "recurring": [
     { "name": "The magic red LEGO brick", "type": "device", "rule": "glows and clicks to start an adventure; returns them home at the end" }
   ],
   "catchphrases": ["Play well", "WHOOOOSH"],
   "topics_covered": [{ "topic": "history of LEGO", "story_id": null, "date": "2026-09-25" }],
-  "last_story": { "title": "Cruz, Phoenix and the Shark Submarine", "ending": "A shark tooth appeared on the bedroom floor; they whispered goodnight to Grandpa Greenie." },
+  "last_story": { "title": "Milo, Juno and the Shark Submarine", "ending": "A shark tooth appeared on the bedroom floor; they whispered goodnight to Grandpa Greenie." },
   "tone_history": ["funny", "exciting"],
   "avoid": ["repeating the submarine device two nights in a row"]
 }
