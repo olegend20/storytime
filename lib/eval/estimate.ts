@@ -60,8 +60,12 @@ export const STORY_CALL_TOKENS = {
    * that fixed (calls over 300s stream), full-length builds measured 772,072 / 31,004 and
    * 768,614 / 23,317 input/output - ~$1.85 each. Input grows faster than the search count,
    * since every search result is re-read on each later turn of the tool loop.
+   *
+   * REDESIGNED 2026-09-29 (DECISIONS #137): four parallel single-search calls at low effort
+   * (each reads its ~50k-token result set once) and one no-tools write. PROJECTED from those
+   * measurements: ~220k input, ~4k output. Re-measure on the first live build and correct.
    */
-  factpack: { input: 770_000, output: 27_000, webSearches: 5 },
+  factpack: { input: 220_000, output: 4_000, webSearches: 4 },
 } as const
 
 export interface CostLine {

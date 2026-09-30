@@ -821,3 +821,22 @@ $2.36 with packs built.
 **Awaiting owner approval (CLAUDE.md rule 5, master prompt changed):** before/after
 `pnpm eval` — v1 pinned (~$3.4, rewrites included) and v2 (~$2.4) — reporting rewrite rate,
 repair count, judge mean and cost per story. **≈ $6 total.**
+
+### 2026-09-29 (later) — latency: the 9-minute fact-pack build, and a fully briefed rewrite
+
+The owner typed "why we sleep" and waited 13½ minutes. 9 of them were the fact-pack build:
+one call running 5 searches in sequence, re-reading every result on every turn (770k input
+tokens) and narrating between them (21k output) — $0.99. **Redesigned (DECISIONS #137):** four
+parallel single-search calls at low effort, then one small no-tools write with the format
+enforced. Projected 1–2 min and ~$0.45; the first live build measures it. Accuracy unchanged:
+every fact still comes from a page a search returned.
+
+Under the new rubric, that story's first draft passed everything but was **22 words short**;
+the rewrite (never told about two unexplained terms, because a failed free check skipped the
+review) was flagged on them. Two fixes: the writer now gets a per-chapter word budget aimed
+high (DECISIONS #136), and on attempt 1 the reviews run regardless so the one rewrite hears
+everything (owner-approved, DECISIONS #138).
+
+**Gates:** lint ✅ · typecheck ✅ · unit+int **989** ✅ · guardrails 29/29 ✅ · e2e real 4 ✅.
+Spend: $0.00. Still owed to the owner: the first live pack build's timing, and the ~$6
+before/after eval once the latency work is measured.

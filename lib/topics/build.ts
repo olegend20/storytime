@@ -1,19 +1,52 @@
 import type Anthropic from '@anthropic-ai/sdk'
-import { callModel, capabilities, modelForRole, parseJsonLoose, type GenerationLogSink } from '@/lib/ai'
+import {
+  callModel,
+  capabilities,
+  modelForRole,
+  parseJsonLoose,
+  structuredOutputRejected,
+  type GenerationLogSink,
+} from '@/lib/ai'
 import { loadPrompt } from '@/lib/prompts'
 import { dataBlock } from '@/lib/datablock'
 import type { FactPack, FactSource } from '@/lib/schemas'
+import { FACT_PACK_OUTPUT_FORMAT } from './pack-schema'
 
 /**
  * The fact-pack builder (F5). This is the ONLY step in StoryTime permitted to use the web
  * search tool (§1 principle 2), and it runs once per topic for every family that will ever
  * ask about it.
  *
+ * Two stages since 2026-09-29 (DECISIONS #137):
+ *
+ *   1. RESEARCH - one call per angle of the topic, all in parallel, one web search each,
+ *      low effort, terse JSON findings out (factpack-research.v1).
+ *   2. WRITE - one call with no tools that turns the findings into the pack, under the
+ *      2,000-token budget, with the format enforced (factpack.v3).
+ *
+ * The single call it replaces ran its searches one after another in one conversation, so
+ * every result set was re-read on every later turn and the model thought and narrated
+ * between searches: the first real parent to type a new topic waited **9 minutes** (553 s,
+ * 21,000 output tokens, 770,000 input tokens, $0.99). Parallel single-search calls read
+ * each result set once, and low effort stops the narration.
+ *
  * It runs on the `factpack` role rather than `helper` because Haiku 4.5 does not support
  * the web_search server tool (DECISIONS.md #5).
  */
 
-export const FACT_PACK_MAX_SEARCHES = 5
+/** The angles researched in parallel. Each is one search, so this is also the search count. */
+export const RESEARCH_ANGLES: readonly string[] = [
+  'origins and history: when it began, who started it, the key dates and turning points',
+  'how it works or what it is: the mechanism, the parts, the science, in plain terms',
+  'records, numbers and surprising details children love',
+  'famous people and moments, and where the subject stands today',
+]
+
+/** Searches per build: one per angle. Kept as the name the estimator and tests use. */
+export const FACT_PACK_MAX_SEARCHES = RESEARCH_ANGLES.length
+
+/** Fewer angles than this coming back means a pack would rest on too little. */
+export const MIN_ANGLES_FOR_A_PACK = 2
 
 /**
  * Why `max_uses` is the ONLY lever here.
@@ -50,7 +83,8 @@ export function webSearchTool(model: string): Anthropic.ToolUnion {
   return {
     type,
     name: 'web_search',
-    max_uses: FACT_PACK_MAX_SEARCHES,
+    // One search per research call: the calls are parallel, one angle each.
+    max_uses: 1,
   } as unknown as Anthropic.ToolUnion
 }
 
@@ -98,6 +132,79 @@ export interface BuildFactPackResult {
   model: string
   webSearches: number
   costUsd: number
+  /** Stage timings, for the latency work this design exists for. Absent from test doubles. */
+  latencyMs?: { research: number; write: number }
+}
+
+export interface ResearchFinding {
+  fact: string
+  source_title: string
+  source_url: string
+}
+
+export interface AngleFindings {
+  angle: string
+  findings: ResearchFinding[]
+  care: string
+}
+
+function asFindings(angle: string, raw: unknown): AngleFindings | null {
+  const obj = raw as { findings?: unknown; care?: unknown } | null
+  if (!obj || !Array.isArray(obj.findings)) return null
+  const findings = obj.findings.filter(
+    (f): f is ResearchFinding =>
+      typeof (f as ResearchFinding)?.fact === 'string' &&
+      typeof (f as ResearchFinding)?.source_title === 'string' &&
+      typeof (f as ResearchFinding)?.source_url === 'string' &&
+      /^https?:\/\//.test((f as ResearchFinding).source_url),
+  )
+  if (findings.length === 0) return null
+  return { angle, findings, care: typeof obj.care === 'string' ? obj.care : '' }
+}
+
+/** Stage 1: one search on one angle. Terse by construction: low effort, small output. */
+export async function researchAngle(
+  topicKey: string,
+  topicLabel: string,
+  angle: string,
+  opts: BuildFactPackOptions & { model: string },
+): Promise<{ result: AngleFindings | null; webSearches: number; costUsd: number }> {
+  const prompt = loadPrompt('factpack-research')
+  const result = await callModel({
+    purpose: 'factpack',
+    model: opts.model,
+    system: [{ text: prompt.body }],
+    tools: [webSearchTool(opts.model)],
+    messages: [
+      {
+        role: 'user',
+        content: [
+          dataBlock('topic', JSON.stringify({ topic_key: topicKey, topic_label: topicLabel })),
+          dataBlock('angle', angle),
+          'Search once for this angle of the topic and return the findings JSON.',
+        ].join('\n\n'),
+      },
+    ],
+    maxTokens: 3_000,
+    timeoutMs: 240_000,
+    maxRetries: 1,
+    thinking: 'adaptive',
+    effort: 'low',
+    factPackId: opts.factPackId ?? null,
+    ...(opts.sink ? { sink: opts.sink } : {}),
+    ...(opts.signal ? { signal: opts.signal } : {}),
+  })
+  return {
+    result: asFindings(angle, extractFinalJson(result.raw, result.text)),
+    webSearches: result.usage.web_searches,
+    costUsd: result.costUsd,
+  }
+}
+
+export function findingsBlocks(angles: readonly AngleFindings[]): string {
+  return angles
+    .map((a) => dataBlock('findings', JSON.stringify({ angle: a.angle, findings: a.findings, care: a.care })))
+    .join('\n\n')
 }
 
 export async function buildFactPack(
@@ -106,46 +213,71 @@ export async function buildFactPack(
   opts: BuildFactPackOptions = {},
 ): Promise<BuildFactPackResult> {
   const model = opts.model ?? modelForRole('factpack')
+  const shared = { ...opts, model }
+
+  // ---- stage 1: research, in parallel ----
+  const researchStarted = Date.now()
+  const settled = await Promise.allSettled(
+    RESEARCH_ANGLES.map((angle) => researchAngle(topicKey, topicLabel, angle, shared)),
+  )
+  const angles: AngleFindings[] = []
+  let webSearches = 0
+  let costUsd = 0
+  const failures: string[] = []
+  for (const [i, outcome] of settled.entries()) {
+    if (outcome.status === 'rejected') {
+      failures.push(`${RESEARCH_ANGLES[i]}: ${String(outcome.reason)}`)
+      continue
+    }
+    webSearches += outcome.value.webSearches
+    costUsd += outcome.value.costUsd
+    if (outcome.value.result) angles.push(outcome.value.result)
+    else failures.push(`${RESEARCH_ANGLES[i]}: no usable findings`)
+  }
+  const research = Date.now() - researchStarted
+  if (angles.length < MIN_ANGLES_FOR_A_PACK) {
+    throw new Error(
+      `fact pack research for "${topicKey}" found too little: ${angles.length} of ` +
+        `${RESEARCH_ANGLES.length} angles returned findings. ${failures.join(' | ')}`,
+    )
+  }
+
+  // ---- stage 2: write the pack from the findings ----
+  const writeStarted = Date.now()
   const prompt = loadPrompt('factpack')
-
-  const result = await callModel({
-    purpose: 'factpack',
-    model,
-    system: [{ text: prompt.body }],
-    tools: [webSearchTool(model)],
-    messages: [
-      {
-        role: 'user',
-        content: [
-          dataBlock('topic', JSON.stringify({ topic_key: topicKey, topic_label: topicLabel })),
-          `Research this topic and return the Fact Pack JSON. Use topic_key "${topicKey}" and ` +
-            `topic_label "${topicLabel}" unchanged.`,
-        ].join('\n\n'),
-      },
-    ],
-    /**
-     * Back to 16k. Dropping this to 6k to save time produced `unparseable`: with a server
-     * tool the response interleaves narration, search results and the final answer across
-     * several turns, and 6k truncated the JSON mid-object. The pack itself must fit 2,000
-     * tokens (§4.3), but the *response* needs room for the reasoning around it. Cost is
-     * controlled on the input side instead - see FACT_PACK_MAX_SEARCH_CONTENT_TOKENS - since
-     * input was 98% of the measured token volume.
-     */
-    maxTokens: 16_000,
-    /**
-     * The web-search tool loop makes this the longest call in the system. Three retries of a
-     * timing-out 5-minute request cost 902s and produced nothing, so: a generous single
-     * timeout, and one retry rather than three.
-     */
-    timeoutMs: 600_000,
-    maxRetries: 1,
-    thinking: 'adaptive',
-    factPackId: opts.factPackId ?? null,
-    ...(opts.sink ? { sink: opts.sink } : {}),
-    ...(opts.signal ? { signal: opts.signal } : {}),
+  const write = (structured: boolean) =>
+    callModel({
+      purpose: 'factpack',
+      model,
+      system: [{ text: prompt.body }],
+      messages: [
+        {
+          role: 'user',
+          content: [
+            dataBlock('topic', JSON.stringify({ topic_key: topicKey, topic_label: topicLabel })),
+            findingsBlocks(angles),
+            `Write the Fact Pack JSON from these findings. Use topic_key "${topicKey}" and ` +
+              `topic_label "${topicLabel}" unchanged.`,
+          ].join('\n\n'),
+        },
+      ],
+      maxTokens: 8_000,
+      timeoutMs: 280_000,
+      maxRetries: 1,
+      thinking: 'adaptive',
+      effort: 'medium',
+      ...(structured ? { outputConfig: { format: FACT_PACK_OUTPUT_FORMAT } } : {}),
+      factPackId: opts.factPackId ?? null,
+      ...(opts.sink ? { sink: opts.sink } : {}),
+      ...(opts.signal ? { signal: opts.signal } : {}),
+    })
+  const written = await write(true).catch((err: unknown) => {
+    if (!structuredOutputRejected(err)) throw err
+    return write(false)
   })
+  costUsd += written.costUsd
 
-  const candidate = extractFinalJson(result.raw, result.text)
+  const candidate = extractFinalJson(written.raw, written.text)
   // Pin the key and label: the pack is stored under our key, not the model's spelling of it.
   if (candidate && typeof candidate === 'object') {
     const obj = candidate as Record<string, unknown>
@@ -157,9 +289,10 @@ export async function buildFactPack(
 
   return {
     candidate,
-    model: result.model,
-    webSearches: result.usage.web_searches,
-    costUsd: result.costUsd,
+    model: written.model,
+    webSearches,
+    costUsd,
+    latencyMs: { research, write: Date.now() - writeStarted },
   }
 }
 

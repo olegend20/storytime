@@ -84,7 +84,7 @@ describe('the writing call', () => {
 
 describe('structuredOutputRejected', () => {
   it('is true only for a 400 about the output format, never for billing or transport', async () => {
-    const { structuredOutputRejected } = await import('@/lib/generate/pipeline')
+    const { structuredOutputRejected } = await import('@/lib/ai/callModel')
     const err = (status: number | undefined, message: string) =>
       new ModelCallError(message, { purpose: 'write', model: 'm', attempts: 1, retryable: false, status })
     expect(structuredOutputRejected(err(400, 'output_config.format: unsupported'))).toBe(true)

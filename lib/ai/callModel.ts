@@ -218,6 +218,19 @@ function normalizeUsage(usage: unknown): CallModelResult['usage'] {
   }
 }
 
+/**
+ * True when the API refused a structured-output request itself (a model without support, a
+ * schema it will not compile) - never for billing, rate limits or transport. A caller can
+ * then retry without the format rather than not run at all.
+ */
+export function structuredOutputRejected(err: unknown): boolean {
+  return (
+    err instanceof ModelCallError &&
+    err.detail.status === 400 &&
+    /output_config|output format|json_schema|schema|structured/i.test(err.message)
+  )
+}
+
 /** Retry on transport failures and the transient HTTP statuses; never on a 4xx we caused. */
 function isRetryable(err: unknown): { retryable: boolean; status?: number } {
   if (err instanceof APIConnectionError) return { retryable: true }

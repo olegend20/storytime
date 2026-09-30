@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabaseService } from '@/lib/supabase/service'
-import { callModel, streamModel, ModelCallError, ModelRefusalError } from '@/lib/ai'
+import { callModel, streamModel, structuredOutputRejected, ModelRefusalError } from '@/lib/ai'
 import { serverEnv } from '@/lib/env'
 import { parentMessage, type ParentMessageKey } from '@/lib/messages'
 import {
@@ -263,19 +263,6 @@ export async function prepareGeneration(
  */
 export const WRITER_MAX_TOKENS = 32_000
 
-/**
- * True when the API refused the structured-output request itself (an unsupported model, a
- * schema it will not compile). The story is then written the way v1 was - format described
- * in the prompt, checked locally - rather than not written.
- */
-export function structuredOutputRejected(err: unknown): boolean {
-  return (
-    err instanceof ModelCallError &&
-    err.detail.status === 400 &&
-    /output_config|output format|json_schema|schema|structured/i.test(err.message)
-  )
-}
-
 export interface RunGenerationResult {
   storyId: string
   status: StoryStatus | 'discarded'
@@ -382,6 +369,8 @@ export async function runGeneration(
       request: prepared.request,
       factPack: pack,
       attempt: 1,
+      // A rewrite follows any failure on attempt 1; brief it fully (DECISIONS #138).
+      reviewDespiteFailures: true,
       familyId: prepared.familyId,
       storyId: prepared.storyId,
       ...(sink ? { sink } : {}),

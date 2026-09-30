@@ -206,7 +206,9 @@ describe('F5: the web-search tool comes from config, not from source', () => {
     const tool = webSearchTool('claude-sonnet-5') as unknown as Record<string, unknown>
     expect(tool.type).toBe('web_search_20260209')
     expect(tool.name).toBe('web_search')
-    expect(tool.max_uses).toBe(FACT_PACK_MAX_SEARCHES)
+    // One search per research call; the calls run in parallel, one angle each.
+    expect(tool.max_uses).toBe(1)
+    expect(FACT_PACK_MAX_SEARCHES).toBe(4)
   })
 
   it('refuses a model that config says cannot search (Haiku 4.5)', () => {

@@ -41,7 +41,50 @@ function gate(overrides: Partial<Parameters<typeof runQualityGate>[0]> = {}) {
   })
 }
 
-describe('F7 AC: a deterministic failure skips the model review entirely', () => {
+describe('when a rewrite is coming anyway, the reviews still run so it is fully briefed (DECISIONS #138)', () => {
+  it('runs both reviewers on a draft that failed a deterministic check, and carries every reason', async () => {
+    let safetyCalls = 0
+    const reviewer: SafetyReviewer = {
+      review: async () => {
+        safetyCalls += 1
+        return { safe: true, violations: [], scary_level: 0, positive_portrayal: true, ending_safe: true }
+      },
+    }
+    const outcome = await runQualityGate({
+      story: goodStory({ wordsPerChapter: 60 }), // far too short: a deterministic failure
+      request: request(),
+      factPack: goodFactPack(),
+      attempt: 1,
+      reviewDespiteFailures: true,
+      reviewOverride: { ...PASSING, age_appropriate: false, reasons: ["chapter 1: 'cycles' is not explained"] },
+      safetyReviewer: reviewer,
+    })
+    expect(outcome.result.deterministic_passed).toBe(false)
+    expect(outcome.needsRewrite).toBe(true)
+    expect(safetyCalls).toBe(1)
+    expect(outcome.result.review?.age_appropriate).toBe(false)
+    // The rewrite hears about the length AND the vocabulary.
+    expect(outcome.result.rewrite_reasons.join(' | ')).toMatch(/word_count_in_range/)
+    expect(outcome.result.rewrite_reasons).toContain("chapter 1: 'cycles' is not explained")
+  })
+
+  it('never reviews a draft that did not even parse', async () => {
+    const sink = new MemoryLogSink()
+    const outcome = await runQualityGate({
+      story: { title: 'nope' },
+      request: request(),
+      factPack: goodFactPack(),
+      attempt: 1,
+      reviewDespiteFailures: true,
+      sink,
+    })
+    expect(outcome.result.failures[0]?.check).toBe('schema_valid')
+    expect(outcome.result.review).toBeNull()
+    expect(sink.rows).toHaveLength(0)
+  })
+})
+
+describe('F7 AC: a deterministic failure skips the model review entirely (the default)', () => {
   it('makes no model call at all when a deterministic check fails', async () => {
     const story = goodStory({ wordsPerChapter: 60 })
     const sink = new MemoryLogSink()

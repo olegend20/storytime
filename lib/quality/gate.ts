@@ -57,6 +57,14 @@ export interface GateOptions {
   extraBlocklists?: readonly BlocklistData[]
   /** Test seam: inject a review instead of calling the model. */
   reviewOverride?: QualityReview
+  /**
+   * Run the model reviews even when a deterministic check failed. F7's AC skips them then,
+   * to save the call - but on attempt 1 a rewrite is coming either way, and a rewrite told
+   * only "22 words short" fixes the length and fails review on the vocabulary it was never
+   * told about (the owner's second real story). Two Haiku calls, ~$0.01, so the one rewrite
+   * the pipeline allows gets the whole list. Owner-approved 2026-09-29 (DECISIONS #138).
+   */
+  reviewDespiteFailures?: boolean
 }
 
 export interface GateOutcome {
@@ -109,8 +117,10 @@ export async function runQualityGate(opts: GateOptions): Promise<GateOutcome> {
   let modelFailures: string[] = []
   let hard: OutputViolation[] = []
 
-  // F7 AC: a deterministic failure skips the model review entirely.
-  if (deterministic.passed) {
+  // F7 AC: a deterministic failure skips the model review entirely - unless the caller
+  // knows a rewrite follows and wants it fully briefed (see `reviewDespiteFailures`).
+  const parsable = !deterministic.failures.some((f) => f.check === 'schema_valid')
+  if (deterministic.passed || (opts.reviewDespiteFailures && parsable)) {
     const story = opts.story as StoryOutput
     review =
       opts.reviewOverride ??
