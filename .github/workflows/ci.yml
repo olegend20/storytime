@@ -51,7 +51,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@v3
         with:
           version: latest
       - name: Start Supabase and apply migrations
@@ -113,7 +113,7 @@ jobs:
       # The `mobile` project is an iPhone 13, which Playwright drives with WebKit; chromium
       # alone leaves half the matrix unable to launch a browser.
       - run: pnpm exec playwright install --with-deps chromium webkit
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@v3
         with:
           version: latest
       # F2's magic-link VT needs the auth server and its mailbox, and F3's CRUD VT needs the
