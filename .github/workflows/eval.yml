@@ -1,0 +1,43 @@
+name: Eval (manual)
+
+# F13: wired as workflow_dispatch because it makes live API calls and costs money.
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      scenarios:
+        description: 'Comma-separated scenario ids, or "all"'
+        required: false
+        default: 'all'
+
+jobs:
+  eval:
+    name: pnpm eval (LIVE_API=1)
+    runs-on: ubuntu-latest
+    # Spends real API credit. Manual only, and only when the owner has enabled live runs.
+    if: vars.LIVE_RUNS_ENABLED == 'true'
+    environment: eval
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm eval
+        env:
+          LIVE_API: '1'
+          EVAL_SCENARIOS: ${{ inputs.scenarios }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-results
+          path: eval/results/
+          retention-days: 90

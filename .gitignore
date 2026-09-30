@@ -1,0 +1,33 @@
+node_modules/
+.next/
+.next-real/
+out/
+dist/
+.env
+.env.local
+.env*.local
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+coverage/
+playwright-report/
+test-results/
+.archive/
+supabase/.temp/
+supabase/.branches/
+
+# Local env in any form - real values never committed. The broad glob matters: a
+# `.env.local.sh` helper slipped past `.env.local` and `.env*.local` because it ends in .sh.
+.env.local
+.env.local.*
+.env*.local
+*.env.sh
+
+# Agent worktrees are separate checkouts, not content of this repo.
+.claude/worktrees/
+
+# Lane scratch space, never committed.
+.scratch/
+
+# F15 guardrail corpus run artefacts (uploaded by the nightly workflow).
+test/guardrails/results/

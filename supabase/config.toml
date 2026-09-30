@@ -1,0 +1,52 @@
+project_id = "storytime"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[studio]
+enabled = true
+port = 54323
+
+# F2 VT: magic-link login flow runs against the local inbucket mailbox.
+[inbucket]
+enabled = true
+port = 54324
+
+[auth]
+enabled = true
+# localhost, not 127.0.0.1: it is what the README and `pnpm dev` print, and a browser treats
+# the two as different sites - the PKCE verifier cookie set on one is invisible on the other.
+site_url = "http://localhost:3000"
+# Any path and query on both spellings, for dev (:3000) and `pnpm test:e2e:real` (:3100).
+# The old exact-match entry rejected `localhost` and any `?next=`, and Supabase then silently
+# fell back to site_url - the bare home page - so the magic link looped back to sign-in.
+additional_redirect_urls = [
+  "http://localhost:3000/**",
+  "http://127.0.0.1:3000/**",
+  "http://localhost:3100/**",
+  "http://127.0.0.1:3100/**",
+]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+# StoryTime signs in by magic link only, but Supabase's password sign-up endpoint stays
+# enabled underneath it. With confirmations off, anyone could POST /auth/v1/signup with ANY
+# email and a password and be signed in without owning that inbox (2026-09-29 audit).
+enable_confirmations = true
+
+[auth.external.google]
+enabled = false
+client_id = ""
+secret = ""

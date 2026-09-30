@@ -1,0 +1,181 @@
+name: CI
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Kickoff rule 3: CI never reaches the live API. Fixtures only.
+  LIVE_API: '0'
+
+jobs:
+  # ---------------------------------------------------------------- lint + types + unit
+  check:
+    name: lint / typecheck / unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - name: Unit + integration tests (fixture mode)
+        run: pnpm test
+        env:
+          ANTHROPIC_API_KEY: sk-ant-ci-replay-only
+          SUPABASE_URL: http://127.0.0.1:54321
+          SUPABASE_ANON_KEY: ci-anon
+          SUPABASE_SERVICE_ROLE_KEY: ci-service
+
+  # ---------------------------------------------------------------- migrations
+  migrations:
+    name: migrations apply to a fresh database
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start Supabase and apply migrations
+        run: supabase start
+      - name: Schema introspection (F1 VT)
+        run: pnpm test:schema
+      - name: Export the local Supabase credentials
+        run: |
+          eval "$(supabase status -o env)"
+          {
+            echo "SUPABASE_URL=$API_URL"
+            echo "SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+          } >> "$GITHUB_ENV"
+      # The `check` job runs the same suite with placeholder keys and no database, where
+      # every integration test skips itself. Running it here too is what makes the F2/F3
+      # integration VTs actually execute in CI instead of silently reporting green.
+      - name: Unit + integration tests against the live database
+        run: pnpm test
+        env:
+          ANTHROPIC_API_KEY: sk-ant-ci-replay-only
+      - if: always()
+        run: supabase stop
+
+  # ---------------------------------------------------------------- guardrails gate
+  # GUARDRAILS.md s6: any regression in the red-team corpus pass criteria blocks merge.
+  guardrails:
+    name: guardrail corpus (blocks merge)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:guardrails
+        env:
+          ANTHROPIC_API_KEY: sk-ant-ci-replay-only
+          SUPABASE_URL: http://127.0.0.1:54321
+          SUPABASE_ANON_KEY: ci-anon
+          SUPABASE_SERVICE_ROLE_KEY: ci-service
+
+  # ---------------------------------------------------------------- e2e
+  e2e:
+    name: e2e (fixture mode)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The `mobile` project is an iPhone 13, which Playwright drives with WebKit; chromium
+      # alone leaves half the matrix unable to launch a browser.
+      - run: pnpm exec playwright install --with-deps chromium webkit
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      # F2's magic-link VT needs the auth server and its mailbox, and F3's CRUD VT needs the
+      # database. Port 3000 is the only origin in `supabase/config.toml`'s
+      # `additional_redirect_urls`, so the default port also gives the sign-in link its real
+      # GoTrue redirect hop.
+      - name: Start Supabase
+        run: supabase start
+      - name: Export the local Supabase credentials
+        run: |
+          eval "$(supabase status -o env)"
+          {
+            echo "SUPABASE_URL=$API_URL"
+            echo "SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY"
+          } >> "$GITHUB_ENV"
+      - run: pnpm test:e2e
+        env:
+          ANTHROPIC_API_KEY: sk-ant-ci-replay-only
+      # The real app and Supabase, model calls disabled: sign-in, the form, a refusal,
+      # library, reader, delete (test/e2e-real). Zero spend by construction.
+      - run: pnpm test:e2e:real
+        env:
+          ANTHROPIC_API_KEY: sk-ant-ci-replay-only
+      - if: always()
+        run: supabase stop
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  # ---------------------------------------------------------------- known external gaps
+  # Allowed to fail. Reports a dependency we are waiting on the owner for, so it stays
+  # visible on every run without blocking unrelated work. See test/blocked/README.md.
+  blocked-on-owner:
+    name: blocked on owner (non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - id: blocked
+        continue-on-error: true
+        run: pnpm test:blocked
+        env:
+          ANTHROPIC_API_KEY: sk-ant-ci-replay-only
+          SUPABASE_URL: http://127.0.0.1:54321
+          SUPABASE_ANON_KEY: ci-anon
+          SUPABASE_SERVICE_ROLE_KEY: ci-service
+      - name: Summarize
+        if: steps.blocked.outcome == 'failure'
+        run: |
+          echo "### Blocked on the owner" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`test/blocked\` is failing: a dependency outside the team's control is missing." >> "$GITHUB_STEP_SUMMARY"
+          echo "Currently: the four **reference stories** were not in the handover archive." >> "$GITHUB_STEP_SUMMARY"
+          echo "This blocks master-prompt style anchors and judge calibration (and so the F13 eval gate)." >> "$GITHUB_STEP_SUMMARY"
+          echo "See \`storytime-plan/reference-stories/README.md\`." >> "$GITHUB_STEP_SUMMARY"

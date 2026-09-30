@@ -1,0 +1,10 @@
+#!/bin/sh
+# Nothing is pushed straight to main; it arrives there by merging a pull request.
+# Escape hatch: ALLOW_MAIN=1 git push ...
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  if [ "$remote_ref" = "refs/heads/main" ] && [ "$ALLOW_MAIN" != "1" ]; then
+    echo "refusing to push to main: open a pull request instead." >&2
+    exit 1
+  fi
+done
+exit 0

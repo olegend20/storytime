@@ -1,0 +1,35 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`assembled prompt snapshot > matches for a fixed input 1`] = `
+"<story_bible>
+{"children":[{"name":"Milo","age":7,"likes":["LEGO","sharks"],"role_notes":"often has the idea"},{"name":"Juno","age":4,"likes":["dinosaurs"],"role_notes":"gets the shout-along lines"}],"recurring":[{"name":"The magic red LEGO brick","type":"device","rule":"glows and clicks to start an adventure; returns them home at the end","last_used":"2026-09-25"}],"catchphrases":["Play well","WHOOOOSH"],"topics_covered":[{"topic":"history of LEGO","story_id":null,"date":"2026-09-25"}],"last_story":{"title":"Milo, Juno and the Brick That Clicked","ending":"Back home, the final brick on their giant tower just went CLICK and held."},"tone_history":["funny","exciting"],"avoid":["repeating the time-travel-to-Billund device"]}
+</story_bible>
+
+<fact_pack>
+{"topic_key":"history-of-lego","topic_label":"The history of LEGO","summary":"LEGO began in Billund, Denmark, as a small wooden-toy workshop.","facts":[{"id":"f1","text":"A concrete, checkable fact number 1 about the history of LEGO.","confidence":"high","kid_safe":true,"min_age":3},{"id":"f2","text":"A concrete, checkable fact number 2 about the history of LEGO.","confidence":"high","kid_safe":true,"min_age":3},{"id":"f3","text":"A concrete, checkable fact number 3 about the history of LEGO.","confidence":"high","kid_safe":true,"min_age":3},{"id":"f4","text":"A concrete, checkable fact number 4 about the history of LEGO.","confidence":"high","kid_safe":true,"min_age":3},{"id":"f5","text":"A concrete, checkable fact number 5 about the history of LEGO.","confidence":"high","kid_safe":true,"min_age":3},{"id":"f6","text":"A concrete, checkable fact number 6 about the history of LEGO.","confidence":"high","kid_safe":true,"min_age":3},{"id":"f7","text":"A concrete, checkable fact number 7 about the history of LEGO.","confidence":"high","kid_safe":true,"min_age":3},{"id":"f8","text":"A concrete, checkable fact number 8 about the history of LEGO.","confidence":"high","kid_safe":true,"min_age":3},{"id":"f9","text":"A concrete, checkable fact number 9 about the history of LEGO.","confidence":"high","kid_safe":true,"min_age":3},{"id":"f10","text":"A concrete, checkable fact number 10 about the history of LEGO.","confidence":"high","kid_safe":true,"min_age":3},{"id":"f11","text":"A concrete, checkable fact number 11 about the history of LEGO.","confidence":"high","kid_safe":true,"min_age":3},{"id":"f12","text":"A concrete, checkable fact number 12 about the history of LEGO.","confidence":"high","kid_safe":true,"min_age":3},{"id":"f13","text":"A concrete, checkable fact number 13 about the history of LEGO.","confidence":"high","kid_safe":true,"min_age":3},{"id":"f14","text":"A concrete, checkable fact number 14 about the history of LEGO.","confidence":"high","kid_safe":true,"min_age":3}],"timeline":[{"year":1932,"event":"Ole Kirk Christiansen starts making wooden toys"}],"characters":[{"name":"Ole Kirk Christiansen","role":"founder","kid_friendly_note":"kind carpenter who never gave up"}],"sensitive_notes":null}
+</fact_pack>
+
+<request>
+<child_profile>
+  <name>Milo</name>
+  <age>7</age>
+  <likes>LEGO, sharks</likes>
+</child_profile>
+<child_profile>
+  <name>Juno</name>
+  <age>4</age>
+  <likes>dinosaurs</likes>
+</child_profile>
+<age_band>A</age_band>
+<youngest_age>4</youngest_age>
+<tones>funny, exciting</tones>
+<length_minutes>10</length_minutes>
+<target_narrative_words>1300-1700</target_narrative_words>
+<aim_for>about 1600 narrative words. With 8 chapters that is about 200 words each; with 10, about 160. Count as you go: under-length is the most common failure.</aim_for>
+<topic>
+The history of LEGO
+</topic>
+</request>
+
+Write the story now. Return the JSON object only."
+`;

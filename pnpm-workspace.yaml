@@ -1,0 +1,6 @@
+# esbuild (vitest) and unrs-resolver (eslint) run install scripts to place their native
+# binaries. Approved explicitly so `pnpm install` exits 0 in CI rather than stopping on
+# an interactive `pnpm approve-builds` prompt. pnpm 12 spells this `allowBuilds`.
+allowBuilds:
+  esbuild: true
+  unrs-resolver: true

@@ -1,0 +1,392 @@
+@import 'tailwindcss';
+
+/*
+ * StoryTime's visual system.
+ *
+ * Designed for one situation: a tired adult reading aloud in a dark bedroom, on a phone, one
+ * handed, with a child leaning on the other arm. That drives every choice here - the dark
+ * theme is the default-equal case rather than an afterthought, prose is serif at a genuinely
+ * large size, controls are at least 44px, and nothing animates enough to wake anybody up.
+ *
+ * Three theme states: no attribute = follow the system; data-theme="light" / "dark" = the
+ * parent chose. Tokens are defined on bare :root first, so every colour has a value before any
+ * media query or attribute selector is consulted.
+ */
+
+:root {
+  --bg: oklch(0.985 0.008 85);
+  --bg-raised: oklch(1 0 0);
+  --bg-sunken: oklch(0.955 0.01 85);
+  --fg: oklch(0.25 0.02 265);
+  --fg-muted: oklch(0.45 0.02 265);
+  --border: oklch(0.885 0.012 85);
+  --accent: oklch(0.45 0.16 265);
+  --accent-fg: oklch(0.99 0 0);
+  --accent-soft: oklch(0.945 0.03 265);
+  --accent-warm: oklch(0.55 0.17 50); /* the O in tic-tac-toe */
+  --danger: oklch(0.46 0.18 25);
+  --danger-soft: oklch(0.955 0.03 25);
+  --focus: oklch(0.55 0.19 265);
+
+  --prose-font: ui-serif, Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  --ui-font:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+
+  /* Set by the reader's text-size control; reading mode multiplies it. */
+  --text-scale: 1;
+  --reading-boost: 1;
+  --prose-size: calc(1.1875rem * var(--text-scale) * var(--reading-boost));
+  --prose-line: 1.72;
+  --prose-measure: 34rem;
+}
+
+/* System dark, unless the parent explicitly chose light. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: oklch(0.16 0.015 265);
+    --bg-raised: oklch(0.212 0.018 265);
+    --bg-sunken: oklch(0.13 0.014 265);
+    --fg: oklch(0.93 0.012 85);
+    --fg-muted: oklch(0.725 0.015 265);
+    --border: oklch(0.305 0.02 265);
+    --accent: oklch(0.79 0.12 265);
+    --accent-fg: oklch(0.16 0.02 265);
+    --accent-soft: oklch(0.265 0.04 265);
+    --accent-warm: oklch(0.78 0.15 50); /* the O in tic-tac-toe */
+    --danger: oklch(0.76 0.14 25);
+    --danger-soft: oklch(0.26 0.05 25);
+    --focus: oklch(0.83 0.13 265);
+  }
+}
+
+/* The explicit choice wins in both directions. */
+:root[data-theme='dark'] {
+  --bg: oklch(0.16 0.015 265);
+  --bg-raised: oklch(0.212 0.018 265);
+  --bg-sunken: oklch(0.13 0.014 265);
+  --fg: oklch(0.93 0.012 85);
+  --fg-muted: oklch(0.725 0.015 265);
+  --border: oklch(0.305 0.02 265);
+  --accent: oklch(0.79 0.12 265);
+  --accent-fg: oklch(0.16 0.02 265);
+  --accent-soft: oklch(0.265 0.04 265);
+  --accent-warm: oklch(0.78 0.15 50); /* the O in tic-tac-toe */
+  --danger: oklch(0.76 0.14 25);
+  --danger-soft: oklch(0.26 0.05 25);
+  --focus: oklch(0.83 0.13 265);
+}
+
+/*
+ * Night (DECISIONS #146): for a dark bedroom. Near-black, nothing white, warm dimmed text.
+ * Contrast stays above 7:1 for the prose, so it is still a legible page, just a quiet one.
+ */
+:root[data-theme='night'] {
+  color-scheme: dark;
+  --bg: oklch(0.1 0.01 60);
+  --bg-raised: oklch(0.14 0.012 60);
+  --bg-sunken: oklch(0.08 0.008 60);
+  --fg: oklch(0.8 0.03 75);
+  --fg-muted: oklch(0.62 0.025 75);
+  --border: oklch(0.22 0.015 60);
+  --accent: oklch(0.72 0.1 60);
+  --accent-fg: oklch(0.12 0.01 60);
+  --accent-soft: oklch(0.2 0.03 60);
+  --accent-warm: oklch(0.72 0.13 30); /* the O in tic-tac-toe */
+  --danger: oklch(0.72 0.13 25);
+  --danger-soft: oklch(0.2 0.04 25);
+  --focus: oklch(0.78 0.11 60);
+}
+:root[data-theme='night'][data-reading='on'] {
+  --bg: oklch(0.07 0.008 60);
+  --bg-raised: oklch(0.07 0.008 60);
+  --fg: oklch(0.76 0.03 75);
+}
+
+/*
+ * Reading mode: the page dims and the text grows.
+ *
+ * "Dims the UI" is done by removing chrome from the layout (see ReadingModeToggle) and by
+ * lowering the page's own brightness - never by lowering opacity on text, which would quietly
+ * break the contrast the a11y scan checks.
+ */
+:root[data-reading='on'] {
+  --reading-boost: 1.18;
+  --bg: oklch(0.945 0.01 85);
+  --bg-raised: oklch(0.945 0.01 85);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light'])[data-reading='on'] {
+    --bg: oklch(0.115 0.013 265);
+    --bg-raised: oklch(0.115 0.013 265);
+    --fg: oklch(0.88 0.012 85);
+  }
+}
+
+:root[data-theme='dark'][data-reading='on'] {
+  --bg: oklch(0.115 0.013 265);
+  --bg-raised: oklch(0.115 0.013 265);
+  --fg: oklch(0.88 0.012 85);
+}
+
+/* `inline` keeps the var reference, so a theme flip repaints without regenerating utilities. */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-raised: var(--bg-raised);
+  --color-sunken: var(--bg-sunken);
+  --color-fg: var(--fg);
+  --color-muted: var(--fg-muted);
+  --color-line: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --font-read: var(--prose-font);
+  --font-ui: var(--ui-font);
+}
+
+html {
+  color-scheme: light dark;
+  /* The reader restores its own scroll position; the browser must not fight it. */
+  scroll-behavior: auto;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--ui-font);
+  -webkit-text-size-adjust: 100%;
+  /* F9 AC: no horizontal scroll at 375px. A long unbroken word must wrap, not widen. */
+  overflow-wrap: break-word;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+/* Tic-tac-toe while the story is written (components/newstory/TicTacToe.tsx). */
+.ttt-cell {
+  min-height: 72px;
+  transition: transform 120ms ease-out;
+}
+.ttt-cell:not(:disabled):hover {
+  transform: scale(1.04);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/*
+ * Chrome that reading mode removes. Done in CSS rather than in React state so the inline theme
+ * script can apply it before first paint: a header that flashes in and out on every reload is
+ * exactly the kind of thing that wakes a child up. `display: none` also takes it out of the
+ * accessibility tree, so a screen reader does not read away dimmed furniture.
+ */
+:root[data-reading='on'] [data-chrome] {
+  display: none;
+}
+
+/*
+ * The reading-mode button's label. Driven by the same attribute rather than by React state, so
+ * the button reads correctly on the very first paint after a reload instead of saying
+ * "Reading mode" for a frame while already in it.
+ */
+[data-when-reading='on'] {
+  display: none;
+}
+:root[data-reading='on'] [data-when-reading='on'] {
+  display: inline;
+}
+:root[data-reading='on'] [data-when-reading='off'] {
+  display: none;
+}
+
+/* ------------------------------------------------------------------ prose */
+
+.prose {
+  font-family: var(--prose-font);
+  font-size: var(--prose-size);
+  line-height: var(--prose-line);
+  max-width: var(--prose-measure);
+}
+
+.prose p {
+  margin: 0 0 1.05em;
+}
+
+.prose p:last-child {
+  margin-bottom: 0;
+}
+
+/* Sound words - the bit a four-year-old shouts along with. */
+.sound {
+  font-family: var(--ui-font);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+/* ------------------------------------------------------------------ controls */
+
+.tap {
+  min-height: 44px;
+  min-width: 44px;
+}
+/* The chapter bar is used one-handed in the dark: bigger than the usual minimum. */
+.tap-big {
+  min-height: 52px;
+  min-width: 56px;
+}
+
+.chip {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.chip:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.chip[aria-pressed='true'],
+.chip[aria-checked='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
+  font-weight: 600;
+}
+
+.chip:disabled {
+  cursor: not-allowed;
+  color: var(--fg-muted);
+  background: var(--bg-sunken);
+}
+
+.btn {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid transparent;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font: inherit;
+  font-weight: 650;
+  font-size: 1.05rem;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  background: var(--bg-sunken);
+  color: var(--fg-muted);
+  border-color: var(--border);
+}
+
+.btn-quiet {
+  background: transparent;
+  color: var(--fg);
+  border-color: var(--border);
+  font-weight: 550;
+  font-size: 1rem;
+  min-height: 44px;
+  padding: 0.55rem 0.95rem;
+}
+
+.btn-danger {
+  background: transparent;
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.card {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+}
+
+.field {
+  width: 100%;
+  min-height: 52px;
+  padding: 0.8rem 0.9rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--fg);
+  font: inherit;
+  font-size: 1.05rem;
+}
+
+.field::placeholder {
+  color: var(--fg-muted);
+}
+
+/* Off-screen until focused, then a real, visible target. */
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -4rem;
+  z-index: 50;
+  padding: 0.7rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 120ms ease;
+}
+
+.skip-link:focus-visible,
+.skip-link:focus {
+  top: 0.5rem;
+}
+
+/* Visually hidden but available to a screen reader. */
+.sr-only-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

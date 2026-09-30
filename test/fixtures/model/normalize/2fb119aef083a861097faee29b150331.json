@@ -1,0 +1,41 @@
+{
+  "purpose": "normalize",
+  "model": "claude-haiku-4-5-20251001",
+  "response": {
+    "model": "claude-haiku-4-5-20251001",
+    "id": "msg_011CfW8xXc6A64n17rLYEWFc",
+    "type": "message",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "```json\n{\n  \"topic_key\": \"history-of-lego\",\n  \"topic_label\": \"The History of LEGO\",\n  \"is_appropriate_for_children\": true,\n  \"reason\": \"Educational history of a toy company and its invention.\"\n}\n```"
+      }
+    ],
+    "container": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "stop_details": null,
+    "usage": {
+      "input_tokens": 1009,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation": {
+        "ephemeral_5m_input_tokens": 0,
+        "ephemeral_1h_input_tokens": 0
+      },
+      "output_tokens": 70,
+      "service_tier": "standard",
+      "inference_geo": "not_available"
+    },
+    "diagnostics": null
+  },
+  "usage": {
+    "input_tokens": 1009,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "output_tokens": 70
+  },
+  "stop_reason": "end_turn",
+  "recorded_at": "2026-09-28T16:17:00.969Z"
+}
