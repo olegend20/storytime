@@ -29,8 +29,12 @@ real:
 
 ```bash
 supabase start
-LIVE_API=1 DAILY_BUDGET_USD=2 pnpm dev   # the cap stops new stories once today's spend hits $2
+LIVE_API=1 DAILY_BUDGET_USD=10 pnpm dev  # the cap stops new stories once today's spend hits $10
 ```
+
+Set `OWNER_USER_ID` in `.env.local` to your own user id (from `auth.users`): it unlocks
+`/admin` and lifts the three-a-day story limit for your own family (DECISIONS #141). The
+budget cap still applies.
 
 1. Open <http://localhost:3000>, **Sign in**, and open the link from the local mailbox
    (<http://127.0.0.1:54324>).

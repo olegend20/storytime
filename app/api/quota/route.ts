@@ -42,6 +42,7 @@ export async function GET() {
   const body: QuotaResponse = {
     used: quota.used,
     limit: quota.limit,
+    ...(quota.unlimited ? { unlimited: true } : {}),
     resets_at: quota.resetsAt,
     generation_enabled: availability.enabled,
   }

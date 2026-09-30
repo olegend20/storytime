@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabaseService } from '@/lib/supabase/service'
 import { DAILY_STORY_LIMIT } from '@/lib/schemas/api'
+import { isOwner } from '@/lib/owner'
 import { nextResetAtIso, safeTimeZone, usageDateFor } from './timezone'
 
 /**
@@ -15,9 +16,17 @@ import { nextResetAtIso, safeTimeZone, usageDateFor } from './timezone'
  *      reset its own quota.
  */
 
+/**
+ * The owner's family has no practical daily limit (DECISIONS #141). It is still counted, and
+ * the daily budget cap still applies: this lifts the per-family rule, not the spend guard.
+ */
+export const UNLIMITED_DAILY_LIMIT = 1_000_000
+
 export interface QuotaSnapshot {
   used: number
   limit: number
+  /** True for the owner's own family: `limit` is UNLIMITED_DAILY_LIMIT. */
+  unlimited: boolean
   remaining: number
   /** `daily_usage.usage_date` this snapshot is keyed on, `YYYY-MM-DD` in the family's tz. */
   usageDate: string
@@ -44,30 +53,50 @@ function db(client?: SupabaseClient): SupabaseClient {
   return client ?? supabaseService()
 }
 
-/** `families.timezone` for a family, or 'UTC' if the row or column is unusable. */
-export async function familyTimeZone(familyId: string, client?: SupabaseClient): Promise<string> {
+interface FamilyFacts {
+  timezone: string
+  ownerUserId: string | null
+}
+
+/** `families.timezone` and owner for a family; 'UTC' and no owner if the row is unusable. */
+async function familyFacts(familyId: string, client?: SupabaseClient): Promise<FamilyFacts> {
   const { data, error } = await db(client)
     .from('families')
-    .select('timezone')
+    .select('timezone, owner_user_id')
     .eq('id', familyId)
     .maybeSingle()
   if (error) {
-    console.warn(`[limits] could not read timezone for family ${familyId}: ${error.message}`)
-    return 'UTC'
+    console.warn(`[limits] could not read family ${familyId}: ${error.message}`)
+    return { timezone: 'UTC', ownerUserId: null }
   }
-  return safeTimeZone((data as { timezone?: string } | null)?.timezone)
+  const row = data as { timezone?: string; owner_user_id?: string } | null
+  return { timezone: safeTimeZone(row?.timezone), ownerUserId: row?.owner_user_id ?? null }
 }
 
-async function resolveZone(args: QuotaArgs): Promise<string> {
-  if (args.timezone) return safeTimeZone(args.timezone)
-  return familyTimeZone(args.familyId, args.client)
+/** `families.timezone` for a family, or 'UTC' if the row or column is unusable. */
+export async function familyTimeZone(familyId: string, client?: SupabaseClient): Promise<string> {
+  return (await familyFacts(familyId, client)).timezone
+}
+
+/**
+ * The zone and the limit for this family. A caller-supplied `limit` wins (tests pin it);
+ * otherwise the owner's family is unlimited and everyone else gets DAILY_STORY_LIMIT.
+ */
+async function resolveZoneAndLimit(args: QuotaArgs): Promise<{ timezone: string; limit: number }> {
+  if (args.timezone && args.limit !== undefined) {
+    return { timezone: safeTimeZone(args.timezone), limit: args.limit }
+  }
+  const facts = await familyFacts(args.familyId, args.client)
+  const timezone = args.timezone ? safeTimeZone(args.timezone) : facts.timezone
+  const limit =
+    args.limit ?? (isOwner(facts.ownerUserId) ? UNLIMITED_DAILY_LIMIT : DAILY_STORY_LIMIT)
+  return { timezone, limit }
 }
 
 /** Read-only. Safe to call from a GET; never moves the counter. */
 export async function quotaStatus(args: QuotaArgs): Promise<QuotaSnapshot> {
-  const timezone = await resolveZone(args)
+  const { timezone, limit } = await resolveZoneAndLimit(args)
   const at = args.at ?? new Date()
-  const limit = args.limit ?? DAILY_STORY_LIMIT
   const usageDate = usageDateFor(timezone, at)
 
   const { data, error } = await db(args.client)
@@ -83,6 +112,7 @@ export async function quotaStatus(args: QuotaArgs): Promise<QuotaSnapshot> {
   return {
     used,
     limit,
+    unlimited: limit >= UNLIMITED_DAILY_LIMIT,
     remaining: Math.max(0, limit - used),
     usageDate,
     resetsAt: nextResetAtIso(timezone, at),
@@ -99,9 +129,8 @@ export async function quotaStatus(args: QuotaArgs): Promise<QuotaSnapshot> {
  * Call this AFTER the `stories` row is committed.
  */
 export async function consumeQuota(args: QuotaArgs): Promise<ConsumeResult> {
-  const timezone = await resolveZone(args)
+  const { timezone, limit } = await resolveZoneAndLimit(args)
   const at = args.at ?? new Date()
-  const limit = args.limit ?? DAILY_STORY_LIMIT
   const usageDate = usageDateFor(timezone, at)
 
   const { data, error } = await db(args.client).rpc('consume_daily_quota', {
@@ -121,6 +150,7 @@ export async function consumeQuota(args: QuotaArgs): Promise<ConsumeResult> {
     allowed: row.allowed,
     used: row.used,
     limit: row.day_limit ?? limit,
+    unlimited: (row.day_limit ?? limit) >= UNLIMITED_DAILY_LIMIT,
     remaining: Math.max(0, (row.day_limit ?? limit) - row.used),
     usageDate,
     resetsAt: nextResetAtIso(timezone, at),

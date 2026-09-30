@@ -8,18 +8,10 @@ import { supabaseServer } from '@/lib/supabase/server'
  * "OWNER_USER_ID is unset".
  */
 
-/** Read fresh from the environment so rotating the owner takes effect without a rebuild. */
-export function ownerUserId(): string | null {
-  const raw = process.env.OWNER_USER_ID?.trim()
-  return raw && raw.length > 0 ? raw : null
-}
-
-export function isOwner(userId: string | null | undefined): boolean {
-  const owner = ownerUserId()
-  // Unset OWNER_USER_ID means nobody is the owner. Fails closed: /admin 404s for everyone.
-  if (!owner) return false
-  return typeof userId === 'string' && userId === owner
-}
+// The owner check itself lives in lib/owner.ts (shared with the quota exemption); this
+// module keeps the 404 behaviour. Unset OWNER_USER_ID fails closed: /admin 404s for everyone.
+import { isOwner } from '@/lib/owner'
+export { isOwner, ownerUserId } from '@/lib/owner'
 
 /** Never returns for a non-owner: `notFound()` throws Next's 404. */
 export function assertOwner(userId: string | null | undefined): void {

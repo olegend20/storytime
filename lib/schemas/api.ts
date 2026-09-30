@@ -156,6 +156,8 @@ export const HTTP_STATUS_FOR_ERROR: Record<string, number> = {
 export const QuotaResponse = z.object({
   used: z.number().int().nonnegative(),
   limit: z.number().int().positive(),
+  /** The owner's own family (DECISIONS #141): no daily limit. Absent for everyone else. */
+  unlimited: z.boolean().optional(),
   /** Local midnight in the family's timezone, ISO 8601. */
   resets_at: z.string(),
   /** False when GENERATION_ENABLED=false or the daily budget is spent. */

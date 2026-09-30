@@ -8,7 +8,17 @@ import type { QuotaResponse } from '@/lib/schemas'
  * Phrased as what is left rather than what is used, because that is the question a parent is
  * asking, and because "1 of 3 used" invites the reading that two have gone.
  */
+/** Mirrors UNLIMITED_DAILY_LIMIT in lib/limits/quota.ts; the `done` event carries only numbers. */
+const UNLIMITED_AT = 1_000_000
+
+export function isUnlimited(quota: QuotaResponse): boolean {
+  return quota.unlimited === true || quota.limit >= UNLIMITED_AT
+}
+
 export function quotaMessage(quota: QuotaResponse): string {
+  if (isUnlimited(quota)) {
+    return `Unlimited stories (owner account) · ${quota.used} today`
+  }
   const left = Math.max(0, quota.limit - quota.used)
   if (left === 0) return 'No stories left today'
   // The noun agrees with the LIMIT, not with what is left: "1 of 3 stories left today", never
@@ -26,7 +36,7 @@ export function resetTimeLabel(isoOrNull: string | null | undefined): string | n
 export function QuotaIndicator({ quota }: { quota: QuotaResponse | null }) {
   if (!quota) return null
   const left = Math.max(0, quota.limit - quota.used)
-  const exhausted = left === 0
+  const exhausted = left === 0 && !isUnlimited(quota)
   const reset = resetTimeLabel(quota.resets_at)
   return (
     <p
