@@ -1,0 +1,8 @@
+#!/bin/sh
+# main is for merged pull requests only. Work on a branch: git switch -c feat/<slug>
+# Escape hatch for a genuine emergency: ALLOW_MAIN=1 git commit ...
+branch=$(git symbolic-ref --short HEAD 2>/dev/null)
+if [ "$branch" = "main" ] && [ "$ALLOW_MAIN" != "1" ]; then
+  echo "refusing to commit on main: create a branch and open a pull request (see /feature)." >&2
+  exit 1
+fi
