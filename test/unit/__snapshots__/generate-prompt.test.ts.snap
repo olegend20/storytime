@@ -25,6 +25,7 @@ exports[`assembled prompt snapshot > matches for a fixed input 1`] = `
 <tones>funny, exciting</tones>
 <length_minutes>10</length_minutes>
 <target_narrative_words>1300-1700</target_narrative_words>
+<aim_for>about 1600 narrative words. With 8 chapters that is about 200 words each; with 10, about 160. Count as you go: under-length is the most common failure.</aim_for>
 <topic>
 The history of LEGO
 </topic>

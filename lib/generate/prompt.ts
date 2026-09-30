@@ -79,6 +79,22 @@ export function childProfileBlocks(request: GenerationRequest): string {
     .join('\n')
 }
 
+/**
+ * A length the writer can actually hit. A model cannot count 1,500 words, but it can write
+ * eight chapters of about 200 words. The aim sits in the upper part of the range because the
+ * writer runs short: the reference stories are 1,540-1,850 narrative words for a band-A
+ * 10-minute story and the first three real drafts were 1,377, 1,083 and 1,197 - the second
+ * failed the gate by 22 words and paid for a rewrite.
+ */
+export function lengthGuidance(target: { min: number; max: number }): string {
+  const aim = Math.round((target.min + 0.7 * (target.max - target.min)) / 50) * 50
+  const per = (chapters: number) => Math.round(aim / chapters / 10) * 10
+  return (
+    `about ${aim} narrative words. With 8 chapters that is about ${per(8)} words each; ` +
+    `with 10, about ${per(10)}. Count as you go: under-length is the most common failure.`
+  )
+}
+
 export function requestBlock(request: GenerationRequest): string {
   const youngest = Math.min(...request.children.map((c) => c.age))
   const lines = [
@@ -91,6 +107,7 @@ export function requestBlock(request: GenerationRequest): string {
       'target_narrative_words',
       `${request.target_words.min}-${request.target_words.max}`,
     ),
+    field('aim_for', lengthGuidance(request.target_words)),
     dataBlock('topic', escapeForDataBlock(request.topic_label)),
     request.avoid.length > 0
       ? dataBlock('avoid', request.avoid.map((a) => `- ${escapeForDataBlock(a)}`).join('\n'))
