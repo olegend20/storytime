@@ -109,15 +109,16 @@ test.describe('accessibility', () => {
     expect(report('reader+chapters', results.violations)).toEqual([])
   })
 
-  test('the fact cards while the writer thinks have no serious violations', async ({ page }) => {
+  test('tic-tac-toe while the writer thinks has no serious violations', async ({ page }) => {
     await page.goto('/new')
     await resetMock(page)
     await page.reload()
     await expect(page.getByRole('button', { name: 'Cruz 7' })).toBeVisible()
     await startStory(page, '!thinking the history of soccer')
-    await expect(page.getByTestId('fact-card')).toBeVisible()
+    await expect(page.getByTestId('ttt-board')).toBeVisible()
+    await page.getByTestId('ttt-cell-0').click()
     const results = await scan(page)
-    expect(report('fact cards', results.violations)).toEqual([])
+    expect(report('tic-tac-toe', results.violations)).toEqual([])
   })
 
   test('the streaming reader has no serious violations', async ({ page }) => {

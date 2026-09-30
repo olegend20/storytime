@@ -273,50 +273,61 @@ test('the streaming reader has no horizontal overflow', async ({ page }) => {
 })
 
 /**
- * "Did you know?" fact cards (2026-09-29): what the children look at during the two minutes
- * the writer thinks. The `!thinking` mock scenario holds the stream for a few seconds
- * between the facts and the title, as the real writer does for far longer.
+ * Tic-tac-toe while the story is written (DECISIONS #142). The `!thinking` mock scenario
+ * holds the stream for a few seconds between the facts and the title, as the real writer
+ * does for far longer.
  */
-test('while the writer thinks, the children get fact cards addressed by name, and the story replaces them', async ({
+test('the children play tic-tac-toe by name while the writer thinks, and the story takes over', async ({
   page,
 }) => {
   await startStory(page, '!thinking the history of soccer')
 
-  // The wait is never a blank form: the warm-up names the children at once...
-  await expect(page.getByTestId('story-warmup').or(page.getByTestId('fact-cards'))).toBeVisible()
+  // The board is there at once - no blank form, no spinner - with the first two children.
+  const board = page.getByTestId('ttt-board')
+  await expect(board).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Cruz vs Phoenix/ })).toBeVisible()
+  await expect(page.getByTestId('ttt-status')).toHaveText("Cruz's turn")
+  await expect(page.getByTestId('story-status')).toContainText(/play while you wait/)
 
-  // ...then the cards: one fact at a time, addressed to a selected child by name.
-  const card = page.getByTestId('fact-card')
-  await expect(card).toBeVisible()
-  await expect(page.getByRole('heading', { name: /^(Cruz|Phoenix|Lennon), did you know\?$/ })).toBeVisible()
-  const first = (await card.innerText()).trim()
-  expect(first.length).toBeGreaterThan(20)
+  // Cruz takes the top row while Phoenix takes the middle.
+  const cell = (i: number) => page.getByTestId(`ttt-cell-${i}`)
+  await cell(0).click()
+  await expect(page.getByTestId('ttt-status')).toHaveText("Phoenix's turn")
+  await expect(cell(0)).toHaveAttribute('data-mark', 'X')
+  await cell(3).click()
+  await cell(1).click()
+  await cell(4).click()
+  await cell(2).click()
+  await expect(page.getByTestId('ttt-status')).toHaveText('Cruz wins!')
+  await expect(page.getByTestId('ttt-score')).toContainText('Cruz 1 – 0 Phoenix')
+  await expect(page.getByTestId('ttt-score')).toContainText('next up: Lennon')
 
-  // A tap goes to the next fact, addressed to the next child; the dots move with it.
-  const dots = page.getByRole('list', { name: 'Which fact' }).getByRole('listitem')
-  await expect(dots.first()).toHaveAttribute('aria-current', 'true')
-  await card.click()
-  await expect(dots.nth(1)).toHaveAttribute('aria-current', 'true')
-  expect((await card.innerText()).trim()).not.toBe(first)
+  // Play again: Lennon takes the loser's seat, Cruz keeps X and starts.
+  await page.getByRole('button', { name: 'Play again' }).click()
+  await expect(page.getByRole('heading', { name: /Cruz vs Lennon/ })).toBeVisible()
+  await expect(page.getByTestId('ttt-status')).toHaveText("Cruz's turn")
+  await expect(cell(0)).toHaveAttribute('data-mark', '')
 
-  // The cards are not the story: no chapter heading yet.
-  expect(await page.getByRole('heading', { level: 2 }).filter({ hasText: /^Chapter|^Level/ }).count()).toBe(0)
-
-  // When the title arrives the reader takes over and the cards are gone.
+  // When the title arrives the reader takes over and the game is gone.
   await expect(page.getByRole('progressbar', { name: 'Writing the story' })).toBeVisible({ timeout: 15_000 })
-  await expect(page.getByTestId('fact-cards')).toBeHidden()
+  await expect(page.getByTestId('tictactoe')).toBeHidden()
   await expect(page.getByRole('heading', { name: 'Saved to your library' })).toBeVisible({ timeout: 30_000 })
 })
 
-test('the fact cards advance on their own', async ({ page }) => {
-  await page.addInitScript(() => {
-    // Make the auto-advance observable: 12 s in production.
-    ;(window as unknown as { __FACT_CARD_MS?: number }).__FACT_CARD_MS = 700
-  })
-  await page.reload() // the init script applies from the next navigation
-  await expect(page.getByRole('button', { name: 'Cruz 7' })).toBeVisible()
+test('one child plays StoryTime, which blocks a win', async ({ page }) => {
+  // Deselect Phoenix and Lennon: Cruz alone.
+  for (const name of ['Phoenix 4', 'Lennon 10']) {
+    await page.getByRole('button', { name }).click()
+    await expect(page.getByRole('button', { name })).toHaveAttribute('aria-pressed', 'false')
+  }
   await startStory(page, '!thinking the history of soccer')
-  const dots = page.getByRole('list', { name: 'Which fact' }).getByRole('listitem')
-  await expect(dots.first()).toHaveAttribute('aria-current', 'true')
-  await expect(dots.nth(1)).toHaveAttribute('aria-current', 'true', { timeout: 5_000 })
+  await expect(page.getByRole('heading', { name: /Cruz vs StoryTime/ })).toBeVisible()
+  const cell = (i: number) => page.getByTestId(`ttt-cell-${i}`)
+  await cell(0).click()
+  // The house replies by itself; the centre is its first choice.
+  await expect(cell(4)).toHaveAttribute('data-mark', 'O', { timeout: 5_000 })
+  await expect(page.getByTestId('ttt-status')).toHaveText("Cruz's turn")
+  await cell(1).click()
+  // Two in a row for Cruz: the house must block at 2.
+  await expect(cell(2)).toHaveAttribute('data-mark', 'O', { timeout: 5_000 })
 })

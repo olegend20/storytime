@@ -31,7 +31,7 @@ import { offsetForDay, suggestedChips, type SuggestedTopic } from '@/lib/client/
 import { checkTopic } from '@/lib/client/validate'
 import type { Child, LengthMinutes, QuotaResponse, Tone } from '@/lib/schemas'
 import { StoryReader } from '@/components/reader/StoryReader'
-import { FactCards, StoryWarmup } from '@/components/newstory/FactCards'
+import { TicTacToe } from '@/components/newstory/TicTacToe'
 import { PrivacyNote } from '@/components/PrivacyCopy'
 import { GenerationError } from './GenerationError'
 import { ChildPicker, LengthPicker, TonePicker } from './Pickers'
@@ -192,17 +192,17 @@ export function NewStoryFlow() {
     tones: form.tones,
   })
 
-  // Waiting for the writer: first "getting the facts ready", then the fact cards. The
-  // reader takes over the moment the title (`meta`) arrives.
+  // Waiting for the writer: tic-tac-toe from the first instant (DECISIONS #142). The reader
+  // takes over the moment the title (`meta`) arrives.
   const names = selectedChildren.map((c) => c.first_name)
   if ((stream.phase === 'connecting' || stream.phase === 'streaming') && !stream.meta) {
+    const topic = stream.facts?.topic_label ?? form.topic.trim()
+    const status = stream.facts
+      ? `Writing your story about ${topic}… play while you wait.`
+      : `Getting the facts ready for your story… play while you wait.`
     return (
       <main id="main">
-        {stream.facts ? (
-          <FactCards facts={stream.facts} names={names} />
-        ) : (
-          <StoryWarmup names={names} onCancel={backToForm} />
-        )}
+        <TicTacToe names={names} status={status} onCancel={backToForm} />
       </main>
     )
   }

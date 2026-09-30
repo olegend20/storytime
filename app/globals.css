@@ -23,6 +23,7 @@
   --accent: oklch(0.45 0.16 265);
   --accent-fg: oklch(0.99 0 0);
   --accent-soft: oklch(0.945 0.03 265);
+  --accent-warm: oklch(0.55 0.17 50); /* the O in tic-tac-toe */
   --danger: oklch(0.46 0.18 25);
   --danger-soft: oklch(0.955 0.03 25);
   --focus: oklch(0.55 0.19 265);
@@ -51,6 +52,7 @@
     --accent: oklch(0.79 0.12 265);
     --accent-fg: oklch(0.16 0.02 265);
     --accent-soft: oklch(0.265 0.04 265);
+    --accent-warm: oklch(0.78 0.15 50); /* the O in tic-tac-toe */
     --danger: oklch(0.76 0.14 25);
     --danger-soft: oklch(0.26 0.05 25);
     --focus: oklch(0.83 0.13 265);
@@ -68,6 +70,7 @@
   --accent: oklch(0.79 0.12 265);
   --accent-fg: oklch(0.16 0.02 265);
   --accent-soft: oklch(0.265 0.04 265);
+  --accent-warm: oklch(0.78 0.15 50); /* the O in tic-tac-toe */
   --danger: oklch(0.76 0.14 25);
   --danger-soft: oklch(0.26 0.05 25);
   --focus: oklch(0.83 0.13 265);
@@ -153,30 +156,13 @@ body {
   border-radius: 0.25rem;
 }
 
-/* The fact cards while the story is written (components/newstory/FactCards.tsx). */
-.fact-card-body {
-  animation: fact-card-in 320ms ease-out;
+/* Tic-tac-toe while the story is written (components/newstory/TicTacToe.tsx). */
+.ttt-cell {
+  min-height: 72px;
+  transition: transform 120ms ease-out;
 }
-/* Movement only, never opacity: text that fades in reads as low-contrast mid-animation. */
-@keyframes fact-card-in {
-  from {
-    transform: translateY(8px);
-  }
-  to {
-    transform: none;
-  }
-}
-.warmup-pulse {
-  animation: warmup-pulse 1.6s ease-in-out infinite;
-}
-@keyframes warmup-pulse {
-  0%,
-  100% {
-    opacity: 0.55;
-  }
-  50% {
-    opacity: 1;
-  }
+.ttt-cell:not(:disabled):hover {
+  transform: scale(1.04);
 }
 
 @media (prefers-reduced-motion: reduce) {

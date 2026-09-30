@@ -859,3 +859,11 @@ cards addressed to each child in turn, auto-advancing every 12 s, tap or → for
 reader takes over when the title arrives. Mock scenario `!thinking` holds the stream so e2e can
 see it. **Gates:** lint ✅ · typecheck ✅ · unit+int 995 ✅ · e2e mock **124** ✅ · e2e real 4 ✅.
 
+### 2026-09-30 — owner exemption from the daily limit; tic-tac-toe replaces the fact cards
+
+`OWNER_USER_ID`'s family is unlimited (counted, never blocked; budget cap still applies -
+DECISIONS #141). The fact cards did not land with the owner; tic-tac-toe by name replaces them
+(#142): on screen from the first instant, house opponent for a lone child, bench rotation for
+three, gone when the title arrives. **Gates:** lint ✅ · typecheck ✅ · unit+int 1008 ✅ ·
+e2e mock 124 ✅ · e2e real 4 ✅.
+
