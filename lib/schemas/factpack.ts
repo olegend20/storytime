@@ -27,8 +27,13 @@ export const Fact = z.object({
   /** Gate check: a True Facts item must have min_age <= the youngest selected child. */
   min_age: z.number().int().min(1).max(17),
   confidence: Confidence,
-  /** Every fact needs >=1 source (F5 AC + review pass). */
-  source_ids: z.array(z.string()).min(1, 'every fact needs at least one source'),
+  /**
+   * Pages the fact came from, when the pack was researched. Empty for a pack written from
+   * the model's own knowledge - the default since 2026-09-29 (owner decision, DECISIONS
+   * #139): a children's story does not need a URL behind every fact, and requiring one
+   * made every new topic a nine-minute wait.
+   */
+  source_ids: z.array(z.string()).default([]),
 })
 export type Fact = z.infer<typeof Fact>
 
@@ -53,7 +58,8 @@ export const FactPack = z
     characters: z.array(FactPackCharacter).max(20).default([]),
     /** GUARDRAILS.md s3.3 care_notes land here and flow into the writer's request block. */
     sensitive_notes: z.string().trim().max(800).nullable().default(null),
-    sources: z.array(FactSource).min(1),
+    /** Empty for a knowledge pack; the pages a researched pack drew on. */
+    sources: z.array(FactSource).default([]),
   })
   .superRefine((pack, ctx) => {
     const sourceIds = new Set(pack.sources.map((s) => s.id))

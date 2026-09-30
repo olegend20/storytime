@@ -35,3 +35,14 @@ export const FACT_PACK_JSON_SCHEMA = object({
 })
 
 export const FACT_PACK_OUTPUT_FORMAT = { type: 'json_schema', schema: FACT_PACK_JSON_SCHEMA } as const
+
+/** The knowledge stage: the pack plus the model's own account of how well it knows the topic. */
+export const KNOWLEDGE_PACK_JSON_SCHEMA = object({
+  coverage: { type: 'string', enum: ['solid', 'partial', 'unknown'] },
+  ...(FACT_PACK_JSON_SCHEMA.properties as Record<string, unknown>),
+})
+
+export const KNOWLEDGE_PACK_OUTPUT_FORMAT = {
+  type: 'json_schema',
+  schema: KNOWLEDGE_PACK_JSON_SCHEMA,
+} as const

@@ -840,3 +840,12 @@ everything (owner-approved, DECISIONS #138).
 **Gates:** lint ✅ · typecheck ✅ · unit+int **989** ✅ · guardrails 29/29 ✅ · e2e real 4 ✅.
 Spend: $0.00. Still owed to the owner: the first live pack build's timing, and the ~$6
 before/after eval once the latency work is measured.
+
+### 2026-09-29 (night) — fact packs from knowledge; research only as a fallback
+
+Owner decision (DECISIONS #139): a children's story does not need a web source behind every
+fact. A pack is now written from the model's own knowledge in one no-tools call (~30 s, a few
+cents); the model reports `coverage`, and only `partial`/`unknown` (or fewer than 12 facts)
+falls through to the parallel research built earlier today (#137). Sources are optional in the
+schema; the review still checks counts, ages, safety notes and any cited source.
+`pnpm eval` estimate with packs built: $2.36. Unit+int **991** ✅.

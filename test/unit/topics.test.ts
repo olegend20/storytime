@@ -26,13 +26,13 @@ describe('F5 VT: the review pass rejects a bad pack, for free', () => {
     expect(review.pack).toBeNull()
   })
 
-  it('rejects a fact with empty source_ids and names the fact', () => {
+  it('accepts a fact with no sources: knowledge packs have none (DECISIONS #139)', () => {
     const pack = goodFactPack()
     const candidate = structuredClone(pack) as typeof pack
     candidate.facts[2]!.source_ids = []
-    const review = reviewFactPackDeterministic(candidate)
-    expect(review.accept).toBe(false)
-    expect(review.reasons).toContain('fact_without_source:f3')
+    expect(reviewFactPackDeterministic(candidate).accept).toBe(true)
+    const noSources = { ...structuredClone(pack), sources: [], facts: pack.facts.map((f) => ({ ...f, source_ids: [] })) }
+    expect(reviewFactPackDeterministic(noSources).accept).toBe(true)
   })
 
   it('rejects a fact citing a source that is not in the pack', () => {

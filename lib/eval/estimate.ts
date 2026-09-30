@@ -61,11 +61,12 @@ export const STORY_CALL_TOKENS = {
    * 768,614 / 23,317 input/output - ~$1.85 each. Input grows faster than the search count,
    * since every search result is re-read on each later turn of the tool loop.
    *
-   * REDESIGNED 2026-09-29 (DECISIONS #137): four parallel single-search calls at low effort
-   * (each reads its ~50k-token result set once) and one no-tools write. PROJECTED from those
-   * measurements: ~220k input, ~4k output. Re-measure on the first live build and correct.
+   * REDESIGNED 2026-09-29 (DECISIONS #137, #139): a pack is written from the model's own
+   * knowledge in one no-tools call (~4k in, ~3k out, a few cents). Web research - four
+   * parallel single-search calls (~220k in) and a write - runs only when the model reports it
+   * does not know the topic, so it is the exception and is not in this estimate.
    */
-  factpack: { input: 220_000, output: 4_000, webSearches: 4 },
+  factpack: { input: 4_000, output: 3_000, webSearches: 0 },
 } as const
 
 export interface CostLine {

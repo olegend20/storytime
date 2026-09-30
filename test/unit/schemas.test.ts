@@ -142,11 +142,10 @@ describe('s4.3 fact pack schema', () => {
     expect(FactPack.safeParse({ ...base, facts: facts.slice(0, 11) }).success).toBe(false)
   })
 
-  /** F5 VT: review rejects a fact with empty source_ids. */
-  it('rejects a fact with empty source_ids', () => {
-    const broken = [...facts]
-    broken[0] = { ...facts[0]!, source_ids: [] }
-    expect(FactPack.safeParse({ ...base, facts: broken }).success).toBe(false)
+  /** DECISIONS #139: a knowledge pack has no sources at all, and that is valid. */
+  it('accepts facts with no sources, and a pack with none', () => {
+    const unsourced = facts.map((f) => ({ ...f, source_ids: [] }))
+    expect(FactPack.safeParse({ ...base, facts: unsourced, sources: [] }).success).toBe(true)
   })
 
   it('rejects a fact citing a source that is not in the pack', () => {

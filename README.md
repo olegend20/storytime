@@ -38,12 +38,12 @@ LIVE_API=1 DAILY_BUDGET_USD=2 pnpm dev   # the cap stops new stories once today'
 3. **New story** → pick the child, a tone and a length, and **pick one of the suggested chips
    marked "starts straight away"**.
 
-**What it costs.** A story on a topic whose fact pack already exists is about **$0.05–0.07**.
-A topic with no fact pack first runs a web-research build costing **~$1–2** and taking several
-minutes. Built so far: LEGO, sharks, soccer, video games, volcanoes and the Titanic (these map
-reliably to their packs), plus bees and the space race (usually do). Typing your own topic
-will very likely trigger a build. Real spend is on the Anthropic console; `/admin` shows what
-the app recorded.
+**What it costs.** A story is about **$0.17** (the writer thinks before it writes; that is
+most of it), or roughly double when the quality gate asks for a rewrite. The first time anyone
+asks about a new topic, a fact pack is written from the model's knowledge first: ~30 seconds
+and a few cents. Only when the model says it does not know the topic does it research the web
+(~1–2 minutes, ~$0.45). Real spend is on the Anthropic console; `/admin` shows what the app
+recorded.
 
 **Rehearsed without spending:** `pnpm test:e2e:real` runs sign-in → add a child → the form →
 a refused topic → library, reader and delete against the real app with model calls disabled.

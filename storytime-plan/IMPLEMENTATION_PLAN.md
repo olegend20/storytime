@@ -214,7 +214,7 @@ One static block, ~3,000–5,000 tokens, identical for every story call. Marked 
   "sources": [{"id": "s1", "title": "...", "url": "..."}]
 }
 ```
-**Building a fact pack** is the only step allowed to use the web search tool. It runs once per topic, with a Haiku review pass that rejects packs with fewer than 12 facts, any fact lacking a source, or any `kid_safe: false` item without a `sensitive_notes` entry. Target 20–40 facts. Cap total pack size at ~2,000 tokens.
+**Building a fact pack** runs once per topic. *Owner decision 2026-09-29 (DECISIONS #139):* the pack is written from the model's own knowledge first — a children's story does not need a web source behind every fact — and the web search tool is used only when the model reports it does not know the topic. A Haiku review pass rejects packs with fewer than 12 facts, any cited source that does not exist, or any `kid_safe: false` item without a `sensitive_notes` entry. Target 20–30 facts. Cap total pack size at ~2,000 tokens.
 
 **Topic normalization** (Haiku): maps free text to a stable `topic_key`. "how lego was invented", "History of Lego", "lego bricks story" → `history-of-lego`. "sharks" and "different kinds of sharks" → `sharks`. The prompt returns `{topic_key, topic_label, is_appropriate_for_children: bool, reason}`. Inappropriate topics are refused with a friendly message before any expensive call.
 
@@ -327,7 +327,7 @@ Notation: **AC** = acceptance criteria, **VT** = verification tests. Test layers
 - Synonymous inputs map to the same `topic_key` (see examples in §4.3).
 - Inappropriate topics (`is_appropriate_for_children: false`) are rejected before any fact-pack or story call with a friendly message; nothing is stored except a log entry.
 - A fact pack is built at most once per key even under concurrent requests.
-- A pack has 12–40 facts, every fact has ≥1 source, size ≤ 2,000 tokens, and `confidence` set.
+- A pack has 12–40 facts, size ≤ 2,000 tokens, and `confidence` set; a researched pack's facts cite sources that exist (knowledge packs have none — DECISIONS #139).
 - Second and later requests for a topic make zero search calls.
 **VT**
 - int (fixture): `normalizeTopic` for the 6 inputs ["how lego was invented", "History of Lego", "lego", "sharks", "different shark species", "the history of soccer"] → keys `history-of-lego` ×3, `sharks` ×2, `history-of-soccer`.

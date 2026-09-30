@@ -14,7 +14,7 @@ import { dataBlock } from '@/lib/datablock'
 /**
  * Fact-pack review (F5). Two passes, cheap one first:
  *
- *  1. `reviewFactPackDeterministic` - free. Fact count, sources, confidence, size, and the
+ *  1. `reviewFactPackDeterministic` - free. Fact count, cited sources, confidence, size, and the
  *     kid_safe/sensitive_notes pairing. Runs on the raw parsed object, before zod, so an
  *     11-fact pack produces the reason code rather than an opaque schema error.
  *  2. `reviewFactPackWithModel` - one Haiku call for the judgement code cannot make:
@@ -27,13 +27,11 @@ import { dataBlock } from '@/lib/datablock'
 export type FactPackRejectReason =
   | `too_few_facts:${number}`
   | `too_many_facts:${number}`
-  | `fact_without_source:${string}`
   | `fact_unknown_source:${string}`
   | `fact_without_confidence:${string}`
   | `duplicate_fact_id:${string}`
   | `pack_too_large:${number}`
   | 'missing_sensitive_notes'
-  | 'no_sources'
   | 'bad_topic_key'
   | 'no_summary'
   | 'unparseable'
@@ -63,8 +61,8 @@ export function reviewFactPackDeterministic(candidate: unknown): DeterministicRe
   }
   if (typeof obj.summary !== 'string' || obj.summary.trim() === '') reasons.push('no_summary')
 
+  // Sources are optional (DECISIONS #139); a cited id must still exist.
   const sources = Array.isArray(obj.sources) ? obj.sources : []
-  if (sources.length === 0) reasons.push('no_sources')
   const sourceIds = new Set(
     sources
       .map((s) => (s as Record<string, unknown>)?.id)
@@ -86,7 +84,6 @@ export function reviewFactPackDeterministic(candidate: unknown): DeterministicRe
     const cited = Array.isArray(fact.source_ids)
       ? fact.source_ids.filter((s): s is string => typeof s === 'string' && s.trim() !== '')
       : []
-    if (cited.length === 0) reasons.push(`fact_without_source:${id}`)
     for (const sid of cited) {
       if (!sourceIds.has(sid)) reasons.push(`fact_unknown_source:${id}`)
     }

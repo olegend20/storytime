@@ -10,17 +10,22 @@ import {
 import { loadPrompt } from '@/lib/prompts'
 import { dataBlock } from '@/lib/datablock'
 import type { FactPack, FactSource } from '@/lib/schemas'
-import { FACT_PACK_OUTPUT_FORMAT } from './pack-schema'
+import { FACT_PACK_OUTPUT_FORMAT, KNOWLEDGE_PACK_OUTPUT_FORMAT } from './pack-schema'
 
 /**
  * The fact-pack builder (F5). This is the ONLY step in StoryTime permitted to use the web
  * search tool (§1 principle 2), and it runs once per topic for every family that will ever
  * ask about it.
  *
- * Two stages since 2026-09-29 (DECISIONS #137):
+ * Knowledge first, research when needed (owner decision 2026-09-29, DECISIONS #139):
  *
- *   1. RESEARCH - one call per angle of the topic, all in parallel, one web search each,
- *      low effort, terse JSON findings out (factpack-research.v1).
+ *   0. KNOWLEDGE - one call, no tools, writes the pack from what the model knows and says
+ *      how well it knows the topic (factpack-knowledge.v1). `solid` coverage with enough
+ *      facts is the pack: ~30 s, a few cents. A children's story does not need a URL behind
+ *      every fact.
+ *   1. RESEARCH - only when coverage is not solid: one call per angle of the topic, all in
+ *      parallel, one web search each, low effort, terse JSON findings out
+ *      (factpack-research.v1). DECISIONS #137.
  *   2. WRITE - one call with no tools that turns the findings into the pack, under the
  *      2,000-token budget, with the format enforced (factpack.v3).
  *
@@ -132,8 +137,74 @@ export interface BuildFactPackResult {
   model: string
   webSearches: number
   costUsd: number
+  /** How the pack was made. Absent from test doubles. */
+  mode?: 'knowledge' | 'research'
+  /** What the knowledge stage said about the topic, when it ran. */
+  coverage?: Coverage
   /** Stage timings, for the latency work this design exists for. Absent from test doubles. */
-  latencyMs?: { research: number; write: number }
+  latencyMs?: { knowledge: number; research: number; write: number }
+}
+
+export type Coverage = 'solid' | 'partial' | 'unknown'
+
+/** Below this many facts a "solid" knowledge pack is treated as partial, and researched. */
+export const KNOWLEDGE_MIN_FACTS = 12
+
+/** Pin the key and label: the pack is stored under our key, not the model's spelling of it. */
+function pinTopic(candidate: unknown, topicKey: string, topicLabel: string): unknown {
+  if (candidate && typeof candidate === 'object') {
+    const obj = candidate as Record<string, unknown>
+    obj.topic_key = topicKey
+    if (typeof obj.topic_label !== 'string' || obj.topic_label.trim() === '') {
+      obj.topic_label = topicLabel
+    }
+  }
+  return candidate
+}
+
+/** Stage 0: the pack from the model's own knowledge, and its account of how well it knows. */
+export async function writeFromKnowledge(
+  topicKey: string,
+  topicLabel: string,
+  opts: BuildFactPackOptions & { model: string },
+): Promise<{ candidate: unknown; coverage: Coverage; facts: number; costUsd: number }> {
+  const prompt = loadPrompt('factpack-knowledge')
+  const write = (structured: boolean) =>
+    callModel({
+      purpose: 'factpack',
+      model: opts.model,
+      system: [{ text: prompt.body }],
+      messages: [
+        {
+          role: 'user',
+          content: [
+            dataBlock('topic', JSON.stringify({ topic_key: topicKey, topic_label: topicLabel })),
+            `Write the Fact Pack JSON from what you know. Use topic_key "${topicKey}" and ` +
+              `topic_label "${topicLabel}" unchanged, and say your coverage honestly.`,
+          ].join('\n\n'),
+        },
+      ],
+      maxTokens: 8_000,
+      timeoutMs: 240_000,
+      maxRetries: 1,
+      thinking: 'adaptive',
+      effort: 'medium',
+      ...(structured ? { outputConfig: { format: KNOWLEDGE_PACK_OUTPUT_FORMAT } } : {}),
+      factPackId: opts.factPackId ?? null,
+      ...(opts.sink ? { sink: opts.sink } : {}),
+      ...(opts.signal ? { signal: opts.signal } : {}),
+    })
+  const result = await write(true).catch((err: unknown) => {
+    if (!structuredOutputRejected(err)) throw err
+    return write(false)
+  })
+  const raw = extractFinalJson(result.raw, result.text) as Record<string, unknown> | null
+  const coverageRaw = raw?.coverage
+  const coverage: Coverage =
+    coverageRaw === 'solid' || coverageRaw === 'partial' ? coverageRaw : 'unknown'
+  const facts = Array.isArray(raw?.facts) ? raw.facts.length : 0
+  if (raw) delete raw.coverage
+  return { candidate: pinTopic(raw, topicKey, topicLabel), coverage, facts, costUsd: result.costUsd }
 }
 
 export interface ResearchFinding {
@@ -215,6 +286,26 @@ export async function buildFactPack(
   const model = opts.model ?? modelForRole('factpack')
   const shared = { ...opts, model }
 
+  // ---- stage 0: from knowledge ----
+  const knowledgeStarted = Date.now()
+  const known = await writeFromKnowledge(topicKey, topicLabel, shared)
+  const knowledge = Date.now() - knowledgeStarted
+  if (known.coverage === 'solid' && known.facts >= KNOWLEDGE_MIN_FACTS) {
+    console.info(`[factpack] "${topicKey}": written from knowledge in ${Math.round(knowledge / 1000)}s`)
+    return {
+      candidate: known.candidate,
+      model,
+      webSearches: 0,
+      costUsd: known.costUsd,
+      mode: 'knowledge',
+      coverage: known.coverage,
+      latencyMs: { knowledge, research: 0, write: 0 },
+    }
+  }
+  console.info(
+    `[factpack] "${topicKey}": model coverage ${known.coverage} (${known.facts} facts) - researching`,
+  )
+
   // ---- stage 1: research, in parallel ----
   const researchStarted = Date.now()
   const settled = await Promise.allSettled(
@@ -222,7 +313,7 @@ export async function buildFactPack(
   )
   const angles: AngleFindings[] = []
   let webSearches = 0
-  let costUsd = 0
+  let costUsd = known.costUsd
   const failures: string[] = []
   for (const [i, outcome] of settled.entries()) {
     if (outcome.status === 'rejected') {
@@ -277,22 +368,14 @@ export async function buildFactPack(
   })
   costUsd += written.costUsd
 
-  const candidate = extractFinalJson(written.raw, written.text)
-  // Pin the key and label: the pack is stored under our key, not the model's spelling of it.
-  if (candidate && typeof candidate === 'object') {
-    const obj = candidate as Record<string, unknown>
-    obj.topic_key = topicKey
-    if (typeof obj.topic_label !== 'string' || obj.topic_label.trim() === '') {
-      obj.topic_label = topicLabel
-    }
-  }
-
   return {
-    candidate,
+    candidate: pinTopic(extractFinalJson(written.raw, written.text), topicKey, topicLabel),
     model: written.model,
     webSearches,
     costUsd,
-    latencyMs: { research, write: Date.now() - writeStarted },
+    mode: 'research',
+    coverage: known.coverage,
+    latencyMs: { knowledge, research, write: Date.now() - writeStarted },
   }
 }
 

@@ -2,13 +2,22 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 
 /**
- * The two-stage fact-pack build (DECISIONS #137): parallel one-search research calls, then
- * one no-tools write with the format enforced. The model layer is stubbed; what is asserted
- * is the shape of every call, because that shape is where the 9 minutes went.
+ * The fact-pack build: from the model's knowledge when it knows the topic (DECISIONS #139),
+ * otherwise parallel one-search research calls and one no-tools write (DECISIONS #137). The
+ * model layer is stubbed; what is asserted is the shape of every call, because that shape is
+ * where the 9 minutes went.
  */
 
 type Call = Record<string, unknown>
-const calls = vi.hoisted(() => ({ made: [] as Call[], failAngles: [] as number[], reject400: false }))
+const calls = vi.hoisted(() => ({
+  made: [] as Call[],
+  failAngles: [] as number[],
+  reject400: false,
+  coverage: 'partial' as 'solid' | 'partial' | 'unknown',
+  knowledgeFacts: 14,
+}))
+const isKnowledge = (c: Call) =>
+  !Array.isArray(c.tools) && String((c.system as { text: string }[])[0]!.text).includes('coverage')
 
 vi.mock('@/lib/ai', async (orig) => {
   const actual = await orig<typeof import('@/lib/ai')>()
@@ -29,6 +38,13 @@ vi.mock('@/lib/ai', async (orig) => {
         })
         return { text, data: null, usage: { input_tokens: 50_000, output_tokens: 400, cache_read_tokens: 0, cache_write_tokens: 0, web_searches: 1 }, costUsd: 0.11, latencyMs: 20_000, model: opts.model, stopReason: 'end_turn', replayed: false, raw: { content: [{ type: 'text', text }] } }
       }
+      if (isKnowledge(opts)) {
+        const facts = Array.from({ length: calls.knowledgeFacts }, (_, i) => ({
+          id: `f${i + 1}`, text: `Known fact ${i + 1}.`, kid_safe: true, min_age: 3, confidence: 'high', source_ids: [],
+        }))
+        const text = JSON.stringify({ coverage: calls.coverage, topic_key: 'x', topic_label: 'y', summary: 's', facts, timeline: [], characters: [], sensitive_notes: null, sources: [] })
+        return { text, data: null, usage: { input_tokens: 3_500, output_tokens: 2_500, cache_read_tokens: 0, cache_write_tokens: 0, web_searches: 0 }, costUsd: 0.03, latencyMs: 30_000, model: opts.model, stopReason: 'end_turn', replayed: false, raw: { content: [{ type: 'text', text }] } }
+      }
       if (calls.reject400 && (opts.outputConfig as Call | undefined)?.format) {
         throw new actual.ModelCallError('output_config.format: not supported', { purpose: 'factpack', model: String(opts.model), attempts: 1, retryable: false, status: 400 })
       }
@@ -46,14 +62,48 @@ afterEach(() => {
   calls.made.length = 0
   calls.failAngles = []
   calls.reject400 = false
+  calls.coverage = 'partial'
+  calls.knowledgeFacts = 14
 })
 
-describe('buildFactPack', () => {
+describe('buildFactPack writes from knowledge when the model knows the topic', () => {
+  it('one no-tools call, no searches, and the pack is the model\'s own', async () => {
+    calls.coverage = 'solid'
+    const result = await buildFactPack('sharks', 'Sharks', { model: 'claude-sonnet-5' })
+    expect(calls.made).toHaveLength(1)
+    expect(calls.made[0]!.tools).toBeUndefined()
+    expect((calls.made[0]!.outputConfig as Call).format).toMatchObject({ type: 'json_schema' })
+    expect(result.mode).toBe('knowledge')
+    expect(result.webSearches).toBe(0)
+    expect(result.costUsd).toBeCloseTo(0.03, 6)
+    const pack = result.candidate as { coverage?: unknown; topic_key: string; facts: unknown[]; sources: unknown[] }
+    expect(pack.coverage).toBeUndefined() // stripped: not part of the stored pack
+    expect(pack.topic_key).toBe('sharks')
+    expect(pack.sources).toEqual([])
+  })
+
+  it('researches instead when the model says its knowledge is partial or unknown', async () => {
+    calls.coverage = 'unknown'
+    const result = await buildFactPack('obscure', 'An obscure thing', { model: 'claude-sonnet-5' })
+    expect(result.mode).toBe('research')
+    expect(result.coverage).toBe('unknown')
+    expect(calls.made.filter((c) => Array.isArray(c.tools))).toHaveLength(RESEARCH_ANGLES.length)
+  })
+
+  it('researches when "solid" knowledge still yields too few facts', async () => {
+    calls.coverage = 'solid'
+    calls.knowledgeFacts = 7
+    const result = await buildFactPack('thin', 'A thin topic', { model: 'claude-sonnet-5' })
+    expect(result.mode).toBe('research')
+  })
+})
+
+describe('buildFactPack researches when knowledge is not enough', () => {
   it('runs one low-effort, single-search call per angle, then one no-tools write with the format enforced', async () => {
     const result = await buildFactPack('bees', 'How bees make honey', { model: 'claude-sonnet-5' })
 
     const research = calls.made.filter((c) => Array.isArray(c.tools))
-    const write = calls.made.filter((c) => !Array.isArray(c.tools))
+    const write = calls.made.filter((c) => !Array.isArray(c.tools) && !isKnowledge(c))
     expect(research).toHaveLength(RESEARCH_ANGLES.length)
     expect(write).toHaveLength(1)
     for (const c of research) {
@@ -67,7 +117,8 @@ describe('buildFactPack', () => {
     expect(content.match(/<findings>/g)).toHaveLength(RESEARCH_ANGLES.length)
 
     expect(result.webSearches).toBe(RESEARCH_ANGLES.length)
-    expect(result.costUsd).toBeCloseTo(0.11 * RESEARCH_ANGLES.length + 0.02, 6)
+    expect(result.costUsd).toBeCloseTo(0.03 + 0.11 * RESEARCH_ANGLES.length + 0.02, 6)
+    expect(result.mode).toBe('research')
     expect((result.candidate as { topic_key: string }).topic_key).toBe('bees')
     expect(result.latencyMs?.research).toBeGreaterThanOrEqual(0)
   })
@@ -76,7 +127,7 @@ describe('buildFactPack', () => {
     calls.failAngles = [1]
     const result = await buildFactPack('bees', 'How bees make honey', { model: 'claude-sonnet-5' })
     expect(result.webSearches).toBe(RESEARCH_ANGLES.length - 1)
-    const write = calls.made.filter((c) => !Array.isArray(c.tools))[0]!
+    const write = calls.made.filter((c) => !Array.isArray(c.tools) && !isKnowledge(c))[0]!
     expect(String((write.messages as { content: string }[])[0]!.content).match(/<findings>/g)).toHaveLength(RESEARCH_ANGLES.length - 1)
   })
 
@@ -85,13 +136,13 @@ describe('buildFactPack', () => {
     await expect(buildFactPack('bees', 'How bees make honey', { model: 'claude-sonnet-5' })).rejects.toThrow(
       /found too little: 1 of 4 angles/,
     )
-    expect(calls.made.filter((c) => !Array.isArray(c.tools))).toHaveLength(0)
+    expect(calls.made.filter((c) => !Array.isArray(c.tools) && !isKnowledge(c))).toHaveLength(0)
   })
 
   it('falls back to a plain write if the model rejects the output format', async () => {
     calls.reject400 = true
     const result = await buildFactPack('bees', 'How bees make honey', { model: 'claude-sonnet-5' })
-    const writes = calls.made.filter((c) => !Array.isArray(c.tools))
+    const writes = calls.made.filter((c) => !Array.isArray(c.tools) && !isKnowledge(c))
     expect(writes).toHaveLength(2)
     expect(writes[1]!.outputConfig).toBeUndefined()
     expect(result.candidate).toBeTruthy()
