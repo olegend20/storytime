@@ -53,6 +53,14 @@ pnpm eval             # F13 golden set — LIVE, costs money
 pnpm bakeoff          # F14 model bake-off — LIVE, costs real money
 ```
 
+## Building a feature
+
+`main` is protected on GitHub: pull requests only, CI must pass. Every feature follows the
+`/feature` skill (`.claude/skills/feature/SKILL.md`): issue with acceptance tests first, a
+branch in its own worktree, all gates green locally, the PR template filled with evidence,
+`/code-review` run, then the owner reviews and merges. Never commit to `main`; never mark a
+feature done before its tests pass in CI.
+
 ## Conventions
 
 - Reason codes in the quality gate and guardrails are **stable enums**
@@ -61,3 +69,4 @@ pnpm bakeoff          # F14 model bake-off — LIVE, costs real money
 - Parent-facing refusal copy lives in `config/guardrails/messages.json`. Never echo the
   triggering text back, and never reveal which layer fired.
 - Cost-relevant numbers come from SQL views (`v_*`), never from application memory (F12).
+

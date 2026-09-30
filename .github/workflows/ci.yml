@@ -23,7 +23,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
@@ -45,7 +45,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - uses: supabase/setup-cli@v1
@@ -83,7 +83,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm test:guardrails
@@ -102,7 +102,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       # The `mobile` project is an iPhone 13, which Playwright drives with WebKit; chromium
@@ -130,6 +130,11 @@ jobs:
       - run: pnpm test:e2e
         env:
           ANTHROPIC_API_KEY: sk-ant-ci-replay-only
+      # The real app and Supabase, model calls disabled: sign-in, the form, a refusal,
+      # library, reader, delete (test/e2e-real). Zero spend by construction.
+      - run: pnpm test:e2e:real
+        env:
+          ANTHROPIC_API_KEY: sk-ant-ci-replay-only
       - if: always()
         run: supabase stop
       - uses: actions/upload-artifact@v4
@@ -151,7 +156,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - id: blocked
