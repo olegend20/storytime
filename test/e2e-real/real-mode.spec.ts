@@ -208,3 +208,16 @@ test.describe('real mode: a parent’s first session, no model spend', () => {
     }
   })
 })
+
+test('every response carries the security headers', async ({ request }) => {
+  for (const path of ['/', '/login', '/manifest.webmanifest']) {
+    const res = await request.get(path)
+    const h = res.headers()
+    expect(h['x-content-type-options'], path).toBe('nosniff')
+    expect(h['x-frame-options'], path).toBe('DENY')
+    expect(h['content-security-policy'], path).toContain("frame-ancestors 'none'")
+    expect(h['referrer-policy'], path).toBe('strict-origin-when-cross-origin')
+    expect(h['permissions-policy'], path).toContain('camera=()')
+    expect(h['strict-transport-security'], path).toContain('max-age=')
+  }
+})

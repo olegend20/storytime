@@ -1,0 +1,18 @@
+# Weekly dependency updates as pull requests, grouped so the noise stays low. Security
+# updates come as they happen. Each PR runs the full CI like any other.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      production:
+        dependency-type: production
+      development:
+        dependency-type: development
+    open-pull-requests-limit: 5
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

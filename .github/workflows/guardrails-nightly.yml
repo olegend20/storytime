@@ -1,6 +1,9 @@
 name: Guardrail corpus (nightly, live)
 
 # GUARDRAILS.md s7: "live mode nightly via scheduled workflow, results uploaded".
+permissions:
+  contents: read
+
 on:
   schedule:
     - cron: '17 3 * * *'
@@ -11,12 +14,15 @@ jobs:
     name: red-team corpus against the live classifier
     runs-on: ubuntu-latest
     environment: eval
+    # Spends real API credit (~$0.19 a run). Off until the owner sets the repository
+    # variable LIVE_RUNS_ENABLED=true - a public repo must never run this by default.
+    if: vars.LIVE_RUNS_ENABLED == 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm test:guardrails
