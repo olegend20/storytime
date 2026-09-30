@@ -31,6 +31,7 @@ import { offsetForDay, suggestedChips, type SuggestedTopic } from '@/lib/client/
 import { checkTopic } from '@/lib/client/validate'
 import type { Child, LengthMinutes, QuotaResponse, Tone } from '@/lib/schemas'
 import { StoryReader } from '@/components/reader/StoryReader'
+import { FactCards, StoryWarmup } from '@/components/newstory/FactCards'
 import { PrivacyNote } from '@/components/PrivacyCopy'
 import { GenerationError } from './GenerationError'
 import { ChildPicker, LengthPicker, TonePicker } from './Pickers'
@@ -190,6 +191,21 @@ export function NewStoryFlow() {
     childNames: selectedChildren.map((c) => c.first_name),
     tones: form.tones,
   })
+
+  // Waiting for the writer: first "getting the facts ready", then the fact cards. The
+  // reader takes over the moment the title (`meta`) arrives.
+  const names = selectedChildren.map((c) => c.first_name)
+  if ((stream.phase === 'connecting' || stream.phase === 'streaming') && !stream.meta) {
+    return (
+      <main id="main">
+        {stream.facts ? (
+          <FactCards facts={stream.facts} names={names} />
+        ) : (
+          <StoryWarmup names={names} onCancel={backToForm} />
+        )}
+      </main>
+    )
+  }
 
   // Streaming, or finished: the reader takes over the page.
   if (stream.phase === 'streaming' || stream.phase === 'done' || stream.meta) {

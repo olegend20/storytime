@@ -63,6 +63,9 @@ function mockQuality(story: LibraryStory): QualityResult {
   }
 }
 
+/** How long the `thinking` scenario holds the stream between the facts and the first chapter. */
+export const MOCK_THINKING_MS = 4_000
+
 export interface StreamOptions {
   scenario: MockScenario
   delayMs: number
@@ -76,6 +79,13 @@ export interface StreamOptions {
 export function generationEvents(story: LibraryStory, opts: StreamOptions): unknown[] {
   const target = targetWords({ band: story.age_band, minutes: story.length_minutes })
   const events: unknown[] = []
+  // The real pipeline sends the fact pack's facts before the writer starts. The mock has no
+  // pack, so the story's own True Facts stand in - the same shape the cards render.
+  events.push({
+    type: 'facts',
+    topic_label: story.topic_label,
+    facts: story.content.true_facts.slice(0, 12).map((f) => ({ id: f.fact_id, text: f.text })),
+  } satisfies SseEvent)
   const meta: SseEvent = {
     type: 'meta',
     story_id: story.id,
@@ -130,6 +140,10 @@ export function generationStream(story: LibraryStory, opts: StreamOptions): Read
         return
       }
       if (opts.delayMs > 0) await sleep(opts.delayMs)
+      // The real writer thinks for ~2 minutes between the facts and chapter 1.
+      if (opts.scenario === 'thinking' && (event as { type?: string }).type === 'meta') {
+        await sleep(MOCK_THINKING_MS)
+      }
       controller.enqueue(encoder.encode(sseFrame(event)))
     },
   })

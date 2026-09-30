@@ -27,7 +27,18 @@ export type GenerateStoryBody = z.infer<typeof GenerateStoryBody>
  * breaking a deployed frontend.
  */
 export const SseEvent = z.discriminatedUnion('type', [
-  /** First event. Lets the reader render a header before any prose (F6 AC: title ≤5s). */
+  /**
+   * Sent as soon as the fact pack is ready, BEFORE the writer starts - so the children have
+   * something to do during the two minutes the writer thinks before the first chapter. Only
+   * facts the story may use: kid-safe and within the youngest child's age, in the pack's
+   * own order, at most FACT_CARDS_MAX. Added 2026-09-29; older clients ignore it.
+   */
+  z.object({
+    type: z.literal('facts'),
+    topic_label: z.string(),
+    facts: z.array(z.object({ id: z.string(), text: z.string() })),
+  }),
+  /** Lets the reader render a header before any prose (F6 AC: title ≤5s). */
   z.object({
     type: z.literal('meta'),
     story_id: z.string().uuid(),
@@ -88,6 +99,23 @@ export const SseEvent = z.discriminatedUnion('type', [
   }),
 ])
 export type SseEvent = z.infer<typeof SseEvent>
+
+/** How many facts the `facts` event carries: enough for the wait, never the whole pack. */
+export const FACT_CARDS_MAX = 12
+
+/** The facts a story may use, as cards for the waiting children. */
+export function factCardsFor(
+  pack: { topic_label: string; facts: { id: string; text: string; kid_safe: boolean; min_age: number }[] } | null,
+  youngestAge: number,
+): Extract<SseEvent, { type: 'facts' }> | null {
+  if (!pack) return null
+  const facts = pack.facts
+    .filter((f) => f.kid_safe && f.min_age <= youngestAge)
+    .slice(0, FACT_CARDS_MAX)
+    .map((f) => ({ id: f.id, text: f.text }))
+  if (facts.length === 0) return null
+  return { type: 'facts', topic_label: pack.topic_label, facts }
+}
 
 /**
  * Non-streaming failures that happen BEFORE the stream opens return a normal JSON body

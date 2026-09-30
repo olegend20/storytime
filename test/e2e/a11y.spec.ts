@@ -109,6 +109,17 @@ test.describe('accessibility', () => {
     expect(report('reader+chapters', results.violations)).toEqual([])
   })
 
+  test('the fact cards while the writer thinks have no serious violations', async ({ page }) => {
+    await page.goto('/new')
+    await resetMock(page)
+    await page.reload()
+    await expect(page.getByRole('button', { name: 'Cruz 7' })).toBeVisible()
+    await startStory(page, '!thinking the history of soccer')
+    await expect(page.getByTestId('fact-card')).toBeVisible()
+    const results = await scan(page)
+    expect(report('fact cards', results.violations)).toEqual([])
+  })
+
   test('the streaming reader has no serious violations', async ({ page }) => {
     test.slow()
     await page.goto('/new')

@@ -395,7 +395,13 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     expect(quota.calls).toEqual(['consumeQuota'])
 
     // SSE contract: meta first, then chapters, `done` last.
-    expect(events[0]?.type).toBe('meta')
+    // The fact cards go out first - before the writer has produced a word - then the title.
+    expect(events[0]?.type).toBe('facts')
+    const cards = events[0] as Extract<SseEvent, { type: 'facts' }>
+    expect(cards.facts.length).toBeGreaterThan(0)
+    expect(cards.facts.length).toBeLessThanOrEqual(12)
+    expect(cards.topic_label).toBe(run.topicLabel)
+    expect(events[1]?.type).toBe('meta')
     const done = events.at(-1)
     expect(done?.type).toBe('done')
     if (done?.type !== 'done') throw new Error('expected a done event')
@@ -593,14 +599,17 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     expect(row).toBeNull()
   })
 
-  it.skipIf(RECORDING)('F6 VT: a failed write is a pre-stream 502 - no story row, no quota consumed', async () => {
-    // No recorded fixture for this prompt, so the write fails before a byte is emitted -
-    // which is exactly what lets the route answer with a real HTTP status.
+  it.skipIf(RECORDING)('F6 VT: a failed write is an error event with quota_consumed: false - no story row, no quota', async () => {
+    // No recorded fixture for this prompt, so the write fails without producing a byte.
+    // Since the fact cards (2026-09-29) the stream is already open by then, so the failure
+    // takes the contract's post-stream shape: an `error` event on the 200, never a 502.
     const run = await prepared('a topic with no recorded write fixture at all')
     const quota = new RecordingQuota()
     const channel = new SseChannel()
-    const rejections: unknown[] = []
-    channel.waitForOpen().catch((err) => rejections.push(err))
+    const events: SseEvent[] = []
+    const drained = (async () => {
+      for await (const e of channel.events()) events.push(e)
+    })()
 
     const result = await runGeneration(run, channel, {
       db: family.db,
@@ -608,13 +617,13 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       quota,
       now: () => FIXED_NOW,
     })
+    await drained
 
     expect(result.status).toBe('failed')
-    expect(channel.isOpen).toBe(false)
-    await Promise.resolve()
-    expect(rejections).toHaveLength(1)
-    expect((rejections[0] as { status: number }).status).toBe(502)
-    expect((rejections[0] as { error: { code: string } }).error.code).toBe('generation_failed')
+    expect(events.map((e) => e.type)).toEqual(['facts', 'error'])
+    const failure = events[1] as Extract<SseEvent, { type: 'error' }>
+    expect(failure.code).toBe('generation_failed')
+    expect(failure.quota_consumed).toBe(false)
 
     expect(quota.calls).not.toContain('consumeQuota')
     const { data: row } = await family.db.from('stories').select('id').eq('id', run.storyId).maybeSingle()

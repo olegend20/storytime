@@ -153,6 +153,32 @@ body {
   border-radius: 0.25rem;
 }
 
+/* The fact cards while the story is written (components/newstory/FactCards.tsx). */
+.fact-card-body {
+  animation: fact-card-in 320ms ease-out;
+}
+/* Movement only, never opacity: text that fades in reads as low-contrast mid-animation. */
+@keyframes fact-card-in {
+  from {
+    transform: translateY(8px);
+  }
+  to {
+    transform: none;
+  }
+}
+.warmup-pulse {
+  animation: warmup-pulse 1.6s ease-in-out infinite;
+}
+@keyframes warmup-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

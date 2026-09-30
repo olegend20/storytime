@@ -14,6 +14,7 @@ import {
   type QualityResult,
   type SseEvent,
   type StoryOutput,
+  factCardsFor,
   type StoryStatus,
   storyWordCount,
   targetWords,
@@ -309,6 +310,10 @@ export async function runGeneration(
     })
 
   try {
+    // Something for the children while the writer thinks: the facts, before any prose.
+    const cards = factCardsFor(pack, Math.min(...prepared.children.map((c) => c.age)))
+    if (cards) channel.push(cards)
+
     // ---- attempt 1: the streamed write ----
     const parser = emitMetaAndChapters()
     const prompt = buildPrompt({

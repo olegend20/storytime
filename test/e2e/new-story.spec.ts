@@ -271,3 +271,52 @@ test('the streaming reader has no horizontal overflow', async ({ page }) => {
   expect(overflow.widest, `element overflows the viewport: ${JSON.stringify(overflow.widest)}`).toBeNull()
   expect(overflow.documentOverflows).toBe(false)
 })
+
+/**
+ * "Did you know?" fact cards (2026-09-29): what the children look at during the two minutes
+ * the writer thinks. The `!thinking` mock scenario holds the stream for a few seconds
+ * between the facts and the title, as the real writer does for far longer.
+ */
+test('while the writer thinks, the children get fact cards addressed by name, and the story replaces them', async ({
+  page,
+}) => {
+  await startStory(page, '!thinking the history of soccer')
+
+  // The wait is never a blank form: the warm-up names the children at once...
+  await expect(page.getByTestId('story-warmup').or(page.getByTestId('fact-cards'))).toBeVisible()
+
+  // ...then the cards: one fact at a time, addressed to a selected child by name.
+  const card = page.getByTestId('fact-card')
+  await expect(card).toBeVisible()
+  await expect(page.getByRole('heading', { name: /^(Cruz|Phoenix|Lennon), did you know\?$/ })).toBeVisible()
+  const first = (await card.innerText()).trim()
+  expect(first.length).toBeGreaterThan(20)
+
+  // A tap goes to the next fact, addressed to the next child; the dots move with it.
+  const dots = page.getByRole('list', { name: 'Which fact' }).getByRole('listitem')
+  await expect(dots.first()).toHaveAttribute('aria-current', 'true')
+  await card.click()
+  await expect(dots.nth(1)).toHaveAttribute('aria-current', 'true')
+  expect((await card.innerText()).trim()).not.toBe(first)
+
+  // The cards are not the story: no chapter heading yet.
+  expect(await page.getByRole('heading', { level: 2 }).filter({ hasText: /^Chapter|^Level/ }).count()).toBe(0)
+
+  // When the title arrives the reader takes over and the cards are gone.
+  await expect(page.getByRole('progressbar', { name: 'Writing the story' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByTestId('fact-cards')).toBeHidden()
+  await expect(page.getByRole('heading', { name: 'Saved to your library' })).toBeVisible({ timeout: 30_000 })
+})
+
+test('the fact cards advance on their own', async ({ page }) => {
+  await page.addInitScript(() => {
+    // Make the auto-advance observable: 12 s in production.
+    ;(window as unknown as { __FACT_CARD_MS?: number }).__FACT_CARD_MS = 700
+  })
+  await page.reload() // the init script applies from the next navigation
+  await expect(page.getByRole('button', { name: 'Cruz 7' })).toBeVisible()
+  await startStory(page, '!thinking the history of soccer')
+  const dots = page.getByRole('list', { name: 'Which fact' }).getByRole('listitem')
+  await expect(dots.first()).toHaveAttribute('aria-current', 'true')
+  await expect(dots.nth(1)).toHaveAttribute('aria-current', 'true', { timeout: 5_000 })
+})

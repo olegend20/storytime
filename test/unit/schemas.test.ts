@@ -15,6 +15,7 @@ import {
   JUDGE_CRITERIA,
   MAX_SCARY_LEVEL,
   type JudgeScore,
+  factCardsFor, FACT_CARDS_MAX, SseEvent,
 } from '@/lib/schemas'
 
 /** F3 VT: zod accepts a valid child; rejects age 0, 18, a 31-char name, 11 likes. */
@@ -294,5 +295,30 @@ describe('JUDGE_AGENT.md s2 position swapping', () => {
 
   it('treats an explicit TIE in one order as a disagreement with a win in the other', () => {
     expect(resolvePositionSwap('A', 'TIE').verdict).toBe('TIE')
+  })
+})
+
+describe('the `facts` stream event (fact cards while the writer thinks)', () => {
+  const pack = {
+    topic_label: 'Volcanoes',
+    facts: [
+      { id: 'f1', text: 'Lava is melted rock.', kid_safe: true, min_age: 3 },
+      { id: 'f2', text: 'A grim detail.', kid_safe: false, min_age: 3 },
+      { id: 'f3', text: 'For older children.', kid_safe: true, min_age: 8 },
+      ...Array.from({ length: 15 }, (_, i) => ({ id: `f${i + 4}`, text: `Fact ${i + 4}.`, kid_safe: true, min_age: 3 })),
+    ],
+  }
+  it('carries only facts the story may use, in pack order, capped', () => {
+    const event = factCardsFor(pack, 4)!
+    expect(event.type).toBe('facts')
+    expect(event.facts.map((f) => f.id)).not.toContain('f2')
+    expect(event.facts.map((f) => f.id)).not.toContain('f3')
+    expect(event.facts[0]!.id).toBe('f1')
+    expect(event.facts).toHaveLength(FACT_CARDS_MAX)
+    expect(SseEvent.safeParse(event).success).toBe(true)
+  })
+  it('includes the older child\'s facts when the youngest is old enough, and is null with no pack', () => {
+    expect(factCardsFor(pack, 9)!.facts.map((f) => f.id)).toContain('f3')
+    expect(factCardsFor(null, 4)).toBeNull()
   })
 })

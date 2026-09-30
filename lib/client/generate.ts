@@ -20,6 +20,7 @@ import { readSseFrames } from './sse'
  */
 
 export type MetaEvent = Extract<SseEvent, { type: 'meta' }>
+export type FactsEvent = Extract<SseEvent, { type: 'facts' }>
 export type ErrorEvent = Extract<SseEvent, { type: 'error' }>
 
 /** A chapter as it exists mid-stream: heading known, prose still arriving. */
@@ -29,6 +30,8 @@ export interface StreamingChapter extends Chapter {
 
 export interface StreamState {
   phase: 'idle' | 'connecting' | 'streaming' | 'done' | 'error'
+  /** The fact cards, sent before the writer starts. Null until then. */
+  facts: FactsEvent | null
   meta: MetaEvent | null
   chapters: StreamingChapter[]
   /** Final story from the `done` event, when it validated. Null while streaming. */
@@ -46,6 +49,7 @@ export interface StreamState {
 
 export const initialStreamState: StreamState = {
   phase: 'idle',
+  facts: null,
   meta: null,
   chapters: [],
   story: null,
@@ -93,6 +97,8 @@ export function streamReducer(state: StreamState, action: StreamAction): StreamS
   }
   const event = action.event
   switch (event.type) {
+    case 'facts':
+      return { ...state, phase: 'streaming', facts: event }
     case 'meta':
       return { ...state, phase: 'streaming', meta: event }
     case 'chapter_start':

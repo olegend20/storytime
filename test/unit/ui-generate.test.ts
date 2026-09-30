@@ -53,6 +53,18 @@ describe('streamReducer', () => {
     ])
   })
 
+  it('holds the fact cards before the title arrives, and the title replaces nothing', () => {
+    const facts = { type: 'facts' as const, topic_label: 'Sharks', facts: [{ id: 'f1', text: 'A **whale shark** is the biggest fish.' }] }
+    const waiting = apply([{ kind: 'start' }, { kind: 'event', event: facts }])
+    expect(waiting.phase).toBe('streaming')
+    expect(waiting.facts).toEqual(facts)
+    expect(waiting.meta).toBeNull()
+    const reading = apply([{ kind: 'start' }, { kind: 'event', event: facts }, { kind: 'event', event: META }])
+    expect(reading.meta?.title).toBe(META.title)
+    expect(reading.facts).toEqual(facts)
+    expect(apply([{ kind: 'start' }]).facts).toBeNull()
+  })
+
   it('accepts a delta for a chapter whose start has not arrived yet', () => {
     // Defensive: nothing in the contract promises strict interleaving across chapters.
     const state = apply([

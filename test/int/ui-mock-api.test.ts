@@ -233,7 +233,9 @@ describe('generate: the happy path follows the event order in lib/schemas/api.ts
     const { events, unknown } = await collect(res)
     expect(unknown).toEqual([])
 
-    expect(events[0]?.type).toBe('meta')
+    // The fact cards go first (2026-09-29), then the title.
+    expect(events[0]?.type).toBe('facts')
+    expect(events[1]?.type).toBe('meta')
     expect(events[events.length - 1]?.type).toBe('done')
 
     // Every chapter opens before its deltas and closes after them, in index order.
@@ -278,8 +280,8 @@ describe('generate: the happy path follows the event order in lib/schemas/api.ts
     await s.patch({ reset: true, quota_used: 0, model_calls: 0 })
     const res = await s.generate(generateBody('how bees make honey'))
     const { events } = await collect(res)
-    const meta = events[0]
-    if (meta?.type !== 'meta') throw new Error('expected meta first')
+    const meta = events[1]
+    if (meta?.type !== 'meta') throw new Error('expected meta after the facts')
 
     const after = (await (await s.debug()).json()) as { quota_used: number; model_calls: number }
     expect(after.quota_used).toBe(1)
@@ -296,7 +298,7 @@ describe('generate: the happy path follows the event order in lib/schemas/api.ts
     const s = session('band')
     await s.patch({ reset: true, quota_used: 0 })
     const { events } = await collect(await s.generate(generateBody('volcanoes')))
-    const meta = events[0]
+    const meta = events[1]
     if (meta?.type !== 'meta') throw new Error('expected meta')
     // Phoenix is 4, so the youngest sets band A (§4.5).
     expect(meta.age_band).toBe('A')
@@ -309,7 +311,7 @@ describe('generate: the happy path follows the event order in lib/schemas/api.ts
     const { events } = await collect(
       await s.generate(generateBody('dinosaurs', { length_minutes: 5 })),
     )
-    const meta = events[0]
+    const meta = events[1]
     if (meta?.type !== 'meta') throw new Error('expected meta')
     expect(meta.target_words).toEqual({ min: 650, max: 850 })
   })
@@ -320,7 +322,9 @@ describe('generate: the happy path follows the event order in lib/schemas/api.ts
     const { events, unknown } = await collect(await s.generate(generateBody('!unknownevent bees')))
     expect(unknown).toHaveLength(1)
     // The known events are unaffected by the one in the middle.
-    expect(events[0]?.type).toBe('meta')
+    // The fact cards go first (2026-09-29), then the title.
+    expect(events[0]?.type).toBe('facts')
+    expect(events[1]?.type).toBe('meta')
     expect(events[events.length - 1]?.type).toBe('done')
   })
 })

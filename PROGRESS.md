@@ -849,3 +849,13 @@ cents); the model reports `coverage`, and only `partial`/`unknown` (or fewer tha
 falls through to the parallel research built earlier today (#137). Sources are optional in the
 schema; the review still checks counts, ages, safety notes and any cited source.
 `pnpm eval` estimate with packs built: $2.36. Unit+int **991** ✅.
+
+### 2026-09-29 (late) — fact cards while the writer thinks (DECISIONS #140)
+
+The third real story went straight through the gate in 3.0 min for $0.22 (fact pack from
+knowledge in 27 s; the writer 146 s, mostly reasoning). Owner chose "Did you know?" cards to
+fill the wait: a `facts` event before the writer starts; a named warm-up card, then big fact
+cards addressed to each child in turn, auto-advancing every 12 s, tap or → for the next; the
+reader takes over when the title arrives. Mock scenario `!thinking` holds the stream so e2e can
+see it. **Gates:** lint ✅ · typecheck ✅ · unit+int 995 ✅ · e2e mock **124** ✅ · e2e real 4 ✅.
+
