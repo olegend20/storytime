@@ -120,8 +120,11 @@ test.describe('real mode: a parent’s first session, no model spend', () => {
         const label = text.replace(/\s*starts straight away\s*$/, '').trim()
         expect(label, 'a chip shows a raw topic key').not.toMatch(/^[a-z0-9]+(-[a-z0-9]+)+$/i)
       }
-      // The warm topics really came from the built fact packs, not only the built-in list.
-      await expect(chips.filter({ hasText: 'starts straight away' }).first()).toBeVisible()
+      // A warm chip for every ready fact pack the database holds - none on a fresh CI
+      // database, some on a laptop that has generated stories.
+      const { count } = await service().from('fact_packs').select('id', { count: 'exact', head: true }).eq('status', 'ready')
+      const warm = chips.filter({ hasText: 'starts straight away' })
+      await expect(warm).toHaveCount(Math.min(count ?? 0, 4))
 
       // ---- An unsafe topic: refused by L1 through the production wiring. No model call.
       const logsBefore = await logRowCount()

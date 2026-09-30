@@ -56,8 +56,8 @@ jobs:
           version: latest
       - name: Start Supabase and apply migrations
         run: supabase start
-      - name: Schema introspection (F1 VT)
-        run: pnpm test:schema
+      # Before the schema test: it needs the service key, and without it reports "not
+      # reachable" (the first real CI run, 2026-09-30).
       - name: Export the local Supabase credentials
         run: |
           eval "$(supabase status -o env)"
@@ -66,6 +66,8 @@ jobs:
             echo "SUPABASE_ANON_KEY=$ANON_KEY"
             echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
           } >> "$GITHUB_ENV"
+      - name: Schema introspection (F1 VT)
+        run: pnpm test:schema
       # The `check` job runs the same suite with placeholder keys and no database, where
       # every integration test skips itself. Running it here too is what makes the F2/F3
       # integration VTs actually execute in CI instead of silently reporting green.
