@@ -75,8 +75,8 @@ const FIXED_NOW = new Date('2026-09-27T20:00:00.000Z')
  */
 const BIBLE_AT_START: StoryBible = {
   children: [
-    { name: 'Cruz', age: 7, likes: ['LEGO', 'sharks'], role_notes: null },
-    { name: 'Phoenix', age: 4, likes: ['dinosaurs'], role_notes: null },
+    { name: 'Milo', age: 7, likes: ['LEGO', 'sharks'], role_notes: null },
+    { name: 'Juno', age: 4, likes: ['dinosaurs'], role_notes: null },
   ],
   recurring: [],
   catchphrases: [],
@@ -175,15 +175,15 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
         id: c.id,
         first_name: c.first_name,
         age: c.age,
-        likes: c.first_name === 'Cruz' ? ['LEGO', 'sharks'] : ['dinosaurs'],
+        likes: c.first_name === 'Milo' ? ['LEGO', 'sharks'] : ['dinosaurs'],
         notes: null,
         reading_level: null,
       })),
       band: 'A',
       request: {
         children: [
-          { name: 'Cruz', age: 7, likes: ['LEGO', 'sharks'], notes: null },
-          { name: 'Phoenix', age: 4, likes: ['dinosaurs'], notes: null },
+          { name: 'Milo', age: 7, likes: ['LEGO', 'sharks'], notes: null },
+          { name: 'Juno', age: 4, likes: ['dinosaurs'], notes: null },
         ],
         age_band: 'A',
         tones: ['funny', 'exciting'],

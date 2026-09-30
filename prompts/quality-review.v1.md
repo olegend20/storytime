@@ -66,7 +66,7 @@ against them: a "funny" story with no jokes, a "calm" story that is frantic thro
 
 ## `reasons`
 
-One short phrase per problem, naming what is wrong and where — `"chapter 4: Phoenix only
+One short phrase per problem, naming what is wrong and where — `"chapter 4: Juno only
 watches"`, `"band A but 'catastrophic' used unexplained"`, `"states 1949 patent; pack says
 1958"`. These phrases are appended verbatim to a rewrite request, so write them as
 instructions a writer can act on. Leave the array empty only when everything passed.

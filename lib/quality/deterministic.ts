@@ -23,7 +23,7 @@ import { hasChildAction } from './actions'
  * model review entirely (F7 AC), which is also GUARDRAILS.md §1.2 - cheap layers first.
  *
  * Every failure carries a stable `check` code from the DeterministicCheck enum plus a
- * `detail` string the VTs match on (`child_missing:Phoenix`). Reason codes are the
+ * `detail` string the VTs match on (`child_missing:Juno`). Reason codes are the
  * contract; the prose is not.
  */
 

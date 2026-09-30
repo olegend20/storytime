@@ -10,7 +10,7 @@ import type { StoryOutput } from '@/lib/schemas'
  * term appears in the story is not a judgement call, so it is not left to a model.
  *
  * It looks for terms that are FOREIGN to the story, not for paraphrase. Matching is on
- * words, and loosely: "**pull-along duck**" is fine in a story where Cruz "pulled the wooden
+ * words, and loosely: "**pull-along duck**" is fine in a story where Milo "pulled the wooden
  * duck" (the owner's LEGO reference does exactly this), "**4,000 meters**" matches "4000
  * meters high". A term is missing only when most of its words appear nowhere in the story.
  */

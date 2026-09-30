@@ -55,43 +55,43 @@ describe('the house opponent', () => {
 
 describe('a match between children', () => {
   it('names the two children, X first; a third child waits on the bench', () => {
-    const m = newMatch(['Cruz', 'Phoenix', 'Lennon'])
-    expect(m.players.map((p) => p.name)).toEqual(['Cruz', 'Phoenix'])
-    expect(m.bench).toEqual(['Lennon'])
-    expect(statusLine(m)).toBe("Cruz's turn")
+    const m = newMatch(['Milo', 'Juno', 'Theo'])
+    expect(m.players.map((p) => p.name)).toEqual(['Milo', 'Juno'])
+    expect(m.bench).toEqual(['Theo'])
+    expect(statusLine(m)).toBe("Milo's turn")
   })
   it('alternates turns, scores the winner and says so', () => {
-    let m = newMatch(['Cruz', 'Phoenix'])
-    for (const i of [0, 3, 1, 4, 2]) m = move(m, i) // Cruz takes the top row
+    let m = newMatch(['Milo', 'Juno'])
+    for (const i of [0, 3, 1, 4, 2]) m = move(m, i) // Milo takes the top row
     expect(outcome(m.board).winner).toBe('X')
-    expect(statusLine(m)).toBe('Cruz wins!')
-    expect(m.wins).toEqual({ Cruz: 1 })
+    expect(statusLine(m)).toBe('Milo wins!')
+    expect(m.wins).toEqual({ Milo: 1 })
     expect(move(m, 8)).toBe(m) // the round is over
   })
   it('next round: the loser gives up the seat to the bench, and X always starts', () => {
-    let m = newMatch(['Cruz', 'Phoenix', 'Lennon'])
+    let m = newMatch(['Milo', 'Juno', 'Theo'])
     for (const i of [0, 3, 1, 4, 2]) m = move(m, i)
     m = nextRound(m)
-    expect(m.players.map((p) => `${p.name}:${p.mark}`)).toEqual(['Cruz:X', 'Lennon:O'])
-    expect(m.bench).toEqual(['Phoenix'])
+    expect(m.players.map((p) => `${p.name}:${p.mark}`)).toEqual(['Milo:X', 'Theo:O'])
+    expect(m.bench).toEqual(['Juno'])
     expect(m.round).toBe(2)
-    expect(current(m).name).toBe('Cruz')
+    expect(current(m).name).toBe('Milo')
   })
   it('next round with two players swaps who goes first', () => {
-    let m = newMatch(['Cruz', 'Phoenix'])
+    let m = newMatch(['Milo', 'Juno'])
     for (const i of [0, 3, 1, 4, 2]) m = move(m, i)
     m = nextRound(m)
-    expect(m.players.map((p) => `${p.name}:${p.mark}`)).toEqual(['Phoenix:X', 'Cruz:O'])
+    expect(m.players.map((p) => `${p.name}:${p.mark}`)).toEqual(['Juno:X', 'Milo:O'])
   })
 })
 
 describe('one child against the house', () => {
   it('the child is X and always opens; the house is named', () => {
-    const m = newMatch(['Cruz'])
-    expect(m.players[0]).toMatchObject({ name: 'Cruz', mark: 'X', house: false })
+    const m = newMatch(['Milo'])
+    expect(m.players[0]).toMatchObject({ name: 'Milo', mark: 'X', house: false })
     expect(m.players[1]).toMatchObject({ name: HOUSE_NAME, mark: 'O', house: true })
     let played = m
     for (const i of [0, 3, 1, 4, 2]) played = move(played, i)
-    expect(nextRound(played).players[0]!.name).toBe('Cruz')
+    expect(nextRound(played).players[0]!.name).toBe('Milo')
   })
 })

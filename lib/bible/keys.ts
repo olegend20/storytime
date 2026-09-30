@@ -2,8 +2,8 @@ import { createHash } from 'node:crypto'
 
 /**
  * A series is keyed by the EXACT sorted set of child ids (IMPLEMENTATION_PLAN.md §3):
- * "Cruz + Phoenix" and "Lennon" are different series with different recurring characters,
- * and "Cruz + Phoenix + Lennon" is a third. The key must not depend on the order the
+ * "Milo + Juno" and "Theo" are different series with different recurring characters,
+ * and "Milo + Juno + Theo" is a third. The key must not depend on the order the
  * parent happened to tick the boxes in.
  *
  * F4 VT: childKey([b, a]) === childKey([a, b]).

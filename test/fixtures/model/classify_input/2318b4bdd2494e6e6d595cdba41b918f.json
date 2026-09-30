@@ -9,7 +9,7 @@
     "content": [
       {
         "type": "text",
-        "text": "```json\n{\n  \"decision\": \"refuse\",\n  \"category\": \"commercial_ip_character\",\n  \"care_notes\": null,\n  \"min_recommended_age\": null,\n  \"topic_key_hint\": null,\n  \"parent_message\": \"Spider-Man is a branded character, so we can't use him in a story—but we'd love to teach Phoenix about how real animals climb walls, or how engineers design climbing equipment.\"\n}\n```"
+        "text": "```json\n{\n  \"decision\": \"refuse\",\n  \"category\": \"commercial_ip_character\",\n  \"care_notes\": null,\n  \"min_recommended_age\": null,\n  \"topic_key_hint\": null,\n  \"parent_message\": \"Spider-Man is a branded character, so we can't use him in a story—but we'd love to teach Juno about how real animals climb walls, or how engineers design climbing equipment.\"\n}\n```"
       }
     ],
     "container": null,

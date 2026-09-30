@@ -25,7 +25,7 @@ test.describe('F3 children profiles', () => {
       await page.goto('/children')
 
       // ---------------------------------------------------------------- add two
-      await page.getByLabel('First name').fill('Cruz')
+      await page.getByLabel('First name').fill('Milo')
       await page.getByLabel('Age').fill('7')
       await page.getByLabel('Likes', { exact: false }).fill('football')
       await page.getByRole('button', { name: 'Add', exact: true }).click()
@@ -34,21 +34,21 @@ test.describe('F3 children profiles', () => {
       await expect(page.getByTestId('child-row')).toHaveCount(1)
 
       await page.getByRole('button', { name: 'Add a child' }).click()
-      await page.getByLabel('First name').fill('Phoenix')
+      await page.getByLabel('First name').fill('Juno')
       await page.getByLabel('Age').fill('4')
       await page.getByRole('button', { name: 'Add child' }).click()
       await expect(page.getByTestId('child-row')).toHaveCount(2)
 
       const rows = page.getByTestId('child-row')
-      await expect(rows.nth(0)).toContainText('Cruz')
+      await expect(rows.nth(0)).toContainText('Milo')
       await expect(rows.nth(0)).toContainText('football')
-      await expect(rows.nth(1)).toContainText('Phoenix')
+      await expect(rows.nth(1)).toContainText('Juno')
 
       // ---------------------------------------------------------- both in the picker
       await page.goto('/dashboard')
       await expect(page.getByText('2 children')).toBeVisible()
-      await expect(page.getByText('Cruz', { exact: false }).first()).toBeVisible()
-      await expect(page.getByText('Phoenix', { exact: false }).first()).toBeVisible()
+      await expect(page.getByText('Milo', { exact: false }).first()).toBeVisible()
+      await expect(page.getByText('Juno', { exact: false }).first()).toBeVisible()
 
       // ---------------------------------------------------------------- edit one
       await page.goto('/children')
@@ -66,12 +66,12 @@ test.describe('F3 children profiles', () => {
       page.once('dialog', (dialog) => dialog.accept())
       await page.getByTestId('child-row').nth(1).getByRole('button', { name: 'Remove' }).click()
       await expect(page.getByTestId('child-row')).toHaveCount(1)
-      await expect(page.getByText('Phoenix removed.')).toBeVisible()
+      await expect(page.getByText('Juno removed.')).toBeVisible()
 
       // ---------------------------------------------------------------- confirm list
       await page.reload()
       await expect(page.getByTestId('child-row')).toHaveCount(1)
-      await expect(page.getByTestId('child-row').nth(0)).toContainText('Cruz')
+      await expect(page.getByTestId('child-row').nth(0)).toContainText('Milo')
       await page.goto('/dashboard')
       await expect(page.getByText('1 child')).toBeVisible()
     } finally {
@@ -87,7 +87,7 @@ test.describe('F3 children profiles', () => {
       await page.goto('/children')
 
       // Age 18 is out of range (F3 AC: 1-17). The same rule runs on the server.
-      await page.getByLabel('First name').fill('Cruz')
+      await page.getByLabel('First name').fill('Milo')
       await page.getByLabel('Age').fill('18')
       await page.getByRole('button', { name: 'Add child' }).click()
       // Scoped to the form's own <p role="alert">: Next's route announcer is also an alert.
@@ -96,7 +96,7 @@ test.describe('F3 children profiles', () => {
       await expect(page.getByTestId('child-row')).toHaveCount(0)
 
       // A name with digits is rejected too (GUARDRAILS.md s3.2 character rule).
-      await page.getByLabel('First name').fill('Cruz99')
+      await page.getByLabel('First name').fill('Milo99')
       await page.getByLabel('Age').fill('7')
       await page.getByRole('button', { name: 'Add child' }).click()
       await expect(formError).toContainText('letters only')

@@ -34,7 +34,7 @@ export type DeterministicCheck = z.infer<typeof DeterministicCheck>
 
 export const CheckFailure = z.object({
   check: DeterministicCheck,
-  /** e.g. "child_missing:Phoenix" - the detail the VTs match on. */
+  /** e.g. "child_missing:Juno" - the detail the VTs match on. */
   detail: z.string().max(300),
 })
 export type CheckFailure = z.infer<typeof CheckFailure>

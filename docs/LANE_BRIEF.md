@@ -87,7 +87,7 @@ One local Supabase serves every lane concurrently.
 - The §4.4 output schema has **no cold-open field**, though §4.1.2 mandates a cold open.
   It folds into `chapters[0]` — which is exactly what the references do.
 - **Ending style splits by band.** Band A closes with a direct bedtime address after
-  "The End" (*"Goodnight, Cruz. Goodnight, Phoenix. Play well."*); band C closes on a
+  "The End" (*"Goodnight, Milo. Goodnight, Juno. Play well."*); band C closes on a
   forward-looking beat (*"Tomorrow, he had a game to make."*). A goodnight address to a
   10-year-old reads as babyish. Choose per band.
 - **Word count is narrative only** — cold open + chapter bodies + ending line. Raw counts

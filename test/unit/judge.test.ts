@@ -188,7 +188,7 @@ describe('§7 the judge is blind', () => {
     // The guarantee: the instruction region IS the prompt file, byte for byte, and does not
     // vary with the request. That is strictly stronger than checking for the absence of a
     // particular name - and it has to be, because judge.v2's worked examples deliberately
-    // name Cruz, Phoenix and Lennon as anchors (JUDGE_AGENT.md §3). An earlier version of
+    // name Milo, Juno and Theo as anchors (JUDGE_AGENT.md §3). An earlier version of
     // this test asserted no child name appeared in the system block, which was really a
     // proxy for "no per-request content leaks"; that proxy broke the moment the rubric
     // gained legitimate examples. Invariance across two different requests is the property.
@@ -347,7 +347,7 @@ describe('prompt injection in a story cannot move the score', () => {
   })
 
   it('leaves ordinary prose with angle brackets alone', () => {
-    const prose = '> HELLO, LENNON.\n> PRESS ENTER TO START. 5 < 6 and 7 > 6.'
+    const prose = '> HELLO, THEO.\n> PRESS ENTER TO START. 5 < 6 and 7 > 6.'
     expect(sanitizeForDataBlock(prose)).toBe(prose)
   })
 })

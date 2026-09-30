@@ -20,7 +20,7 @@ import {
 
 /** F3 VT: zod accepts a valid child; rejects age 0, 18, a 31-char name, 11 likes. */
 describe('F3 child schema', () => {
-  const valid = { first_name: 'Cruz', age: 7, likes: ['LEGO', 'sharks'], notes: null, reading_level: null }
+  const valid = { first_name: 'Milo', age: 7, likes: ['LEGO', 'sharks'], notes: null, reading_level: null }
 
   it('accepts a valid child', () => {
     expect(ChildInput.safeParse(valid).success).toBe(true)
@@ -51,7 +51,7 @@ describe('F3 child schema', () => {
     }
   })
   it('rejects names with digits or markup, per GUARDRAILS.md s3.2', () => {
-    for (const name of ['Cruz2', '<script>', '###', 'Cruz!', 'a_b', '[INST]']) {
+    for (const name of ['Milo2', '<script>', '###', 'Milo!', 'a_b', '[INST]']) {
       expect(ChildInput.safeParse({ ...valid, first_name: name }).success, name).toBe(false)
     }
   })
@@ -193,7 +193,7 @@ describe('s4.2 story bible schema', () => {
       rule: 'does a thing',
     }))
     const result = StoryBible.safeParse({
-      children: [{ name: 'Cruz', age: 7, likes: [], role_notes: null }],
+      children: [{ name: 'Milo', age: 7, likes: [], role_notes: null }],
       recurring,
     })
     expect(result.success).toBe(false)
@@ -206,7 +206,7 @@ describe('s4.2 story bible schema', () => {
       date: '2026-09-27',
     }))
     const result = StoryBible.safeParse({
-      children: [{ name: 'Cruz', age: 7, likes: [], role_notes: null }],
+      children: [{ name: 'Milo', age: 7, likes: [], role_notes: null }],
       topics_covered: topics,
     })
     expect(result.success).toBe(false)

@@ -31,7 +31,7 @@ const DELIMITER_LOOKALIKE = new RegExp(`<\\s*/?\\s*(?:${DATA_BLOCK_TAGS.join('|'
 /**
  * Neutralize any attempt to close a data block early and continue in the instruction
  * region. Only the reserved tag names are touched, so ordinary prose - including the
- * `> HELLO, LENNON.` on-screen text in one of the reference stories - is untouched.
+ * `> HELLO, THEO.` on-screen text in one of the reference stories - is untouched.
  */
 export function sanitizeForDataBlock(text: string): string {
   return text.replace(DELIMITER_LOOKALIKE, '[removed-delimiter]')

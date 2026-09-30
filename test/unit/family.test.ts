@@ -68,7 +68,7 @@ describe('F2 timezone validation', () => {
 describe('F2 family settings input', () => {
   it('accepts a display name and a timezone', () => {
     const parsed = FamilySettingsInput.safeParse({
-      display_name: 'The Murrays',
+      display_name: 'The Okafors',
       timezone: 'Europe/London',
     })
     expect(parsed.success).toBe(true)
@@ -95,16 +95,16 @@ describe('F2 family settings input', () => {
 describe('F2 family settings sanitization', () => {
   it('strips HTML from the display name and reports it (F11 AC)', () => {
     const { input, htmlField } = sanitizeFamilySettings({
-      display_name: 'The <script>alert(1)</script>Murrays',
+      display_name: 'The <script>alert(1)</script>Okafors',
     })
     expect(htmlField).toBe('display_name')
-    expect(input.display_name).toBe('The Murrays')
+    expect(input.display_name).toBe('The Okafors')
   })
 
   it('collapses whitespace in the display name', () => {
-    const { input, htmlField } = sanitizeFamilySettings({ display_name: '  The   Murrays ' })
+    const { input, htmlField } = sanitizeFamilySettings({ display_name: '  The   Okafors ' })
     expect(htmlField).toBeNull()
-    expect(input.display_name).toBe('The Murrays')
+    expect(input.display_name).toBe('The Okafors')
   })
 
   it('only returns the keys the client actually sent', () => {

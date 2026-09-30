@@ -150,7 +150,7 @@ F7's gate and the judge both read one definition of "the story". What they estab
 | Journey stops | 7–10 | 9 |
 | Narrative words | 1,549 / 1,859 | 2,474 / 2,643 |
 | True facts | 8–14 | 10–13 |
-| Closing line | direct bedtime address after "The End" — *"Goodnight, Cruz. Goodnight, Phoenix. Play well."* | forward-looking final beat — *"Tomorrow, he had a game to make."* |
+| Closing line | direct bedtime address after "The End" — *"Goodnight, Milo. Goodnight, Juno. Play well."* | forward-looking final beat — *"Tomorrow, he had a game to make."* |
 
 Both band A references sit above the nominal 1,700-word ceiling for their band and pass
 only on the ±15% tolerance. Worth knowing before anyone tightens that tolerance.

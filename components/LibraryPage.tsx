@@ -13,7 +13,7 @@ import { readMinutes, type LibraryStory } from '@/lib/client/types'
  * F9 library: grouped by series, newest first.
  *
  * The series heading is the children's first names, because a series in this product is a group
- * of kids (§3) - "Cruz & Phoenix" is what a parent is looking for at 7pm, not a topic.
+ * of kids (§3) - "Milo & Juno" is what a parent is looking for at 7pm, not a topic.
  */
 export function LibraryPage() {
   const [groups, setGroups] = useState<SeriesGroup[] | null>(null)

@@ -52,7 +52,7 @@ function savedStory(title: string) {
     subtitle: 'A story about LEGO',
     chapters: Array.from({ length: 6 }, (_, i) => ({
       heading: `Chapter ${i + 1}: Brick ${i + 1}`,
-      text: `Cruz picked up brick number ${i + 1}. It clicked into place, and the tower grew taller.`,
+      text: `Milo picked up brick number ${i + 1}. It clicked into place, and the tower grew taller.`,
       shout_line: i === 0 ? 'CLICK!' : null,
     })),
     ending_line: 'And the tower stood, brick by brick, all night long.',
@@ -80,7 +80,7 @@ async function familyOf(email: string): Promise<{ familyId: string; childId: str
 
 async function addChild(page: Page) {
   await page.goto('/children')
-  await page.getByLabel('First name').fill('Cruz')
+  await page.getByLabel('First name').fill('Milo')
   await page.getByLabel('Age').fill('7')
   await page.getByRole('button', { name: 'Add child' }).click()
   await expect(page.getByTestId('child-row')).toHaveCount(1)
@@ -105,9 +105,9 @@ test.describe('real mode: a parent’s first session, no model spend', () => {
       // The form falls back to built-in ideas when this fails, which hid a broken endpoint.
       const topics = await topicsResponse
       expect(topics.status(), await topics.text()).toBe(200)
-      const cruz = page.getByRole('button', { name: 'Cruz 7' })
-      await expect(cruz).toBeVisible()
-      if ((await cruz.getAttribute('aria-pressed')) !== 'true') await cruz.click()
+      const milo = page.getByRole('button', { name: 'Milo 7' })
+      await expect(milo).toBeVisible()
+      if ((await milo.getAttribute('aria-pressed')) !== 'true') await milo.click()
       await expect(page.getByText('3 of 3 stories left today').first()).toBeVisible()
       await expect(page.getByRole('button', { name: 'Start the story' })).toBeEnabled()
 
@@ -164,8 +164,8 @@ test.describe('real mode: a parent’s first session, no model spend', () => {
           tones: ['funny'],
           length_minutes: 5,
           age_band: 'B',
-          title: 'Cruz and the Tower That Clicked',
-          content: savedStory('Cruz and the Tower That Clicked'),
+          title: 'Milo and the Tower That Clicked',
+          content: savedStory('Milo and the Tower That Clicked'),
           word_count: 700,
           status: 'ready',
         })
@@ -174,14 +174,14 @@ test.describe('real mode: a parent’s first session, no model spend', () => {
       expect(error).toBeNull()
 
       await page.reload()
-      const card = page.getByRole('link').filter({ hasText: 'Cruz and the Tower That Clicked' })
+      const card = page.getByRole('link').filter({ hasText: 'Milo and the Tower That Clicked' })
       await expect(card).toBeVisible()
-      await expect(page.getByText('Cruz').first()).toBeVisible()
+      await expect(page.getByText('Milo').first()).toBeVisible()
 
       const readLogs = await logRowCount()
       await card.click()
       await expect(
-        page.getByRole('heading', { level: 1, name: 'Cruz and the Tower That Clicked' }),
+        page.getByRole('heading', { level: 1, name: 'Milo and the Tower That Clicked' }),
       ).toBeVisible()
       await expect(page.getByRole('heading', { name: 'True facts from the story' })).toBeVisible()
       await expect(page.getByRole('checkbox')).toHaveCount(8)

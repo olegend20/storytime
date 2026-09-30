@@ -5,7 +5,7 @@
  * This is a heuristic and it is deliberately a loose one: it exists to catch the story
  * where a child is pure audience, not to grade agency. The real judgement is the review
  * pass's `kids_are_active_participants`. Speech and thought verbs are excluded, so "said
- * Cruz" and "Phoenix wondered" never satisfy it - which is the whole point.
+ * Milo" and "Juno wondered" never satisfy it - which is the whole point.
  *
  * The lexicon is validated against the four reference stories in the F7 tests: every child
  * in every reference must pass, or the lexicon is wrong.
@@ -74,7 +74,7 @@ function escapeRegExp(text: string): string {
 
 /**
  * True when at least one sentence has the child's name followed by an action verb.
- * "Cruz flipped a brick over" passes; "said Cruz" and "Cruz watched" do not.
+ * "Milo flipped a brick over" passes; "said Milo" and "Milo watched" do not.
  */
 export function hasChildAction(text: string, name: string): boolean {
   const nameRe = new RegExp(`(?<![\\p{L}])${escapeRegExp(name)}(?![\\p{L}])`, 'iu')

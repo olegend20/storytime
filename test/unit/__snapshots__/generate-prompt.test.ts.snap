@@ -2,7 +2,7 @@
 
 exports[`assembled prompt snapshot > matches for a fixed input 1`] = `
 "<story_bible>
-{"children":[{"name":"Cruz","age":7,"likes":["LEGO","sharks"],"role_notes":"often has the idea"},{"name":"Phoenix","age":4,"likes":["dinosaurs"],"role_notes":"gets the shout-along lines"}],"recurring":[{"name":"The magic red LEGO brick","type":"device","rule":"glows and clicks to start an adventure; returns them home at the end","last_used":"2026-09-25"}],"catchphrases":["Play well","WHOOOOSH"],"topics_covered":[{"topic":"history of LEGO","story_id":null,"date":"2026-09-25"}],"last_story":{"title":"Cruz, Phoenix and the Brick That Clicked","ending":"Back home, the final brick on their giant tower just went CLICK and held."},"tone_history":["funny","exciting"],"avoid":["repeating the time-travel-to-Billund device"]}
+{"children":[{"name":"Milo","age":7,"likes":["LEGO","sharks"],"role_notes":"often has the idea"},{"name":"Juno","age":4,"likes":["dinosaurs"],"role_notes":"gets the shout-along lines"}],"recurring":[{"name":"The magic red LEGO brick","type":"device","rule":"glows and clicks to start an adventure; returns them home at the end","last_used":"2026-09-25"}],"catchphrases":["Play well","WHOOOOSH"],"topics_covered":[{"topic":"history of LEGO","story_id":null,"date":"2026-09-25"}],"last_story":{"title":"Milo, Juno and the Brick That Clicked","ending":"Back home, the final brick on their giant tower just went CLICK and held."},"tone_history":["funny","exciting"],"avoid":["repeating the time-travel-to-Billund device"]}
 </story_bible>
 
 <fact_pack>
@@ -11,12 +11,12 @@ exports[`assembled prompt snapshot > matches for a fixed input 1`] = `
 
 <request>
 <child_profile>
-  <name>Cruz</name>
+  <name>Milo</name>
   <age>7</age>
   <likes>LEGO, sharks</likes>
 </child_profile>
 <child_profile>
-  <name>Phoenix</name>
+  <name>Juno</name>
   <age>4</age>
   <likes>dinosaurs</likes>
 </child_profile>

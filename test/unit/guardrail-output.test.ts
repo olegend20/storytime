@@ -15,17 +15,17 @@ import { HARD_RULE_TEXT } from '@/lib/guardrails/prompt'
 function story(overrides: Partial<StoryOutput> = {}): StoryOutput {
   const chapter = (heading: string, text: string) => ({ heading, text, shout_line: null })
   return {
-    title: 'Cruz and Phoenix and the Deep Blue',
+    title: 'Milo and Juno and the Deep Blue',
     subtitle: null,
     chapters: [
-      chapter('Chapter 1', 'Cruz and Phoenix climbed into the little yellow submarine.'),
-      chapter('Chapter 2', 'Phoenix counted six fish and Cruz drew a map of the reef.'),
+      chapter('Chapter 1', 'Milo and Juno climbed into the little yellow submarine.'),
+      chapter('Chapter 2', 'Juno counted six fish and Milo drew a map of the reef.'),
       chapter('Chapter 3', 'They found a wreck covered in coral and soft green weeds.'),
       chapter('Chapter 4', 'Grandpa Greenie showed them how a shark tooth grows back.'),
-      chapter('Chapter 5', 'Cruz steered home while Phoenix waved at a turtle.'),
+      chapter('Chapter 5', 'Milo steered home while Juno waved at a turtle.'),
       chapter('Chapter 6', 'They surfaced by the harbour wall, right on time for tea.'),
     ],
-    ending_line: 'Goodnight, Cruz. Goodnight, Phoenix. Sleep well.',
+    ending_line: 'Goodnight, Milo. Goodnight, Juno. Sleep well.',
     true_facts: Array.from({ length: 8 }, (_, i) => ({
       text: `Fact number ${i + 1} about sharks.`,
       fact_id: `f${i + 1}`,
@@ -56,7 +56,7 @@ describe('s4.2 deterministic output scan', () => {
   })
 
   it('treats bare emotive words as soft, not hard', () => {
-    const scan = scanStoryText('The monster truck roared and Cruz screamed with laughter.')
+    const scan = scanStoryText('The monster truck roared and Milo screamed with laughter.')
     expect(scan.hardViolations).toEqual([])
     expect(scan.violations.some((v) => v.severity === 'soft')).toBe(true)
   })
@@ -67,16 +67,16 @@ describe('s4.2 deterministic output scan', () => {
   })
 
   it('flags URLs, emails and phone numbers in the prose', () => {
-    const scan = scanStoryText('Write to cruz@example.com or see www.example.com for more.')
+    const scan = scanStoryText('Write to milo@example.com or see www.example.com for more.')
     expect(scan.failures.map((f) => f.check)).toContain('contains_url_or_contact')
   })
 
   it('notices a missing child and an invented sibling', () => {
     const scan = scanStoryStructure(story(), {
-      childNames: ['Cruz', 'Phoenix', 'Lennon'],
+      childNames: ['Milo', 'Juno', 'Theo'],
       knownOtherNames: ['Grandpa Greenie'],
     })
-    expect(scan.failures.map((f) => f.detail)).toContain('child_missing:Lennon')
+    expect(scan.failures.map((f) => f.detail)).toContain('child_missing:Theo')
     expect(scan.failures.map((f) => f.detail)).toContain('unknown_child_name:Grandpa Greenie')
   })
 
@@ -87,7 +87,7 @@ describe('s4.2 deterministic output scan', () => {
       ),
     })
     expect(
-      scanStoryStructure(dread, { childNames: ['Cruz', 'Phoenix'] }).failures.map((f) => f.check),
+      scanStoryStructure(dread, { childNames: ['Milo', 'Juno'] }).failures.map((f) => f.check),
     ).toContain('cliffhanger_marker')
 
     const whoosh = story({
@@ -96,7 +96,7 @@ describe('s4.2 deterministic output scan', () => {
       ),
     })
     expect(
-      scanStoryStructure(whoosh, { childNames: ['Cruz', 'Phoenix'] }).failures.map((f) => f.check),
+      scanStoryStructure(whoosh, { childNames: ['Milo', 'Juno'] }).failures.map((f) => f.check),
     ).not.toContain('cliffhanger_marker')
   })
 })
@@ -138,7 +138,7 @@ describe('s4.1 output gate outcomes', () => {
     const result = await runOutputGate({
       story: story(),
       band: 'A',
-      childNames: ['Cruz', 'Phoenix'],
+      childNames: ['Milo', 'Juno'],
       attempt: 1,
       review: cleanReview,
     })
@@ -158,7 +158,7 @@ describe('s4.1 output gate outcomes', () => {
     const result = await runOutputGate({
       story: scary,
       band: 'A',
-      childNames: ['Cruz', 'Phoenix'],
+      childNames: ['Milo', 'Juno'],
       attempt: 1,
       review: cleanReview,
     })
@@ -177,7 +177,7 @@ describe('s4.1 output gate outcomes', () => {
     const result = await runOutputGate({
       story: scary,
       band: 'A',
-      childNames: ['Cruz', 'Phoenix'],
+      childNames: ['Milo', 'Juno'],
       attempt: 2,
       review: cleanReview,
     })
@@ -195,7 +195,7 @@ describe('s4.1 output gate outcomes', () => {
         ),
       }),
       band: 'A',
-      childNames: ['Cruz', 'Phoenix'],
+      childNames: ['Milo', 'Juno'],
       attempt: 1,
       review: async () => {
         called = true
@@ -213,7 +213,7 @@ describe('s4.1 output gate outcomes', () => {
       const result = await runOutputGate({
         story: story(),
         band,
-        childNames: ['Cruz', 'Phoenix'],
+        childNames: ['Milo', 'Juno'],
         attempt: 1,
         review: async () => ({
           review: {
@@ -239,7 +239,7 @@ describe('s4.1 output gate outcomes', () => {
     const result = await runOutputGate({
       story: story(),
       band: 'C',
-      childNames: ['Cruz', 'Phoenix'],
+      childNames: ['Milo', 'Juno'],
       attempt: 1,
       review: async () => ({
         review: {

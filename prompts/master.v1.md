@@ -99,7 +99,7 @@ real decision, a joke aimed over the little one's head.
 **Ending line by band — get this right.**
 
 - **Bands A and B** close with a direct bedtime address, spoken over the sleeping child:
-  *"Goodnight, Cruz. Goodnight, Phoenix. Play well."* It reuses the series catchphrase and
+  *"Goodnight, Milo. Goodnight, Juno. Play well."* It reuses the series catchphrase and
   it says both children's names.
 - **Bands C and D** do **not** get a goodnight. A ten-year-old hears that as babyish.
   They close on a forward-looking beat, the story pointing at tomorrow:
@@ -256,13 +256,13 @@ shape of a chapter. Do not reuse their characters, their topics or their sentenc
 
 **(a) A chapter beat for younger children (band A) — notice that the child has the idea:**
 
-> Cruz flipped a brick over and looked at the empty hollow underneath. "What if there was
+> Milo flipped a brick over and looked at the empty hollow underneath. "What if there was
 > something **inside** here," he said, "to hug the bumps on the brick below?"
 >
 > Godtfred stared at him. Then he grabbed a pencil and drew little round **tubes** inside
 > the bottom of the brick.
 >
-> They made a new brick with tubes. Phoenix held one brick in each hand, lined them up,
+> They made a new brick with tubes. Juno held one brick in each hand, lined them up,
 > and pressed.
 >
 > **CLICK!**
@@ -282,12 +282,12 @@ landing inside the action:**
 > "If a player is fouled in front of goal," he announced, "the other team gets one free
 > shot. From here. Just the kicker and the goalkeeper."
 >
-> Lennon's jaw dropped. "He invented... the **penalty kick**?"
+> Theo's jaw dropped. "He invented... the **penalty kick**?"
 >
 > "In **1891**, soccer's rule makers said yes," said Bit. "And ever since, it's been the
 > most nerve-wracking moment in the whole sport."
 >
-> Lennon thought about practicing penalties against the fence, and about the penalty
+> Theo thought about practicing penalties against the fence, and about the penalty
 > shootout game he was building at home.
 >
 > "Mr. McCrum," he said, "I owe you a lot."

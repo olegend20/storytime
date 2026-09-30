@@ -1,4 +1,4 @@
-# Lennon and the Lost Levels
+# Theo and the Lost Levels
 
 *A true-history adventure through the story of video games*
 
@@ -6,7 +6,7 @@
 
 ## Loading...
 
-It was late on a Friday, and Lennon was supposed to be asleep.
+It was late on a Friday, and Theo was supposed to be asleep.
 
 Instead, he was sitting in front of the computer with the volume turned all the way down, testing one last thing in Roblox Studio. Just one more tweak. Then bed. Definitely.
 
@@ -17,10 +17,10 @@ The screen froze.
 Then it flickered. Then the colours drained away until everything was black and green, like the screen of a computer from a really old movie. A blinking cursor appeared in the middle.
 
 ```
-> HELLO, LENNON.
+> HELLO, THEO.
 ```
 
-Lennon leaned back. "Okay. That's new."
+Theo leaned back. "Okay. That's new."
 
 ```
 > THE HISTORY OF GAMES IS BREAKING.
@@ -29,7 +29,7 @@ Lennon leaned back. "Okay. That's new."
 > PLAYER ONE REQUIRED. PRESS ENTER TO START.
 ```
 
-Lennon's finger hovered over the key. Every sensible part of his brain said *go to bed*.
+Theo's finger hovered over the key. Every sensible part of his brain said *go to bed*.
 
 He pressed Enter.
 
@@ -41,7 +41,7 @@ The screen stretched toward him like a giant rubber sheet, wrapped around him, a
 
 ## Level 1: The Dot on the Screen (1958)
 
-Lennon landed on a hard floor in a room full of grown-ups in suits and dresses. Everything was in black and white, and a sign on the wall read:
+Theo landed on a hard floor in a room full of grown-ups in suits and dresses. Everything was in black and white, and a sign on the wall read:
 
 **BROOKHAVEN NATIONAL LABORATORY: VISITORS' DAY, 1958**
 
@@ -57,9 +57,9 @@ In the corner, a crowd of people were queuing, which is not what people usually 
 
 "That's a tennis ball," said Bit. "And that line is the net. A scientist called **William Higinbotham** built this so visitors wouldn't be bored. It's called **Tennis for Two**."
 
-Lennon watched two people twist knobs and press buttons, knocking the dot back and forth. They were grinning like little kids.
+Theo watched two people twist knobs and press buttons, knocking the dot back and forth. They were grinning like little kids.
 
-"It's just a dot," said Lennon.
+"It's just a dot," said Theo.
 
 "It's just a dot," agreed Bit. "But nobody had ever seen a dot you could *play with* before. People queued for hours."
 
@@ -67,9 +67,9 @@ Suddenly the dot on the screen began to fizz and crackle. It stretched, flickere
 
 "The deletion's starting!" squeaked Bit. "If this level disappears, every game after it goes too!"
 
-Lennon jumped to the front of the queue. "Excuse me, sorry, emergency, time-travel stuff." He grabbed the controller, twisted the knob, and whacked the fading dot back over the net. Again. And again. With every hit, the dot grew brighter until it was bouncing strongly.
+Theo jumped to the front of the queue. "Excuse me, sorry, emergency, time-travel stuff." He grabbed the controller, twisted the knob, and whacked the fading dot back over the net. Again. And again. With every hit, the dot grew brighter until it was bouncing strongly.
 
-The crowd clapped. The level glowed. A shiny golden coin appeared in the air and dropped into Lennon's hand with a satisfying **ding**.
+The crowd clapped. The level glowed. A shiny golden coin appeared in the air and dropped into Theo's hand with a satisfying **ding**.
 
 "One level saved," said Bit. "Hold on tight."
 
@@ -85,11 +85,11 @@ On it, two little spaceships were circling a glowing star, firing torpedoes at e
 
 "This is **Spacewar!**" said Bit. "A student called **Steve Russell** and his friends made it in their spare time. The computer cost more than a house, and they used it to... well, blast spaceships."
 
-"Honestly? Respect," said Lennon.
+"Honestly? Respect," said Theo.
 
 "Here's the cool bit," said Bit. "They didn't sell it. They *shared* it. They let other people copy the code, and it spread to computers all over the country. Other people added new ideas, like a star that pulls your ship in with gravity."
 
-"So people were making mods," said Lennon. "In 1962."
+"So people were making mods," said Theo. "In 1962."
 
 "Exactly!"
 
@@ -97,7 +97,7 @@ The screen stuttered. One of the spaceships began to glitch sideways.
 
 "Your turn, Player One," said Bit.
 
-A student slid the controls across. Lennon had never flown a 1962 spaceship before, but he'd played enough games to know one thing: *don't fly into the sun*. He looped around the star, dodged two torpedoes, and fired.
+A student slid the controls across. Theo had never flown a 1962 spaceship before, but he'd played enough games to know one thing: *don't fly into the sun*. He looped around the star, dodged two torpedoes, and fired.
 
 **BOOM.** Pixels everywhere. The students cheered.
 
@@ -115,17 +115,17 @@ A basement. Wood panelling. A man with glasses was bent over a box covered in fa
 
 Ralph looked up. "Every home has a television," he said, to nobody in particular. "Millions of them. And all they do is show programmes. What if you could *play* on them?"
 
-"He's talking to himself," whispered Lennon.
+"He's talking to himself," whispered Theo.
 
 "Inventors do that," whispered Bit.
 
 Ralph called his invention the **Brown Box**. A few years later, in **1972**, it went on sale as the **Magnavox Odyssey**, the first video game console you could plug into your TV at home. It was so basic that you had to stick plastic sheets onto the TV screen to add the colours and pictures.
 
-"Wait," said Lennon. "So the graphics were... a sticker?"
+"Wait," said Theo. "So the graphics were... a sticker?"
 
 "The graphics were a sticker," said Bit proudly.
 
-Lennon helped Ralph hold up a plastic overlay while he tested it. When the white dots moved behind the sticker and turned into a hockey game, Ralph did a small, happy dance.
+Theo helped Ralph hold up a plastic overlay while he tested it. When the white dots moved behind the sticker and turned into a hockey game, Ralph did a small, happy dance.
 
 **Ding.** Coin three.
 
@@ -145,13 +145,13 @@ Music. Chatter. The smell of chips. They were in a bar in California called **An
 
 "Well, a couple of weeks later, the owner rang them up. *Your machine's broken. Come and fix it.*"
 
-Right on cue, the Pong screen went dark. A man with a toolbox marched in. That was Allan. He opened up the machine, and Lennon peered over his shoulder.
+Right on cue, the Pong screen went dark. A man with a toolbox marched in. That was Allan. He opened up the machine, and Theo peered over his shoulder.
 
 The coin box was so stuffed with quarters that it had jammed. Coins spilled out onto the floor like treasure.
 
 Allan stared. "It's not broken," he said slowly. "It's *full*."
 
-Lennon laughed so hard he almost fell over. "It broke because too many people wanted to play it!"
+Theo laughed so hard he almost fell over. "It broke because too many people wanted to play it!"
 
 "That," said Bit, "is when the grown-ups realised video games could be a BIG business."
 
@@ -171,7 +171,7 @@ In one corner, rows of aliens were marching down a screen, getting faster and fa
 
 In another corner, a yellow circle was chomping dots and running away from four ghosts.
 
-"**Pac-Man**!" said Lennon. "I know that one!"
+"**Pac-Man**!" said Theo. "I know that one!"
 
 "Made by **Toru Iwatani** in **1980**," said Bit. "He said he got the idea from a pizza with one slice missing. He wanted a game that everyone would enjoy, not just people who liked shooting things."
 
@@ -179,7 +179,7 @@ And in the third corner was a big gorilla throwing barrels at a small man in ove
 
 "**Donkey Kong**, **1981**, by a young designer called **Shigeru Miyamoto**," said Bit. "The hero was called *Jumpman*. Guess what name he got later?"
 
-Lennon squinted at the little man in the red cap. "No way. That's **Mario**?"
+Theo squinted at the little man in the red cap. "No way. That's **Mario**?"
 
 "That's Mario."
 
@@ -187,11 +187,11 @@ Then all three screens at once began to glitch. The aliens froze. The ghosts tur
 
 "It's a triple deletion!" squeaked Bit. "You can't save all three at once!"
 
-Lennon looked around the arcade at all the kids watching. Then he climbed onto a stool.
+Theo looked around the arcade at all the kids watching. Then he climbed onto a stool.
 
 "EVERYBODY!" he shouted. "I need two Space Invaders experts and two Pac-Man pros! I've got Donkey Kong!"
 
-Hands shot up everywhere. Two kids took Space Invaders. Two took Pac-Man. Lennon jumped Jumpman over barrel after barrel, all the way to the top.
+Hands shot up everywhere. Two kids took Space Invaders. Two took Pac-Man. Theo jumped Jumpman over barrel after barrel, all the way to the top.
 
 All three screens blazed back to life at the same moment. The arcade erupted.
 
@@ -199,7 +199,7 @@ All three screens blazed back to life at the same moment. The arcade erupted.
 
 "Teamwork," said Bit. "That's a new trick."
 
-"Multiplayer," corrected Lennon. "Obviously."
+"Multiplayer," corrected Theo. "Obviously."
 
 ---
 
@@ -209,7 +209,7 @@ All three screens blazed back to life at the same moment. The arcade erupted.
 
 Wind. Sand. Heat. They were standing in a desert in **New Mexico** at night, next to a rubbish dump.
 
-"Why are we in a bin?" asked Lennon.
+"Why are we in a bin?" asked Theo.
 
 "Because of one of the worst things that ever happened to video games," said Bit quietly. "By 1983, loads of companies were rushing out games as fast as they could. Lots of them were boring, rushed or broken. People got fed up and stopped buying them. It was called the **video game crash**."
 
@@ -217,7 +217,7 @@ Bit pointed at a truck tipping thousands of game cartridges into the ground.
 
 "Atari had way too many games nobody wanted, including a famously rubbish one based on the film **E.T.** So they buried them out here in the desert. For years people thought it was just a legend. Then in **2014**, people actually dug them up, and it was true!"
 
-Lennon kicked a bit of sand. "So... games nearly ended?"
+Theo kicked a bit of sand. "So... games nearly ended?"
 
 "Lots of people thought so," said Bit. "They said video games were just a fad."
 
@@ -231,19 +231,19 @@ Bit's pixel face split into a grin. "A plumber."
 
 **BZZZT!**
 
-A living room. A grey box on the carpet. A kid about Lennon's age holding a rectangular controller with a red button marked **A** and another marked **B**.
+A living room. A grey box on the carpet. A kid about Theo's age holding a rectangular controller with a red button marked **A** and another marked **B**.
 
 "The **Nintendo Entertainment System**," said Bit. "It arrived in America in **1985** with **Super Mario Bros.**, made by that same Shigeru Miyamoto. Nintendo promised that games would be *good* again, and they were. Mario brought video games back from the dead."
 
 The kid on the carpet ran Mario right, jumped on a mushroom-looking enemy, and bumped a brick. A coin popped out. **Ding!**
 
-Lennon checked his pocket. He had seven coins now.
+Theo checked his pocket. He had seven coins now.
 
-Then the room shifted, and a new sound filled the air, a catchy tune that Lennon somehow already knew. Coloured blocks were falling down a screen, twisting and slotting into rows.
+Then the room shifted, and a new sound filled the air, a catchy tune that Theo somehow already knew. Coloured blocks were falling down a screen, twisting and slotting into rows.
 
 "**Tetris**," said Bit. "Invented in **1984** in **Moscow** by a computer scientist called **Alexey Pajitnov**, on a computer at work. His colleagues couldn't stop playing it. Then in **1989**, it came packed with a handheld console called the **Game Boy**, and suddenly people were playing it on buses, in cars, and under the covers when they were supposed to be asleep."
 
-Lennon coughed. "No idea what you mean."
+Theo coughed. "No idea what you mean."
 
 ---
 
@@ -263,7 +263,7 @@ But the students weren't doing serious stuff. They were building ridiculous mach
 
 Erik nodded. "What if there was a place where kids could build anything they wanted... and then everyone else could play it?"
 
-Lennon felt a shiver go all the way down his back. "Wait," he said. "Wait wait wait. Are these the..."
+Theo felt a shiver go all the way down his back. "Wait," he said. "Wait wait wait. Are these the..."
 
 "Keep watching," said Bit.
 
@@ -291,13 +291,13 @@ But then the ground rumbled. Cracks of static raced across the baseplate. Blocks
 
 "This is it!" shrieked Bit. "The biggest deletion yet! If Roblox goes, everything built on it goes too! Every game! Every obby! Every single thing any kid has ever made!"
 
-Lennon looked at the vanishing blocks. He looked at the seven golden coins in his hand. Then he remembered every level: the dot, the spaceship, the sticker graphics, the overflowing quarters, the arcade kids, the buried cartridges, the plumber, the puzzle, and the students who wouldn't stop building silly machines.
+Theo looked at the vanishing blocks. He looked at the seven golden coins in his hand. Then he remembered every level: the dot, the spaceship, the sticker graphics, the overflowing quarters, the arcade kids, the buried cartridges, the plumber, the puzzle, and the students who wouldn't stop building silly machines.
 
 "Bit," he said. "What's been saving the levels this whole time?"
 
 "You playing them?"
 
-"Not just playing," said Lennon. "Every time a level got saved, it's because somebody *made* something new. Tennis for Two. Mods for Spacewar. Ralph's box. That's the whole point. Games don't survive because people play them. They survive because people keep **making** them."
+"Not just playing," said Theo. "Every time a level got saved, it's because somebody *made* something new. Tennis for Two. Mods for Spacewar. Ralph's box. That's the whole point. Games don't survive because people play them. They survive because people keep **making** them."
 
 He opened Roblox Studio right there in mid-air. A blank baseplate appeared. He grabbed a block and placed it. Then another. Then a goal. Then a penalty spot.
 
@@ -305,7 +305,7 @@ As he built, the static stopped spreading. Blocks started blinking back into exi
 
 The seven golden coins floated out of his hand, spun around him, and fused into one enormous, glowing, blocky trophy.
 
-Builderman climbed down from his tower and gave Lennon a thumbs up.
+Builderman climbed down from his tower and gave Theo a thumbs up.
 
 "Level complete," said Bit, and his pixel eyes looked suspiciously watery. "Game saved."
 
@@ -315,7 +315,7 @@ Builderman climbed down from his tower and gave Lennon a thumbs up.
 
 **BZZZT!**
 
-Lennon was back in his chair. The computer screen showed Roblox Studio, completely normal. The clock said it was very, very late.
+Theo was back in his chair. The computer screen showed Roblox Studio, completely normal. The clock said it was very, very late.
 
 He'd almost convinced himself it was a dream when a tiny message appeared in the corner of the screen, in green, blocky letters:
 
@@ -324,7 +324,7 @@ He'd almost convinced himself it was a dream when a tiny message appeared in the
 > THE NEXT LEVEL IS YOURS TO BUILD.
 ```
 
-Lennon grinned, switched off the screen, and finally went to bed.
+Theo grinned, switched off the screen, and finally went to bed.
 
 Tomorrow, he had a game to make.
 

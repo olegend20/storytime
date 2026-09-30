@@ -33,7 +33,7 @@ describe.runIf(dbUp)('security audit 2026-09-29: attacks through the public API'
     const db = serviceClient()
     const { data: child } = await db
       .from('children')
-      .insert({ family_id: familyId, first_name: 'Cruz', age: 7 })
+      .insert({ family_id: familyId, first_name: 'Milo', age: 7 })
       .select('id')
       .single()
     const { data: series } = await db

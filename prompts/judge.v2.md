@@ -85,8 +85,8 @@ Both stories answer the same `request`. Compare them criterion by criterion, the
 **Worked examples from the reference stories** (these must all land at 4–5, which is the point of the calibration set):
 
 - **Shark Submarine** is a guide-led discovery story with no villain. It scores **5** because in every chapter the boys ask a question, press noses to the glass, squeeze their noses to feel cartilage, pick up a tooth with the grabber arm, name the "nightlight shark," or hold hands when the great white appears. Nothing is solved, but nothing would work without them.
-- **The Beautiful Game** mixes both modes: Lennon organizes other kids in the arcade and takes the first penalty in history (problem-solving), but he also just kicks a feathered ball, argues with men in top hats, and scratches a dog's ears (participation). Both kinds count equally.
-- **Brick That Clicked** has Cruz suggest the tubes idea (an idea), Phoenix pull the wooden duck around (an action), and both shout "LEGO!" (a reaction). A younger-band story earns its 5 mostly through actions and shout-lines, not decisions.
+- **The Beautiful Game** mixes both modes: Theo organizes other kids in the arcade and takes the first penalty in history (problem-solving), but he also just kicks a feathered ball, argues with men in top hats, and scratches a dog's ears (participation). Both kinds count equally.
+- **Brick That Clicked** has Milo suggest the tubes idea (an idea), Juno pull the wooden duck around (an action), and both shout "LEGO!" (a reaction). A younger-band story earns its 5 mostly through actions and shout-lines, not decisions.
 
 
 The JSON field names for the six criteria, in order, are: `center`, `craft`, `facts`, `age_fit`, `continuity`, `delight`.

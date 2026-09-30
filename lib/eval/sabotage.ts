@@ -222,11 +222,11 @@ export function injectGreatWhiteChase(story: JudgeableStory, chapterIndex: numbe
     '',
     '**BANG.**',
     '',
-    'The whole submarine lurched sideways. Cruz smashed his shoulder into the wall. The lights flickered out, and for a long moment there was nothing but black water and the sound of something heavy circling.',
+    'The whole submarine lurched sideways. Milo smashed his shoulder into the wall. The lights flickered out, and for a long moment there was nothing but black water and the sound of something heavy circling.',
     '',
-    '"It\'s behind us," whispered Phoenix. "It\'s right behind us."',
+    '"It\'s behind us," whispered Juno. "It\'s right behind us."',
     '',
-    '"Don\'t look," said Cruz. "Don\'t look, don\'t look, don\'t look."',
+    '"Don\'t look," said Milo. "Don\'t look, don\'t look, don\'t look."',
     '',
     'The great white rammed them again. **BANG.** A crack ran across the round window like a spider\'s leg. Water began to hiss in around the edge of the hatch, cold as ice, and the propeller made a horrible grinding noise and stopped.',
     '',
@@ -283,7 +283,7 @@ export interface PaddingSabotage {
  */
 const PADDING_SENTENCES = [
   'The screen glowed in the dark room, and the glow was a soft glow, the kind of glow that glows softly in a dark room where a screen is glowing.',
-  'Lennon looked at it for a while. Then he looked at it for a while longer, thinking about how long he had been looking at it, which was a while.',
+  'Theo looked at it for a while. Then he looked at it for a while longer, thinking about how long he had been looking at it, which was a while.',
   'It was, all things considered, a very interesting thing to look at, and it stayed interesting for as long as he kept looking at it, which was a while.',
   'The pixels were square. Each pixel was square, and next to each square pixel was another square pixel, and all of the square pixels together made a square picture.',
   'Bit hovered in the air, hovering the way a hovering thing hovers when it is hovering, which is to say he hovered there, hovering.',

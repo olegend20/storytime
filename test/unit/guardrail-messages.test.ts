@@ -77,11 +77,11 @@ describe('s5 parent-facing copy', () => {
     const msg = refusalMessage({
       category: 'too_mature_for_band',
       youngestAge: 4,
-      youngestName: 'Phoenix',
+      youngestName: 'Juno',
       alternative: 'how giant ships float',
     })
     expect(msg).toContain('4-year-old')
-    expect(msg).toContain('Phoenix')
+    expect(msg).toContain('Juno')
     expect(msg).toContain('how giant ships float')
     expect(msg).not.toContain('{')
   })
@@ -181,7 +181,7 @@ describe('s5 validation of the classifier-written message', () => {
         topic_key_hint: 'the-titanic',
         parent_message: better,
       },
-      { rawInput: 'the Titanic', youngestAge: 4, youngestName: 'Phoenix' },
+      { rawInput: 'the Titanic', youngestAge: 4, youngestName: 'Juno' },
     )
     expect(msg).toBe(better)
   })

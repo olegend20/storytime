@@ -43,8 +43,8 @@ async function main(): Promise<void> {
 
   await db.from('children').delete().eq('family_id', family.id)
   const { error: childError } = await db.from('children').insert([
-    { family_id: family.id, first_name: 'Cruz', age: 7, likes: ['LEGO', 'sharks'], notes: 'often the one with the idea' },
-    { family_id: family.id, first_name: 'Phoenix', age: 4, likes: ['dinosaurs'], notes: 'loves shouting the sound words' },
+    { family_id: family.id, first_name: 'Milo', age: 7, likes: ['LEGO', 'sharks'], notes: 'often the one with the idea' },
+    { family_id: family.id, first_name: 'Juno', age: 4, likes: ['dinosaurs'], notes: 'loves shouting the sound words' },
   ])
   if (childError) throw childError
 

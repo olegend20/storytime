@@ -63,7 +63,7 @@ describe('F11 sanitizer strips HTML', () => {
   })
 
   it('reports html per field, which is the F11 AC rejection signal', () => {
-    const clean = sanitize('first_name', 'Cruz')
+    const clean = sanitize('first_name', 'Milo')
     const dirty = sanitize('notes', '<b>hi</b>')
     expect(containedHtml(clean.removed)).toBe(false)
     expect(containedHtml(clean.removed, dirty.removed)).toBe(true)
@@ -92,8 +92,8 @@ describe('F11 sanitizer trims to limits', () => {
   })
 
   it('does not truncate something already inside the limit', () => {
-    const result = sanitize('first_name', 'Cruz')
-    expect(result.value).toBe('Cruz')
+    const result = sanitize('first_name', 'Milo')
+    expect(result.value).toBe('Milo')
     expect(result.removed.truncated).toBe(false)
   })
 
@@ -112,15 +112,15 @@ describe('F11 sanitizer trims to limits', () => {
 
 describe('F11 sanitizer removes invisible characters', () => {
   it('strips C0 control characters', () => {
-    const result = sanitize('first_name', 'Cr\u0000u\u0007z\u001F')
-    expect(result.value).toBe('Cruz')
+    const result = sanitize('first_name', 'Mi\u0000l\u0007o\u001F')
+    expect(result.value).toBe('Milo')
     expect(result.removed.controlChars).toBe(true)
   })
 
   it('strips zero-width and bidi characters', () => {
-    const hidden = 'Cr\u200Buz\u200D\uFEFF'
+    const hidden = 'Mi\u200Blo\u200D\uFEFF'
     const result = sanitize('first_name', hidden)
-    expect(result.value).toBe('Cruz')
+    expect(result.value).toBe('Milo')
     expect(result.removed.zeroWidth).toBe(true)
   })
 
@@ -146,8 +146,8 @@ describe('F11 sanitizer removes invisible characters', () => {
 
 describe('F11 sanitizer collapses whitespace', () => {
   it('collapses runs and trims the ends', () => {
-    const result = sanitize('first_name', '  Cruz   James  ')
-    expect(result.value).toBe('Cruz James')
+    const result = sanitize('first_name', '  Milo   James  ')
+    expect(result.value).toBe('Milo James')
     expect(result.removed.whitespaceCollapsed).toBe(true)
   })
 
@@ -217,7 +217,7 @@ describe('F11 sanitizeLikes', () => {
   it('does not cap the number of tags - the schema does that, with its own message', () => {
     const result = sanitizeLikes(Array.from({ length: 11 }, (_, i) => `like-${i}`))
     expect(result.value).toHaveLength(11)
-    expect(ChildInput.safeParse({ first_name: 'Cruz', age: 7, likes: result.value }).success).toBe(
+    expect(ChildInput.safeParse({ first_name: 'Milo', age: 7, likes: result.value }).success).toBe(
       false,
     )
   })

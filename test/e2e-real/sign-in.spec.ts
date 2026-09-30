@@ -70,7 +70,7 @@ test.describe('F2: the magic link, opened exactly as it arrives', () => {
 
       // ---- 2. Things to come back to: a child, and a saved story.
       await page.goto('/children')
-      await page.getByLabel('First name').fill('Cruz')
+      await page.getByLabel('First name').fill('Milo')
       await page.getByLabel('Age').fill('7')
       await page.getByRole('button', { name: 'Add child' }).click()
       await expect(page.getByTestId('child-row')).toHaveCount(1)
@@ -93,16 +93,16 @@ test.describe('F2: the magic link, opened exactly as it arrives', () => {
         tones: ['funny'],
         length_minutes: 5,
         age_band: 'B',
-        title: 'Cruz and the Singing Shark',
+        title: 'Milo and the Singing Shark',
         content: {
-          title: 'Cruz and the Singing Shark',
+          title: 'Milo and the Singing Shark',
           subtitle: null,
           chapters: Array.from({ length: 6 }, (_, i) => ({
             heading: `Chapter ${i + 1}`,
-            text: `Cruz swam a little further, chapter ${i + 1}.`,
+            text: `Milo swam a little further, chapter ${i + 1}.`,
             shout_line: null,
           })),
-          ending_line: 'And the shark sang Cruz to sleep.',
+          ending_line: 'And the shark sang Milo to sleep.',
           true_facts: Array.from({ length: 8 }, (_, i) => ({ text: `Shark fact ${i + 1}.`, fact_id: `f${i + 1}` })),
           bible_suggestions: { new_recurring: [], ending_summary: 'The shark sang.' },
           estimated_read_minutes: 5,
@@ -128,9 +128,9 @@ test.describe('F2: the magic link, opened exactly as it arrives', () => {
       // Same family, same child, same story.
       await page.goto('/children')
       await expect(page.getByTestId('child-row')).toHaveCount(1)
-      await expect(page.getByTestId('child-row')).toContainText('Cruz')
+      await expect(page.getByTestId('child-row')).toContainText('Milo')
       await page.goto('/library')
-      await expect(page.getByRole('link').filter({ hasText: 'Cruz and the Singing Shark' })).toBeVisible()
+      await expect(page.getByRole('link').filter({ hasText: 'Milo and the Singing Shark' })).toBeVisible()
 
       // And still exactly one family for this account (F2 AC: login never duplicates it).
       const { count } = await db

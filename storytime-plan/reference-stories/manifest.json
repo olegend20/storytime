@@ -3,13 +3,13 @@
   "written_by_model": "claude-fable-5-1",
   "stories": [
     {
-      "file": "cruz-and-phoenix-lego-story.md",
-      "series": "cruz-phoenix",
+      "file": "milo-and-juno-lego-story.md",
+      "series": "milo-juno",
       "sequence": 1,
       "request": {
         "children": [
-          {"name": "Cruz", "age_band_note": "one of 4 and 7; which is which was not specified"},
-          {"name": "Phoenix", "age_band_note": "one of 4 and 7; which is which was not specified"}
+          {"name": "Milo", "age_band_note": "one of 4 and 7; which is which was not specified"},
+          {"name": "Juno", "age_band_note": "one of 4 and 7; which is which was not specified"}
         ],
         "youngest_age": 4,
         "age_band": "A",
@@ -22,11 +22,11 @@
       "expected_bible_additions": ["magic red LEGO brick (device)", "catchphrase: Play well", "sound word: WHOOOOSH"]
     },
     {
-      "file": "lennon-and-the-lost-levels.md",
-      "series": "lennon",
+      "file": "theo-and-the-lost-levels.md",
+      "series": "theo",
       "sequence": 1,
       "request": {
-        "children": [{"name": "Lennon", "age": 10, "likes": ["Roblox", "building games in Roblox Studio", "soccer"]}],
+        "children": [{"name": "Theo", "age": 10, "likes": ["Roblox", "building games in Roblox Studio", "soccer"]}],
         "youngest_age": 10,
         "age_band": "C",
         "topic_input": "the history of computer gaming leading all the way to when Roblox was created",
@@ -38,13 +38,13 @@
       "expected_bible_additions": ["Bit (8-bit pixel guide character)", "coins per saved level (device)", "catchphrase: Player One", "sound word: BZZZT"]
     },
     {
-      "file": "cruz-and-phoenix-shark-submarine.md",
-      "series": "cruz-phoenix",
+      "file": "milo-and-juno-shark-submarine.md",
+      "series": "milo-juno",
       "sequence": 2,
       "request": {
         "children": [
-          {"name": "Cruz", "age_band_note": "one of 4 and 7"},
-          {"name": "Phoenix", "age_band_note": "one of 4 and 7"}
+          {"name": "Milo", "age_band_note": "one of 4 and 7"},
+          {"name": "Juno", "age_band_note": "one of 4 and 7"}
         ],
         "youngest_age": 4,
         "age_band": "A",
@@ -57,16 +57,16 @@
         "recurring": [{"name": "The magic red LEGO brick", "type": "device", "rule": "glows and clicks to start an adventure; returns them home at the end"}],
         "catchphrases": ["Play well", "WHOOOOSH"],
         "topics_covered": ["history-of-lego"],
-        "last_story": {"title": "Cruz, Phoenix and the Brick That Clicked", "ending": "Back home, the final brick on their giant tower just went CLICK and held."}
+        "last_story": {"title": "Milo, Juno and the Brick That Clicked", "ending": "Back home, the final brick on their giant tower just went CLICK and held."}
       },
       "expected_bible_additions": ["Grandpa Greenie (400-year-old Greenland shark guide)", "LEGO submarine (device)", "keepsake: shark tooth"]
     },
     {
-      "file": "lennon-the-beautiful-game.md",
-      "series": "lennon",
+      "file": "theo-the-beautiful-game.md",
+      "series": "theo",
       "sequence": 2,
       "request": {
-        "children": [{"name": "Lennon", "age": 10, "likes": ["soccer", "Roblox", "building a penalty shootout game"], "notes": "plays on a youth soccer team; practices penalties"}],
+        "children": [{"name": "Theo", "age": 10, "likes": ["soccer", "Roblox", "building a penalty shootout game"], "notes": "plays on a youth soccer team; practices penalties"}],
         "youngest_age": 10,
         "age_band": "C",
         "topic_input": "the history of soccer",
@@ -78,9 +78,9 @@
         "recurring": [{"name": "Bit", "type": "character", "rule": "green 8-bit pixel guide; squeaky, jokes about being 8-bit; eyes go watery at the end"}, {"name": "Golden coins", "type": "device", "rule": "one per saved level; fuse into a trophy at the end"}],
         "catchphrases": ["Player One", "BZZZT", "Level complete"],
         "topics_covered": ["history-of-video-games"],
-        "last_story": {"title": "Lennon and the Lost Levels", "ending": "A message on screen: THE NEXT LEVEL IS YOURS TO BUILD. Tomorrow he had a game to make."}
+        "last_story": {"title": "Theo and the Lost Levels", "ending": "A message on screen: THE NEXT LEVEL IS YOURS TO BUILD. Tomorrow he had a game to make."}
       },
-      "expected_bible_additions": ["catchphrase: Nice pen, Player One", "penalty kick as Lennon's signature move"]
+      "expected_bible_additions": ["catchphrase: Nice pen, Player One", "penalty kick as Theo's signature move"]
     }
   ],
   "notes": [

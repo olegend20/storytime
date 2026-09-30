@@ -91,8 +91,8 @@ describe('LimitsQuotaService maps lane 3 onto the pipeline seam', () => {
 
 describe('GuardrailsInputGuard maps lane 6 L1+L2 onto the pipeline seam', () => {
   const children = [
-    { id: 'a', first_name: 'Cruz', age: 7, likes: ['LEGO'], notes: null },
-    { id: 'b', first_name: 'Phoenix', age: 4, likes: [], notes: null },
+    { id: 'a', first_name: 'Milo', age: 7, likes: ['LEGO'], notes: null },
+    { id: 'b', first_name: 'Juno', age: 4, likes: [], notes: null },
   ]
 
   it('passes every child and the youngest name, and returns the refusal copy', async () => {
@@ -114,11 +114,11 @@ describe('GuardrailsInputGuard maps lane 6 L1+L2 onto the pipeline seam', () => 
       expect.objectContaining({
         topic_input: 'something',
         youngestAge: 4,
-        youngestName: 'Phoenix',
+        youngestName: 'Juno',
         familyId: 'fam',
         children: [
-          { first_name: 'Cruz', likes: ['LEGO'], notes: null },
-          { first_name: 'Phoenix', likes: [], notes: null },
+          { first_name: 'Milo', likes: ['LEGO'], notes: null },
+          { first_name: 'Juno', likes: [], notes: null },
         ],
       }),
     )
@@ -141,7 +141,7 @@ describe('GuardrailsInputGuard maps lane 6 L1+L2 onto the pipeline seam', () => 
 
 describe('GuardrailsSafetyReviewer runs lane 6 L4', () => {
   const story = { title: 't', subtitle: null, chapters: [{ heading: 'h', text: 'Once.' }], ending_line: 'e', true_facts: [] }
-  const request = { children: [{ name: 'Cruz' }], age_band: 'B' }
+  const request = { children: [{ name: 'Milo' }], age_band: 'B' }
   const safe = { safe: true, violations: [], scary_level: 0, positive_portrayal: true, ending_safe: true }
 
   it('returns the model review when the scan finds nothing hard', async () => {
@@ -149,7 +149,7 @@ describe('GuardrailsSafetyReviewer runs lane 6 L4', () => {
     mocks.reviewOutput.mockResolvedValue({ review: safe, costUsd: 0.001 })
     const r = await new GuardrailsSafetyReviewer().review(story as never, request as never, {})
     expect(r).toEqual(safe)
-    expect(mocks.reviewOutput).toHaveBeenCalledWith(expect.objectContaining({ band: 'B', childNames: ['Cruz'] }))
+    expect(mocks.reviewOutput).toHaveBeenCalledWith(expect.objectContaining({ band: 'B', childNames: ['Milo'] }))
   })
 
   it('a hard deterministic violation fails the story even if the model says safe', async () => {

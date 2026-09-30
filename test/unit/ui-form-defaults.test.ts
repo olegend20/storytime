@@ -3,10 +3,10 @@ import { formBlocker, initialFormState, toggleChild } from '@/lib/client/form'
 import { DEFAULT_FORM_MEMORY } from '@/lib/client/storage'
 import { bandForAges } from '@/lib/schemas'
 
-const CRUZ = 'c1'
-const PHOENIX = 'c2'
-const LENNON = 'c3'
-const ALL = [CRUZ, PHOENIX, LENNON]
+const MILO = 'c1'
+const JUNO = 'c2'
+const THEO = 'c3'
+const ALL = [MILO, JUNO, THEO]
 
 /**
  * The first-visit default.
@@ -24,8 +24,8 @@ describe('initialFormState', () => {
   })
 
   it('prefers the remembered selection over the family list', () => {
-    const state = initialFormState({ childIds: [LENNON], lengthMinutes: 10 }, ALL)
-    expect(state.childIds).toEqual([LENNON])
+    const state = initialFormState({ childIds: [THEO], lengthMinutes: 10 }, ALL)
+    expect(state.childIds).toEqual([THEO])
   })
 
   it('selects nothing when the children have not loaded yet', () => {
@@ -34,10 +34,10 @@ describe('initialFormState', () => {
 
   it('a parent can still deselect down to one child, and to none', () => {
     let state = initialFormState(DEFAULT_FORM_MEMORY, ALL)
-    state = toggleChild(state, CRUZ)
-    state = toggleChild(state, LENNON)
-    expect(state.childIds).toEqual([PHOENIX])
-    state = toggleChild(state, PHOENIX)
+    state = toggleChild(state, MILO)
+    state = toggleChild(state, THEO)
+    expect(state.childIds).toEqual([JUNO])
+    state = toggleChild(state, JUNO)
     expect(state.childIds).toEqual([])
     expect(formBlocker(state)).toBe('no_children')
   })

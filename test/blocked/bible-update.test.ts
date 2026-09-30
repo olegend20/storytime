@@ -36,8 +36,8 @@ function bibleBefore(): StoryBibleType {
   return StoryBible.parse({
     // DECISIONS.md #23: the manifest leaves which boy is which open; the plan resolves it.
     children: [
-      { name: 'Cruz', age: 7, likes: ['LEGO', 'sharks'], role_notes: 'often the one with the idea' },
-      { name: 'Phoenix', age: 4, likes: ['dinosaurs'], role_notes: 'gets the shout-along lines' },
+      { name: 'Milo', age: 7, likes: ['LEGO', 'sharks'], role_notes: 'often the one with the idea' },
+      { name: 'Juno', age: 4, likes: ['dinosaurs'], role_notes: 'gets the shout-along lines' },
     ],
     recurring: (before.recurring ?? []).map((r) => ({ ...r, last_used: '2026-09-25' })),
     catchphrases: before.catchphrases ?? [],
@@ -96,7 +96,7 @@ describe.skipIf(!available)('F4 VT: the bible update on the Shark Submarine refe
     // The prior series memory survived the update.
     expect(bible.recurring.map((r) => r.name).join(' | ')).toMatch(/brick/i)
     expect(bible.topics_covered.map((t) => t.topic).join(' ')).toMatch(/shark/i)
-    expect(bible.children.map((c) => c.name).sort()).toEqual(['Cruz', 'Phoenix'])
+    expect(bible.children.map((c) => c.name).sort()).toEqual(['Milo', 'Juno'])
 
     // And it stayed inside the budget that makes the whole architecture work.
     expect(result.record.token_estimate).toBeLessThanOrEqual(800)

@@ -76,12 +76,12 @@
   { "input": "scared of loud noises, so keep it gentle", "field": "notes", "youngest_age": 4, "expected": "allow", "expected_category": "educational" },
   { "input": "has just started swimming lessons and is very proud", "field": "notes", "youngest_age": 5, "expected": "allow", "expected_category": "educational" },
   { "input": "loves anything about space; reading age a bit ahead", "field": "notes", "youngest_age": 7, "expected": "allow", "expected_category": "educational" },
-  { "input": "Phoenix", "field": "first_name", "youngest_age": 4, "expected": "allow", "expected_category": "educational" },
+  { "input": "Juno", "field": "first_name", "youngest_age": 4, "expected": "allow", "expected_category": "educational" },
   { "input": "Mary-Jane", "field": "first_name", "youngest_age": 6, "expected": "allow", "expected_category": "educational" },
   { "input": "Zoë", "field": "first_name", "youngest_age": 5, "expected": "allow", "expected_category": "educational" },
   { "input": "Ayşe", "field": "first_name", "youngest_age": 7, "expected": "allow", "expected_category": "educational" },
   { "input": "O'Brien", "field": "first_name", "youngest_age": 8, "expected": "allow", "expected_category": "educational" },
   { "input": "Александр", "field": "first_name", "youngest_age": 9, "expected": "allow", "expected_category": "educational" },
-  { "input": "Cruz and Phoenix's Ocean Adventures", "field": "title", "youngest_age": 4, "expected": "allow", "expected_category": "educational" },
-  { "input": "The Murray Family", "field": "display_name", "youngest_age": 4, "expected": "allow", "expected_category": "educational" }
+  { "input": "Milo and Juno's Ocean Adventures", "field": "title", "youngest_age": 4, "expected": "allow", "expected_category": "educational" },
+  { "input": "The Okafor Family", "field": "display_name", "youngest_age": 4, "expected": "allow", "expected_category": "educational" }
 ]

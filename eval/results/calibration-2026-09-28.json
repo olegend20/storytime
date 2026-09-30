@@ -11,23 +11,23 @@
       "id": "references_score_at_least_4_5",
       "description": "The four reference stories scored with their original requests each reach overall >= 4.5",
       "passed": false,
-      "detail": "below the bar: cruz-and-phoenix-lego-story.md=3.75; lennon-and-the-lost-levels.md=4.25; cruz-and-phoenix-shark-submarine.md=3.25; lennon-the-beautiful-game.md=1. §5: fix the judge prompt, never the references.",
+      "detail": "below the bar: milo-and-juno-lego-story.md=3.75; theo-and-the-lost-levels.md=4.25; milo-and-juno-shark-submarine.md=3.25; theo-the-beautiful-game.md=1. §5: fix the judge prompt, never the references.",
       "observed": {
         "per_story": [
           {
-            "file": "cruz-and-phoenix-lego-story.md",
+            "file": "milo-and-juno-lego-story.md",
             "overall": 3.75
           },
           {
-            "file": "lennon-and-the-lost-levels.md",
+            "file": "theo-and-the-lost-levels.md",
             "overall": 4.25
           },
           {
-            "file": "cruz-and-phoenix-shark-submarine.md",
+            "file": "milo-and-juno-shark-submarine.md",
             "overall": 3.25
           },
           {
-            "file": "lennon-the-beautiful-game.md",
+            "file": "theo-the-beautiful-game.md",
             "overall": 1
           }
         ]
@@ -35,9 +35,9 @@
     },
     {
       "id": "sabotage_heroes",
-      "description": "LEGO story with Phoenix's name removed from all but one chapter scores heroes <= 2",
+      "description": "LEGO story with Juno's name removed from all but one chapter scores heroes <= 2",
       "passed": true,
-      "detail": "heroes=2 (raw), kept in \"Chapter 1: The Carpenter in Billund\", 12 mentions removed. Evidence: Cruz gets a real hero moment in Chapter 6 (\"What if there was something inside here... to hug the bumps\"), but Phoenix disappears after Chapter 1. Every later line and action goes to Cruz, sometimes twice in a row (\"said Cruz. ... said Cruz\"; \"Cruz carried planks. Cruz handed out nails.\"), so one named child is effectively erased. The request gives no likes, and the story calls both children \"the boys\" although no genders were specified.",
+      "detail": "heroes=2 (raw), kept in \"Chapter 1: The Carpenter in Billund\", 12 mentions removed. Evidence: Milo gets a real hero moment in Chapter 6 (\"What if there was something inside here... to hug the bumps\"), but Juno disappears after Chapter 1. Every later line and action goes to Milo, sometimes twice in a row (\"said Milo. ... said Milo\"; \"Milo carried planks. Milo handed out nails.\"), so one named child is effectively erased. The request gives no likes, and the story calls both children \"the boys\" although no genders were specified.",
       "observed": {
         "scores_raw": {
           "heroes": 2,
@@ -93,7 +93,7 @@
       "id": "sabotage_age_fit_peril",
       "description": "Shark story where the great white chases and rams the submarine scores age_fit <= 2 for band A",
       "passed": true,
-      "detail": "age_fit=1 (raw); word count 1851 -> 1826, length effectively unchanged so this is peril and not padding. Evidence: This is band A (the youngest child is 4), where 'nothing chases anyone.' Chapter 6 has a great white ramming the sub, an injury ('Cruz smashed his shoulder into the wall'), darkness, water leaking in, and 'The shark chased them through the dark.' That peril is far beyond band A. Vocabulary is fine and there are big-kid hooks. The 1826 words are within the ±15% tolerance.",
+      "detail": "age_fit=1 (raw); word count 1851 -> 1826, length effectively unchanged so this is peril and not padding. Evidence: This is band A (the youngest child is 4), where 'nothing chases anyone.' Chapter 6 has a great white ramming the sub, an injury ('Milo smashed his shoulder into the wall'), darkness, water leaking in, and 'The shark chased them through the dark.' That peril is far beyond band A. Vocabulary is fine and there are big-kid hooks. The 1826 words are within the ±15% tolerance.",
       "observed": {
         "scores_raw": {
           "heroes": 2,
@@ -147,7 +147,7 @@
   ],
   "reference_scores": [
     {
-      "file": "cruz-and-phoenix-lego-story.md",
+      "file": "milo-and-juno-lego-story.md",
       "band": "A",
       "word_count": 1540,
       "scores_raw": {
@@ -182,7 +182,7 @@
       "judge_error": null
     },
     {
-      "file": "lennon-and-the-lost-levels.md",
+      "file": "theo-and-the-lost-levels.md",
       "band": "C",
       "word_count": 2471,
       "scores_raw": {
@@ -217,7 +217,7 @@
       "judge_error": null
     },
     {
-      "file": "cruz-and-phoenix-shark-submarine.md",
+      "file": "milo-and-juno-shark-submarine.md",
       "band": "A",
       "word_count": 1851,
       "scores_raw": {
@@ -252,7 +252,7 @@
       "judge_error": null
     },
     {
-      "file": "lennon-the-beautiful-game.md",
+      "file": "theo-the-beautiful-game.md",
       "band": "C",
       "word_count": 2633,
       "scores_raw": {

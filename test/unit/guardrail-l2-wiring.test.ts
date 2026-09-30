@@ -108,13 +108,13 @@ describe('L2 wiring through guardInput', () => {
     const result = await guardInput({
       topic_input: input.topic,
       youngestAge: 4,
-      youngestName: 'Phoenix',
+      youngestName: 'Juno',
       sink: logs,
     })
     expect(result.decision).toBe('refuse')
     expect(result.category).toBe('too_mature_for_band')
     expect(result.parentMessage).toContain('4-year-old')
-    expect(result.parentMessage).toContain('Phoenix')
+    expect(result.parentMessage).toContain('Juno')
     expect(events.events[0]?.layer).toBe('L2')
   })
 
@@ -143,7 +143,7 @@ describe('L2 wiring through guardInput', () => {
     const reviewInput = {
       storyText: 'A calm story about bees.',
       band: 'A' as const,
-      childNames: ['Cruz'],
+      childNames: ['Milo'],
     }
     const system = [
       { type: 'text', text: reviewSystemPrompt(), cache_control: { type: 'ephemeral' } },

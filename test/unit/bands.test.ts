@@ -103,8 +103,8 @@ describe('the rubric covers what the first stories were failed for', () => {
 describe('sentence length is measured, and calibrated on the reference stories', () => {
   it('splits dialogue, sound words and ellipses the way a reader would', () => {
     expect(
-      splitSentences('"No way," whispered Cruz. **WHOOOSH!** Then... nothing. "Is it real?" he said.'),
-    ).toEqual(['"No way," whispered Cruz.', 'WHOOOSH!', 'Then...', 'nothing.', '"Is it real?"', 'he said.'])
+      splitSentences('"No way," whispered Milo. **WHOOOSH!** Then... nothing. "Is it real?" he said.'),
+    ).toEqual(['"No way," whispered Milo.', 'WHOOOSH!', 'Then...', 'nothing.', '"Is it real?"', 'he said.'])
   })
 
   it('every reference story is inside its band with room to spare', () => {

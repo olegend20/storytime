@@ -17,12 +17,12 @@ import {
 
 /** Short sentences, as the band rubric asks: the gate measures sentence length. */
 const CHAPTER_BODY = [
-  'Cruz pressed the red brick. It went CLICK.',
-  '"Look at this," said Phoenix. He held up a tiny wooden duck on wheels.',
+  'Milo pressed the red brick. It went CLICK.',
+  '"Look at this," said Juno. He held up a tiny wooden duck on wheels.',
   'The year was **1932**. A carpenter called **Ole Kirk Christiansen** made wooden toys.',
   'His workshop was in **Billund, Denmark**. Families still needed something to play with.',
-  'Phoenix pulled the duck across the floor. It went quack-clack, quack-clack.',
-  'Cruz built a tower out of the new bricks. It held together perfectly.',
+  'Juno pulled the duck across the floor. It went quack-clack, quack-clack.',
+  'Milo built a tower out of the new bricks. It held together perfectly.',
 ].join(' ')
 
 export interface GoodStoryOptions {
@@ -57,14 +57,14 @@ export function goodStoryRaw(opts: GoodStoryOptions = {}): Record<string, unknow
     return out.slice(0, words).join(' ')
   }
   return {
-    title: `${opts.titleNames ?? 'Cruz, Phoenix'} and the Brick That Clicked`,
+    title: `${opts.titleNames ?? 'Milo, Juno'} and the Brick That Clicked`,
     subtitle: 'A bedtime adventure through the true story of LEGO',
     chapters: Array.from({ length: chapters }, (_, i) => ({
       heading: `Chapter ${i + 1}: The Workshop in Billund`,
       text: chapterTextFor(i),
       shout_line: i === 0 ? 'PLAY WELL!' : null,
     })),
-    ending_line: 'Goodnight, Cruz. Goodnight, Phoenix. Play well.',
+    ending_line: 'Goodnight, Milo. Goodnight, Juno. Play well.',
     true_facts: Array.from({ length: 9 }, (_, i) => ({
       text: `True fact number ${i + 1} about LEGO.`,
       fact_id: `f${i + 1}`,
@@ -124,8 +124,8 @@ export function request(opts: RequestOptions = {}): GenerationRequest {
   const band = opts.band ?? 'A'
   const minutes = opts.minutes ?? 10
   const children = opts.children ?? [
-    { name: 'Cruz', age: 7, likes: ['LEGO', 'sharks'] },
-    { name: 'Phoenix', age: 4, likes: ['dinosaurs'] },
+    { name: 'Milo', age: 7, likes: ['LEGO', 'sharks'] },
+    { name: 'Juno', age: 4, likes: ['dinosaurs'] },
   ]
   return {
     children: children.map((c) => ({

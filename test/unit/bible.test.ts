@@ -74,8 +74,8 @@ describe('F4 VT: childKey is order-independent', () => {
 describe('F4 VT: enforceBibleLimits', () => {
   const base = StoryBible.parse({
     children: [
-      { name: 'Cruz', age: 7, likes: ['LEGO', 'sharks'], role_notes: 'has the ideas' },
-      { name: 'Phoenix', age: 4, likes: ['dinosaurs'], role_notes: 'shouts the sound words' },
+      { name: 'Milo', age: 7, likes: ['LEGO', 'sharks'], role_notes: 'has the ideas' },
+      { name: 'Juno', age: 4, likes: ['dinosaurs'], role_notes: 'shouts the sound words' },
     ],
     recurring: [],
     catchphrases: ['Play well', 'WHOOOOSH'],
@@ -169,7 +169,7 @@ describe('F4 VT: enforceBibleLimits', () => {
     expect(bibleFitsLimit(result)).toBe(true)
     // It must still be a valid bible, and it must still know who the children are.
     expect(StoryBible.safeParse(result).success).toBe(true)
-    expect(result.children.map((c) => c.name)).toEqual(['Cruz', 'Phoenix'])
+    expect(result.children.map((c) => c.name)).toEqual(['Milo', 'Juno'])
     // And it must keep the single most important field for continuity.
     expect(result.last_story?.title).toContain('A rather long story title')
   })
@@ -182,8 +182,8 @@ describe('F4 VT: enforceBibleLimits', () => {
 
 describe('F4: a new series bible is built from child profiles only', () => {
   it('has the children and nothing else', () => {
-    const bible = emptyBible([child('Cruz', 7), child('Phoenix', 4)])
-    expect(bible.children.map((c) => c.name)).toEqual(['Cruz', 'Phoenix'])
+    const bible = emptyBible([child('Milo', 7), child('Juno', 4)])
+    expect(bible.children.map((c) => c.name)).toEqual(['Milo', 'Juno'])
     expect(bible.recurring).toEqual([])
     expect(bible.catchphrases).toEqual([])
     expect(bible.topics_covered).toEqual([])
@@ -194,7 +194,7 @@ describe('F4: a new series bible is built from child profiles only', () => {
 
 describe('F4 AC: editing a child propagates to the bible on next load', () => {
   const bible = StoryBible.parse({
-    children: [{ name: 'Cruz', age: 7, likes: ['LEGO'], role_notes: 'has the ideas' }],
+    children: [{ name: 'Milo', age: 7, likes: ['LEGO'], role_notes: 'has the ideas' }],
     recurring: [],
     catchphrases: [],
     topics_covered: [],
@@ -205,11 +205,11 @@ describe('F4 AC: editing a child propagates to the bible on next load', () => {
 
   it('picks up a new age and new likes, keeping role_notes', () => {
     const refreshed = refreshBibleChildren(bible, [
-      { ...child('Cruz', 8), likes: ['LEGO', 'sharks'] },
+      { ...child('Milo', 8), likes: ['LEGO', 'sharks'] },
     ])
     expect(refreshed).not.toBeNull()
     expect(refreshed!.children[0]).toEqual({
-      name: 'Cruz',
+      name: 'Milo',
       age: 8,
       likes: ['LEGO', 'sharks'],
       role_notes: 'has the ideas',
@@ -217,12 +217,12 @@ describe('F4 AC: editing a child propagates to the bible on next load', () => {
   })
 
   it('returns null when nothing changed, so a read causes no write', () => {
-    expect(refreshBibleChildren(bible, [child('Cruz', 7)])).toBeNull()
+    expect(refreshBibleChildren(bible, [child('Milo', 7)])).toBeNull()
   })
 
   it('adding a child to the set is a different series, but the shape still updates', () => {
-    const refreshed = refreshBibleChildren(bible, [child('Cruz', 7), child('Phoenix', 4)])
-    expect(refreshed?.children.map((c) => c.name)).toEqual(['Cruz', 'Phoenix'])
+    const refreshed = refreshBibleChildren(bible, [child('Milo', 7), child('Juno', 4)])
+    expect(refreshed?.children.map((c) => c.name)).toEqual(['Milo', 'Juno'])
     expect(refreshed?.children[1]?.role_notes).toBeNull()
   })
 })
@@ -230,7 +230,7 @@ describe('F4 AC: editing a child propagates to the bible on next load', () => {
 describe('F4: conflict resolution merges rather than clobbers', () => {
   const day = '2026-09-27'
   const base = StoryBible.parse({
-    children: [{ name: 'Cruz', age: 7, likes: ['LEGO'], role_notes: null }],
+    children: [{ name: 'Milo', age: 7, likes: ['LEGO'], role_notes: null }],
     recurring: [recurring('The magic red LEGO brick', '2026-09-25')],
     catchphrases: ['Play well'],
     topics_covered: [{ topic: 'history of LEGO', story_id: null, date: '2026-09-25' }],
@@ -286,14 +286,14 @@ describe('F4: conflict resolution merges rather than clobbers', () => {
 
 describe('F4: the no-model fallback keeps continuity', () => {
   const story: StoryOutput = {
-    title: 'Cruz, Phoenix and the Shark Submarine',
+    title: 'Milo, Juno and the Shark Submarine',
     subtitle: 'The next adventure of the magic LEGO brick',
     chapters: Array.from({ length: 7 }, (_, i) => ({
       heading: `Chapter ${i + 1}`,
-      text: 'Cruz pressed the brick and it clicked.',
+      text: 'Milo pressed the brick and it clicked.',
       shout_line: i === 0 ? 'WHOOOOSH!' : null,
     })),
-    ending_line: 'Goodnight, Cruz. Goodnight, Phoenix. Swim well.',
+    ending_line: 'Goodnight, Milo. Goodnight, Juno. Swim well.',
     true_facts: Array.from({ length: 8 }, (_, i) => ({ text: `Fact ${i}`, fact_id: `f${i + 1}` })),
     bible_suggestions: {
       new_recurring: [
@@ -305,7 +305,7 @@ describe('F4: the no-model fallback keeps continuity', () => {
   }
 
   it('records the topic, the ending and the suggested recurring element', () => {
-    const base = emptyBible([child('Cruz', 7), child('Phoenix', 4)])
+    const base = emptyBible([child('Milo', 7), child('Juno', 4)])
     const next = deterministicBibleUpdate(base, story, {
       topic: 'sharks',
       storyId: null,
@@ -323,7 +323,7 @@ describe('F4: the no-model fallback keeps continuity', () => {
 
 describe('F4: the bible-update prompt never carries a previous story', () => {
   it('sends only the old bible, the new story and metadata, all in data blocks', () => {
-    const base = emptyBible([child('Cruz', 7)])
+    const base = emptyBible([child('Milo', 7)])
     const message = buildBibleUpdateMessage(
       base,
       {

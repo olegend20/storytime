@@ -172,7 +172,7 @@ describe.skipIf(!available)(`F4 series and bible (int) ${available ? '' : `- SKI
     const legoStory = goodStory()
     const sharkStory = {
       ...goodStory(),
-      title: 'Cruz, Phoenix and the Shark Submarine',
+      title: 'Milo, Juno and the Shark Submarine',
       bible_suggestions: {
         new_recurring: [
           {

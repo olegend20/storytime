@@ -35,26 +35,26 @@ describe('§5 sabotage: a child removed from all but one chapter', () => {
   const lego = referenceCase(cases, REFERENCE_FILES.lego)
 
   it('leaves the name in exactly one chapter and rewrites the rest as a solo', () => {
-    const before = lego.story.chapters.filter((c) => /\bPhoenix\b/.test(c.text)).length
+    const before = lego.story.chapters.filter((c) => /\bJuno\b/.test(c.text)).length
     expect(before).toBeGreaterThan(5)
 
     const sab = removeChildFromAllButOneChapter(lego.story, {
-      remove: 'Phoenix',
-      keepWith: 'Cruz',
+      remove: 'Juno',
+      keepWith: 'Milo',
       keepChapter: 0,
     })
-    const after = sab.story.chapters.filter((c) => /\bPhoenix\b/.test(c.text))
+    const after = sab.story.chapters.filter((c) => /\bJuno\b/.test(c.text))
     expect(after.length).toBe(1)
     expect(sab.keptChapter).toBe(0)
     expect(sab.strippedFrom).toBeGreaterThan(5)
     // The other child now carries the chapters alone - no sentence left with two subjects.
-    expect(sab.story.chapters[9]!.text).not.toMatch(/Cruz and Cruz/)
+    expect(sab.story.chapters[9]!.text).not.toMatch(/Milo and Milo/)
   })
 
   it('keeps the story the same length, so nothing but the centre score has changed', () => {
     const sab = removeChildFromAllButOneChapter(lego.story, {
-      remove: 'Phoenix',
-      keepWith: 'Cruz',
+      remove: 'Juno',
+      keepWith: 'Milo',
       keepChapter: 0,
     })
     const delta = Math.abs(narrativeWordCount(sab.story) - narrativeWordCount(lego.story))
@@ -62,7 +62,7 @@ describe('§5 sabotage: a child removed from all but one chapter', () => {
   })
 
   it('is deterministic', () => {
-    const opts = { remove: 'Phoenix', keepWith: 'Cruz', keepChapter: 0 }
+    const opts = { remove: 'Juno', keepWith: 'Milo', keepChapter: 0 }
     const a = removeChildFromAllButOneChapter(lego.story, opts)
     const b = removeChildFromAllButOneChapter(lego.story, opts)
     expect(JSON.stringify(a.story)).toBe(JSON.stringify(b.story))
@@ -70,7 +70,7 @@ describe('§5 sabotage: a child removed from all but one chapter', () => {
 
   it('throws rather than silently no-op when the name is not there', () => {
     expect(() =>
-      removeChildFromAllButOneChapter(lego.story, { remove: 'Zephyrine', keepWith: 'Cruz' }),
+      removeChildFromAllButOneChapter(lego.story, { remove: 'Zephyrine', keepWith: 'Milo' }),
     ).toThrow(SabotageError)
   })
 })
@@ -165,7 +165,7 @@ describe('reference adaptation', () => {
   })
 
   /**
-   * Both Lennon stories head their cold open, giving 11 markdown sections against the
+   * Both Theo stories head their cold open, giving 11 markdown sections against the
    * 10-chapter cap. The upstream fold (DECISIONS.md #54) collapses that to 10, so no
    * reference now exceeds the cap - and every one stays inside its band word target.
    */
@@ -236,7 +236,7 @@ function scriptedJudge(opts: {
     if (scoreCall === REF_CALLS + 1) {
       return scoreResponse(s.center ?? { ...ALL_FIVES, center: 2 }, {
         evidence: {
-          center: 'Phoenix is named in the goodnight line and in one chapter, and does nothing anywhere else.',
+          center: 'Juno is named in the goodnight line and in one chapter, and does nothing anywhere else.',
           craft: 'ok',
           facts: 'ok',
           age_fit: 'ok',
