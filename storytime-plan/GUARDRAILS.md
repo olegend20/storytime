@@ -89,7 +89,7 @@ Rules given to the classifier:
 - Names of all selected children present; no unknown child names introduced as siblings.
 
 ### 4.3 Model output review (Haiku, structured; part of the F7 gate)
-Returns `{safe: bool, violations: [{rule: 3, quote: "…", severity: "hard"|"soft"}], scary_level: 0-3, positive_portrayal: bool, ending_safe: bool}`. Any `hard` violation, `scary_level` above the band limit (A: 0, B: 1, C: 2, D: 2), `positive_portrayal: false`, or `ending_safe: false` → fail.
+Returns `{safe: bool, violations: [{rule: 3, quote: "…", severity: "hard"|"soft"}], scary_level: 0-3, positive_portrayal: bool, ending_safe: bool}`. Any `hard` violation, `scary_level` above the band limit (A: 1, B: 1, C: 2, D: 2 — A raised from 0 on 2026-09-29 by owner decision, DECISIONS #127; the 0–3 scale is defined once in `config/bands.json` and shared with the writer), `positive_portrayal: false`, or `ending_safe: false` → fail.
 
 ### 4.4 The True Facts list
 - Each item must map to a fact-pack `fact_id` marked `kid_safe: true` with `min_age ≤ youngest child`.

@@ -13,7 +13,9 @@ import {
   type FactPack,
   type LengthMinutes,
 } from '@/lib/schemas'
+import { sentenceLengthFailure, sentenceStats, type SentenceStats } from '@/lib/bands'
 import { OUTPUT_BLOCKLIST, findContactInfo, scanBlocklist, type BlocklistData } from './blocklist'
+import { factTermsMissingFromStory } from './facts-in-story'
 import { hasChildAction } from './actions'
 
 /**
@@ -51,6 +53,8 @@ export interface DeterministicResult {
   wordCount: number
   /** Chapter coverage per child name, for diagnostics. */
   coverage: Record<string, number>
+  /** Measured sentence lengths, handed to the reviewer so it does not have to guess. */
+  sentences: SentenceStats | null
 }
 
 const SIBLING_INTRO =
@@ -143,6 +147,7 @@ export function runDeterministicChecks(input: GateInput): DeterministicResult {
       skipped: ['all other checks: story did not parse'],
       wordCount: 0,
       coverage,
+      sentences: null,
     }
   }
 
@@ -155,6 +160,16 @@ export function runDeterministicChecks(input: GateInput): DeterministicResult {
     failures.push({
       check: 'word_count_in_range',
       detail: `word_count_in_range:${wordCount} not in ${input.targetWords.min}-${input.targetWords.max} (+/-15%)`,
+    })
+  }
+
+  // ---- sentence length, against the band's limits (config/bands.json) ----
+  const sentences = sentenceStats(story.chapters.map((c) => c.text).join('\n\n'), input.band)
+  const tooLong = sentenceLengthFailure(sentences, input.band)
+  if (tooLong) {
+    failures.push({
+      check: 'sentence_length',
+      detail: `sentence_length:${tooLong}. Split the long sentences.`,
     })
   }
 
@@ -223,6 +238,16 @@ export function runDeterministicChecks(input: GateInput): DeterministicResult {
     skipped.push('unsourced_fact/fact_min_age/fact_not_kid_safe: no fact pack supplied')
   }
 
+  for (const miss of factTermsMissingFromStory(story)) {
+    failures.push({
+      check: 'true_fact_not_in_story',
+      detail: `true_fact_not_in_story:${miss.fact_id}:"${miss.term}" is in the True Facts list but not in the story`.slice(
+        0,
+        300,
+      ),
+    })
+  }
+
   // ---- ending ----
   if (story.ending_line.trim() === '') {
     failures.push({ check: 'ending_line_present', detail: 'ending_line_present:empty' })
@@ -264,5 +289,5 @@ export function runDeterministicChecks(input: GateInput): DeterministicResult {
     }
   }
 
-  return { passed: failures.length === 0, failures, skipped, wordCount, coverage }
+  return { passed: failures.length === 0, failures, skipped, wordCount, coverage, sentences }
 }

@@ -29,8 +29,19 @@ export const STORY_CALL_TOKENS = {
   normalize: { input: 300, output: 50 },
   quality: { input: 6_000, output: 200 },
   bible_update: { input: 7_000, output: 600 },
-  /** The writing call: master prompt cached, request block uncached. */
-  write: { cacheRead: 4_000, input: 1_500 },
+  /**
+   * The writing call: master prompt cached, request block uncached. `thinking` is what the
+   * writer generates BEFORE the story, billed as output like the story itself.
+   *
+   * MEASURED 2026-09-29 on the first two real stories (Sonnet 5, adaptive thinking): 13,101
+   * and 11,771 output tokens for ~1,400 narrative words, of which the JSON story is ~2,600.
+   * Until then this table counted only the story's tokens, and every per-story figure - the
+   * $0.05-0.07 quoted to the owner - was 3-4x low. The owner keeps thinking on for quality.
+   */
+  write: { cacheRead: 4_000, input: 1_500, thinking: 11_000 },
+  /** L2 input classifier and L4 safety review, both Haiku, both on every story. */
+  classify: { input: 1_300, output: 130 },
+  safety: { input: 3_000, output: 60 },
   /**
    * One per NEW topic, on the fact-pack model, plus web searches.
    *
@@ -91,8 +102,10 @@ function sum(lines: CostLine[]): number {
 
 function storyGenerationCost(writer: string, words: number): number {
   const helper = modelForRole('helper')
-  const outputTokens = Math.ceil(words * TOKENS_PER_WORD) + 500
+  const outputTokens = Math.ceil(words * TOKENS_PER_WORD) + 500 + STORY_CALL_TOKENS.write.thinking
   return (
+    computeCost({ model: helper, input: STORY_CALL_TOKENS.classify.input, output: STORY_CALL_TOKENS.classify.output }) +
+    computeCost({ model: helper, input: STORY_CALL_TOKENS.safety.input, output: STORY_CALL_TOKENS.safety.output }) +
     computeCost({ model: helper, input: STORY_CALL_TOKENS.normalize.input, output: STORY_CALL_TOKENS.normalize.output }) +
     computeCost({
       model: writer,

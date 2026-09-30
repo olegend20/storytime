@@ -773,3 +773,51 @@ SSL enforcement and network restrictions; MFA on the Supabase account; PITR back
 Also: library series titles are now oldest-child-first (uuid order flipped them randomly).
 
 **Gates:** lint ✅ · typecheck ✅ · unit+int 945 ✅ · e2e mock 118 ✅ · e2e real 4 ✅.
+
+### 2026-09-29 — the quality system: one rubric for the writer, the reviewers and the code
+
+**Owner's brief:** the rewrites are a system problem; improve the first draft so rewrites drop;
+keep the writer's thinking; fix the format failures; decide the scary limit. **Spend: $0.00** —
+designed from the evidence already in hand, verified in fixture mode. Live before/after
+measurement awaits approval (below).
+
+**The evidence** (`test/fixtures/stories/first-real-story-volcanoes.json`): every first draft
+was sent back and every rewrite failed too, because three parties worked to three rulebooks —
+the writer was asked for "big kid" hooks and given no sentence numbers; the quality reviewer
+had its own band table, saw only the youngest age and marked the hooks and the True Facts list
+down; the two reviewers defined the 0–3 scary scale differently; and the code's band-A limit of
+0 rejected the one suspense line — *"is it gonna erupt?" / "Nope!"* — and would have rejected
+the owner's own band-A reference (a great white at the submarine window). Measured against the
+references, the real gap was sentence length: **10.4%** of the story's sentences over 20 words
+vs **2.7–3.4%** in the references (means 8.9 vs 6.9–7.9).
+
+**The design** (DECISIONS #127–#135):
+1. **One rubric** — `config/bands.json`, rendered by `lib/bands.ts` into `master.v2`,
+   `quality-review.v2` and `guardrail.output-review.v2` via `{{band_rubric}}` /
+   `{{suspense_scale}}`; `test/unit/bands.test.ts` fails if any of the three drifts.
+   Sentence numbers (calibrated on the references, with headroom), a big-word budget, the
+   mixed-age rule, one suspense scale, and how to word the True Facts list.
+2. **Code measures what can be measured** — new deterministic checks `sentence_length` and
+   `true_fact_not_in_story`; the reviewer is handed the measured numbers and told not to judge
+   them. Band A scary limit 1 (owner's call, delegated).
+3. **The writer checks itself against the gate** before answering (master.v2 §10), using
+   the thinking the owner wants kept.
+4. **Format can no longer fail** — structured outputs on the write and rewrite calls, with a
+   fallback if a model rejects the format; the schema's length limits are stated to the writer
+   (they never were); what a schema cannot express is fixed locally and for free
+   (`lib/generate/normalize.ts`), never touching prose. Writer cap 32k tokens; rewrite streams.
+5. **It is measurable** — `quality.first_attempt` saves why draft 1 was sent back;
+   `v_first_draft_health` reports rewrite and repair rates per day. Baseline: **1/1 rewritten,
+   1/1 repaired**, $0.30 per story.
+6. `PROMPT_PIN_MASTER=1` runs or rolls back to v1 without a code change.
+
+**Cost estimate corrected:** the writer's thinking (~11k output tokens/story, measured) was
+never counted; a story is ~$0.17 without a rewrite, not $0.05–0.07. `pnpm eval` now estimates
+$2.36 with packs built.
+
+**Gates:** lint ✅ · typecheck ✅ · unit+int **981** ✅ · guardrails 29/29, recall 47/47, FP 0
+(before and after, unchanged) ✅ · e2e mock 118 ✅ · e2e real 4 ✅.
+
+**Awaiting owner approval (CLAUDE.md rule 5, master prompt changed):** before/after
+`pnpm eval` — v1 pinned (~$3.4, rewrites included) and v2 (~$2.4) — reporting rewrite rate,
+repair count, judge mean and cost per story. **≈ $6 total.**

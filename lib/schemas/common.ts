@@ -96,8 +96,16 @@ export function wordCountWithinTolerance(
   )
 }
 
-/** GUARDRAILS.md s4.3: max scary_level per band. */
-export const MAX_SCARY_LEVEL: Record<AgeBand, number> = { A: 0, B: 1, C: 2, D: 2 }
+/**
+ * GUARDRAILS.md s4.3: max scary_level per band.
+ *
+ * Band A was 0 until 2026-09-29 (owner decision, DECISIONS #127). Level 1 is a wobble
+ * answered straight away - "is it going to erupt?" "No." - and a limit of 0 rejected it, so
+ * every "exciting" story for a four-year-old was rewritten and then flagged. It also
+ * rejected the owner's own band-A reference: the shark story has a shadow passing over the
+ * submarine and a great white at the window. Levels 2 and 3 stay out of bands A and B.
+ */
+export const MAX_SCARY_LEVEL: Record<AgeBand, number> = { A: 1, B: 1, C: 2, D: 2 }
 
 export function countWords(text: string): number {
   const trimmed = text.trim()

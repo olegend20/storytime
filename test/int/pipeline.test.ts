@@ -34,7 +34,9 @@ import {
   STUB_PASSING_REVIEW,
 } from '../helpers/fixtures'
 import { buildPrompt } from '@/lib/generate/prompt'
-import { buildQualityReviewMessage } from '@/lib/quality/review'
+import { buildQualityReviewMessage, measuredForReview } from '@/lib/quality/review'
+import { WRITER_MAX_TOKENS } from '@/lib/generate/pipeline'
+import { STORY_OUTPUT_FORMAT } from '@/lib/generate/output-schema'
 import { buildBibleUpdateMessage } from '@/lib/bible'
 import { loadPrompt } from '@/lib/prompts'
 import { modelForRole } from '@/lib/ai'
@@ -247,8 +249,9 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
         model: writer,
         system: writePrompt.system,
         messages: writePrompt.messages,
-        maxTokens: 16_000,
+        maxTokens: WRITER_MAX_TOKENS,
         thinking: 'adaptive',
+        outputFormat: STORY_OUTPUT_FORMAT,
       }),
       JSON.stringify(story),
       { input_tokens: 1_400, cache_write_tokens: 4_200, output_tokens: 5_200 },
@@ -263,7 +266,12 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
         messages: [
           {
             role: 'user',
-            content: buildQualityReviewMessage(story, run.request, FIXTURE_FACT_PACK),
+            content: buildQualityReviewMessage(
+              story,
+              run.request,
+              FIXTURE_FACT_PACK,
+              measuredForReview(story, run.request.age_band),
+            ),
           },
         ],
         maxTokens: 2_000,
@@ -286,8 +294,9 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
           model: writer,
           system: rewritePrompt.system,
           messages: rewritePrompt.messages,
-          maxTokens: 16_000,
+          maxTokens: WRITER_MAX_TOKENS,
           thinking: 'adaptive',
+          outputFormat: STORY_OUTPUT_FORMAT,
         }),
         JSON.stringify(rewritten),
         { input_tokens: 1_500, cache_read_tokens: 4_200, output_tokens: 5_300 },
@@ -300,7 +309,12 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
           messages: [
             {
               role: 'user',
-              content: buildQualityReviewMessage(rewritten, rewriteRequest, FIXTURE_FACT_PACK),
+              content: buildQualityReviewMessage(
+                rewritten,
+                rewriteRequest,
+                FIXTURE_FACT_PACK,
+                measuredForReview(rewritten, rewriteRequest.age_band),
+              ),
             },
           ],
           maxTokens: 2_000,
@@ -483,13 +497,24 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     expect(result.quality?.attempt).toBe(2)
     expect(result.status).toBe('ready')
     expect(events.some((e) => e.type === 'done')).toBe(true)
+
+    // Why the first draft was sent back is saved with the story - the measure "reduce the
+    // rewrites" is impossible without it - and the local fixes are recorded with it.
+    expect(result.quality?.first_attempt?.reasons).toEqual([
+      'GUARDRAILS rule 3 breached',
+      'output safety review returned safe: false',
+      'scary_level 3 above band A limit',
+    ])
+    // The stub story's list says "pull-along duck" for a duck that was pulled along; that is
+    // paraphrase, not a foreign term, so nothing was removed and nothing is recorded.
+    expect(result.quality?.normalized).toBeUndefined()
   })
 
   it('F7 VT: two consecutive failures flag the story - still saved, still shown', async () => {
     const run = await prepared()
     stubResponsesFor(run, { rewriteReasons: ['scary_level 2 above band A limit'] })
     const alwaysTooScary = {
-      // Above band A's scary limit of 0 both times, but no HARD rule breach:
+      // Above band A's scary limit of 1 both times, but no HARD rule breach:
       // flagged with a soft banner, never a blank screen.
       review: async (): Promise<OutputSafetyReview> => ({
         safe: true,

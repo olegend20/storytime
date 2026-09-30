@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { resolvePromptPlaceholders } from '@/lib/bands'
 
 /**
  * Prompt loader. CLAUDE.md rule 5: prompts live in `prompts/*.md` with a version header.
@@ -20,6 +21,14 @@ import { join } from 'node:path'
  * The BODY is what goes to the model. The front matter is stripped, so metadata edits
  * cannot change the cached master block's bytes - but a body edit changes them, which is
  * exactly the cache miss that CLAUDE.md rule 5 asks us to notice and re-eval.
+ *
+ * `{{band_rubric}}` and `{{suspense_scale}}` in a body are replaced at load time with the
+ * shared band rubric (lib/bands.ts), so the writer and the reviewers are given the same
+ * standard word for word. The result is static, so the cached master block stays stable.
+ *
+ * `PROMPT_PIN_<ID>=<N>` (id upper-cased, non-alphanumerics as `_`) pins an older version
+ * without a code change: `PROMPT_PIN_MASTER=1`. It is how a before/after eval runs the
+ * "before", and how a new prompt is rolled back.
  *
  * Node-only (fs). Imported from server code, tests and eval/ - never a browser bundle.
  */
@@ -51,6 +60,21 @@ function parseFrontMatter(raw: string): { meta: Record<string, string>; body: st
   return { meta, body: raw.slice(match[0].length).trim() }
 }
 
+export function promptPinEnvName(id: string): string {
+  return `PROMPT_PIN_${id.toUpperCase().replace(/[^A-Z0-9]/g, '_')}`
+}
+
+function pinnedVersion(id: string, available: readonly number[]): number | null {
+  const name = promptPinEnvName(id)
+  const raw = process.env[name]
+  if (raw === undefined || raw === '') return null
+  const pin = Number(raw)
+  if (!available.includes(pin)) {
+    throw new Error(`${name}=${raw}, but the versions on disk are ${available.join(', ')}.`)
+  }
+  return pin
+}
+
 /** Every `<id>.v<N>.md` on disk for this id, newest version first. */
 export function promptVersions(id: string, dir: string = PROMPT_DIR): number[] {
   if (!existsSync(dir)) return []
@@ -63,7 +87,7 @@ export function promptVersions(id: string, dir: string = PROMPT_DIR): number[] {
 }
 
 export function loadPrompt(id: string, dir: string = PROMPT_DIR): LoadedPrompt {
-  const cacheKey = `${dir}::${id}`
+  const cacheKey = `${dir}::${id}::${process.env[promptPinEnvName(id)] ?? ''}`
   const hit = cache.get(cacheKey)
   if (hit) return hit
 
@@ -74,9 +98,11 @@ export function loadPrompt(id: string, dir: string = PROMPT_DIR): LoadedPrompt {
         `Prompts live in prompts/*.md with a version header (CLAUDE.md rule 5).`,
     )
   }
-  const version = versions[0]!
+  const version = pinnedVersion(id, versions) ?? versions[0]!
   const file = join(dir, `${id}.v${version}.md`)
-  const { meta, body } = parseFrontMatter(readFileSync(file, 'utf8'))
+  const parsed = parseFrontMatter(readFileSync(file, 'utf8'))
+  const meta = parsed.meta
+  const body = resolvePromptPlaceholders(parsed.body)
 
   if (meta.version !== undefined && Number(meta.version) !== version) {
     throw new Error(

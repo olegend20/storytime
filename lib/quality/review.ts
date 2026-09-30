@@ -1,9 +1,11 @@
 import { callModel, type GenerationLogSink } from '@/lib/ai'
 import { loadPrompt } from '@/lib/prompts'
 import { dataBlock } from '@/lib/datablock'
+import { sentenceStats } from '@/lib/bands'
 import {
   MAX_SCARY_LEVEL,
   QualityReview,
+  storyWordCount,
   type AgeBand,
   type FactPack,
   type GenerationRequest,
@@ -20,6 +22,7 @@ import {
  */
 
 export interface QualityReviewOptions {
+  measured?: MeasuredForReview | null
   sink?: GenerationLogSink
   familyId?: string | null
   storyId?: string | null
@@ -42,10 +45,27 @@ export function reviewFactsView(pack: FactPack | null): unknown {
   }
 }
 
+/** What code has already measured, so the reviewer is told rather than left to estimate. */
+export interface MeasuredForReview {
+  narrative_words: number
+  average_sentence_words: number
+  long_sentence_share: number
+}
+
+export function measuredForReview(story: StoryOutput, band: AgeBand): MeasuredForReview {
+  const stats = sentenceStats(story.chapters.map((c) => c.text).join('\n\n'), band)
+  return {
+    narrative_words: storyWordCount(story),
+    average_sentence_words: Number(stats.meanWords.toFixed(1)),
+    long_sentence_share: Number(stats.longShare.toFixed(3)),
+  }
+}
+
 export function buildQualityReviewMessage(
   story: StoryOutput,
   request: GenerationRequest,
   pack: FactPack | null,
+  measured: MeasuredForReview | null = null,
 ): string {
   return [
     dataBlock('story', JSON.stringify(story)),
@@ -55,6 +75,10 @@ export function buildQualityReviewMessage(
       JSON.stringify({
         age_band: request.age_band,
         youngest_age: Math.min(...request.children.map((c) => c.age)),
+        // Every age, not only the youngest: with mixed ages the rubric gives each older
+        // child a hook per chapter, and a reviewer who cannot see them marks the hooks down.
+        children: request.children.map((c) => ({ name: c.name, age: c.age })),
+        ...(measured ? { measured_by_code: measured } : {}),
         tones: request.tones,
         length_minutes: request.length_minutes,
         topic_label: request.topic_label,
@@ -75,7 +99,12 @@ export async function reviewStoryQuality(
     purpose: 'quality',
     role: 'helper',
     system: [{ text: prompt.body }],
-    messages: [{ role: 'user', content: buildQualityReviewMessage(story, request, pack) }],
+    messages: [
+      {
+        role: 'user',
+        content: buildQualityReviewMessage(story, request, pack, opts.measured ?? null),
+      },
+    ],
     maxTokens: 2_000,
     schema: QualityReview,
     familyId: opts.familyId ?? null,

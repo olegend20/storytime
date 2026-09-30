@@ -105,7 +105,7 @@ describe('F7: outcomes', () => {
     // The band limit is named, and the reviewer's own note is carried through verbatim so the
     // rewrite request can act on it.
     expect(outcome.result.rewrite_reasons.join(' | ')).toContain(
-      'too scary for band A: scary_level 3, limit 0',
+      'too scary for band A: scary_level 3, limit 1',
     )
     expect(outcome.result.rewrite_reasons).toContain(
       'chapter 4: the shark follows them home in the dark',
@@ -118,9 +118,9 @@ describe('F7: outcomes', () => {
       wordsPerChapter: 300,
       titleNames: 'Lennon',
       body: [
-        'Lennon placed the ball on the very first penalty spot in history and took three steps back.',
-        'In **1891**, soccer\'s rule makers agreed, and the penalty kick became part of the game.',
-        'Lennon hit it top corner, and the goalkeeper dived the wrong way entirely.',
+        'Lennon placed the ball on the very first penalty spot in history. He took three steps back.',
+        'In **1891**, soccer\'s rule makers agreed. The penalty kick became part of the game.',
+        'Lennon hit it top corner. The goalkeeper dived the wrong way entirely.',
       ].join(' '),
     })
     story.ending_line = 'Tomorrow, he had a game to make.'

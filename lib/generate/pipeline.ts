@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabaseService } from '@/lib/supabase/service'
-import { callModel, streamModel, ModelRefusalError } from '@/lib/ai'
+import { callModel, streamModel, ModelCallError, ModelRefusalError } from '@/lib/ai'
 import { serverEnv } from '@/lib/env'
 import { parentMessage, type ParentMessageKey } from '@/lib/messages'
 import {
@@ -37,6 +37,8 @@ import {
 import { runQualityGate } from '@/lib/quality'
 import { buildPrompt } from './prompt'
 import { parseStoryOutput } from './parse'
+import { salvageTrueFacts } from './normalize'
+import { STORY_OUTPUT_FORMAT } from './output-schema'
 import { StoryStreamParser } from './story-stream'
 import { SseChannel } from './sse'
 import { resolveGuard, resolveQuota, type GenerationDeps, type QuotaState } from './deps'
@@ -254,6 +256,26 @@ export async function prepareGeneration(
   }
 }
 
+/**
+ * A cap, not a cost: only tokens actually generated are billed. The writer thinks before it
+ * writes, and the owner's first 1,400-word story used 13,101 output tokens against the old
+ * 16,000 cap - so a 15-minute story for an older child could not have finished at all.
+ */
+export const WRITER_MAX_TOKENS = 32_000
+
+/**
+ * True when the API refused the structured-output request itself (an unsupported model, a
+ * schema it will not compile). The story is then written the way v1 was - format described
+ * in the prompt, checked locally - rather than not written.
+ */
+export function structuredOutputRejected(err: unknown): boolean {
+  return (
+    err instanceof ModelCallError &&
+    err.detail.status === 400 &&
+    /output_config|output format|json_schema|schema|structured/i.test(err.message)
+  )
+}
+
 export interface RunGenerationResult {
   storyId: string
   status: StoryStatus | 'discarded'
@@ -308,18 +330,28 @@ export async function runGeneration(
       factPack: pack,
     })
     writeCalls += 1
-    const streamed = await streamModel({
-      purpose: 'write',
-      role: 'writer',
-      ...(deps.writingModel ? { model: deps.writingModel } : {}),
-      system: prompt.system,
-      messages: prompt.messages,
-      maxTokens: 16_000,
-      thinking: 'adaptive',
-      familyId: prepared.familyId,
-      storyId: prepared.storyId,
-      ...(sink ? { sink } : {}),
-      onText: (delta) => parser.feed(delta),
+    const write = (structured: boolean) =>
+      streamModel({
+        purpose: 'write',
+        role: 'writer',
+        ...(deps.writingModel ? { model: deps.writingModel } : {}),
+        system: prompt.system,
+        messages: prompt.messages,
+        maxTokens: WRITER_MAX_TOKENS,
+        thinking: 'adaptive',
+        ...(structured ? { outputFormat: STORY_OUTPUT_FORMAT } : {}),
+        familyId: prepared.familyId,
+        storyId: prepared.storyId,
+        ...(sink ? { sink } : {}),
+        onText: (delta) => parser.feed(delta),
+      })
+    let structured = true
+    const streamed = await write(true).catch((err: unknown) => {
+      // A rejected request fails before any text is streamed, so nothing reached the parent.
+      if (!structuredOutputRejected(err)) throw err
+      console.warn(`[generate] structured outputs rejected, writing without: ${(err as Error).message}`)
+      structured = false
+      return write(false)
     })
     parser.end()
 
@@ -337,7 +369,12 @@ export async function runGeneration(
           `output_tokens=${streamed.usage.output_tokens}; issues: ${parsed.issues.slice(0, 8).join(' | ')}`,
       )
     }
-    let story = parsed.story
+    // Free local fixes: metadata slips, then True Facts items that cannot stand.
+    const tidy = (draft: typeof parsed & { ok: true }) => {
+      const facts = salvageTrueFacts(draft.story, pack)
+      return { story: facts.value, notes: [...draft.notes, ...facts.notes] }
+    }
+    let { story, notes: normalized } = tidy(parsed)
 
     // ---- the gate ----
     let gate = await runQualityGate({
@@ -351,6 +388,17 @@ export async function runGeneration(
       ...(deps.safetyReviewer ? { safetyReviewer: deps.safetyReviewer } : {}),
       ...(deps.extraBlocklists ? { extraBlocklists: deps.extraBlocklists } : {}),
     })
+
+    // Why attempt 1 was sent back. Saved with the story, and logged for the ones never saved.
+    const firstAttempt = gate.needsRewrite
+      ? { failures: gate.result.failures, reasons: gate.result.rewrite_reasons }
+      : null
+    if (firstAttempt) {
+      console.warn(
+        `[generate] first draft sent back (${prepared.band}, ${prepared.topicKey}): ` +
+          firstAttempt.reasons.join(' | ').slice(0, 1200),
+      )
+    }
 
     // ---- at most one rewrite (F6 AC: two writing-model calls maximum) ----
     if (gate.needsRewrite) {
@@ -366,17 +414,26 @@ export async function runGeneration(
       writeCalls += 1
       // Not streamed: the client has already received attempt 1's chapters, and replaying
       // the same indices would corrupt its concatenation. The rewrite arrives in `done`.
-      const rewritten = await callModel({
-        purpose: 'rewrite',
-        role: 'writer',
-        ...(deps.writingModel ? { model: deps.writingModel } : {}),
-        system: rewritePrompt.system,
-        messages: rewritePrompt.messages,
-        maxTokens: 16_000,
-        thinking: 'adaptive',
-        familyId: prepared.familyId,
-        storyId: prepared.storyId,
-        ...(sink ? { sink } : {}),
+      const rewrite = (withFormat: boolean) =>
+        callModel({
+          purpose: 'rewrite',
+          role: 'writer',
+          ...(deps.writingModel ? { model: deps.writingModel } : {}),
+          system: rewritePrompt.system,
+          messages: rewritePrompt.messages,
+          maxTokens: WRITER_MAX_TOKENS,
+          // Over 300s so callModel streams it: the SDK refuses a non-streaming request this
+          // large, and the deadline still bounds the whole call.
+          timeoutMs: 600_000,
+          thinking: 'adaptive',
+          ...(withFormat ? { outputConfig: { format: STORY_OUTPUT_FORMAT } } : {}),
+          familyId: prepared.familyId,
+          storyId: prepared.storyId,
+          ...(sink ? { sink } : {}),
+        })
+      const rewritten = await rewrite(structured).catch((err: unknown) => {
+        if (!structured || !structuredOutputRejected(err)) throw err
+        return rewrite(false)
       })
       parsed = await parseStoryOutput(rewritten.text, {
         familyId: prepared.familyId,
@@ -384,7 +441,7 @@ export async function runGeneration(
         ...(sink ? { sink } : {}),
       })
       if (parsed.ok) {
-        story = parsed.story
+        ;({ story, notes: normalized } = tidy(parsed))
         gate = await runQualityGate({
           story,
           request: rewriteRequest,
@@ -413,6 +470,12 @@ export async function runGeneration(
           needsRewrite: false,
         }
       }
+    }
+
+    if (firstAttempt) gate.result.first_attempt = firstAttempt
+    if (normalized.length > 0) {
+      gate.result.normalized = normalized
+      console.info(`[generate] fixed locally, no model call: ${normalized.join(' | ')}`)
     }
 
     // GUARDRAILS.md §4.1: a second HARD safety breach is discarded, quota untouched.

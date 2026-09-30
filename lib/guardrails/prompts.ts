@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { resolvePromptPlaceholders } from '@/lib/bands'
 
 /**
  * Prompt loader. CLAUDE.md rule 5: "Prompts live in prompts/*.md with a version header."
@@ -18,7 +19,8 @@ const cache = new Map<string, string>()
 export function readPromptFile(name: string): string {
   let text = cache.get(name)
   if (text === undefined) {
-    text = readFileSync(join(PROMPT_DIR, name), 'utf8')
+    // `{{suspense_scale}}`: the shared scale, so both reviewers and the writer agree on it.
+    text = resolvePromptPlaceholders(readFileSync(join(PROMPT_DIR, name), 'utf8'))
     cache.set(name, text)
   }
   return text
@@ -44,4 +46,4 @@ export function promptVersion(name: string): number {
 }
 
 export const INPUT_CLASSIFIER_PROMPT = 'guardrail.input-classifier.v1.md'
-export const OUTPUT_REVIEW_PROMPT = 'guardrail.output-review.v1.md'
+export const OUTPUT_REVIEW_PROMPT = 'guardrail.output-review.v2.md'

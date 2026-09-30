@@ -1,0 +1,63 @@
+{
+  "$comment": "The band rubric: ONE standard, given word for word to the writer (master prompt), the quality reviewer and the safety reviewer, and enforced by code where it can be measured. Before 2026-09-29 each of the three had its own wording and the gate rejected stories the writer had been told to write. Scary limits are NOT here: they live in MAX_SCARY_LEVEL (lib/schemas/common.ts) and are rendered from it.",
+  "calibrated_from": "storytime-plan/reference-stories, measured 2026-09-29 with lib/bands.ts sentenceStats(): band A references average 6.9 and 7.9 words per sentence with 2.7% and 3.4% of sentences over 20 words; band C references average 7.4 and 7.8 with 2.1% and 1.5% over 25 words. `target` is what the writer is asked for; `limit` is where the gate fails a story, set with headroom above every reference.",
+  "bands": {
+    "A": {
+      "ages": "3–5",
+      "sentences": {
+        "target": "Short. Average 7–8 words. Repetition, sound words. Almost none over 20 words.",
+        "long_sentence_words": 20,
+        "limit_mean_words": 10,
+        "limit_long_share": 0.08
+      },
+      "vocabulary": "Everyday words. At most 6 big words, each explained on the spot.",
+      "humour": "Silly, physical, repeated jokes.",
+      "ending": "Direct bedtime address"
+    },
+    "B": {
+      "ages": "6–8",
+      "sentences": {
+        "target": "Short to medium. Average 8–10 words. Few over 20.",
+        "long_sentence_words": 20,
+        "limit_mean_words": 12,
+        "limit_long_share": 0.12
+      },
+      "vocabulary": "At most 10 big words, each explained on the spot.",
+      "humour": "Silly plus wordplay.",
+      "ending": "Direct bedtime address"
+    },
+    "C": {
+      "ages": "9–12",
+      "sentences": {
+        "target": "Punchy, real paragraphs. Average 8–11 words. Few over 25.",
+        "long_sentence_words": 25,
+        "limit_mean_words": 14,
+        "limit_long_share": 0.12
+      },
+      "vocabulary": "Full vocabulary. Explain each technical term once.",
+      "humour": "Dry, self-aware, in-jokes with the reader.",
+      "ending": "Forward-looking beat"
+    },
+    "D": {
+      "ages": "13+",
+      "sentences": {
+        "target": "Near-adult, still written to be read aloud.",
+        "long_sentence_words": 30,
+        "limit_mean_words": 18,
+        "limit_long_share": 0.15
+      },
+      "vocabulary": "Unrestricted. Explain specialist terms once.",
+      "humour": "Dry.",
+      "ending": "Forward-looking beat"
+    }
+  },
+  "big_word": "A **big word** is a technical or unfamiliar term the youngest child would not know: *seismograph*, *fertile*. It is **explained on the spot** when the same sentence or the next says what it is in everyday words (\"a **seismograph** — a machine that feels the ground wobble\"). Names of places, people, animals and things (Hawaii, Megalodon, LEGO) are names, not big words: say what the thing is and move on.",
+  "mixed_ages": "**Mixed ages.** The youngest child sets the sentences, the vocabulary and the suspense limit. Every older child still gets one hook per chapter: a surprising number, a real decision, or a joke that sails over the little one's head. A hook is one sentence the story does not depend on. It is part of the design, never a fault.",
+  "suspense_scale": [
+    "**0** — nothing a child could find alarming.",
+    "**1** — a brief wobble, answered straight away: a loud noise, a huge animal that turns out friendly, \"is it going to erupt?\" and the guide says no. Nobody is in danger.",
+    "**2** — tension that lasts: a storm, a deadline, a chase that ends well, a sad event from history told plainly.",
+    "**3** — written to frighten: something pursuing a child, dread built from darkness and silence, a chapter ending on a threat, injury or death on the page."
+  ],
+  "true_facts": "**The True Facts list** is a recap. Each item restates something the story told, in the story's own words, and every **bold** term in it is a term the story used. The fact pack is written for adults: never copy its wording."
+}

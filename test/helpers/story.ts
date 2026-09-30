@@ -15,13 +15,14 @@ import {
  * "known good" is the only way those tests stay readable.
  */
 
+/** Short sentences, as the band rubric asks: the gate measures sentence length. */
 const CHAPTER_BODY = [
-  'Cruz pressed the red brick and it went CLICK.',
-  '"Look at this," said Phoenix, holding up a tiny wooden duck on wheels.',
-  'In **1932**, a carpenter called **Ole Kirk Christiansen** started making wooden toys in',
-  '**Billund, Denmark**, because families still needed something to play with.',
-  'Phoenix pulled the duck across the floor and it went quack-clack, quack-clack.',
-  'Cruz built a tower out of the new bricks and it held together perfectly.',
+  'Cruz pressed the red brick. It went CLICK.',
+  '"Look at this," said Phoenix. He held up a tiny wooden duck on wheels.',
+  'The year was **1932**. A carpenter called **Ole Kirk Christiansen** made wooden toys.',
+  'His workshop was in **Billund, Denmark**. Families still needed something to play with.',
+  'Phoenix pulled the duck across the floor. It went quack-clack, quack-clack.',
+  'Cruz built a tower out of the new bricks. It held together perfectly.',
 ].join(' ')
 
 export interface GoodStoryOptions {

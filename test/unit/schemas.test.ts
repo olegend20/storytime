@@ -103,9 +103,12 @@ describe('s4.5 age bands and word targets', () => {
     expect(wordCountWithinTolerance(2800, target)).toBe(false)
   })
 
-  it('allows band A no scary content at all', () => {
-    expect(MAX_SCARY_LEVEL.A).toBe(0)
+  it('allows bands A and B a brief wobble and nothing more (owner decision, DECISIONS #127)', () => {
+    // Level 1 is "is it going to erupt?" / "no". Level 2 is tension that lasts.
+    expect(MAX_SCARY_LEVEL.A).toBe(1)
     expect(MAX_SCARY_LEVEL.B).toBe(1)
+    expect(MAX_SCARY_LEVEL.C).toBe(2)
+    expect(MAX_SCARY_LEVEL.D).toBe(2)
   })
 })
 

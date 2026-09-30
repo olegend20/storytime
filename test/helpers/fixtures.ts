@@ -28,6 +28,8 @@ export function streamFixtureKey(input: {
   messages: Anthropic.MessageParam[]
   maxTokens: number
   thinking?: 'adaptive' | 'off'
+  /** Structured outputs: what the pipeline passes as `outputFormat` / `outputConfig.format`. */
+  outputFormat?: Record<string, unknown>
 }): string {
   const system = input.system?.map((b) => {
     const block: Record<string, unknown> = { type: 'text', text: b.text }
@@ -46,7 +48,7 @@ export function streamFixtureKey(input: {
     system,
     messages: input.messages,
     max_tokens: input.maxTokens,
-    output_config: undefined,
+    output_config: input.outputFormat ? { format: input.outputFormat } : undefined,
     thinking,
   })
 }
@@ -58,6 +60,8 @@ export function callFixtureKey(input: {
   messages: Anthropic.MessageParam[]
   maxTokens: number
   thinking?: 'adaptive' | 'off'
+  /** Structured outputs: what the pipeline passes as `outputFormat` / `outputConfig.format`. */
+  outputFormat?: Record<string, unknown>
 }): string {
   const system = input.system?.map((b) => {
     const block: Record<string, unknown> = { type: 'text', text: b.text }
@@ -77,7 +81,7 @@ export function callFixtureKey(input: {
     messages: input.messages,
     tools: undefined,
     max_tokens: input.maxTokens,
-    output_config: undefined,
+    output_config: input.outputFormat ? { format: input.outputFormat } : undefined,
     thinking,
   })
 }

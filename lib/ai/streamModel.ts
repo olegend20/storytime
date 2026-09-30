@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk'
+import Anthropic, { APIError } from '@anthropic-ai/sdk'
 import type { CallPurpose } from '@/lib/schemas/common'
 import { capabilities, computeCost, modelForRole } from './pricing'
 import { MissingFixtureError, fixtureKey, readFixture, writeFixture } from './fixtures'
@@ -22,6 +22,11 @@ export interface StreamModelOptions {
   maxTokens?: number
   thinking?: 'adaptive' | 'off'
   effort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max'
+  /**
+   * Structured outputs: `output_config.format`. The reply is constrained to the schema, so
+   * it cannot arrive as malformed JSON. Works with streaming and with thinking.
+   */
+  outputFormat?: Record<string, unknown>
   familyId?: string | null
   storyId?: string | null
   sink?: GenerationLogSink
@@ -68,8 +73,10 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
     thinkingMode !== 'extended_budget_tokens'
       ? { type: 'adaptive' as const }
       : undefined
-  const outputConfig =
-    opts.effort && caps.supports_effort === true ? { effort: opts.effort } : undefined
+  const effort = opts.effort && caps.supports_effort === true ? { effort: opts.effort } : {}
+  const format = opts.outputFormat ? { format: opts.outputFormat } : {}
+  const merged = { ...effort, ...format }
+  const outputConfig = Object.keys(merged).length > 0 ? merged : undefined
 
   const key = fixtureKey({
     model,
@@ -242,7 +249,13 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
     })
     throw new ModelCallError(
       `${opts.purpose} stream to ${model} failed: ${err instanceof Error ? err.message : String(err)}`,
-      { purpose: opts.purpose, model, attempts: 1, retryable: false },
+      {
+        purpose: opts.purpose,
+        model,
+        attempts: 1,
+        retryable: false,
+        ...(err instanceof APIError && typeof err.status === 'number' ? { status: err.status } : {}),
+      },
     )
   }
 }

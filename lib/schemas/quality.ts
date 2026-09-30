@@ -25,6 +25,10 @@ export const DeterministicCheck = z.enum([
   'contains_url_or_contact',
   'meta_content',
   'unknown_child_name',
+  /** Measured against the band's limits in config/bands.json (lib/bands.ts). */
+  'sentence_length',
+  /** A bold term in the True Facts list that the story itself never used. */
+  'true_fact_not_in_story',
 ])
 export type DeterministicCheck = z.infer<typeof DeterministicCheck>
 
@@ -63,6 +67,22 @@ export const QualityResult = z.object({
   rewrite_reasons: z.array(z.string()).default([]),
   word_count: z.number().int().nonnegative(),
   target_words: z.object({ min: z.number().int(), max: z.number().int() }),
+  /**
+   * Why attempt 1 was sent back, when there was a rewrite. Without it the saved row only
+   * described the attempt that was kept, and the cause of every rewrite was lost - which
+   * made "reduce the rewrites" unmeasurable. Absent when attempt 1 passed.
+   *
+   * Both fields are OPTIONAL, not defaulted: the contract is additive, so rows saved before
+   * 2026-09-29 and every consumer built against the earlier shape stay valid unchanged.
+   */
+  first_attempt: z
+    .object({
+      failures: z.array(CheckFailure),
+      reasons: z.array(z.string()),
+    })
+    .optional(),
+  /** Free local fixes applied to the model's output (lib/generate/normalize.ts). */
+  normalized: z.array(z.string()).optional(),
 })
 export type QualityResult = z.infer<typeof QualityResult>
 

@@ -14,7 +14,7 @@ import {
 } from '@/lib/schemas'
 import type { GenerationLogSink } from '@/lib/ai'
 import { runDeterministicChecks, type DeterministicResult } from './deterministic'
-import { reviewStoryQuality, reviewFailures, reviewPassed } from './review'
+import { measuredForReview, reviewStoryQuality, reviewFailures, reviewPassed } from './review'
 import type { BlocklistData } from './blocklist'
 
 /**
@@ -115,6 +115,7 @@ export async function runQualityGate(opts: GateOptions): Promise<GateOutcome> {
     review =
       opts.reviewOverride ??
       (await reviewStoryQuality(story, request, opts.factPack, {
+        measured: measuredForReview(story, band),
         ...(opts.sink ? { sink: opts.sink } : {}),
         familyId: opts.familyId ?? null,
         storyId: opts.storyId ?? null,
