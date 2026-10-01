@@ -16,6 +16,19 @@ export const metadata: Metadata = {
  * `?deleted=1` is where `DELETE /api/account` sends the parent (F2). It has to be
  * acknowledged somewhere, and this is the only page left that they can still see.
  */
+/**
+ * `kindleConfigured()` reads the validated server env, which throws when a required variable
+ * is missing. The landing page must still render then - it is the one page with nothing to
+ * configure - so a failure here just means the page does not mention Kindle.
+ */
+function canSendToKindle(): boolean {
+  try {
+    return kindleConfigured()
+  } catch {
+    return false
+  }
+}
+
 export default async function HomePage({
   searchParams,
 }: {
@@ -24,5 +37,5 @@ export default async function HomePage({
   const params = await searchParams
   // F2 AC: a signed-out visitor can reach login from here. Signed in, the action skips it.
   const signedIn = (await currentUser().catch(() => null)) !== null
-  return <Landing signedIn={signedIn} justDeleted={params.deleted === '1'} kindle={kindleConfigured()} />
+  return <Landing signedIn={signedIn} justDeleted={params.deleted === '1'} kindle={canSendToKindle()} />
 }

@@ -152,10 +152,11 @@ test.describe('accessibility', () => {
   /** VT-R2 (issue #17): the landing page, in the light and the dark it will be seen in. */
   for (const scheme of ['light', 'dark'] as const) {
     test(`the landing page has no serious violations (${scheme})`, async ({ page }) => {
-      await page.emulateMedia({ colorScheme: scheme })
+      // The moons fade in one after another. Reduced motion shows them at once (globals.css),
+      // so the scan sees the settled page without waiting on a timer.
+      await page.emulateMedia({ colorScheme: scheme, reducedMotion: 'reduce' })
       await page.goto('/')
-      // The moons fade in; scan the settled page so a half-faded mark is not read as low contrast.
-      await page.waitForTimeout(2200)
+      await expect(page.locator('.lt-moons-row span').last()).toHaveCSS('opacity', '1')
       expect(report(`landing-${scheme}`, (await scan(page)).violations)).toEqual([])
     })
   }
