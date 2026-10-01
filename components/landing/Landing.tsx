@@ -14,11 +14,9 @@ import { BELIEFS, CLOSING, HERO, HOW, KINDLE, MISSION, PROMISES, QUESTIONS, SAMP
  * (`/login?next=/new`), so there is one path and no auth logic here.
  */
 export function Landing({
-  signedIn,
   justDeleted,
   kindle,
 }: {
-  signedIn: boolean
   justDeleted: boolean
   /** This server can send to a Kindle, so the page may say so. */
   kindle: boolean
@@ -40,15 +38,9 @@ export function Landing({
             <a href="#how" className="st-navlink st-hide-sm">
               How it works
             </a>
-            {signedIn ? (
-              <Link href="/library" className="st-navlink">
-                Library
-              </Link>
-            ) : (
-              <Link href="/login" className="st-navlink">
-                Sign in
-              </Link>
-            )}
+            <Link href="/login" className="st-navlink">
+              Sign in
+            </Link>
           </nav>
         </div>
       </header>

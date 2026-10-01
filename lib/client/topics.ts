@@ -77,6 +77,27 @@ export function offsetForDay(now: Date = new Date()): number {
 }
 
 /**
+ * Every idea there is, in the order "More ideas" walks them: ready fact packs first (those
+ * stories start sooner), then the whole evergreen pool from `offset`. No duplicates, so paging
+ * through it three at a time reaches each one before any repeats.
+ */
+export function ideaPool(input: {
+  fromServer?: readonly SuggestedTopic[]
+  offset?: number
+  pool?: readonly SuggestedTopic[]
+}): SuggestedTopic[] {
+  const pool = input.pool ?? EVERGREEN_TOPICS
+  return suggestedChips({ ...input, pool, count: (input.fromServer?.length ?? 0) + pool.length })
+}
+
+/** `count` ideas from `start`, wrapping round the pool. */
+export function ideasFrom(pool: readonly SuggestedTopic[], start: number, count: number): SuggestedTopic[] {
+  if (pool.length === 0) return []
+  const n = Math.min(count, pool.length)
+  return Array.from({ length: n }, (_, i) => pool[(((start + i) % pool.length) + pool.length) % pool.length]!)
+}
+
+/**
  * The suggested topics, remembered for the browser session (issue #17).
  *
  * The creator is now the home page, so it is opened far more often than `/new` was; the ideas
@@ -102,6 +123,15 @@ export function recallSuggestedTopics(now: number = Date.now()): SuggestedTopic[
     return topics.length === parsed.topics.length ? topics : null
   } catch {
     return null
+  }
+}
+
+/** After a story is made a new fact pack may be ready, so the remembered ideas are out of date. */
+export function forgetSuggestedTopics(): void {
+  try {
+    sessionStorage.removeItem(TOPICS_CACHE_KEY)
+  } catch {
+    /* nothing to forget */
   }
 }
 

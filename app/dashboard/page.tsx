@@ -17,7 +17,8 @@ export default async function DashboardPage() {
   if (!ctx) redirect('/login?next=/dashboard')
 
   const initial = await creatorInitial(ctx)
-  const children = initial.children ?? []
+  // undefined means the read failed, which is not the same as having no children.
+  const children = initial.children
 
   return (
     <>
@@ -28,15 +29,17 @@ export default async function DashboardPage() {
         below={
           <section className="st-family" aria-labelledby="family-name">
             <h2 id="family-name">{ctx.family.display_name}</h2>
-            <p>
-              {children.length === 0
-                ? 'No children yet.'
-                : `${children.length} ${children.length === 1 ? 'child' : 'children'} — ` +
-                  children.map((child) => `${child.first_name}, ${child.age}`).join(' · ')}
-            </p>
+            {children ? (
+              <p>
+                {children.length === 0
+                  ? 'No children yet.'
+                  : `${children.length} ${children.length === 1 ? 'child' : 'children'} — ` +
+                    children.map((child) => `${child.first_name}, ${child.age}`).join(' · ')}
+              </p>
+            ) : null}
             <span className="st-family-links">
               <Link href="/children" className="st-textlink">
-                {children.length === 0 ? 'Add a child' : 'Manage children'}
+                {children?.length === 0 ? 'Add a child' : 'Manage children'}
               </Link>
               <Link href="/settings" className="st-textlink">
                 Settings

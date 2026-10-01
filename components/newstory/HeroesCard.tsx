@@ -15,17 +15,31 @@ import { ChildPicker } from './Pickers'
  */
 export function HeroesCard({
   options,
+  failed = false,
   selected,
   onToggle,
 }: {
   /** null while the profiles are loading. */
   options: readonly Child[] | null
+  /** The profiles could not be read. Never to be confused with "this family has no children". */
+  failed?: boolean
   selected: readonly string[]
   onToggle: (id: string) => void
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const changeRef = useRef<HTMLButtonElement>(null)
   const chosen = (options ?? []).filter((c) => selected.includes(c.id))
+
+  if (options === null && failed) {
+    return (
+      <div className="st-heroes">
+        <div>
+          <span className="st-label-sm">Tonight’s heroes</span>
+          <span className="st-heroes-names st-heroes-quiet">We couldn’t load your children just now.</span>
+        </div>
+      </div>
+    )
+  }
 
   if (options === null) {
     return (

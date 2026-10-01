@@ -29,12 +29,15 @@ import {
 } from '@/lib/client/storage'
 import { useStoredJson } from '@/lib/client/useStored'
 import {
+  forgetSuggestedTopics,
+  ideaPool,
+  ideasFrom,
   offsetForDay,
   recallSuggestedTopics,
   rememberSuggestedTopics,
-  suggestedChips,
   type SuggestedTopic,
 } from '@/lib/client/topics'
+import { useHydrated } from '@/lib/client/useHydrated'
 import { checkTopic } from '@/lib/client/validate'
 import type { Child, LengthMinutes, QuotaResponse, Tone } from '@/lib/schemas'
 import type { CreatorInitial } from '@/lib/newstory/initial'
@@ -81,9 +84,12 @@ export function NewStoryFlow({
   const [children, setChildren] = useState<Child[] | null>(initial?.children ?? null)
   const [quota, setQuota] = useState<QuotaResponse | null>(initial?.quota ?? null)
   const [serverTopics, setServerTopics] = useState<readonly SuggestedTopic[]>(initial?.topics ?? [])
-  const [chipOffset, setChipOffset] = useState(() => offsetForDay())
-  /** Where the three visible ideas start within the row of eight. */
+  const [chipOffset] = useState(() => offsetForDay())
+  /** Where the three visible ideas start within the pool. */
   const [chipStart, setChipStart] = useState(0)
+  /** Story options: open because the parent opened it, or because what blocks the story is inside. */
+  const [optionsOpen, setOptionsOpen] = useState(false)
+  const hydrated = useHydrated()
   const [loadFailed, setLoadFailed] = useState(false)
   /** Bumped by the retry button so the load effect runs again. */
   const [loadAttempt, setLoadAttempt] = useState(0)
@@ -129,9 +135,10 @@ export function NewStoryFlow({
     const controller = new AbortController()
     // Only ask for what the page does not already have: whatever the server passed in, and
     // topic ideas this browser session has seen in the last few minutes. "Try again" asks
-    // for everything.
+    // for everything, afresh.
     const first = loadAttempt === 0
-    const recalled = recallSuggestedTopics()
+    if (first && initial?.topics) rememberSuggestedTopics(initial.topics)
+    const recalled = first ? recallSuggestedTopics() : null
     Promise.all([
       first && initial?.children
         ? null
@@ -178,21 +185,32 @@ export function NewStoryFlow({
     if (window.matchMedia?.('(pointer: fine)').matches) topicRef.current?.focus({ preventScroll: true })
   }, [children, selectedIds.length, stream.phase])
 
-  // The row is still built eight at a time (ready fact packs first); three are on show, and
-  // "More ideas" walks along the row before turning it over for a fresh eight.
-  const chipRow = useMemo(
-    () => suggestedChips({ fromServer: serverTopics, offset: chipOffset }),
+  // Three ideas on show; "More ideas" pages through every idea there is - ready fact packs
+  // first, then the whole evergreen pool - and only then comes round again.
+  const ideas = useMemo(
+    () => ideaPool({ fromServer: serverTopics, offset: chipOffset }),
     [serverTopics, chipOffset],
   )
-  const chips = useMemo(
-    () => chipRow.slice(chipStart, chipStart + CHIPS_SHOWN),
-    [chipRow, chipStart],
+  const chips = useMemo(() => ideasFrom(ideas, chipStart, CHIPS_SHOWN), [ideas, chipStart])
+  const moreIdeas = useCallback(
+    () => setChipStart((start) => (ideas.length === 0 ? 0 : (start + CHIPS_SHOWN) % ideas.length)),
+    [ideas.length],
   )
-  const moreIdeas = useCallback(() => {
-    if (chipStart + CHIPS_SHOWN * 2 <= chipRow.length) return setChipStart(chipStart + CHIPS_SHOWN)
-    setChipStart(0)
-    setChipOffset((o) => o + chipRow.length)
-  }, [chipStart, chipRow.length])
+
+  // The quota the server rendered can go stale: a tab left open past the nightly reset, or a
+  // page restored from the back/forward cache after a story was made elsewhere. Ask again
+  // whenever the page comes back into view.
+  useEffect(() => {
+    const revalidate = () => {
+      if (document.visibilityState === 'visible') void refreshQuota()
+    }
+    document.addEventListener('visibilitychange', revalidate)
+    window.addEventListener('pageshow', revalidate)
+    return () => {
+      document.removeEventListener('visibilitychange', revalidate)
+      window.removeEventListener('pageshow', revalidate)
+    }
+  }, [refreshQuota])
 
   // ------------------------------------------------------------------ submit
   /** The form as it will actually be submitted: stated intent minus children that are gone. */
@@ -204,7 +222,8 @@ export function NewStoryFlow({
   const blocker = formBlocker(effectiveForm)
   const quotaLeft = quota ? Math.max(0, quota.limit - quota.used) : null
   const quotaBlocked = quotaLeft === 0 || quota?.generation_enabled === false
-  const resetLabel = resetTimeLabel(quota?.resets_at)
+  // A clock time in the parent's own locale: only the browser knows it, so not before hydration.
+  const resetLabel = hydrated ? resetTimeLabel(quota?.resets_at) : null
   const busy = stream.phase === 'connecting' || stream.phase === 'streaming'
 
   const submit = useCallback(async () => {
@@ -233,6 +252,8 @@ export function NewStoryFlow({
     for await (const action of readGenerationEvents(started.stream, controller.signal)) {
       dispatch(action)
     }
+    // A new story can leave a new fact pack ready: next time, ask for the ideas again.
+    forgetSuggestedTopics()
     void refreshQuota()
   }, [busy, effectiveForm, refreshQuota])
 
@@ -361,7 +382,8 @@ export function NewStoryFlow({
             }}
           >
             <HeroesCard
-              options={loadFailed && children === null ? [] : children}
+              options={children}
+              failed={loadFailed}
               selected={selectedIds}
               onToggle={(id) => setForm((f) => toggleChild(f, id))}
             />
@@ -376,7 +398,11 @@ export function NewStoryFlow({
             />
 
             {/* Open by itself when the thing blocking the story is inside it. */}
-            <details className="st-options" open={blocker === 'no_tone' ? true : undefined}>
+            <details
+              className="st-options"
+              open={optionsOpen || blocker === 'no_tone'}
+              onToggle={(event) => setOptionsOpen(event.currentTarget.open)}
+            >
               <summary>
                 <span>Story options</span>
                 <span className="st-options-summary">

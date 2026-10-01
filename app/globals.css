@@ -464,7 +464,6 @@ body > main {
 .st-avatar span { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-fg); font-family: var(--prose-font); font-size: 17px; transition: background-color 120ms ease; }
 .st-avatar:hover span { background: var(--accent-hover); }
 
-.st-main { flex: 1; width: 100%; max-width: 1120px; margin: 0 auto; padding: 48px 24px 44px; }
 .st-footer { border-top: 1px solid var(--border); }
 .st-footer-in { min-height: 64px; font-size: 13px; color: var(--fg-muted); flex-wrap: wrap; }
 .st-footer-links { display: flex; gap: 4px; }

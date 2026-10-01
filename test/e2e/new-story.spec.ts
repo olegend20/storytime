@@ -265,6 +265,16 @@ test('three suggested chips are offered, and "More ideas" rotates them', async (
     .poll(async () => (await chips.allInnerTexts()).join('|'))
     .not.toBe(before.join('|'))
 
+  // It pages through every idea before any comes round again: twelve built-in ideas plus the
+  // ready fact packs, three at a time, never the same idea twice on the way.
+  const seen = new Set(before)
+  for (let i = 0; i < 3; i++) {
+    for (const idea of await chips.allInnerTexts()) seen.add(idea)
+    await page.getByRole('button', { name: 'More ideas' }).click()
+    await expect(chips).toHaveCount(3)
+  }
+  expect(seen.size).toBeGreaterThanOrEqual(12)
+
   // Tapping a chip fills the topic. A warm chip's accessible name carries an extra
   // screen-reader-only "starts straight away", so the label is the first line only.
   const first = chips.first()
@@ -371,4 +381,11 @@ test('with no feeling chosen, Story options opens itself and says why the button
   await expect(page.getByRole('button', { name: MAKE_BOOK })).toBeDisabled()
   await expect(page.getByText('Pick at least one feeling in Story options.')).toBeVisible()
   await expect(page.locator('details.st-options')).toHaveAttribute('open', '')
+
+  // Choosing the first feeling clears the block, and the options stay open for the second.
+  await page.getByRole('button', { name: 'Calm & sleepy', exact: true }).click()
+  await expect(page.getByRole('button', { name: MAKE_BOOK })).toBeEnabled()
+  await expect(page.locator('details.st-options')).toHaveAttribute('open', '')
+  await page.getByRole('button', { name: 'Mysterious', exact: true }).click()
+  await expect(page.getByTestId('options-summary')).toHaveText('Calm & sleepy + Mysterious · 10 min')
 })
