@@ -67,7 +67,7 @@ jobs:
       LIVE_API: '0'
     steps:
       - uses: actions/checkout@v4 # no ref: the base branch, at the workspace root
-      - name: Refuse anything but this repository's own, non-draft PR (dispatch skips the event guard)
+      - name: "Refuse anything but this repository's own, non-draft PR (dispatch skips the event guard)"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -78,7 +78,7 @@ jobs:
           ref: refs/pull/${{ env.PR }}/head
           path: pr-head
           fetch-depth: 0
-      - name: Reviewer model from config/models.json (CLAUDE.md rule 2: never a literal)
+      - name: "Reviewer model from config/models.json (CLAUDE.md rule 2: never a literal)"
         id: model
         run: echo "id=$(jq -r .roles.pr_reviewer.model config/models.json)" >> "$GITHUB_OUTPUT"
 
