@@ -20,5 +20,5 @@
 - [ ] `lib/schemas/` unchanged, or the change is additive and called out here
 - [ ] Prompts unchanged, or `master`/`judge`/guardrail changes carry the eval before/after here (rule 5)
 - [ ] `DECISIONS.md` has a row for every decision made; `PROGRESS.md` updated
-- [ ] AI review run (`/code-review`) and its findings addressed or answered
+- [ ] AI review run (`/code-review`) and its findings addressed or answered; owner-only paths touched are listed above (the owner releases those)
 - [ ] Nothing here spent API credit without the owner's approval and a cost figure
