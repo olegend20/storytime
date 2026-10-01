@@ -15,7 +15,7 @@ import {
 test.describe('F2 authentication', () => {
   test('an unauthenticated visitor sees the landing page and can reach login', async ({ page }) => {
     await page.goto('/')
-    await expect(page.getByRole('heading', { name: 'StoryTime' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: /last ten minutes/i })).toBeVisible()
     await page.getByRole('link', { name: 'Sign in' }).click()
     await expect(page).toHaveURL(/\/login$/)
     await expect(page.getByLabel('Email address')).toBeVisible()

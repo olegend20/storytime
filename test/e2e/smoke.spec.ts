@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 /** F1: the app builds and serves. Real e2e coverage arrives with F2/F9/F10. */
 test('landing page renders', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByRole('heading', { name: 'StoryTime' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: /last ten minutes/i })).toBeVisible()
 })
 
 /** F9 AC: no horizontal scroll on a 375px phone. */

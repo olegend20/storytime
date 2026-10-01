@@ -74,16 +74,16 @@ export default function LoginForm({ next, initialError }: { next: string; initia
 
   if (status === 'sent') {
     return (
-      <div className="rounded-xl border border-black/10 bg-black/[0.02] p-5 dark:border-white/15 dark:bg-white/[0.04]">
-        <h2 className="m-0 text-lg font-semibold">Check your email</h2>
-        <p className="mt-2 mb-0 text-sm leading-relaxed opacity-80">
+      <div className="card p-5">
+        <h2 className="m-0 text-2xl font-normal">Check your email</h2>
+        <p className="mt-2 mb-0 text-sm leading-relaxed text-muted">
           We sent a sign-in link to <strong>{email.trim()}</strong>. It opens StoryTime on this
           device and expires shortly.
         </p>
         <button
           type="button"
           onClick={() => setStatus('idle')}
-          className="mt-4 text-sm underline underline-offset-2 opacity-70 hover:opacity-100"
+          className="st-textlink mt-2"
         >
           Use a different email
         </button>
@@ -107,42 +107,42 @@ export default function LoginForm({ next, initialError }: { next: string; initia
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
-          className="mt-1.5 w-full rounded-lg border border-black/15 bg-white px-3 py-2.5 text-base dark:border-white/20 dark:bg-white/5"
+          className="field mt-1.5"
         />
         <button
           type="submit"
           disabled={status === 'sending'}
-          className="mt-3 w-full rounded-lg bg-ink px-4 py-2.5 text-base font-medium text-paper disabled:opacity-60 dark:bg-paper dark:text-ink"
+          className="btn mt-3 w-full"
         >
           {status === 'sending' ? 'Sending…' : 'Email me a sign-in link'}
         </button>
       </form>
 
-      <div className="mt-6 border-t border-black/10 pt-5 dark:border-white/15">
+      <div className="mt-6 border-t border-line pt-5">
         {GOOGLE_ENABLED ? (
           <button
             type="button"
             onClick={signInWithGoogle}
-            className="w-full rounded-lg border border-black/15 px-4 py-2.5 text-base font-medium dark:border-white/20"
+            className="btn btn-quiet w-full"
           >
             Continue with Google
           </button>
         ) : (
-          <p className="m-0 text-sm opacity-60">
+          <p className="m-0 text-sm text-muted">
             Google sign-in is not enabled on this deployment.
           </p>
         )}
       </div>
 
       {error ? (
-        <p role="alert" className="mt-4 mb-0 text-sm text-red-700 dark:text-red-400">
+        <p role="alert" className="mt-4 mb-0 text-sm text-danger">
           {error}
         </p>
       ) : null}
 
-      <p className="mt-6 mb-0 text-xs leading-relaxed opacity-60">
+      <p className="mt-6 mb-0 text-[0.8125rem] leading-relaxed text-muted">
         No password to remember. We only store your email address and your children&apos;s first
-        names — see our <a href="/privacy" className="underline underline-offset-2">privacy page</a>.
+        names — see our <a href="/privacy" className="underline underline-offset-2" style={{ color: 'inherit' }}>privacy page</a>.
       </p>
     </div>
   )
