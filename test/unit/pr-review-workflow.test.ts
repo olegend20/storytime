@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { parse } from 'yaml'
 import models from '../../config/models.json'
 import { OWNER_ONLY_PATHS, isOwnerOnlyPath } from '../../scripts/pr-decide'
 
@@ -14,6 +15,16 @@ const allowed = /--allowedTools "([^"]*)"/.exec(claudeArgs)?.[1] ?? ''
 const disallowed = /--disallowedTools "([^"]*)"/.exec(claudeArgs)?.[1] ?? ''
 
 describe('pr-review workflow', () => {
+  it('is valid YAML with the expected shape (a parse error here is a silent no-op on GitHub)', () => {
+    // The first version shipped with an unquoted `: ` in a step name; GitHub refused the
+    // whole file and no job ever ran. Parse it the way GitHub does before checking strings.
+    const doc = parse(workflow) as { on: Record<string, unknown>; jobs: Record<string, { name: string; steps: { name?: string; uses?: string; run?: string }[] }> }
+    expect(Object.keys(doc.on)).toEqual(['pull_request_target', 'workflow_dispatch'])
+    expect(Object.keys(doc.jobs)).toEqual(['review', 'verdict'])
+    expect(doc.jobs.verdict!.name).toBe('agent review / verdict')
+    for (const job of Object.values(doc.jobs)) for (const step of job.steps) expect(typeof (step.name ?? step.uses ?? step.run)).toBe('string')
+  })
+
   it('runs on pull_request_target so the rules always come from main', () => {
     expect(workflow).toMatch(/^on:\n\s+pull_request_target:/m)
     expect(workflow).not.toMatch(/^\s+pull_request:\s*$/m)
