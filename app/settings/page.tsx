@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation'
 import { currentFamily } from '@/lib/auth/session'
 import { supportedTimeZones } from '@/lib/family/timezone'
 import FamilySettingsForm from './FamilySettingsForm'
+import KindleSettingsForm from './KindleSettingsForm'
+import { kindleFromAddress } from '@/lib/kindle/send'
 import DeleteAccountForm from './DeleteAccountForm'
 
 export const metadata: Metadata = { title: 'Settings — StoryTime' }
@@ -26,6 +28,10 @@ export default async function SettingsPage() {
           family={{ display_name: ctx.family.display_name, timezone: ctx.family.timezone }}
           timezones={supportedTimeZones()}
         />
+      </section>
+
+      <section className="mb-10">
+        <KindleSettingsForm kindleEmail={ctx.family.kindle_email ?? null} fromAddress={kindleFromAddress()} />
       </section>
 
       <section className="mb-10">

@@ -34,6 +34,11 @@ export default defineConfig({
       UI_MOCK_API: '0',
       NEXT_PUBLIC_API_MOCK: '0',
       NEXT_DIST_DIR: '.next-real',
+      // Send to Kindle (issue #11): the local mailbox is the SMTP provider, so the e2e can
+      // send a real email and read the attachment back. Zero external accounts.
+      SMTP_HOST: process.env.SMTP_HOST ?? '127.0.0.1',
+      SMTP_PORT: process.env.SMTP_PORT ?? '54325',
+      KINDLE_FROM_EMAIL: process.env.KINDLE_FROM_EMAIL ?? 'kindle@storytime.local',
     },
   },
 })

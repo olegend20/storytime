@@ -84,7 +84,8 @@ export default function PrivacyPage() {
         <h2 className="mb-2 text-lg font-semibold">What we store about you</h2>
         <p className="mt-0 mb-0 text-[0.95rem] leading-relaxed">
           Your email address, so you can sign in — there is no password to lose. A family name
-          and a timezone, both of which you choose. And the stories we made for you, with what
+          and a timezone, both of which you choose. If you add one, your Kindle&rsquo;s
+          Send-to-Kindle address, used only to email you a story you ask for. And the stories we made for you, with what
           each one cost us to generate.
         </p>
       </section>

@@ -44,6 +44,18 @@ const ServerEnv = z.object({
   GENERATION_ENABLED: Booleanish.default(true),
   DAILY_BUDGET_USD: z.coerce.number().positive().default(5),
 
+  /**
+   * Send to Kindle (issue #11): the app mails an EPUB over SMTP. All optional - with
+   * SMTP_HOST or KINDLE_FROM_EMAIL unset the feature says it is not set up. Locally the
+   * Supabase mailbox is the provider (127.0.0.1:54325, no auth).
+   */
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_SECURE: Booleanish.default(false),
+  KINDLE_FROM_EMAIL: z.string().email().optional(),
+
   /** F12: /admin is gated to this user id; everyone else gets a 404. */
   OWNER_USER_ID: z.string().uuid().optional(),
 

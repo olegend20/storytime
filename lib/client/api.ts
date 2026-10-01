@@ -34,10 +34,36 @@ export class ApiError extends Error {
   constructor(
     readonly status: number,
     readonly path: string,
+    /** The server's `code` and parent-facing `message`, when the body carried them. */
+    readonly code: string | null = null,
+    readonly serverMessage: string | null = null,
   ) {
     super(`${path} responded ${status}`)
     this.name = 'ApiError'
   }
+}
+
+/** Send to Kindle (issue #11). */
+export interface KindleSendResponse {
+  sent: { to: string; filename: string; sent_today: number }
+}
+
+export async function sendToKindle(id: string): Promise<KindleSendResponse> {
+  const path = `/stories/${encodeURIComponent(id)}/kindle`
+  const res = await fetch(apiUrl(path), { method: 'POST', headers: { accept: 'application/json' } })
+  if (!res.ok) {
+    let code: string | null = null
+    let message: string | null = null
+    try {
+      const body = (await res.json()) as { code?: string; message?: string }
+      code = body.code ?? null
+      message = body.message ?? null
+    } catch {
+      /* no body */
+    }
+    throw new ApiError(res.status, path, code, message)
+  }
+  return (await res.json()) as KindleSendResponse
 }
 
 export async function fetchQuota(signal?: AbortSignal): Promise<QuotaResponse> {

@@ -17,7 +17,12 @@ export interface FamilyRequestContext {
 
 /** Only the fields a client has any business seeing. */
 export function publicFamily(family: FamilyRow) {
-  return { id: family.id, display_name: family.display_name, timezone: family.timezone }
+  return {
+    id: family.id,
+    display_name: family.display_name,
+    timezone: family.timezone,
+    kindle_email: family.kindle_email ?? null,
+  }
 }
 
 export function handleGetFamily(ctx: FamilyRequestContext): Response {

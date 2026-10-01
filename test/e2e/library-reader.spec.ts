@@ -407,3 +407,24 @@ test('a saved story reads with no signal', async ({ page, context, browserName }
   await expect(page.getByRole('heading', { name: 'True facts from the story' })).toBeVisible({ timeout: 15_000 })
   await context.setOffline(false)
 })
+
+// ---------------------------------------------------------------------------------------
+// Send to Kindle (issue #11) - the button on a saved story, against the mock backend
+// ---------------------------------------------------------------------------------------
+
+test('Send to Kindle reports where the story went, and links to Settings when no address is set', async ({ page }) => {
+  // The newest story (…0001) has a Kindle address in the mock; …0000 does not.
+  await page.goto('/stories/833fa5ee-0001-4000-8000-833fa5ee0001')
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  await page.getByTestId('send-to-kindle').click()
+  await expect(page.getByTestId('kindle-sent')).toContainText('Sent to mock_family@kindle.com')
+
+  await page.goto('/stories/a2117f05-0000-4000-8000-a2117f050000')
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  await page.getByTestId('send-to-kindle').click()
+  await expect(page.getByTestId('kindle-error')).toContainText('Add your Kindle address')
+  await expect(page.getByRole('link', { name: 'Add it in Settings' })).toHaveAttribute('href', '/settings')
+  // Reading mode hides the chrome, the button with it.
+  await page.getByRole('button', { name: 'Reading mode' }).click()
+  await expect(page.getByTestId('send-to-kindle')).toBeHidden()
+})

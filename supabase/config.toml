@@ -20,6 +20,9 @@ port = 54323
 [inbucket]
 enabled = true
 port = 54324
+# SMTP in, for the app's own mail (Send to Kindle, issue #11): locally the mailbox is the
+# email provider, so the whole flow runs and is tested with no account anywhere.
+smtp_port = 54325
 
 [auth]
 enabled = true
