@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { fetchChildren, fetchQuota, fetchSuggestedTopics } from '@/lib/client/api'
 import {
@@ -18,7 +18,8 @@ import {
   toggleTone,
   type StoryFormState,
 } from '@/lib/client/form'
-import { readerFromStream } from '@/lib/client/reader'
+import { TONE_LABELS } from '@/lib/client/form'
+import { joinNames, readerFromStream } from '@/lib/client/reader'
 import {
   DEFAULT_FORM_MEMORY,
   FORM_KEY,
@@ -27,33 +28,62 @@ import {
   saveFormMemory,
 } from '@/lib/client/storage'
 import { useStoredJson } from '@/lib/client/useStored'
-import { offsetForDay, suggestedChips, type SuggestedTopic } from '@/lib/client/topics'
+import {
+  offsetForDay,
+  recallSuggestedTopics,
+  rememberSuggestedTopics,
+  suggestedChips,
+  type SuggestedTopic,
+} from '@/lib/client/topics'
 import { checkTopic } from '@/lib/client/validate'
 import type { Child, LengthMinutes, QuotaResponse, Tone } from '@/lib/schemas'
+import type { CreatorInitial } from '@/lib/newstory/initial'
 import { StoryReader } from '@/components/reader/StoryReader'
-import { TicTacToe } from '@/components/newstory/TicTacToe'
+import { ArrowRight, ChevronDown } from '@/components/Icons'
+import { Phase } from '@/components/Phase'
 import { PrivacyNote } from '@/components/PrivacyCopy'
 import { GenerationError } from './GenerationError'
-import { ChildPicker, LengthPicker, TonePicker } from './Pickers'
+import { HeroesCard } from './HeroesCard'
+import { LengthPicker, TonePicker } from './Pickers'
 import { QuotaIndicator, resetTimeLabel } from './QuotaIndicator'
 import { TopicField } from './TopicField'
+import { Waiting } from './Waiting'
+
+/** How many ideas sit under the topic field (the calm design shows three; the pool rotates). */
+const CHIPS_SHOWN = 3
 
 /**
- * F10, the nightly flow: form → streaming reader → saved story.
+ * F10, the nightly flow: creator → calm waiting → streaming reader → saved story.
+ *
+ * This is the one creator: `/` (signed in), `/dashboard` and `/new` all mount it (issue #17).
  *
  * Tap budget (AC: "≤3 taps before typing the topic on a phone"). Children and length are restored
- * from the last story, tones default to funny + exciting, every child is selected on a first visit,
- * and the topic field is focused once the form is ready — so reaching the topic costs zero taps,
- * and the one tap in the budget is the parent choosing to narrow the selection.
+ * from the last story, tones default to funny + exciting, every child is selected on a first
+ * visit, and tone and length sit behind "Story options" with their values in view — so reaching
+ * the topic costs one tap at most. With a mouse the field is focused for you; on a touch screen
+ * it is not, so the keyboard does not jump up before the parent has looked at the page.
  *
  * A pre-stream failure never navigates away: the form keeps its contents so the parent can edit
  * the topic instead of retyping it.
  */
-export function NewStoryFlow() {
-  const [children, setChildren] = useState<Child[] | null>(null)
-  const [quota, setQuota] = useState<QuotaResponse | null>(null)
-  const [serverTopics, setServerTopics] = useState<readonly SuggestedTopic[]>([])
+export function NewStoryFlow({
+  below,
+  initial,
+}: {
+  /** Shown under the creator (the dashboard's family strip). */
+  below?: ReactNode
+  /**
+   * What the page that mounts this already read on the server (`/` and `/dashboard`): the
+   * creator then opens complete and asks the API for nothing until the parent acts.
+   */
+  initial?: CreatorInitial
+} = {}) {
+  const [children, setChildren] = useState<Child[] | null>(initial?.children ?? null)
+  const [quota, setQuota] = useState<QuotaResponse | null>(initial?.quota ?? null)
+  const [serverTopics, setServerTopics] = useState<readonly SuggestedTopic[]>(initial?.topics ?? [])
   const [chipOffset, setChipOffset] = useState(() => offsetForDay())
+  /** Where the three visible ideas start within the row of eight. */
+  const [chipStart, setChipStart] = useState(0)
   const [loadFailed, setLoadFailed] = useState(false)
   /** Bumped by the retry button so the load effect runs again. */
   const [loadAttempt, setLoadAttempt] = useState(0)
@@ -97,19 +127,35 @@ export function NewStoryFlow() {
 
   useEffect(() => {
     const controller = new AbortController()
+    // Only ask for what the page does not already have: whatever the server passed in, and
+    // topic ideas this browser session has seen in the last few minutes. "Try again" asks
+    // for everything.
+    const first = loadAttempt === 0
+    const recalled = recallSuggestedTopics()
     Promise.all([
-      fetchChildren(controller.signal).then((res) => {
-        setChildren(res.children)
-        setLoadFailed(false)
-      }),
-      refreshQuota(controller.signal),
-      fetchSuggestedTopics(controller.signal)
-        .then((res) => setServerTopics(res.topics))
-        .catch(() => setServerTopics([])),
+      first && initial?.children
+        ? null
+        : fetchChildren(controller.signal).then((res) => {
+            setChildren(res.children)
+            setLoadFailed(false)
+          }),
+      first && initial?.quota ? null : refreshQuota(controller.signal),
+      first && initial?.topics
+        ? null
+        : recalled
+          ? Promise.resolve().then(() => setServerTopics(recalled))
+          : fetchSuggestedTopics(controller.signal)
+            .then((res) => {
+              setServerTopics(res.topics)
+              rememberSuggestedTopics(res.topics)
+            })
+            .catch(() => setServerTopics([])),
     ]).catch(() => {
       if (!controller.signal.aborted) setLoadFailed(true)
     })
     return () => controller.abort()
+    // `initial` is a server-rendered prop: it does not change after mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshQuota, loadAttempt])
 
   /**
@@ -128,13 +174,25 @@ export function NewStoryFlow() {
     if (focusedOnce.current || !children || stream.phase !== 'idle') return
     if (selectedIds.length === 0) return
     focusedOnce.current = true
-    topicRef.current?.focus({ preventScroll: true })
+    // A fine pointer means a keyboard is already there; on touch, focus would summon one.
+    if (window.matchMedia?.('(pointer: fine)').matches) topicRef.current?.focus({ preventScroll: true })
   }, [children, selectedIds.length, stream.phase])
 
-  const chips = useMemo(
+  // The row is still built eight at a time (ready fact packs first); three are on show, and
+  // "More ideas" walks along the row before turning it over for a fresh eight.
+  const chipRow = useMemo(
     () => suggestedChips({ fromServer: serverTopics, offset: chipOffset }),
     [serverTopics, chipOffset],
   )
+  const chips = useMemo(
+    () => chipRow.slice(chipStart, chipStart + CHIPS_SHOWN),
+    [chipRow, chipStart],
+  )
+  const moreIdeas = useCallback(() => {
+    if (chipStart + CHIPS_SHOWN * 2 <= chipRow.length) return setChipStart(chipStart + CHIPS_SHOWN)
+    setChipStart(0)
+    setChipOffset((o) => o + chipRow.length)
+  }, [chipStart, chipRow.length])
 
   // ------------------------------------------------------------------ submit
   /** The form as it will actually be submitted: stated intent minus children that are gone. */
@@ -192,17 +250,18 @@ export function NewStoryFlow() {
     tones: form.tones,
   })
 
-  // Waiting for the writer: tic-tac-toe from the first instant (DECISIONS #142). The reader
-  // takes over the moment the title (`meta`) arrives.
+  // Waiting for the writer, quietly. The reader takes over the moment the title (`meta`)
+  // arrives; until then the moon shows the stage the server has reached.
   const names = selectedChildren.map((c) => c.first_name)
   if ((stream.phase === 'connecting' || stream.phase === 'streaming') && !stream.meta) {
-    const topic = stream.facts?.topic_label ?? form.topic.trim()
-    const status = stream.facts
-      ? `Writing your story about ${topic}… play while you wait.`
-      : `Getting the facts ready for your story… play while you wait.`
     return (
-      <main id="main">
-        <TicTacToe names={names} status={status} onCancel={backToForm} />
+      <main id="main" className="st-main">
+        <Waiting
+          names={names}
+          topicLabel={stream.facts?.topic_label ?? null}
+          stage={stream.facts ? 'writing' : 'facts'}
+          onCancel={backToForm}
+        />
       </main>
     )
   }
@@ -250,101 +309,135 @@ export function NewStoryFlow() {
     )
   }
 
+  const optionsSummary = `${form.tones.map((t) => TONE_LABELS[t]).join(' + ') || 'No feeling chosen'} · ${form.lengthMinutes} min`
+  const paused = quota?.generation_enabled === false
+  const note = quotaBlocked
+    ? paused
+      ? 'New stories are paused right now. Everything in your library is still there to read.'
+      : `That's all ${quota?.limit ?? 3} for today${resetLabel ? ` — your next story unlocks at ${resetLabel}` : ''}.`
+    : blocker === 'no_children'
+      ? 'Pick who the story is about.'
+      : blocker === 'no_tone'
+        ? 'Pick at least one feeling in Story options.'
+        : `Free for families · ${form.lengthMinutes} min read aloud`
+  const sampleA = names[0] ?? 'Milo'
+  const sampleB = names.length === 0 ? 'Juno' : names[1]
+  const sampleNames = names.length === 0 ? 'Milo & Juno' : joinNames(names)
+
   return (
-    <main id="main" className="mx-auto max-w-2xl px-4 py-8">
-      <div className="mb-6 flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="m-0 text-[clamp(1.6rem,5vw,2.1rem)]">Tonight&rsquo;s story</h1>
-        <QuotaIndicator quota={quota} />
+    <main id="main" className="st-main">
+      <div className="st-home">
+        <div className="st-creator">
+          <p className="st-eyebrow">Ten minutes. Together.</p>
+          <h1 className="st-h1">
+            Make the last ten minutes <em>memorable.</em>
+          </h1>
+          <p className="st-lead">
+            A bedtime story where your children are the heroes, and there’s something new to discover.
+          </p>
+
+          {loadFailed && (
+            <div className="card mt-6 p-4" role="alert">
+              <p className="mt-0 mb-3">
+                We couldn&rsquo;t load your family details. Nothing is lost — have another go.
+              </p>
+              {/* A dead form with no way out is the worst version of this failure. */}
+              <button type="button" className="btn btn-quiet" onClick={() => setLoadAttempt((n) => n + 1)}>
+                Try again
+              </button>
+            </div>
+          )}
+
+          {stream.error && (
+            <div className="mt-6">
+              <GenerationError error={stream.error} onRetry={quotaBlocked ? undefined : () => void submit()} />
+            </div>
+          )}
+
+          <form
+            onSubmit={(event) => {
+              event.preventDefault()
+              void submit()
+            }}
+          >
+            <HeroesCard
+              options={loadFailed && children === null ? [] : children}
+              selected={selectedIds}
+              onToggle={(id) => setForm((f) => toggleChild(f, id))}
+            />
+
+            <TopicField
+              value={form.topic}
+              onChange={(topic) => setForm((f) => ({ ...f, topic }))}
+              chips={chips}
+              onShuffle={moreIdeas}
+              message={showTopicError && !topicCheck.ok ? topicCheck.message : null}
+              inputRef={topicRef}
+            />
+
+            {/* Open by itself when the thing blocking the story is inside it. */}
+            <details className="st-options" open={blocker === 'no_tone' ? true : undefined}>
+              <summary>
+                <span>Story options</span>
+                <span className="st-options-summary">
+                  <span data-testid="options-summary">{optionsSummary}</span>
+                  <ChevronDown width={16} height={16} className="st-chev" />
+                </span>
+              </summary>
+              <div className="st-options-body">
+                <TonePicker selected={form.tones} onToggle={(tone: Tone) => setForm((f) => toggleTone(f, tone))} />
+                <LengthPicker
+                  value={form.lengthMinutes}
+                  onChange={(lengthMinutes: LengthMinutes) => setForm((f) => ({ ...f, lengthMinutes }))}
+                />
+              </div>
+            </details>
+
+            <button
+              type="submit"
+              className="st-primary st-submit"
+              disabled={busy || quotaBlocked || blocker === 'no_children' || blocker === 'no_tone'}
+            >
+              Make tonight’s book <ArrowRight />
+            </button>
+            <p className="st-note" aria-live="polite">
+              {note}
+            </p>
+            <div className="st-quota">
+              <QuotaIndicator quota={quota} />
+            </div>
+          </form>
+        </div>
+
+        <aside className="st-sample" aria-label="A sample of a bedtime book">
+          <p className="st-sample-label">A sample of a bedtime book</p>
+          <div className="st-book">
+            <p className="st-book-by">A story starring {sampleNames}</p>
+            <p className="st-book-title">{sampleNames} and the Moon’s Secret</p>
+            <div className="st-ornament" aria-hidden>
+              <i />
+              <Phase lit={0.28} size={13} />
+              <i />
+            </div>
+            <div className="st-book-prose">
+              <p className="st-dropcap">
+                {sampleB
+                  ? `${sampleA} was pulling the blanket up, chin-high, when ${sampleB} noticed a little silver light on the windowsill.`
+                  : `${sampleA} was pulling the blanket up, chin-high, when a little silver light appeared on the windowsill.`}
+              </p>
+              <p>
+                “I think the Moon has left {sampleB ? 'us' : 'me'} a question,” {sampleB ?? sampleA} whispered.
+              </p>
+            </div>
+            <span className="st-book-folio" aria-hidden>
+              1
+            </span>
+          </div>
+          <p className="st-sample-caption">Their names. Their curiosity. Your time together.</p>
+        </aside>
       </div>
-
-      {loadFailed && (
-        <div className="card mb-6 p-4" role="alert">
-          <p className="mt-0 mb-3">
-            We couldn&rsquo;t load your family details. Nothing is lost — have another go.
-          </p>
-          {/* A dead form with no way out is the worst version of this failure. */}
-          <button
-            type="button"
-            className="btn btn-quiet"
-            onClick={() => setLoadAttempt((n) => n + 1)}
-          >
-            Try again
-          </button>
-        </div>
-      )}
-
-      {stream.error && (
-        <div className="mb-6">
-          <GenerationError
-            error={stream.error}
-            onRetry={quotaBlocked ? undefined : () => void submit()}
-          />
-        </div>
-      )}
-
-      <form
-        className="space-y-7"
-        onSubmit={(event) => {
-          event.preventDefault()
-          void submit()
-        }}
-      >
-        {children === null ? (
-          <p style={{ color: 'var(--fg-muted)' }}>Loading your children…</p>
-        ) : children.length === 0 ? (
-          <p className="card p-4">
-            Add a child first and we&rsquo;ll make them the hero of tonight&rsquo;s story.
-          </p>
-        ) : (
-          <ChildPicker
-            options={children}
-            selected={selectedIds}
-            onToggle={(id) => setForm((f) => toggleChild(f, id))}
-          />
-        )}
-
-        <TopicField
-          value={form.topic}
-          onChange={(topic) => setForm((f) => ({ ...f, topic }))}
-          chips={chips}
-          onShuffle={() => setChipOffset((o) => o + 8)}
-          message={showTopicError && !topicCheck.ok ? topicCheck.message : null}
-          inputRef={topicRef}
-        />
-
-        <TonePicker
-          selected={form.tones}
-          onToggle={(tone: Tone) => setForm((f) => toggleTone(f, tone))}
-        />
-
-        <LengthPicker
-          value={form.lengthMinutes}
-          onChange={(lengthMinutes: LengthMinutes) => setForm((f) => ({ ...f, lengthMinutes }))}
-        />
-
-        <div>
-          <button
-            type="submit"
-            className="btn w-full"
-            disabled={busy || quotaBlocked || blocker === 'no_children' || blocker === 'no_tone'}
-          >
-            {busy ? 'Writing…' : 'Start the story'}
-          </button>
-          <p className="mt-2 mb-0 text-sm" style={{ color: 'var(--fg-muted)' }} aria-live="polite">
-            {quotaBlocked
-              ? quota && quota.generation_enabled === false
-                ? 'New stories are paused right now. Everything in your library is still there to read.'
-                : `That's all ${quota?.limit ?? 3} for today${resetLabel ? ` — your next story unlocks at ${resetLabel}` : ''}.`
-              : blocker === 'no_children'
-                ? 'Pick who the story is about.'
-                : blocker === 'no_tone'
-                  ? 'Pick at least one feeling.'
-                  : 'It starts reading within a few seconds.'}
-          </p>
-        </div>
-      </form>
-
-      <PrivacyNote className="mt-10" />
+      <PrivacyNote className="st-privacy-note" />
+      {below}
     </main>
   )
 }

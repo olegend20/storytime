@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
-import { resetMock, startStory } from './helpers'
+import { creatorReady, MAKE_BOOK, openHeroes, openOptions, resetMock, startStory } from './helpers'
 
 /**
  * F10 VT: "axe-core scan of the form and reader pages reports no serious violations."
@@ -43,7 +43,7 @@ test.describe('accessibility', () => {
     await page.goto('/new')
     await resetMock(page)
     await page.reload()
-    await expect(page.getByRole('button', { name: 'Milo 7' })).toBeVisible()
+    await creatorReady(page)
     const results = await scan(page)
     expect(report('form', results.violations)).toEqual([])
   })
@@ -53,7 +53,7 @@ test.describe('accessibility', () => {
     await page.goto('/new')
     await resetMock(page)
     await page.reload()
-    await expect(page.getByRole('button', { name: 'Milo 7' })).toBeVisible()
+    await creatorReady(page)
     await startStory(page, '!refuse a topic')
     // Next injects its own empty role="alert" route announcer, so match on our copy.
     await expect(
@@ -68,7 +68,7 @@ test.describe('accessibility', () => {
     await resetMock(page)
     await page.request.post('/api/mock/debug', { data: { quota_used: 3 } })
     await page.reload()
-    await expect(page.getByRole('button', { name: 'Start the story' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: MAKE_BOOK })).toBeDisabled()
     const results = await scan(page)
     expect(report('form+quota', results.violations)).toEqual([])
   })
@@ -109,16 +109,48 @@ test.describe('accessibility', () => {
     expect(report('reader+chapters', results.violations)).toEqual([])
   })
 
-  test('tic-tac-toe while the writer thinks has no serious violations', async ({ page }) => {
+  test('the creator with the heroes selector and Story options open has no serious violations', async ({ page }) => {
     await page.goto('/new')
     await resetMock(page)
     await page.reload()
-    await expect(page.getByRole('button', { name: 'Milo 7' })).toBeVisible()
+    await creatorReady(page)
+    await openOptions(page)
+    expect(report('creator+options', (await scan(page)).violations)).toEqual([])
+    await openHeroes(page)
+    expect(report('creator+heroes', (await scan(page)).violations)).toEqual([])
+    // Escape closes the selector and focus goes back to the control that opened it.
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('dialog')).toBeHidden()
+    await expect(page.getByRole('button', { name: /^Change/ })).toBeFocused()
+  })
+
+  test('every control on the creator is at least 44 by 44, the action at least 52 high', async ({ page }) => {
+    await page.goto('/new')
+    await resetMock(page)
+    await page.reload()
+    await creatorReady(page)
+    await openOptions(page)
+    const small = await page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>('main a, main button, main summary, main input')]
+        .filter((el) => el.offsetParent !== null)
+        .map((el) => ({ el, r: el.getBoundingClientRect() }))
+        .filter(({ r }) => r.width < 44 || r.height < 44)
+        .map(({ el, r }) => `${el.textContent?.trim().slice(0, 30)} ${Math.round(r.width)}x${Math.round(r.height)}`),
+    )
+    expect(small).toEqual([])
+    expect((await page.getByRole('button', { name: MAKE_BOOK }).boundingBox())!.height).toBeGreaterThanOrEqual(52)
+  })
+
+  test('the calm waiting screen has no serious violations', async ({ page }) => {
+
+    await page.goto('/new')
+    await resetMock(page)
+    await page.reload()
+    await creatorReady(page)
     await startStory(page, '!thinking the history of soccer')
-    await expect(page.getByTestId('ttt-board')).toBeVisible()
-    await page.getByTestId('ttt-cell-0').click()
+    await expect(page.getByTestId('waiting')).toBeVisible()
     const results = await scan(page)
-    expect(report('tic-tac-toe', results.violations)).toEqual([])
+    expect(report('waiting', results.violations)).toEqual([])
   })
 
   test('the streaming reader has no serious violations', async ({ page }) => {
@@ -126,7 +158,7 @@ test.describe('accessibility', () => {
     await page.goto('/new')
     await resetMock(page)
     await page.reload()
-    await expect(page.getByRole('button', { name: 'Milo 7' })).toBeVisible()
+    await creatorReady(page)
     await startStory(page, 'the history of soccer')
     await expect(page.getByRole('progressbar', { name: 'Writing the story' })).toBeVisible()
     const results = await scan(page)

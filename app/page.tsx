@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
 import { Landing } from '@/components/landing/Landing'
-import { currentUser } from '@/lib/auth/session'
+import { NewStoryFlow } from '@/components/newstory/NewStoryFlow'
+import { AppFooter, AppHeader } from '@/components/SiteHeader'
+import { currentFamilyIfAny, currentUser } from '@/lib/auth/session'
+import { creatorInitial } from '@/lib/newstory/initial'
 import { kindleConfigured } from '@/lib/kindle/send'
 import './landing.css'
 
@@ -11,7 +14,8 @@ export const metadata: Metadata = {
 }
 
 /**
- * Home, and what lastten.org shows a visitor (issue #17): the mission, and one action.
+ * Home (issue #17). A visitor to lastten.org gets the mission and one action; a signed-in
+ * parent gets the creator itself, because at 7pm there is only one thing they came to do.
  *
  * `?deleted=1` is where `DELETE /api/account` sends the parent (F2). It has to be
  * acknowledged somewhere, and this is the only page left that they can still see.
@@ -35,7 +39,18 @@ export default async function HomePage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const params = await searchParams
-  // F2 AC: a signed-out visitor can reach login from here. Signed in, the action skips it.
   const signedIn = (await currentUser().catch(() => null)) !== null
-  return <Landing signedIn={signedIn} justDeleted={params.deleted === '1'} kindle={canSendToKindle()} />
+  if (signedIn) {
+    // Read what the creator needs here when we can, so it opens with its heroes already named.
+    const ctx = await currentFamilyIfAny().catch(() => null)
+    const initial = ctx ? await creatorInitial(ctx) : undefined
+    return (
+      <>
+        <AppHeader />
+        <NewStoryFlow initial={initial} />
+        <AppFooter />
+      </>
+    )
+  }
+  return <Landing signedIn={false} justDeleted={params.deleted === '1'} kindle={canSendToKindle()} />
 }

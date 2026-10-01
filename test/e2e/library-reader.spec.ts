@@ -37,7 +37,7 @@ test('generate, open from the library, and the open costs zero model calls', asy
   // under five parallel workers, does not fit the default 30s budget.
   test.slow()
   await page.goto('/new')
-  await expect(page.getByRole('button', { name: 'Milo 7' })).toBeVisible()
+  await page.getByTestId('heroes').waitFor()
   await startStory(page, 'the history of soccer')
   await expect(page.getByRole('heading', { name: 'Saved to your library' })).toBeVisible({
     timeout: 30_000,

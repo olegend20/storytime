@@ -75,3 +75,40 @@ export function suggestedChips(input: {
 export function offsetForDay(now: Date = new Date()): number {
   return Math.floor(now.getTime() / 86_400_000)
 }
+
+/**
+ * The suggested topics, remembered for the browser session (issue #17).
+ *
+ * The creator is now the home page, so it is opened far more often than `/new` was; the ideas
+ * change at most when a fact pack is built, so one request per session (or ten minutes) is
+ * plenty. sessionStorage, try/catch: a browser blocking site data must still get its chips.
+ */
+const TOPICS_CACHE_KEY = 'storytime:v1:suggested-topics'
+const TOPICS_CACHE_MS = 10 * 60 * 1000
+
+export function recallSuggestedTopics(now: number = Date.now()): SuggestedTopic[] | null {
+  try {
+    const raw = sessionStorage.getItem(TOPICS_CACHE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as { at?: unknown; topics?: unknown }
+    if (typeof parsed.at !== 'number' || now - parsed.at > TOPICS_CACHE_MS || !Array.isArray(parsed.topics)) return null
+    const topics = parsed.topics.filter(
+      (t): t is SuggestedTopic =>
+        typeof t === 'object' && t !== null &&
+        typeof (t as SuggestedTopic).label === 'string' &&
+        typeof (t as SuggestedTopic).topic_key === 'string' &&
+        typeof (t as SuggestedTopic).warm === 'boolean',
+    )
+    return topics.length === parsed.topics.length ? topics : null
+  } catch {
+    return null
+  }
+}
+
+export function rememberSuggestedTopics(topics: readonly SuggestedTopic[], now: number = Date.now()): void {
+  try {
+    sessionStorage.setItem(TOPICS_CACHE_KEY, JSON.stringify({ at: now, topics }))
+  } catch {
+    /* no storage: ask again next time */
+  }
+}
