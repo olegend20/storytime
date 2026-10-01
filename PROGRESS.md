@@ -876,6 +876,14 @@ Each has an e2e test on desktop and phone (the wake lock and offline tests stub 
 browser APIs). **Gates:** lint ✅ · typecheck ✅ · unit+int 1013 ✅ · e2e mock **132** ✅ ·
 e2e real 4 ✅.
 
+### 2026-09-30 — automated PR review and merge (issue #13, DECISIONS #151)
+
+A Claude reviewer on the owner's subscription reviews every PR from `main`'s copy of the
+rules; `scripts/pr-decide.ts` (VT-AR1) makes the merge decision as a required check;
+owner-only paths and `needs_human` wait for the `owner-approved` label. VT-AR2 pins the
+workflow's safety properties. The owner's two one-time steps: `claude setup-token` into the
+`CLAUDE_CODE_OAUTH_TOKEN` secret, and the last manual merge.
+
 ### 2026-09-30 — public repo, CI green, Send to Kindle (issue #11)
 
 Repo anonymised and squashed to one commit, then public; CI runs and passes; `main`

@@ -66,7 +66,7 @@ describe('pr-review workflow', () => {
 
 describe('owner-only paths cover CLAUDE.md\'s "stop and ask" list', () => {
   it.each([
-    ['guardrails', 'GUARDRAILS.md'],
+    ['guardrails', 'storytime-plan/GUARDRAILS.md'],
     ['prices', 'config/pricing.json'],
     ['model IDs', 'config/models.json'],
     ['the schema contract', 'lib/schemas/story.ts'],

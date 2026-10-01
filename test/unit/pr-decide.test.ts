@@ -98,7 +98,7 @@ describe('decide', () => {
 
 describe('isOwnerOnlyPath', () => {
   it.each([
-    'GUARDRAILS.md',
+    'storytime-plan/GUARDRAILS.md',
     'CLAUDE.md',
     'config/pricing.json',
     'config/models.json',

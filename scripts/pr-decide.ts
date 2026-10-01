@@ -32,7 +32,7 @@ export const MAX_CHANGE_ROUNDS = 2
  * so the reviewer cannot be re-briefed, or this file rewritten, without the owner.
  */
 export const OWNER_ONLY_PATHS: readonly string[] = [
-  'GUARDRAILS.md',
+  'storytime-plan/GUARDRAILS.md',
   'CLAUDE.md',
   'config/pricing.json',
   'config/models.json',

@@ -56,13 +56,24 @@ the session gives you.
 ## 5. Review, then merge
 
 Run `/code-review` on the PR and address every finding — fix it, or answer it in the PR.
-Then hand it to the owner: they review prompts, anything touching children's data,
-guardrails and cost themselves. Merge only when CI is green and the owner approves; squash.
-Delete the branch and the worktree.
+Then the reviewer agent takes over (`.github/workflows/pr-review.yml`): it reviews against
+`.github/pr-review-standard.md` and the required check `agent review / verdict` decides.
+
+- **Approved** → auto-merge is enabled; it squash-merges when CI is green. Nothing to do.
+- **Changes requested** → fix every blocking item, push; the review re-runs. After two
+  rounds it escalates to the owner instead of looping.
+- **`needs-owner` label** → the PR touches an owner-only path (`OWNER_ONLY_PATHS` in
+  `scripts/pr-decide.ts`) or the reviewer wants a human. Tell the owner what to look at
+  and why; they release it with the `owner-approved` label. Never add that label yourself,
+  never split a change to dodge the list.
+
+After the merge, delete the worktree (`git worktree remove ../storybot-<slug>`) and pull
+`main`. Dependabot PRs are the owner's to merge.
 
 ## What never happens
 
 - Committing to `main`.
+- Adding the `owner-approved` label, or editing the reviewer's rules, yourself.
 - A live API call without the owner's explicit OK and a cost number.
 - A new column, field or prompt line about a child beyond the five allowed.
 - Marking something done without every one of its acceptance tests passing in CI.

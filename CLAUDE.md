@@ -58,8 +58,11 @@ pnpm bakeoff          # F14 model bake-off — LIVE, costs real money
 `main` is protected on GitHub: pull requests only, CI must pass. Every feature follows the
 `/feature` skill (`.claude/skills/feature/SKILL.md`): issue with acceptance tests first, a
 branch in its own worktree, all gates green locally, the PR template filled with evidence,
-`/code-review` run, then the owner reviews and merges. Never commit to `main`; never mark a
-feature done before its tests pass in CI.
+`/code-review` run, then the PR is reviewed by the reviewer agent (`.github/workflows/pr-review.yml`,
+standard in `.github/pr-review-standard.md`) and merges itself when approved and CI is
+green. A PR touching an owner-only path (`scripts/pr-decide.ts`, `OWNER_ONLY_PATHS`) or one
+the reviewer escalates waits for the owner's `owner-approved` label — tell the owner, don't
+work around it. Never commit to `main`; never mark a feature done before its tests pass in CI.
 
 ## Conventions
 
