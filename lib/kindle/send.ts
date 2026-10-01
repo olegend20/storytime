@@ -52,7 +52,15 @@ export function kindleConfigured(): boolean {
 
 let transport: Transporter | null = null
 
-/** The configured SMTP transport (one, pooled, like the Supabase client), or null. */
+/**
+ * A pooled connection is right for a long-running server and wrong for a serverless
+ * function, where a frozen instance can hand the next request a dead socket.
+ */
+export function smtpPooling(env: Record<string, string | undefined> = process.env): boolean {
+  return !env.VERCEL && !env.AWS_LAMBDA_FUNCTION_NAME
+}
+
+/** The configured SMTP transport (one per process, like the Supabase client), or null. */
 export function smtpSender(): MailSender | null {
   const env = serverEnv()
   if (!kindleConfigured()) return null
@@ -60,7 +68,7 @@ export function smtpSender(): MailSender | null {
     host: env.SMTP_HOST,
     port: env.SMTP_PORT,
     secure: env.SMTP_SECURE,
-    pool: true,
+    pool: smtpPooling(),
     ...(env.SMTP_USER ? { auth: { user: env.SMTP_USER, pass: env.SMTP_PASS ?? '' } } : {}),
   })
   const t = transport
