@@ -25,6 +25,12 @@ describe.runIf(dbUp)('Send to Kindle', () => {
   let stranger: TestUser
   let familyId: string
   let storyId: string
+  // One timezone and one fixed moment for every send in this file. The daily limit is counted
+  // per calendar day in the family's zone, so mixing zones or using the real clock made this
+  // suite fail for the hour each night when London is already on tomorrow's date (23:00 UTC).
+  const TZ = 'Europe/London'
+  const NOW = new Date('2026-06-15T12:00:00Z')
+  const DAY_MS = 24 * 60 * 60 * 1000
   const outbox: OutgoingMail[] = []
   const sender = { send: async (m: OutgoingMail) => void outbox.push(m) }
 
@@ -106,6 +112,8 @@ describe.runIf(dbUp)('Send to Kindle', () => {
       sender,
       from: 'kindle@storytime.local',
       db: serviceClient(),
+      timezone: TZ,
+      now: NOW,
     })
     expect(result.to).toBe('milo_abc@kindle.com')
     expect(result.sentToday).toBe(1)
@@ -132,6 +140,8 @@ describe.runIf(dbUp)('Send to Kindle', () => {
       childNames: ['Milo'],
       from: 'kindle@storytime.local',
       db: serviceClient(),
+      timezone: TZ,
+      now: NOW,
     }
     const broken = { send: async () => { throw new Error('smtp down') } }
     await expect(sendStoryToKindle({ ...base, sender: broken })).rejects.toMatchObject({ code: 'delivery_failed' })
@@ -140,10 +150,10 @@ describe.runIf(dbUp)('Send to Kindle', () => {
     const { count: afterFailure } = await serviceClient().from('story_sends').select('id', { count: 'exact', head: true }).eq('family_id', familyId)
     expect(afterFailure).toBe(1)
 
-    const today = usageDateFor('Europe/London', new Date())
+    const today = usageDateFor(TZ, NOW)
     const rows = Array.from({ length: KINDLE_SENDS_PER_DAY - 1 }, () => ({ family_id: familyId, story_id: storyId, to_address: 'milo_abc@kindle.com', usage_date: today }))
     await serviceClient().from('story_sends').insert(rows)
-    const err = await sendStoryToKindle({ ...base, sender, timezone: 'Europe/London' }).catch((e: unknown) => e)
+    const err = await sendStoryToKindle({ ...base, sender }).catch((e: unknown) => e)
     expect(err).toBeInstanceOf(KindleSendError)
     expect((err as KindleSendError).code).toBe('daily_limit')
     expect(outbox).toHaveLength(1) // nothing more was sent
@@ -151,8 +161,8 @@ describe.runIf(dbUp)('Send to Kindle', () => {
     expect(afterLimit).toBe(KINDLE_SENDS_PER_DAY) // the refused send gave its slot back too
 
     // A different calendar day for the family is a fresh allowance.
-    const tomorrow = usageDateFor('Europe/London', new Date(Date.now() + 24 * 60 * 60 * 1000))
-    const next = await sendStoryToKindle({ ...base, sender, timezone: 'Europe/London', now: new Date(Date.now() + 24 * 60 * 60 * 1000) })
+    const tomorrow = usageDateFor(TZ, new Date(NOW.getTime() + DAY_MS))
+    const next = await sendStoryToKindle({ ...base, sender, now: new Date(NOW.getTime() + DAY_MS) })
     expect(next.sentToday).toBe(1)
     const { data: fresh } = await serviceClient().from('story_sends').select('usage_date').eq('family_id', familyId).eq('usage_date', tomorrow)
     expect(fresh).toHaveLength(1)
