@@ -1,11 +1,17 @@
 {
   "$comment": "Model IDs are config, never hard-coded in source. Swapping the writing model must require no code change (F14 AC).",
-  "updated_at": "2026-09-27",
+  "updated_at": "2026-09-30",
   "sources": [
     {
       "page": "Models overview",
       "url": "https://platform.claude.com/docs/en/models/overview",
       "fetched": "2026-09-27"
+    },
+    {
+      "page": "Models overview",
+      "url": "https://platform.claude.com/docs/en/models/overview",
+      "fetched": "2026-09-30",
+      "note": "pr_reviewer role added"
     }
   ],
   "roles": {
@@ -28,6 +34,11 @@
       "model": "claude-opus-5-5",
       "why": "OWNER'S DECISION, 2026-09-27. JUDGE_AGENT.md s2 asks for the strongest available model; the owner chose Opus 5.5 over Fable 5.1, which halves the judging cost of a bake-off ($16.90 vs $40.44) at the price of a slightly weaker primary instrument. Fable 5.1 remains the SECOND judge on the highest-stakes comparisons, so the strongest model still cross-checks the verdicts that decide the outcome.",
       "env_override": "JUDGE_MODEL"
+    },
+    "pr_reviewer": {
+      "model": "claude-opus-5-5",
+      "why": "The PR reviewer agent (issue #13, DECISIONS #151). Read by .github/workflows/pr-review.yml with jq; runs on the owner's subscription, never through callModel(). As capable as the model that writes the code.",
+      "env_override": "PR_REVIEWER_MODEL"
     },
     "judge_secondary": {
       "model": "claude-fable-5-1",

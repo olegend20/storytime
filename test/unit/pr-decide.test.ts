@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   decide,
+  isOwnerOnlyChange,
   isOwnerOnlyPath,
   MAX_CHANGE_ROUNDS,
   NEEDS_OWNER,
@@ -14,7 +15,7 @@ const base: DecideInput = {
   action: 'opened',
   repoOwner: 'olegend20',
   reviewer: { verdict: 'approve', summary: 'Looks right.', blocking: [] },
-  changedFiles: ['lib/kindle/send.ts', 'test/int/kindle.test.ts'],
+  changedFiles: [{ filename: 'lib/kindle/send.ts' }, { filename: 'test/int/kindle.test.ts' }],
   priorChangeRounds: 0,
   labels: [],
 }
@@ -45,7 +46,7 @@ describe('decide', () => {
   })
 
   it('an owner-only path needs the owner even when the reviewer approves', () => {
-    const d = decide({ ...base, changedFiles: ['lib/kindle/send.ts', 'config/pricing.json'] })
+    const d = decide({ ...base, changedFiles: [{ filename: 'lib/kindle/send.ts' }, { filename: 'config/pricing.json' }] })
     expect(d.pass).toBe(false)
     expect(d.autoMerge).toBe(false)
     expect(d.review?.event).toBe('COMMENT')
@@ -69,11 +70,30 @@ describe('decide', () => {
     expect(d.autoMerge).toBe(false)
   })
 
-  it(`the owner adding ${OWNER_APPROVED} passes the check and enables auto-merge`, () => {
+  it(`the owner adding ${OWNER_APPROVED} passes the check, approves (superseding an earlier changes-requested) and enables auto-merge`, () => {
     const d = decide({ ...base, action: 'labeled', reviewer: null, labels: [NEEDS_OWNER, OWNER_APPROVED], label: { name: OWNER_APPROVED, addedBy: 'olegend20' } })
     expect(d.pass).toBe(true)
     expect(d.autoMerge).toBe(true)
+    expect(d.review?.event).toBe('APPROVE')
     expect(d.removeLabels).toEqual([NEEDS_OWNER])
+  })
+
+  it('a PR opened by a bot (Dependabot) is the owner\'s, and the check still reports', () => {
+    const d = decide({ ...base, author: 'dependabot[bot]', reviewer: null, reviewerFailure: 'review job skipped' })
+    expect(d.pass).toBe(false)
+    expect(d.addLabels).toEqual([NEEDS_OWNER])
+    expect(d.review?.body).toContain('dependabot[bot]')
+  })
+
+  it('a migration that touches the children table is the owner\'s (rule 7), one that does not is not', () => {
+    const child = { filename: 'supabase/migrations/20261001000000_x.sql', patch: '+alter table public.children add column birthdate date;' }
+    const other = { filename: 'supabase/migrations/20261001000000_x.sql', patch: '+create table public.story_sends (...);' }
+    expect(isOwnerOnlyChange(child)).toBe(true)
+    expect(isOwnerOnlyChange(other)).toBe(false)
+    expect(isOwnerOnlyChange({ filename: 'lib/children/service.ts' })).toBe(true)
+    const d = decide({ ...base, changedFiles: [other, child] })
+    expect(d.pass).toBe(false)
+    expect(d.addLabels).toEqual([NEEDS_OWNER])
   })
 
   it('the same label from anyone else does nothing, and is removed', () => {
@@ -84,7 +104,7 @@ describe('decide', () => {
   })
 
   it('a new commit strips an earlier owner approval', () => {
-    const d = decide({ ...base, action: 'synchronize', labels: [OWNER_APPROVED], changedFiles: ['config/models.json'] })
+    const d = decide({ ...base, action: 'synchronize', labels: [OWNER_APPROVED], changedFiles: [{ filename: 'config/models.json' }] })
     expect(d.pass).toBe(false)
     expect(d.removeLabels).toContain(OWNER_APPROVED)
   })

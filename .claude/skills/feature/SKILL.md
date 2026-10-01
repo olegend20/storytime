@@ -68,7 +68,8 @@ Then the reviewer agent takes over (`.github/workflows/pr-review.yml`): it revie
   never split a change to dodge the list.
 
 After the merge, delete the worktree (`git worktree remove ../storybot-<slug>`) and pull
-`main`. Dependabot PRs are the owner's to merge.
+`main`. Dependabot PRs get no agent review; the check reports `needs-owner` and the owner
+releases them with the label.
 
 ## What never happens
 

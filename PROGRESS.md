@@ -882,7 +882,14 @@ A Claude reviewer on the owner's subscription reviews every PR from `main`'s cop
 rules; `scripts/pr-decide.ts` (VT-AR1) makes the merge decision as a required check;
 owner-only paths and `needs_human` wait for the `owner-approved` label. VT-AR2 pins the
 workflow's safety properties. The owner's two one-time steps: `claude setup-token` into the
-`CLAUDE_CODE_OAUTH_TOKEN` secret, and the last manual merge.
+`CLAUDE_CODE_OAUTH_TOKEN` secret, and the last manual merge. Repo settings this depends on
+(set 2026-09-30 via `gh api`/`gh repo edit`): Actions may approve PRs
+(`can_approve_pull_request_reviews`), auto-merge enabled, squash-only, delete branch on
+merge; after the merge, `agent review / verdict` joins the required status checks. The
+`/code-review` of the PR itself caught ten issues, two of them fatal (a placeholder API key
+in the job env would have out-ranked the subscription token; the PR's own `pnpm install`
+ran in the job holding the secret) — fixed by making the reviewer read-only: it never runs
+PR code.
 
 ### 2026-09-30 — public repo, CI green, Send to Kindle (issue #11)
 

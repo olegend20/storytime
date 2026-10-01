@@ -34,6 +34,7 @@ export const MAX_CHANGE_ROUNDS = 2
 export const OWNER_ONLY_PATHS: readonly string[] = [
   'storytime-plan/GUARDRAILS.md',
   'CLAUDE.md',
+  'lib/children/',
   'config/pricing.json',
   'config/models.json',
   'config/guardrails/',
@@ -55,17 +56,34 @@ export function isOwnerOnlyPath(file: string): boolean {
   )
 }
 
+export interface ChangedFile {
+  filename: string
+  /** The unified diff for this file, as the GitHub files API gives it; absent for binaries. */
+  patch?: string
+}
+
+/**
+ * Rule 7 ("never store more about a child") as code: a migration whose diff mentions the
+ * children table is the owner's, whatever else the PR does. Path rules cover the rest.
+ */
+export function isOwnerOnlyChange(file: ChangedFile): boolean {
+  if (isOwnerOnlyPath(file.filename)) return true
+  return file.filename.startsWith('supabase/migrations/') && /\bchildren\b/i.test(file.patch ?? '')
+}
+
 export interface DecideInput {
   /** The GitHub event action: opened | synchronize | reopened | ready_for_review | labeled | dispatch. */
   action: string
   /** On a `labeled` event: which label, and who added it. */
   label?: { name: string; addedBy: string }
   repoOwner: string
+  /** Who opened the PR; bots (Dependabot) are the owner's to merge. */
+  author?: string
   /** The reviewer's structured verdict, or null when it did not run or failed. */
   reviewer: ReviewerOutput | null
   /** Why the reviewer has no verdict, when it has none. */
   reviewerFailure?: string
-  changedFiles: readonly string[]
+  changedFiles: readonly ChangedFile[]
   /** CHANGES_REQUESTED reviews the bot has already left on this PR. */
   priorChangeRounds: number
   labels: readonly string[]
@@ -104,9 +122,11 @@ export function decide(input: DecideInput): Decision {
         reason: `label "${input.label?.name}" by ${input.label?.addedBy} is not the owner's approval`,
       }
     }
+    // APPROVE, not COMMENT: the bot's own approval supersedes its earlier changes-requested
+    // review, which would otherwise keep blocking the merge.
     return {
       pass: true,
-      review: { event: 'COMMENT', body: `Owner approved (\`${OWNER_APPROVED}\` by @${input.repoOwner}). Auto-merge enabled; merges when CI is green.` },
+      review: { event: 'APPROVE', body: `Owner approved (\`${OWNER_APPROVED}\` by @${input.repoOwner}). Auto-merge enabled; merges when CI is green.` },
       autoMerge: true,
       addLabels: [],
       removeLabels: has(NEEDS_OWNER) ? [NEEDS_OWNER] : [],
@@ -116,7 +136,7 @@ export function decide(input: DecideInput): Decision {
 
   // New commits invalidate an earlier owner approval, like dismissing a stale review.
   const removeLabels = input.action === 'synchronize' && has(OWNER_APPROVED) ? [OWNER_APPROVED] : []
-  const ownerPaths = input.changedFiles.filter(isOwnerOnlyPath)
+  const ownerPaths = input.changedFiles.filter(isOwnerOnlyChange).map((f) => f.filename)
   const needsOwner = (reason: string, body: string): Decision => ({
     pass: false,
     review: { event: 'COMMENT', body: `${body}\n\n${HOW_TO_RELEASE}` },
@@ -126,12 +146,15 @@ export function decide(input: DecideInput): Decision {
     reason,
   })
 
+  if (input.author?.endsWith('[bot]')) {
+    return needsOwner(`opened by ${input.author}`, `Opened by ${input.author}: dependency bumps are the owner's to merge.`)
+  }
   if (!input.reviewer) {
     return {
       pass: false,
       review: {
         event: 'COMMENT',
-        body: `The reviewer did not produce a verdict (${input.reviewerFailure ?? 'unknown reason'}). Re-run the "agent review" workflow for this PR, or the owner can add \`${OWNER_APPROVED}\`.`,
+        body: `The reviewer did not produce a verdict (${input.reviewerFailure ?? 'unknown reason'}). Use "Re-run failed jobs" on this PR's "agent review" run, or the owner can add \`${OWNER_APPROVED}\`.`,
       },
       autoMerge: false,
       addLabels: [],
@@ -185,7 +208,9 @@ function gh(args: string[]): string {
 }
 
 function parseReviewer(raw: string | undefined): ReviewerOutput | null {
-  if (!raw) return null
+  // A verdict is trusted only from a review job that finished cleanly: a step that hit
+  // max-turns after emitting partial output is not a review.
+  if (!raw || process.env.REVIEW_RESULT !== 'success' || process.env.REVIEWER_CONCLUSION !== 'success') return null
   try {
     const parsed = JSON.parse(raw) as Partial<ReviewerOutput>
     if (parsed.verdict !== 'approve' && parsed.verdict !== 'request_changes' && parsed.verdict !== 'needs_human') return null
@@ -201,17 +226,27 @@ function main(): void {
   const pr = env.PR_NUMBER!
   const reviewer = parseReviewer(env.REVIEWER_OUTPUT)
   const reviewerFailure =
-    env.REVIEW_RESULT === 'skipped' ? 'review job skipped' : env.REVIEW_RESULT !== 'success' ? `review job ${env.REVIEW_RESULT}` : 'no structured verdict'
+    env.REVIEW_RESULT === 'skipped'
+      ? 'review job skipped'
+      : env.REVIEW_RESULT !== 'success'
+        ? `review job ${env.REVIEW_RESULT}`
+        : env.REVIEWER_CONCLUSION !== 'success'
+          ? `reviewer step ${env.REVIEWER_CONCLUSION}`
+          : 'no structured verdict'
 
-  const changedFiles = gh(['api', `repos/${repo}/pulls/${pr}/files`, '--paginate', '-q', '.[].filename']).split('\n').filter(Boolean)
-  const reviews = JSON.parse(gh(['api', `repos/${repo}/pulls/${pr}/reviews`, '--paginate']) || '[]') as { user: { login: string }; state: string }[]
-  const priorChangeRounds = reviews.filter((r) => r.user.login === BOT_LOGIN && r.state === 'CHANGES_REQUESTED').length
+  // `--paginate` emits one JSON array per page; `--slurp` wraps them so this parses past 30 files.
+  const changedFiles = (JSON.parse(gh(['api', `repos/${repo}/pulls/${pr}/files`, '--paginate', '--slurp']) || '[]') as ChangedFile[][]).flat()
+  const priorChangeRounds = gh([
+    'api', `repos/${repo}/pulls/${pr}/reviews`, '--paginate',
+    '-q', `.[] | select(.user.login == "${BOT_LOGIN}" and .state == "CHANGES_REQUESTED") | .id`,
+  ]).split('\n').filter(Boolean).length
   const labels = gh(['pr', 'view', pr, '--repo', repo, '--json', 'labels', '-q', '.labels[].name']).split('\n').filter(Boolean)
 
   const decision = decide({
     action: env.EVENT_ACTION ?? 'dispatch',
     label: env.LABEL_NAME ? { name: env.LABEL_NAME, addedBy: env.LABEL_SENDER ?? '' } : undefined,
     repoOwner: env.REPO_OWNER!,
+    author: env.PR_AUTHOR || undefined,
     reviewer,
     reviewerFailure,
     changedFiles,
@@ -229,6 +264,10 @@ function main(): void {
     gh(['pr', 'review', pr, '--repo', repo, flag, '--body', decision.review.body])
   }
   if (decision.autoMerge) gh(['pr', 'merge', pr, '--repo', repo, '--auto', '--squash', '--delete-branch'])
+  else {
+    // An earlier round may have enabled it; gh errors when it was not, which is fine.
+    try { gh(['pr', 'merge', pr, '--repo', repo, '--disable-auto']) } catch { /* not enabled */ }
+  }
 
   const line = `${decision.pass ? '✅' : '⛔'} ${decision.reason}`
   console.log(line)
