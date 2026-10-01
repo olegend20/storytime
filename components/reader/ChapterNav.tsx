@@ -1,6 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useRef } from 'react'
+import { ArrowLeft, ArrowRight, ChevronDown } from '@/components/Icons'
+import { Phase } from '@/components/Phase'
 
 /**
  * F9: chapter navigation, and "chapter nav usable" on a 375x812 phone.
@@ -54,46 +56,37 @@ export function ChapterNav({
 
   return (
     <>
-      <div
-        data-testid="chapters-bar"
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-line"
-        style={{
-          background: 'var(--bg-raised)',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-        }}
-      >
-        <div className="mx-auto flex max-w-3xl items-center gap-2 px-2 py-2">
+      <div data-testid="chapters-bar" className="st-cbar">
+        <div className="st-cbar-in">
           <button
             type="button"
-            className="btn btn-quiet tap tap-big"
+            className="st-rbtn st-cbar-arrow"
             onClick={() => go(currentIndex - 1)}
             disabled={currentIndex <= 0}
             aria-label="Previous chapter"
-            style={{ paddingInline: '0.75rem' }}
           >
-            <span aria-hidden="true">←</span>
+            <ArrowLeft />
           </button>
-
-          <button
-            type="button"
-            className="btn btn-quiet min-w-0 flex-1"
-            onClick={open}
-            aria-haspopup="dialog"
-          >
+          <button type="button" className="st-cpick" onClick={open} aria-haspopup="dialog">
+            {/* Where you are in the book, as a row of moons: read, reading, still to come. */}
+            <span className="st-phases" aria-hidden="true">
+              {headings.map((_, index) => (
+                <Phase key={index} lit={index < currentIndex ? 1 : index === currentIndex ? 0.5 : 0} size={12} />
+              ))}
+            </span>
             <span className="truncate">
               Chapter {currentIndex + 1} of {total}
             </span>
+            <ChevronDown width={15} height={15} />
           </button>
-
           <button
             type="button"
-            className="btn btn-quiet tap tap-big"
+            className="st-rbtn st-cbar-arrow"
             onClick={() => go(currentIndex + 1)}
             disabled={currentIndex >= total - 1}
             aria-label="Next chapter"
-            style={{ paddingInline: '0.75rem' }}
           >
-            <span aria-hidden="true">→</span>
+            <ArrowRight />
           </button>
         </div>
       </div>
@@ -101,14 +94,13 @@ export function ChapterNav({
       <dialog
         ref={dialogRef}
         aria-label="Chapters"
-        className="card w-[min(28rem,92vw)] p-0"
-        style={{ color: 'var(--fg)', background: 'var(--bg-raised)' }}
+        className="st-dialog st-dialog-chapters"
         onClick={(event) => {
           if (event.target === dialogRef.current) close()
         }}
       >
         <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
-          <h2 className="m-0 text-lg font-semibold">Chapters</h2>
+          <h2 className="m-0 text-xl font-normal">Chapters</h2>
           <button type="button" className="btn btn-quiet" onClick={close}>
             Close
           </button>
@@ -118,19 +110,15 @@ export function ChapterNav({
             <li key={index}>
               <button
                 type="button"
-                className="tap w-full rounded-lg px-3 py-3 text-left"
+                className="st-chapter-item"
                 aria-current={index === currentIndex ? 'true' : undefined}
-                style={{
-                  background: index === currentIndex ? 'var(--accent-soft)' : 'transparent',
-                  fontWeight: index === currentIndex ? 650 : 450,
-                  color: 'var(--fg)',
-                }}
                 onClick={() => {
                   close()
                   go(index)
                 }}
               >
-                {heading || `Chapter ${index + 1}`}
+                <Phase lit={index < currentIndex ? 1 : index === currentIndex ? 0.5 : 0} size={13} />
+                <span>{heading || `Chapter ${index + 1}`}</span>
               </button>
             </li>
           ))}

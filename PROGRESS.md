@@ -876,6 +876,14 @@ Each has an e2e test on desktop and phone (the wake lock and offline tests stub 
 browser APIs). **Gates:** lint ✅ · typecheck ✅ · unit+int 1013 ✅ · e2e mock **132** ✅ ·
 e2e real 4 ✅.
 
+### 2026-10-01 — calm bedtime redesign, PR 3 of 3: library + reader (issue #17, DECISIONS #157)
+
+Library rows with text covers and Continue/Read again; reader restyled (title page, larger
+prose, drop cap, moon-phase chapter bar), theme and story actions behind menus, "Read
+together". VT-R7/R8 in `test/e2e/library-reader.spec.ts`, VT-R9 in `a11y.spec.ts` (night
+theme, menus, 44px targets); mock e2e 178, real e2e 6, unit 1096. With this the redesign in
+#17 is complete; deployment is #18.
+
 ### 2026-10-01 — calm bedtime redesign, PR 2 of 3: creator + calm waiting (issue #17, DECISIONS #155–#156)
 
 The creator is now the signed-in home page and the dashboard as well as `/new`; heroes by

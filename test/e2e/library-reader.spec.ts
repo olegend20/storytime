@@ -5,6 +5,8 @@ import {
   mockState,
   relativeLuminance,
   resetMock,
+  chooseTheme,
+  openStoryActions,
   scrollToAndPersist,
   startStory,
 } from './helpers'
@@ -80,7 +82,94 @@ test('the library groups stories by series, newest first', async ({ page }) => {
 
   const seriesSections = page.locator('section[aria-labelledby^="series-"]')
   await expect(seriesSections).toHaveCount(2)
-  await expect(seriesSections.first().getByText(/2 stories in this series/)).toBeVisible()
+  await expect(seriesSections.first().getByText(/2 books together/)).toBeVisible()
+})
+
+/** VT-R7 (issue #17): what a row offers follows where the parent actually stopped. */
+test('a row says "Continue reading" only once the story has been read into, and "Read again" otherwise', async ({
+  page,
+}) => {
+  const first = page.locator('.st-row').first()
+  await expect(first).toContainText('Read again')
+  await expect(page.getByText('Continue reading')).toHaveCount(0)
+  // Each row carries a text cover (no image), the real read time and the real fact count.
+  await expect(first.locator('.st-cover')).toHaveAttribute('data-tint', /sage|mist|sand/)
+  await expect(first.locator('img')).toHaveCount(0)
+  await expect(first).toContainText(/\d+ min read aloud/)
+  await expect(first).toContainText(/\d+ true facts/)
+
+  const before = await mockState(page)
+  await openFirstStory(page)
+  await scrollToAndPersist(page, 1500)
+  await page.goto('/library')
+  await expect(page.locator('.st-row').first()).toContainText('Continue reading')
+  await expect(page.locator('.st-row').nth(1)).toContainText('Read again')
+
+  // Continue resumes; "Read again" in the story sends it back to the top and the row follows.
+  await page.locator('.st-row').first().click()
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(1000)
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+  await page.getByRole('button', { name: 'Read again' }).click()
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(200)
+  await page.goto('/library')
+  await expect(page.locator('.st-row').first()).toContainText('Read again')
+
+  // None of it reached the model or the quota.
+  const after = await mockState(page)
+  expect(after.model_calls).toBe(before.model_calls)
+  expect(after.quota_used).toBe(before.quota_used)
+})
+
+/** VT-R8 (issue #17): read together keeps exactly what is needed to read and to get back out. */
+test('read together keeps Done reading, text size and the chapter bar, and nothing else', async ({ page }) => {
+  await openFirstStory(page)
+  await page.getByRole('button', { name: 'Read together' }).click()
+  await expect(page.getByRole('button', { name: 'Done reading' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Larger text' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Smaller text' })).toBeVisible()
+  await expect(page.getByTestId('chapters-bar')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Next chapter' })).toBeEnabled()
+  for (const gone of ['theme-menu', 'story-actions']) await expect(page.getByTestId(gone)).toBeHidden()
+  await expect(page.getByRole('link', { name: 'Back to the library' })).toBeHidden()
+  await expect(page.locator('footer.st-footer')).toBeHidden()
+  // The chapter bar still works from here.
+  await page.getByRole('button', { name: 'Next chapter' }).click()
+  await expect(page.getByRole('button', { name: /^Chapter 2 of \d+$/ })).toBeVisible()
+})
+
+test('all four themes and all five text sizes are there, and the choice persists', async ({ page }) => {
+  await openFirstStory(page)
+  await page.getByTestId('theme-menu').locator('summary').click()
+  await expect(page.getByTestId('theme-menu').getByRole('radio')).toHaveText(['Auto', 'Light', 'Dark', 'Night'])
+  await page.keyboard.press('Escape')
+
+  // Five steps: from the smallest, "Larger text" can be pressed exactly four times.
+  const larger = page.getByRole('button', { name: 'Larger text' })
+  const smaller = page.getByRole('button', { name: 'Smaller text' })
+  while (await smaller.isEnabled()) await smaller.click()
+  let steps = 1
+  while (await larger.isEnabled()) {
+    await larger.click()
+    steps += 1
+  }
+  expect(steps).toBe(5)
+  await page.reload()
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Larger text' })).toBeDisabled()
+})
+
+test('the chapter bar never covers the end of the story or its last buttons', async ({ page }) => {
+  await openFirstStory(page)
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+  const bar = (await page.getByTestId('chapters-bar').boundingBox())!
+  for (const name of ['Read again', 'Clear ticks']) {
+    const button = page.getByRole('button', { name })
+    if ((await button.count()) === 0) continue
+    const box = (await button.boundingBox())!
+    expect(box.y + box.height, `${name} is clear of the chapter bar`).toBeLessThanOrEqual(bar.y)
+  }
+  const another = (await page.getByRole('link', { name: /make another book/i }).boundingBox())!
+  expect(another.y + another.height).toBeLessThanOrEqual(bar.y)
 })
 
 /** VT (mobile viewport 375x812): no element wider than viewport; chapter nav usable. */
@@ -175,7 +264,7 @@ test('reading mode dims the UI, enlarges the text, and survives a reload', async
   const before = await proseSize()
   await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible()
 
-  await page.getByRole('button', { name: 'Reading mode' }).click()
+  await page.getByRole('button', { name: 'Read together' }).click()
 
   // Chrome is gone from the layout (and therefore from the a11y tree), and the text is bigger.
   await expect(page.getByRole('navigation', { name: 'Main' })).toBeHidden()
@@ -195,9 +284,9 @@ test('reading mode dims the UI, enlarges the text, and survives a reload', async
 
 test('the dark theme applies without a reload and persists', async ({ page }) => {
   await openFirstStory(page)
-  await page.getByRole('radio', { name: 'Light' }).first().click()
+  await chooseTheme(page, 'Light')
   const light = await bodyBackgroundRgb(page)
-  await page.getByRole('radio', { name: 'Dark' }).first().click()
+  await chooseTheme(page, 'Dark')
   const dark = await bodyBackgroundRgb(page)
   expect(dark).not.toEqual(light)
 
@@ -249,6 +338,7 @@ test('deleting a story removes it from the library and 404s its URL', async ({ p
   const title = (await page.getByRole('heading', { level: 1 }).innerText()).trim()
   const url = page.url()
 
+  await openStoryActions(page)
   await page.getByRole('button', { name: 'Delete story' }).click()
   // Two steps, and the confirmation says what deletion does and does not do.
   await expect(page.getByText(/deleting a story doesn.t rewind the series/i)).toBeVisible()
@@ -268,6 +358,7 @@ test('deleting a story removes it from the library and 404s its URL', async ({ p
 test('cancelling the delete keeps the story', async ({ page }) => {
   await openFirstStory(page)
   const title = (await page.getByRole('heading', { level: 1 }).innerText()).trim()
+  await openStoryActions(page)
   await page.getByRole('button', { name: 'Delete story' }).click()
   await page.getByRole('button', { name: 'Keep it' }).click()
   await expect(page.getByRole('button', { name: 'Delete story' })).toBeVisible()
@@ -333,7 +424,7 @@ test('the screen stays awake while a story is open, and is released on leaving',
 
 test('the night theme is near-black with warm text, and persists', async ({ page }) => {
   await openFirstStory(page)
-  await page.getByRole('radio', { name: 'Night' }).first().click()
+  await chooseTheme(page, 'Night')
   expect(await page.getAttribute('html', 'data-theme')).toBe('night')
   const bg = await bodyBackgroundRgb(page)
   expect(relativeLuminance(bg)).toBeLessThan(25)
@@ -416,15 +507,18 @@ test('Send to Kindle reports where the story went, and links to Settings when no
   // The newest story (…0001) has a Kindle address in the mock; …0000 does not.
   await page.goto('/stories/833fa5ee-0001-4000-8000-833fa5ee0001')
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  await openStoryActions(page)
   await page.getByTestId('send-to-kindle').click()
   await expect(page.getByTestId('kindle-sent')).toContainText('Sent to mock_family@kindle.com')
 
   await page.goto('/stories/a2117f05-0000-4000-8000-a2117f050000')
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  await openStoryActions(page)
   await page.getByTestId('send-to-kindle').click()
   await expect(page.getByTestId('kindle-error')).toContainText('Add your Kindle address')
   await expect(page.getByRole('link', { name: 'Add it in Settings' })).toHaveAttribute('href', '/settings')
-  // Reading mode hides the chrome, the button with it.
-  await page.getByRole('button', { name: 'Reading mode' }).click()
+  // Reading mode hides the chrome, the menu and its button with it.
+  await page.getByRole('button', { name: 'Read together' }).click()
+  await expect(page.getByTestId('story-actions')).toBeHidden()
   await expect(page.getByTestId('send-to-kindle')).toBeHidden()
 })

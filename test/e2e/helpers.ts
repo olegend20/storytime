@@ -146,3 +146,16 @@ export async function startStory(page: Page, topic: string) {
   await page.getByLabel(TOPIC_LABEL).fill(topic)
   await page.getByRole('button', { name: MAKE_BOOK }).click()
 }
+
+/** The reader keeps theme and the story's actions behind two small menus (issue #17). */
+export async function chooseTheme(page: Page, name: 'Auto' | 'Light' | 'Dark' | 'Night') {
+  const menu = page.getByTestId('theme-menu')
+  if ((await menu.getAttribute('open')) === null) await menu.locator('summary').click()
+  await menu.getByRole('radio', { name }).click()
+  await page.keyboard.press('Escape')
+}
+
+export async function openStoryActions(page: Page) {
+  const menu = page.getByTestId('story-actions')
+  if ((await menu.getAttribute('open')) === null) await menu.locator('summary').click()
+}

@@ -41,24 +41,22 @@ export function TrueFactsChecklist({
   if (facts.length === 0) return null
 
   return (
-    <section aria-labelledby={headingId} className="card mt-10 p-4 sm:p-6">
+    <section aria-labelledby={headingId} className="st-facts">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id={headingId} className="m-0 text-xl font-semibold">
-          True facts from the story
-        </h2>
+        <h2 id={headingId}>True facts from the story</h2>
         <p className="m-0 text-sm" style={{ color: 'var(--fg-muted)' }} aria-live="polite">
           {checked.length} of {facts.length} ticked
         </p>
       </div>
-
-      <ul className="mt-4 list-none space-y-1 p-0">
+      <p className="st-facts-lead">A few discoveries to talk about together.</p>
+      <ul className="mt-3 list-none space-y-1 p-0">
         {facts.map((fact, index) => {
           const isChecked = checked.includes(index)
           return (
             <li key={`${fact.fact_id}-${index}`}>
               <label
-                className="flex cursor-pointer items-start gap-3 rounded-lg p-2"
-                style={{ background: isChecked ? 'var(--accent-soft)' : 'transparent' }}
+                className="st-fact"
+                data-checked={isChecked}
               >
                 <input
                   type="checkbox"

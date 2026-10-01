@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ApiError, deleteStory, fetchStory } from '@/lib/client/api'
+import { ArrowRight } from '@/components/Icons'
 import { SendToKindleButton } from '@/components/reader/SendToKindleButton'
 import { readerFromLibraryStory } from '@/lib/client/reader'
 import { forgetStory, saveScroll } from '@/lib/client/storage'
@@ -45,7 +46,7 @@ export function StoryPage({ id }: { id: string }) {
 
   if (state === 'loading') {
     return (
-      <main id="main" className="mx-auto max-w-3xl px-4 py-12">
+      <main id="main" className="st-main st-main-narrow">
         <p style={{ color: 'var(--fg-muted)' }}>Opening the story…</p>
       </main>
     )
@@ -53,8 +54,8 @@ export function StoryPage({ id }: { id: string }) {
 
   if (state === 'missing' || (state === 'ready' && !story)) {
     return (
-      <main id="main" className="mx-auto max-w-3xl px-4 py-12">
-        <h1 className="mt-0 text-2xl">That story isn&rsquo;t here any more</h1>
+      <main id="main" className="st-main st-main-narrow">
+        <h1 className="st-h1 st-h1-page">That story isn&rsquo;t here any more</h1>
         <p style={{ color: 'var(--fg-muted)' }}>
           It may have been deleted. Everything else is still in your library.
         </p>
@@ -67,8 +68,8 @@ export function StoryPage({ id }: { id: string }) {
 
   if (state === 'error' || !story) {
     return (
-      <main id="main" className="mx-auto max-w-3xl px-4 py-12">
-        <h1 className="mt-0 text-2xl">We couldn&rsquo;t open that story</h1>
+      <main id="main" className="st-main st-main-narrow">
+        <h1 className="st-h1 st-h1-page">We couldn&rsquo;t open that story</h1>
         <p style={{ color: 'var(--fg-muted)' }}>
           Nothing is lost — check your connection and try again.
         </p>
@@ -97,21 +98,18 @@ export function StoryPage({ id }: { id: string }) {
           </>
         }
         footer={
-          <div className="card p-4 sm:p-6">
-            <h2 className="mt-0 mb-2 text-lg">Read it again?</h2>
-            <p className="mt-0 mb-4 text-sm" style={{ color: 'var(--fg-muted)' }}>
-              Re-reading a story is always free. It never uses one of tonight&rsquo;s three
-              stories.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <button type="button" className="btn" onClick={readAgain}>
+          <div className="st-again">
+            <h2>Read it again?</h2>
+            <p>Re-reading a story is always free. It never uses one of tonight&rsquo;s new stories.</p>
+            <div className="st-again-actions">
+              <button type="button" className="btn btn-quiet" onClick={readAgain}>
                 Read again
               </button>
               <Link href="/library" className="btn btn-quiet no-underline">
-                Library
+                Back to library
               </Link>
-              <Link href="/new" className="btn btn-quiet no-underline">
-                New story
+              <Link href="/new" className="st-primary st-primary-inline">
+                Make another book <ArrowRight />
               </Link>
             </div>
           </div>
