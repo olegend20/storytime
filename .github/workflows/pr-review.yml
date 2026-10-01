@@ -1,0 +1,144 @@
+name: agent review
+
+# Automated PR review and merge decision (issue #13, DECISIONS #151).
+#
+# Two jobs. `review` runs a Claude reviewer on the owner's subscription (no API credit)
+# and returns a structured verdict. `agent review / verdict` is the required status check:
+# plain code (`scripts/pr-decide.ts`) turns the verdict, the PR's changed files and its
+# review history into approve + auto-merge, changes requested, or "needs the owner".
+#
+# `pull_request_target`, not `pull_request`: the workflow, the decision script and the
+# review standard then always come from `main`, so a PR cannot edit its own reviewer.
+# The PR's code is checked out into `pr-head/`, never into the workspace root (see the
+# action's docs/security.md). Only same-repo PRs run; forks never see the secret.
+#
+# The owner releases a blocked PR by adding the `owner-approved` label; a new commit
+# strips it again. Only the repository owner's label counts (checked by sender).
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number to review (VT-AR3, or a re-run)
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agent-review-${{ github.event.pull_request.number || inputs.pr }}
+  cancel-in-progress: true
+
+env:
+  PR: ${{ github.event.pull_request.number || inputs.pr }}
+
+# Both jobs carry the same guard (job-level `if` cannot read `env`): this repo's own,
+# non-draft, non-Dependabot PRs; a `labeled` event only when the label is the owner's
+# release, and then only the verdict job runs.
+
+jobs:
+  review:
+    name: review
+    if: >-
+      github.event.action != 'labeled'
+      && (github.event_name == 'workflow_dispatch'
+          || (github.event.pull_request.head.repo.full_name == github.repository
+              && github.event.pull_request.draft == false
+              && github.actor != 'dependabot[bot]'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # inline comments and the summary comment
+      id-token: write # the action asks for it
+    outputs:
+      verdict: ${{ steps.claude.outputs.structured_output }}
+      conclusion: ${{ steps.claude.outputs.conclusion }}
+    env:
+      # Kickoff rule 3: the reviewer's test runs never reach the live API either.
+      LIVE_API: '0'
+      ANTHROPIC_API_KEY: sk-ant-ci-replay-only
+      SUPABASE_URL: http://127.0.0.1:54321
+      SUPABASE_ANON_KEY: ci-anon
+      SUPABASE_SERVICE_ROLE_KEY: ci-service
+    steps:
+      - uses: actions/checkout@v4 # no ref: the base branch, at the workspace root
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ env.PR }}/head
+          path: pr-head
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pr-head/pnpm-lock.yaml
+      - name: Install the PR's dependencies (so the reviewer can run fixture-mode gates)
+        run: pnpm install --frozen-lockfile
+        working-directory: pr-head
+
+      - name: Claude review
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          use_sticky_comment: true
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ env.PR }}
+
+            You are the StoryTime pull-request reviewer. Read `.github/pr-review-standard.md`
+            (this checkout is `main`) and follow it exactly. The pull request's code is checked
+            out under `./pr-head`, with its dependencies installed; `.` is `main`. Review the
+            diff (`gh pr diff ${{ env.PR }}`) in the context of the surrounding code in
+            `pr-head`. CI runs every gate itself; run `pnpm` gates only to verify a specific
+            claim. Post inline comments for specific problems and one summary comment with
+            the verdict. Finish with the structured verdict.
+          # Reviewer model: claude-opus-5-5 (models overview fetched 2026-09-30). Read-only
+          # tools plus the fixture-mode gates; no editing, no pushing, no reviewing or merging
+          # by hand — the verdict job owns the decision.
+          claude_args: >-
+            --model claude-opus-5-5
+            --max-turns 60
+            --allowedTools "Read,Grep,Glob,LS,mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr checks:*),Bash(gh pr comment:*),Bash(git log:*),Bash(git diff:*),Bash(git -C pr-head log:*),Bash(git -C pr-head diff:*),Bash(cd pr-head && pnpm lint),Bash(cd pr-head && pnpm typecheck),Bash(cd pr-head && pnpm test),Bash(cd pr-head && pnpm test:unit),Bash(cd pr-head && pnpm test:int),Bash(cd pr-head && pnpm test:guardrails)"
+            --disallowedTools "Edit,Write,MultiEdit,NotebookEdit,WebFetch,WebSearch"
+            --json-schema '{"type":"object","properties":{"verdict":{"type":"string","enum":["approve","request_changes","needs_human"]},"summary":{"type":"string"},"blocking":{"type":"array","items":{"type":"string"}}},"required":["verdict","summary"]}'
+
+  verdict:
+    name: agent review / verdict
+    needs: review
+    if: >-
+      !cancelled()
+      && (github.event_name == 'workflow_dispatch'
+          || (github.event.pull_request.head.repo.full_name == github.repository
+              && github.event.pull_request.draft == false
+              && github.actor != 'dependabot[bot]'
+              && (github.event.action != 'labeled' || github.event.label.name == 'owner-approved')))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # enable auto-merge
+      pull-requests: write # reviews and labels
+    steps:
+      - uses: actions/checkout@v4 # the base branch: the decision script comes from main
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Decide
+        run: pnpm tsx scripts/pr-decide.ts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          PR_NUMBER: ${{ env.PR }}
+          EVENT_ACTION: ${{ github.event.action || 'dispatch' }}
+          LABEL_NAME: ${{ github.event.label.name }}
+          LABEL_SENDER: ${{ github.event.sender.login }}
+          REVIEW_RESULT: ${{ needs.review.result }}
+          REVIEWER_CONCLUSION: ${{ needs.review.outputs.conclusion }}
+          REVIEWER_OUTPUT: ${{ needs.review.outputs.verdict }}
