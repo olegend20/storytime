@@ -4,6 +4,7 @@ import { ensureFamily, updateFamily, FamilySettingsInput } from '@/lib/family/se
 import { handleUpdateFamily } from '@/lib/family/handlers'
 import { KINDLE_SENDS_PER_DAY, KindleSendError, sendStoryToKindle, type OutgoingMail } from '@/lib/kindle/send'
 import { getLibraryStory } from '@/lib/stories/library'
+import { usageDateFor } from '@/lib/limits/timezone'
 import { stubStory } from '../helpers/fixtures'
 import {
   cleanupUser,
@@ -135,12 +136,26 @@ describe.runIf(dbUp)('Send to Kindle', () => {
     const broken = { send: async () => { throw new Error('smtp down') } }
     await expect(sendStoryToKindle({ ...base, sender: broken })).rejects.toMatchObject({ code: 'delivery_failed' })
 
-    const rows = Array.from({ length: KINDLE_SENDS_PER_DAY - 1 }, () => ({ family_id: familyId, story_id: storyId, to_address: 'milo_abc@kindle.com' }))
+    // The failed send gave its slot back: still exactly the one logged row.
+    const { count: afterFailure } = await serviceClient().from('story_sends').select('id', { count: 'exact', head: true }).eq('family_id', familyId)
+    expect(afterFailure).toBe(1)
+
+    const today = usageDateFor('Europe/London', new Date())
+    const rows = Array.from({ length: KINDLE_SENDS_PER_DAY - 1 }, () => ({ family_id: familyId, story_id: storyId, to_address: 'milo_abc@kindle.com', usage_date: today }))
     await serviceClient().from('story_sends').insert(rows)
-    const err = await sendStoryToKindle({ ...base, sender }).catch((e: unknown) => e)
+    const err = await sendStoryToKindle({ ...base, sender, timezone: 'Europe/London' }).catch((e: unknown) => e)
     expect(err).toBeInstanceOf(KindleSendError)
     expect((err as KindleSendError).code).toBe('daily_limit')
     expect(outbox).toHaveLength(1) // nothing more was sent
+    const { count: afterLimit } = await serviceClient().from('story_sends').select('id', { count: 'exact', head: true }).eq('family_id', familyId)
+    expect(afterLimit).toBe(KINDLE_SENDS_PER_DAY) // the refused send gave its slot back too
+
+    // A different calendar day for the family is a fresh allowance.
+    const tomorrow = usageDateFor('Europe/London', new Date(Date.now() + 24 * 60 * 60 * 1000))
+    const next = await sendStoryToKindle({ ...base, sender, timezone: 'Europe/London', now: new Date(Date.now() + 24 * 60 * 60 * 1000) })
+    expect(next.sentToday).toBe(1)
+    const { data: fresh } = await serviceClient().from('story_sends').select('usage_date').eq('family_id', familyId).eq('usage_date', tomorrow)
+    expect(fresh).toHaveLength(1)
   })
 
   it('an empty string clears the address', async () => {

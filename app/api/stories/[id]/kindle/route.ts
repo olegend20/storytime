@@ -17,13 +17,20 @@ export async function POST(_req: Request, { params }: Ctx) {
   const ctx = await currentFamilyIfAny()
   if (!ctx) return apiError('unauthorized', 'Please sign in.')
   const { id } = await params
-  const story = await getLibraryStory(ctx.db, id).catch(() => null)
+  let story: Awaited<ReturnType<typeof getLibraryStory>>
+  try {
+    story = await getLibraryStory(ctx.db, id)
+  } catch (err) {
+    console.error('[kindle] story read failed:', err)
+    return apiError('server_error', "We couldn't load that story. Please try again.")
+  }
   if (!story) return apiError('not_found', 'Story not found.')
 
   try {
     const result = await sendStoryToKindle({
       familyId: ctx.family.id,
       kindleEmail: ctx.family.kindle_email,
+      timezone: ctx.family.timezone,
       story: { id: story.id, title: story.title, content: story.content },
       childNames: story.child_names,
     })

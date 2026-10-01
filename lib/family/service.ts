@@ -172,7 +172,9 @@ export function sanitizeFamilySettings(raw: unknown): {
     input.timezone = cleaned.value
   }
   if (body.kindle_email !== undefined) {
-    const cleaned = sanitize('title', body.kindle_email)
+    // No length cap here: a Send-to-Kindle address can be longer than a title; the schema's
+    // own max(80) and the address pattern decide. (Review on PR #12.)
+    const cleaned = sanitize('title', body.kindle_email, { cap: false })
     if (cleaned.removed.html) htmlField = htmlField ?? 'kindle_email'
     input.kindle_email = cleaned.value
   }

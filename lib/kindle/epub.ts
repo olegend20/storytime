@@ -1,5 +1,6 @@
 import JSZip from 'jszip'
 import { parseParagraphs, type Inline } from '@/lib/client/markdown'
+import { joinNames } from '@/lib/client/reader'
 import type { StoryOutput } from '@/lib/schemas'
 
 /**
@@ -24,8 +25,12 @@ export interface EpubInput {
 
 export const EPUB_MIME = 'application/epub+zip'
 
+/** XML cannot carry these at all; a stray form feed would make Kindle reject the book. */
+const XML_ILLEGAL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g
+
 export function xml(text: string): string {
   return text
+    .replace(XML_ILLEGAL, '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -86,13 +91,6 @@ p { margin: 0 0 0.9em; }
 ul.facts { padding-left: 1.2em; }
 ul.facts li { margin-bottom: 0.6em; }
 `
-
-export function joinNames(names: readonly string[]): string {
-  const list = names.filter((n) => n.trim() !== '')
-  if (list.length === 0) return ''
-  if (list.length === 1) return list[0]!
-  return `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]}`
-}
 
 /** The files of the book, path -> content. The order matters: `mimetype` must be first. */
 export function epubFiles(input: EpubInput): { path: string; content: string }[] {

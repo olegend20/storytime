@@ -23,11 +23,19 @@ export default function KindleSettingsForm({
     event.preventDefault()
     setStatus('saving')
     setError(null)
-    const response = await fetch('/api/family', {
-      method: 'PATCH',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ kindle_email: address }),
-    })
+    let response: Response
+    try {
+      response = await fetch('/api/family', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ kindle_email: address }),
+      })
+    } catch {
+      // Wi-Fi dropped mid-tap: say so and let them try again, never a stuck button.
+      setStatus('idle')
+      setError('We could not reach StoryTime. Check the connection and try again.')
+      return
+    }
     if (!response.ok) {
       setStatus('idle')
       let message = 'We could not save that. Please try again.'
