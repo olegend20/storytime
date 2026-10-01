@@ -62,3 +62,29 @@ test.describe('landing page', () => {
     await expect(page.locator('#mission')).toBeInViewport()
   })
 })
+
+test.describe('the app shell', () => {
+  test('the creator is one tap away from every page, on a phone too', async ({ page }) => {
+    await page.goto('/privacy')
+    const link = page.getByRole('link', { name: 'Tonight’s book' })
+    await expect(link).toBeVisible()
+    await expect(link).toHaveAttribute('href', '/new')
+    await expect(page.getByRole('link', { name: 'Library' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Account and settings' })).toBeVisible()
+  })
+
+  test('in the reader, the footer clears the chapter bar that is fixed to the bottom', async ({ page }) => {
+    await page.goto('/library')
+    await page.getByRole('link', { name: /read/i }).first().click()
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    await expect(page.locator('[data-reader]')).toBeVisible()
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+    const bar = (await page.getByTestId('chapters-bar').boundingBox())!
+    for (const name of ['Privacy', 'Our mission']) {
+      const link = (await page.locator('footer.st-footer').getByRole('link', { name }).boundingBox())!
+      expect(link.y + link.height, `${name} sits above the chapter bar`).toBeLessThanOrEqual(bar.y + 1)
+    }
+    const theme = (await page.locator('footer.st-footer').getByRole('radiogroup', { name: 'Theme' }).boundingBox())!
+    expect(theme.y + theme.height).toBeLessThanOrEqual(bar.y + 1)
+  })
+})

@@ -39,7 +39,9 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
             onClick={() => setTheme(option.value)}
             className="rounded-full px-3 py-2 text-sm"
             style={{
-              minHeight: compact ? 36 : 40,
+              minHeight: 44,
+              minWidth: 44,
+              padding: compact ? '0 0.7rem' : undefined,
               background: checked ? 'var(--accent)' : 'transparent',
               color: checked ? 'var(--accent-fg)' : 'var(--fg)',
               fontWeight: checked ? 650 : 500,

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Landing } from '@/components/landing/Landing'
 import { currentUser } from '@/lib/auth/session'
+import { kindleConfigured } from '@/lib/kindle/send'
 import './landing.css'
 
 export const metadata: Metadata = {
@@ -23,5 +24,5 @@ export default async function HomePage({
   const params = await searchParams
   // F2 AC: a signed-out visitor can reach login from here. Signed in, the action skips it.
   const signedIn = (await currentUser().catch(() => null)) !== null
-  return <Landing signedIn={signedIn} justDeleted={params.deleted === '1'} />
+  return <Landing signedIn={signedIn} justDeleted={params.deleted === '1'} kindle={kindleConfigured()} />
 }

@@ -33,9 +33,6 @@
   --danger-soft: #f3e7e3;
   --focus: #8b6f39;
   --shade: 41 58 52;
-  --tint-sage: #dfe6d6;
-  --tint-mist: #d6e1e8;
-  --tint-sand: #efe2cc;
 
   /* Newsreader and Inter are self-hosted by next/font (app/fonts.ts); the rest are fallbacks. */
   --prose-font: var(--font-newsreader), Georgia, 'Iowan Old Style', 'Times New Roman', serif;
@@ -226,6 +223,7 @@ body {
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
     transition-duration: 0.01ms !important;
   }
 }
@@ -437,11 +435,25 @@ body {
 
 /* ------------------------------------------------------------------ the calm shell (#17) */
 
-h1,
-h2,
-h3 {
-  font-family: var(--prose-font);
-  letter-spacing: -0.012em;
+/* In the base layer, so a `tracking-*` or `font-*` utility on a heading still wins. */
+@layer base {
+  h1,
+  h2,
+  h3 {
+    font-family: var(--prose-font);
+    letter-spacing: -0.012em;
+  }
+}
+
+/*
+ * The reader's chapter bar is fixed to the bottom of the screen. The footer (and the theme
+ * control in it) clears the bar, so its links are never underneath something else.
+ */
+body:has([data-reader]) > .st-footer {
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+}
+.st-show-sm {
+  display: none;
 }
 
 /* Every page's content sits between the header and the footer and takes the slack. */
@@ -517,14 +529,14 @@ body > main {
 }
 .st-book::before { content: ''; position: absolute; inset: 11px; border: 1px solid var(--line-soft); border-radius: 1px; pointer-events: none; }
 .st-book-by { text-align: center; font-size: 10.5px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--fg-muted); font-weight: 500; }
-.st-book-title { margin-top: 26px !important; text-align: center; font-family: var(--prose-font); font-size: clamp(26px, 3vw, 34px); line-height: 1.14; letter-spacing: -0.018em; text-wrap: balance; }
+.st-book-title { margin: 26px 0 0; text-align: center; font-family: var(--prose-font); font-size: clamp(26px, 3vw, 34px); line-height: 1.14; letter-spacing: -0.018em; text-wrap: balance; }
 .st-ornament { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 26px 0; color: var(--fg-muted); }
 .st-ornament i { width: 30px; height: 1px; background: var(--border); }
 .st-book-prose { font-family: var(--prose-font); font-size: 17.5px; line-height: 1.62; color: var(--fg); }
 .st-book-prose p + p { margin-top: 0.9em; }
 .st-dropcap::first-letter { float: left; font-size: 3.25em; line-height: 0.82; padding: 0.06em 0.09em 0 0; color: var(--accent); font-weight: 400; }
 .st-book-folio { position: absolute; bottom: 26px; left: 0; right: 0; text-align: center; font-family: var(--prose-font); font-size: 13px; color: var(--fg-muted); }
-.st-sample-caption { margin-top: 24px !important; text-align: center; font-family: var(--prose-font); font-style: italic; font-size: 15px; color: var(--fg-muted); }
+.st-sample-caption { margin: 24px 0 0; text-align: center; font-family: var(--prose-font); font-style: italic; font-size: 15px; color: var(--fg-muted); }
 
 
 @media (max-width: 650px) {
@@ -532,6 +544,7 @@ body > main {
   .st-wordmark { font-size: 24px; }
   .st-byline { font-size: 9.5px; }
   .st-hide-sm { display: none; }
+  .st-show-sm { display: inline; }
   .st-footer-in { padding: 12px 22px; }
   .st-book { padding: 46px 30px 54px; aspect-ratio: auto; }
   .st-sample { max-width: none; }
@@ -541,4 +554,9 @@ body > main {
   .st-header-in { padding: 0 16px; gap: 8px; }
   .st-byline { letter-spacing: 0.12em; font-size: 9px; }
   .st-navlink { padding: 0 8px; }
+}
+/* The app header carries two links and the account: on a phone the byline makes room. */
+@media (max-width: 480px) {
+  .st-header-app .st-byline { display: none; }
+  .st-header-app .st-nav { gap: 0; }
 }

@@ -5,10 +5,13 @@
  * fast a story is made (generation time is not ours to promise), and nothing that reads as a
  * research finding, a statistic or an endorsement. Beliefs are written as beliefs. Every
  * promise names something the app already does; `feature` says where, for the same test.
+ * Sending to a Kindle depends on the server having mail set up, so those two sentences are
+ * separate and the page only says them when it is true.
  */
+import { BRAND } from '@/lib/brand'
 
 export const HERO = {
-  eyebrow: 'The Last Ten Project',
+  eyebrow: BRAND.project,
   headline: ['Make the last ten minutes of the day the ones they ', 'remember.'] as const,
   lead:
     'A small project with one idea: end every day with a story. One where your child is the hero, ' +
@@ -16,13 +19,16 @@ export const HERO = {
   cta: 'Make tonight’s book',
   secondary: 'Read our mission',
   note: 'Free for families · Text-only stories · No adverts',
-  moons: 'Ten minutes. Together.',
+  moons: BRAND.tagline,
 } as const
 
-export const MISSION =
+/** [before, the emphasised word, after] - a tuple, so an edit cannot silently lose the split. */
+export const MISSION = [
   'To help parents and children end the day together — with a story, a little learning, and a ' +
-  'moment that belongs to them. And to raise children who stay curious about the world, one ' +
-  'bedtime at a time.'
+    'moment that belongs to them. And to raise children who stay ',
+  'curious',
+  ' about the world, one bedtime at a time.',
+] as const
 
 export const BELIEFS: ReadonlyArray<{ n: string; title: string; body: string }> = [
   {
@@ -84,14 +90,14 @@ export type PromiseFeature =
   | 'child-data-minimal'
   | 'true-facts'
   | 'no-engagement-mechanics'
-  | 'library-and-kindle'
+  | 'library'
 
 export const PROMISES: ReadonlyArray<{ title: string; body: string; feature: PromiseFeature }> = [
   { title: 'Free for families', body: 'Free to make, free to reread.', feature: 'no-payment' },
   { title: 'Words, not screens', body: 'Text only. No videos, no characters to sell, no adverts.', feature: 'text-only' },
   {
     title: 'Only what a story needs',
-    body: 'A first name, an age and what they love. Never a surname, a photo or a location.',
+    body: 'First name, age, what they love and how they read. Never a surname, a photo or a location.',
     feature: 'child-data-minimal',
   },
   {
@@ -101,15 +107,25 @@ export const PROMISES: ReadonlyArray<{ title: string; body: string; feature: Pro
   },
   {
     title: 'Calm by design',
-    body: 'No streaks, no scores, no notifications. It is bedtime.',
+    body: 'No streaks, no badges, no notifications. It is bedtime.',
     feature: 'no-engagement-mechanics',
   },
   {
     title: 'Yours to keep',
-    body: 'Every story is saved to your library, and can be sent to a Kindle.',
-    feature: 'library-and-kindle',
+    body: 'Every story is saved to your library, free to read again.',
+    feature: 'library',
   },
 ]
+
+const SCREEN_QUESTION = 'Do we need a screen at bedtime?'
+
+/** Said only when this server can actually send to a Kindle (`kindleConfigured()`). */
+export const KINDLE = {
+  promiseTitle: 'Yours to keep',
+  promise: ' It can be sent to a Kindle, too.',
+  question: SCREEN_QUESTION,
+  answer: ' If you would rather keep phones out of the bedroom, send the story to a Kindle.',
+} as const
 
 export const QUESTIONS: ReadonlyArray<{ q: string; a: string }> = [
   {
@@ -122,15 +138,13 @@ export const QUESTIONS: ReadonlyArray<{ q: string; a: string }> = [
   {
     q: 'What do you keep about my child?',
     a:
-      'A first name, an age, the things they like and any notes you choose to add, so the story ' +
-      'can be about them. No surname, no birthday, no photo, no location. You can delete all of ' +
-      'it at any time.',
+      'A first name, an age, the things they like, an optional reading level and any notes you ' +
+      'choose to add, so the story can be about them. No surname, no birthday, no photo, no ' +
+      'location. You can delete all of it at any time.',
   },
   {
-    q: 'Do we need a screen at bedtime?',
-    a:
-      'A phone in night mode works well: warm, dim, and it stays awake while you read. If you ' +
-      'would rather keep phones out of the bedroom, send the story to a Kindle.',
+    q: SCREEN_QUESTION,
+    a: 'A phone in night mode works well: warm, dim, and it stays awake while you read.',
   },
   {
     q: 'Is it really free?',
@@ -142,19 +156,20 @@ export const QUESTIONS: ReadonlyArray<{ q: string; a: string }> = [
 
 export const CLOSING = {
   headline: ['Tonight, keep the last ', 'ten.'] as const,
-  lead: 'Ten minutes of curiosity. A little more time together.',
+  lead: BRAND.footer,
 } as const
 
 /** Every sentence a visitor can read, for the copy rules test. */
 export function allLandingCopy(): string[] {
   return [
     HERO.eyebrow, HERO.headline.join(''), HERO.lead, HERO.cta, HERO.secondary, HERO.note, HERO.moons,
-    MISSION,
+    MISSION.join(''),
     ...BELIEFS.flatMap((b) => [b.title, b.body]),
     HOW.eyebrow, HOW.headline, HOW.aside, ...HOW.steps.flatMap((s) => [s.title, s.body]),
     SAMPLE.label, SAMPLE.byline, SAMPLE.title, ...SAMPLE.paragraphs, SAMPLE.factLabel, SAMPLE.fact,
     ...PROMISES.flatMap((p) => [p.title, p.body]),
     ...QUESTIONS.flatMap((x) => [x.q, x.a]),
     CLOSING.headline.join(''), CLOSING.lead,
+    KINDLE.promise, KINDLE.answer,
   ]
 }

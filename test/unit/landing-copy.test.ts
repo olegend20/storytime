@@ -1,6 +1,7 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { allLandingCopy, PROMISES, QUESTIONS, type PromiseFeature } from '@/lib/landing/copy'
+import { allLandingCopy, KINDLE, PROMISES, QUESTIONS, type PromiseFeature } from '@/lib/landing/copy'
 import { ChildInput } from '@/lib/schemas/child'
 
 /**
@@ -12,6 +13,15 @@ import { ChildInput } from '@/lib/schemas/child'
  */
 
 const copy = allLandingCopy()
+
+function sourceFiles(dirs: string[]): string[] {
+  return dirs.flatMap((dir) =>
+    readdirSync(dir).flatMap((name) => {
+      const path = join(dir, name)
+      return statSync(path).isDirectory() ? sourceFiles([path]) : /\.tsx?$/.test(name) ? [path] : []
+    }),
+  )
+}
 
 describe('landing copy', () => {
   it('makes no claim about how fast a story is made', () => {
@@ -44,18 +54,34 @@ describe('landing copy', () => {
     'child-data-minimal': () =>
       Object.keys(ChildInput.shape).sort().join() === ['age', 'first_name', 'likes', 'notes', 'reading_level'].join(),
     'true-facts': () => /true_facts/.test(readFileSync('lib/schemas/story.ts', 'utf8')),
-    // No push or notification API anywhere in the client, and no streak or score in the UI.
-    'no-engagement-mechanics': () => !/Notification\.requestPermission|pushManager/.test(readFileSync('public/sw.js', 'utf8')),
-    'library-and-kindle': () => readFileSync('lib/kindle/send.ts', 'utf8').includes('sendStoryToKindle'),
+    // No push or notification API in the service worker, and no streak or badge anywhere in
+    // the interface. (The copy does not say "no scores" while a waiting game keeps one.)
+    'no-engagement-mechanics': () =>
+      !/Notification\.requestPermission|pushManager/.test(readFileSync('public/sw.js', 'utf8')) &&
+      sourceFiles(['app', 'components']).every((f) => !/\bstreak|\bbadge/i.test(readFileSync(f, 'utf8'))),
+    library: () => readFileSync('components/LibraryPage.tsx', 'utf8').length > 0,
   }
 
   it.each(PROMISES.map((p) => [p.title, p.feature] as const))('"%s" is something the app does', (_title, feature) => {
     expect(EVIDENCE[feature]()).toBe(true)
   })
 
-  it('the child-data promise names only fields the app stores', () => {
+  it('the child-data promise and answer name every kind of thing the app stores', () => {
     const promise = PROMISES.find((p) => p.feature === 'child-data-minimal')!
     expect(promise.body).toMatch(/first name/i)
+    expect(promise.body).toMatch(/how they read/i)
     expect(promise.body).toMatch(/never a surname, a photo or a location/i)
+    const answer = QUESTIONS.find((x) => /keep about my child/i.test(x.q))!.a
+    for (const stored of [/first name/i, /an age/i, /things they like/i, /reading level/i, /notes/i]) {
+      expect(answer).toMatch(stored)
+    }
+  })
+
+  it('Kindle is only mentioned in the two sentences the page shows when mail is set up', () => {
+    const always = [...PROMISES.map((p) => p.body), ...QUESTIONS.map((x) => x.a)]
+    expect(always.filter((line) => /kindle/i.test(line))).toEqual([])
+    expect(KINDLE.promise + KINDLE.answer).toMatch(/Kindle/)
+    expect(QUESTIONS.some((x) => x.q === KINDLE.question)).toBe(true)
+    expect(PROMISES.some((p) => p.title === KINDLE.promiseTitle)).toBe(true)
   })
 })

@@ -2,7 +2,8 @@ import Link from 'next/link'
 import { ArrowRight, Check, ChevronDown } from '@/components/Icons'
 import { Phase } from '@/components/Phase'
 import { BRAND } from '@/lib/brand'
-import { BELIEFS, CLOSING, HERO, HOW, MISSION, PROMISES, QUESTIONS, SAMPLE } from '@/lib/landing/copy'
+import { ThemeToggle } from '@/components/ThemeToggle'
+import { BELIEFS, CLOSING, HERO, HOW, KINDLE, MISSION, PROMISES, QUESTIONS, SAMPLE } from '@/lib/landing/copy'
 
 /**
  * lastten.org (issue #17): the mission in one screen, and one thing to do about it.
@@ -12,9 +13,17 @@ import { BELIEFS, CLOSING, HERO, HOW, MISSION, PROMISES, QUESTIONS, SAMPLE } fro
  * always points at the creator: the proxy sends a signed-out visitor through sign-in and back
  * (`/login?next=/new`), so there is one path and no auth logic here.
  */
-export function Landing({ signedIn, justDeleted }: { signedIn: boolean; justDeleted: boolean }) {
+export function Landing({
+  signedIn,
+  justDeleted,
+  kindle,
+}: {
+  signedIn: boolean
+  justDeleted: boolean
+  /** This server can send to a Kindle, so the page may say so. */
+  kindle: boolean
+}) {
   const start = '/new'
-  const [missionLead, missionCurious] = MISSION.split('curious') as [string, string]
 
   return (
     <div className="lt">
@@ -88,9 +97,9 @@ export function Landing({ signedIn, justDeleted }: { signedIn: boolean; justDele
               Our mission
             </h2>
             <p className="lt-statement">
-              {missionLead}
-              <em>curious</em>
-              {missionCurious}
+              {MISSION[0]}
+              <em>{MISSION[1]}</em>
+              {MISSION[2]}
             </p>
           </div>
           <ol className="lt-beliefs">
@@ -166,7 +175,10 @@ export function Landing({ signedIn, justDeleted }: { signedIn: boolean; justDele
                   </span>
                   <div>
                     <h3>{p.title}</h3>
-                    <p>{p.body}</p>
+                    <p>
+                      {p.body}
+                      {kindle && p.title === KINDLE.promiseTitle ? KINDLE.promise : ''}
+                    </p>
                   </div>
                 </li>
               ))}
@@ -186,7 +198,10 @@ export function Landing({ signedIn, justDeleted }: { signedIn: boolean; justDele
                   <h3>{item.q}</h3>
                   <ChevronDown width={18} height={18} className="st-chev" />
                 </summary>
-                <p className="lt-a">{item.a}</p>
+                <p className="lt-a">
+                  {item.a}
+                  {kindle && item.q === KINDLE.question ? KINDLE.answer : ''}
+                </p>
               </details>
             ))}
           </div>
@@ -215,6 +230,7 @@ export function Landing({ signedIn, justDeleted }: { signedIn: boolean; justDele
           <span className="st-footer-links">
             <a href="#mission">Our mission</a>
             <Link href="/privacy">Privacy</Link>
+            <ThemeToggle compact />
           </span>
         </div>
       </footer>

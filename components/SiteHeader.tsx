@@ -6,9 +6,10 @@ import { Person } from './Icons'
 import { ThemeToggle } from './ThemeToggle'
 import { BRAND } from '@/lib/brand'
 
+/** `short` is what a phone shows: both links must fit beside the name at 320px. */
 const LINKS = [
-  { href: '/new', label: 'Tonight’s book' },
-  { href: '/library', label: 'Library' },
+  { href: '/new', label: 'Tonight’s book', short: 'Tonight' },
+  { href: '/library', label: 'Library', short: 'Library' },
 ]
 
 /**
@@ -22,7 +23,7 @@ export function SiteHeader() {
   const pathname = usePathname()
   if (pathname === '/') return null
   return (
-    <header data-chrome className="st-header">
+    <header data-chrome className="st-header st-header-app">
       <div className="st-header-in">
         <Link href="/" className="st-brand" aria-label={`${BRAND.app}, home`}>
           <span className="st-wordmark">{BRAND.app}</span>
@@ -36,9 +37,11 @@ export function SiteHeader() {
                 key={link.href}
                 href={link.href}
                 aria-current={active ? 'page' : undefined}
-                className={`st-navlink${link.href === '/new' ? ' st-hide-sm' : ''}`}
+                className="st-navlink"
+                aria-label={link.label}
               >
-                {link.label}
+                <span className="st-hide-sm">{link.label}</span>
+                <span className="st-show-sm">{link.short}</span>
               </Link>
             )
           })}
