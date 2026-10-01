@@ -340,13 +340,18 @@ test('waiting shows the stage the server has reached, with no countdown, then th
   await expect(page.getByRole('heading', { name: 'Saved to your library' })).toBeVisible({ timeout: 30_000 })
 })
 
-test('going back from the waiting screen keeps the draft and makes no story', async ({ page }) => {
+test('going back from the waiting screen returns to the creator with the draft intact', async ({ page }) => {
   await startStory(page, '!thinking the history of soccer')
   await expect(page.getByTestId('waiting')).toBeVisible()
   await page.getByRole('button', { name: 'Back to tonight’s book' }).click()
   await expect(page.getByLabel(TOPIC_LABEL)).toHaveValue('!thinking the history of soccer')
   await expect(page.getByRole('button', { name: MAKE_BOOK })).toBeEnabled()
   await expect(page.getByRole('heading', { name: 'Saved to your library' })).toHaveCount(0)
+  // The parent is back on the creator, not in a reader. (This stops the page following the
+  // story; whether the server finishes one it had already begun is the server's business,
+  // and the library shows it if so.)
+  await expect(page.getByTestId('waiting')).toHaveCount(0)
+  await expect(page.locator('[data-reader]')).toHaveCount(0)
 })
 
 test('one tap makes one request, however fast the second tap comes', async ({ page }) => {

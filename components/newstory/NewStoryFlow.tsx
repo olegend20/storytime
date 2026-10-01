@@ -191,7 +191,12 @@ export function NewStoryFlow({
     () => ideaPool({ fromServer: serverTopics, offset: chipOffset }),
     [serverTopics, chipOffset],
   )
-  const chips = useMemo(() => ideasFrom(ideas, chipStart, CHIPS_SHOWN), [ideas, chipStart])
+  // Which ideas lead depends on today's date as the browser sees it, and `/new` is rendered
+  // ahead of time: the ideas appear once hydrated, so server and client markup always agree.
+  const chips = useMemo(
+    () => (hydrated ? ideasFrom(ideas, chipStart, CHIPS_SHOWN) : []),
+    [hydrated, ideas, chipStart],
+  )
   const moreIdeas = useCallback(
     () => setChipStart((start) => (ideas.length === 0 ? 0 : (start + CHIPS_SHOWN) % ideas.length)),
     [ideas.length],
