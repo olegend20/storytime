@@ -876,3 +876,12 @@ Each has an e2e test on desktop and phone (the wake lock and offline tests stub 
 browser APIs). **Gates:** lint ✅ · typecheck ✅ · unit+int 1013 ✅ · e2e mock **132** ✅ ·
 e2e real 4 ✅.
 
+### 2026-09-30 — public repo, CI green, Send to Kindle (issue #11)
+
+Repo anonymised and squashed to one commit, then public; CI runs and passes; `main`
+protected. Then the first feature through the `/feature` loop: **Send to Kindle** (DECISIONS
+#150) - EPUB built by the app, mailed over SMTP, local mailbox as the provider in dev and
+test. 5 unit, 6 int, 1 real e2e (an actual email with the attachment read back from the
+mailbox), 1 mock e2e. **Gates:** lint ✅ · typecheck ✅ · unit+int 1024 ✅ · guardrails 29 ✅ ·
+schema 6 ✅ · e2e mock 134 ✅ · e2e real 6 ✅.
+

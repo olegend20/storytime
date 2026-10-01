@@ -16,6 +16,12 @@ export const API_ERROR_STATUS = {
   not_found: 404,
   conflict: 409,
   rate_limited: 429,
+  /** Send to Kindle (issue #11): the parent has not saved a Kindle address yet. */
+  no_kindle_address: 400,
+  /** Send to Kindle is not set up on this server (no SMTP). */
+  not_configured: 503,
+  /** The email provider refused or timed out. Nothing was changed. */
+  delivery_failed: 502,
   server_error: 500,
 } as const
 

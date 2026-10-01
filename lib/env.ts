@@ -34,6 +34,13 @@ const supabaseKey = (name: string, newPrefix: string) =>
         'For local dev, copy the keys from `supabase status`.',
     )
 
+/**
+ * An optional feature's variable left as `KEY=` in .env is unset, not invalid: a blank
+ * must never take down login and generation over a feature that is off.
+ */
+const blankIsUnset = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess((v) => (v === '' ? undefined : v), schema.optional())
+
 const ServerEnv = z.object({
   ANTHROPIC_API_KEY: z.string().min(1, 'ANTHROPIC_API_KEY is required'),
   SUPABASE_URL: z.string().url('SUPABASE_URL must be a URL'),
@@ -43,6 +50,18 @@ const ServerEnv = z.object({
   /** F8: kill switch and budget cap. Both take effect without a deploy. */
   GENERATION_ENABLED: Booleanish.default(true),
   DAILY_BUDGET_USD: z.coerce.number().positive().default(5),
+
+  /**
+   * Send to Kindle (issue #11): the app mails an EPUB over SMTP. All optional - with
+   * SMTP_HOST or KINDLE_FROM_EMAIL unset the feature says it is not set up. Locally the
+   * Supabase mailbox is the provider (127.0.0.1:54325, no auth).
+   */
+  SMTP_HOST: blankIsUnset(z.string().min(1)),
+  SMTP_PORT: blankIsUnset(z.coerce.number().int().positive()).default(587),
+  SMTP_USER: blankIsUnset(z.string().min(1)),
+  SMTP_PASS: blankIsUnset(z.string().min(1)),
+  SMTP_SECURE: Booleanish.default(false),
+  KINDLE_FROM_EMAIL: blankIsUnset(z.string().email()),
 
   /** F12: /admin is gated to this user id; everyone else gets a 404. */
   OWNER_USER_ID: z.string().uuid().optional(),

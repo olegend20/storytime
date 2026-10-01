@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ApiError, deleteStory, fetchStory } from '@/lib/client/api'
+import { SendToKindleButton } from '@/components/reader/SendToKindleButton'
 import { readerFromLibraryStory } from '@/lib/client/reader'
 import { forgetStory, saveScroll } from '@/lib/client/storage'
 import type { LibraryStory } from '@/lib/client/types'
@@ -84,13 +85,16 @@ export function StoryPage({ id }: { id: string }) {
         story={readerFromLibraryStory(story)}
         flagged={story.status === 'flagged'}
         actions={
-          <DeleteStoryButton
+          <>
+            <SendToKindleButton storyId={story.id} />
+            <DeleteStoryButton
             onConfirm={async () => {
               await deleteStory(story.id)
               forgetStory(story.id)
               router.push('/library')
             }}
           />
+          </>
         }
         footer={
           <div className="card p-4 sm:p-6">

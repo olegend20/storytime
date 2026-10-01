@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import { FIELD_MAX_LENGTH, sanitize } from '@/lib/http/sanitize'
 import { DEFAULT_TIMEZONE, isValidTimeZone, normalizeTimeZone } from './timezone'
+import { isKindleAddress, normalizeKindleAddress } from '@/lib/kindle/address'
 
 /**
  * F2 - the family account. One `families` row per user, created on first login.
@@ -15,6 +16,8 @@ export interface FamilyRow {
   owner_user_id: string
   display_name: string
   timezone: string
+  /** The parent's Send-to-Kindle address, or null. Issue #11. */
+  kindle_email: string | null
   deleted_at: string | null
   created_at: string
   updated_at: string
@@ -40,6 +43,16 @@ export const FamilySettingsInput = z.object({
   timezone: z
     .string()
     .refine(isValidTimeZone, 'Please choose a timezone from the list.')
+    .optional(),
+  /** Empty string clears it. */
+  kindle_email: z
+    .string()
+    .trim()
+    .max(80)
+    .refine(
+      (v) => v === '' || isKindleAddress(v),
+      'A Send to Kindle address ends in @kindle.com - find it under Manage Your Content and Devices on Amazon.',
+    )
     .optional(),
 })
 export type FamilySettingsInput = z.infer<typeof FamilySettingsInput>
@@ -109,9 +122,12 @@ export async function updateFamily(
   familyId: string,
   patch: FamilySettingsInput,
 ): Promise<FamilyRow> {
-  const update: Record<string, string> = {}
+  const update: Record<string, string | null> = {}
   if (patch.display_name !== undefined) update.display_name = patch.display_name
   if (patch.timezone !== undefined) update.timezone = normalizeTimeZone(patch.timezone)
+  if (patch.kindle_email !== undefined) {
+    update.kindle_email = patch.kindle_email === '' ? null : normalizeKindleAddress(patch.kindle_email)
+  }
   if (Object.keys(update).length === 0) {
     const current = await db.from('families').select('*').eq('id', familyId).single()
     if (current.error) throw new FamilyServiceError(current.error.message, current.error)
@@ -154,6 +170,13 @@ export function sanitizeFamilySettings(raw: unknown): {
     const cleaned = sanitize('title', body.timezone)
     if (cleaned.removed.html) htmlField = htmlField ?? 'timezone'
     input.timezone = cleaned.value
+  }
+  if (body.kindle_email !== undefined) {
+    // No length cap here: a Send-to-Kindle address can be longer than a title; the schema's
+    // own max(80) and the address pattern decide. (Review on PR #12.)
+    const cleaned = sanitize('title', body.kindle_email, { cap: false })
+    if (cleaned.removed.html) htmlField = htmlField ?? 'kindle_email'
+    input.kindle_email = cleaned.value
   }
   return { input, containedHtml: htmlField !== null, htmlField }
 }
