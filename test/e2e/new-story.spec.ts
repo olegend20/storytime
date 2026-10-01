@@ -209,7 +209,7 @@ test('reaching the topic field costs at most three taps from the home page', asy
   await page.goto('/')
   let taps = 0
 
-  await page.getByRole('link', { name: /make tonight.s story/i }).click()
+  await page.getByRole('link', { name: /make tonight.s book/i }).first().click()
   taps += 1
   await expect(page.getByLabel(/what.s the story about/i)).toBeVisible()
 

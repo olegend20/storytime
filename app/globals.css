@@ -1,7 +1,9 @@
 @import 'tailwindcss';
 
 /*
- * StoryTime's visual system.
+ * StoryTime's visual system: the calm bedtime design (issue #17, DECISIONS #152).
+ * Warm ivory, paper-white surfaces, evergreen ink and one evergreen action; serif for the
+ * book, sans for the controls.
  *
  * Designed for one situation: a tired adult reading aloud in a dark bedroom, on a phone, one
  * handed, with a child leaning on the other arm. That drives every choice here - the dark
@@ -14,23 +16,29 @@
  */
 
 :root {
-  --bg: oklch(0.985 0.008 85);
-  --bg-raised: oklch(1 0 0);
-  --bg-sunken: oklch(0.955 0.01 85);
-  --fg: oklch(0.25 0.02 265);
-  --fg-muted: oklch(0.45 0.02 265);
-  --border: oklch(0.885 0.012 85);
-  --accent: oklch(0.45 0.16 265);
-  --accent-fg: oklch(0.99 0 0);
-  --accent-soft: oklch(0.945 0.03 265);
-  --accent-warm: oklch(0.55 0.17 50); /* the O in tic-tac-toe */
-  --danger: oklch(0.46 0.18 25);
-  --danger-soft: oklch(0.955 0.03 25);
-  --focus: oklch(0.55 0.19 265);
+  --bg: #f6f4ee;
+  --bg-raised: #fffdf8;
+  --bg-sunken: #eeece4;
+  --fg: #293a34;
+  --fg-soft: #46554e;
+  --fg-muted: #626c63;
+  --border: #dcded3;
+  --line-soft: #e8e9df;
+  --accent: #355c49;
+  --accent-hover: #2c4d3d;
+  --accent-fg: #fffdf8;
+  --accent-soft: #e9eee3;
+  --accent-warm: #8b6f39; /* the O in tic-tac-toe */
+  --danger: #8a3b2e;
+  --danger-soft: #f3e7e3;
+  --focus: #8b6f39;
+  --shade: 41 58 52;
 
-  --prose-font: ui-serif, Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  /* Newsreader and Inter are self-hosted by next/font (app/fonts.ts); the rest are fallbacks. */
+  --prose-font: var(--font-newsreader), Georgia, 'Iowan Old Style', 'Times New Roman', serif;
   --ui-font:
-    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    var(--font-inter), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+    sans-serif;
 
   /* Set by the reader's text-size control; reading mode multiplies it. */
   --text-scale: 1;
@@ -43,63 +51,77 @@
 /* System dark, unless the parent explicitly chose light. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: oklch(0.16 0.015 265);
-    --bg-raised: oklch(0.212 0.018 265);
-    --bg-sunken: oklch(0.13 0.014 265);
-    --fg: oklch(0.93 0.012 85);
-    --fg-muted: oklch(0.725 0.015 265);
-    --border: oklch(0.305 0.02 265);
-    --accent: oklch(0.79 0.12 265);
-    --accent-fg: oklch(0.16 0.02 265);
-    --accent-soft: oklch(0.265 0.04 265);
-    --accent-warm: oklch(0.78 0.15 50); /* the O in tic-tac-toe */
-    --danger: oklch(0.76 0.14 25);
-    --danger-soft: oklch(0.26 0.05 25);
-    --focus: oklch(0.83 0.13 265);
+    --bg: #161819;
+    --bg-raised: #1f2223;
+    --bg-sunken: #111314;
+    --fg: #e9e7e2;
+    --fg-soft: #cfcdc8;
+    --fg-muted: #a9aca8;
+    --border: #383c3d;
+    --line-soft: #2a2e2f;
+    --accent: #c9d6c0;
+    --accent-hover: #d8e3d0;
+    --accent-fg: #161819;
+    --accent-soft: #2a2f2c;
+    --accent-warm: #e0c078; /* the O in tic-tac-toe */
+    --danger: #f0b3a6;
+    --danger-soft: #3a2622;
+    --focus: #e0c078;
+    --shade: 0 0 0;
   }
 }
 
 /* The explicit choice wins in both directions. */
 :root[data-theme='dark'] {
-  --bg: oklch(0.16 0.015 265);
-  --bg-raised: oklch(0.212 0.018 265);
-  --bg-sunken: oklch(0.13 0.014 265);
-  --fg: oklch(0.93 0.012 85);
-  --fg-muted: oklch(0.725 0.015 265);
-  --border: oklch(0.305 0.02 265);
-  --accent: oklch(0.79 0.12 265);
-  --accent-fg: oklch(0.16 0.02 265);
-  --accent-soft: oklch(0.265 0.04 265);
-  --accent-warm: oklch(0.78 0.15 50); /* the O in tic-tac-toe */
-  --danger: oklch(0.76 0.14 25);
-  --danger-soft: oklch(0.26 0.05 25);
-  --focus: oklch(0.83 0.13 265);
+  --bg: #161819;
+  --bg-raised: #1f2223;
+  --bg-sunken: #111314;
+  --fg: #e9e7e2;
+  --fg-soft: #cfcdc8;
+  --fg-muted: #a9aca8;
+  --border: #383c3d;
+  --line-soft: #2a2e2f;
+  --accent: #c9d6c0;
+  --accent-hover: #d8e3d0;
+  --accent-fg: #161819;
+  --accent-soft: #2a2f2c;
+  --accent-warm: #e0c078; /* the O in tic-tac-toe */
+  --danger: #f0b3a6;
+  --danger-soft: #3a2622;
+  --focus: #e0c078;
+  --shade: 0 0 0;
 }
 
 /*
  * Night (DECISIONS #146): for a dark bedroom. Near-black, nothing white, warm dimmed text.
+ * The calm design's night is evergreen; it is taken down to near-black here so #146's bar
+ * (and its test) still holds - the hue is the design's, the darkness is the bedroom's.
  * Contrast stays above 7:1 for the prose, so it is still a legible page, just a quiet one.
  */
 :root[data-theme='night'] {
   color-scheme: dark;
-  --bg: oklch(0.1 0.01 60);
-  --bg-raised: oklch(0.14 0.012 60);
-  --bg-sunken: oklch(0.08 0.008 60);
-  --fg: oklch(0.8 0.03 75);
-  --fg-muted: oklch(0.62 0.025 75);
-  --border: oklch(0.22 0.015 60);
-  --accent: oklch(0.72 0.1 60);
-  --accent-fg: oklch(0.12 0.01 60);
-  --accent-soft: oklch(0.2 0.03 60);
-  --accent-warm: oklch(0.72 0.13 30); /* the O in tic-tac-toe */
-  --danger: oklch(0.72 0.13 25);
-  --danger-soft: oklch(0.2 0.04 25);
-  --focus: oklch(0.78 0.11 60);
+  --bg: #121816;
+  --bg-raised: #18201d;
+  --bg-sunken: #0e1311;
+  --fg: #e6dfcf;
+  --fg-soft: #cfc9ba;
+  --fg-muted: #a8b1a3;
+  --border: #2f3a34;
+  --line-soft: #232c28;
+  --accent: #b9caa3;
+  --accent-hover: #c8d7b4;
+  --accent-fg: #121816;
+  --accent-soft: #26322b;
+  --accent-warm: #d9b976; /* the O in tic-tac-toe */
+  --danger: #e8a99b;
+  --danger-soft: #3a2a25;
+  --focus: #d9b976;
+  --shade: 0 0 0;
 }
 :root[data-theme='night'][data-reading='on'] {
-  --bg: oklch(0.07 0.008 60);
-  --bg-raised: oklch(0.07 0.008 60);
-  --fg: oklch(0.76 0.03 75);
+  --bg: #0e1311;
+  --bg-raised: #0e1311;
+  --fg: #dcd5c5;
 }
 
 /*
@@ -111,22 +133,22 @@
  */
 :root[data-reading='on'] {
   --reading-boost: 1.18;
-  --bg: oklch(0.945 0.01 85);
-  --bg-raised: oklch(0.945 0.01 85);
+  --bg: #efede5;
+  --bg-raised: #efede5;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light'])[data-reading='on'] {
-    --bg: oklch(0.115 0.013 265);
-    --bg-raised: oklch(0.115 0.013 265);
-    --fg: oklch(0.88 0.012 85);
+    --bg: #101213;
+    --bg-raised: #101213;
+    --fg: #dddbd6;
   }
 }
 
 :root[data-theme='dark'][data-reading='on'] {
-  --bg: oklch(0.115 0.013 265);
-  --bg-raised: oklch(0.115 0.013 265);
-  --fg: oklch(0.88 0.012 85);
+  --bg: #101213;
+  --bg-raised: #101213;
+  --fg: #dddbd6;
 }
 
 /* `inline` keeps the var reference, so a theme flip repaints without regenerating utilities. */
@@ -162,9 +184,14 @@ html {
 body {
   margin: 0;
   min-height: 100dvh;
+  /* A column, so the footer sits at the bottom of a short page. */
+  display: flex;
+  flex-direction: column;
   background: var(--bg);
   color: var(--fg);
   font-family: var(--ui-font);
+  -webkit-font-smoothing: antialiased;
+  font-optical-sizing: auto;
   -webkit-text-size-adjust: 100%;
   /* F9 AC: no horizontal scroll at 375px. A long unbroken word must wrap, not widen. */
   overflow-wrap: break-word;
@@ -196,6 +223,7 @@ body {
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
     transition-duration: 0.01ms !important;
   }
 }
@@ -284,9 +312,10 @@ body {
 
 .chip[aria-pressed='true'],
 .chip[aria-checked='true'] {
-  background: var(--accent);
+  background: var(--accent-soft);
   border-color: var(--accent);
-  color: var(--accent-fg);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  color: var(--fg);
   font-weight: 600;
 }
 
@@ -297,20 +326,26 @@ body {
 }
 
 .btn {
-  min-height: 48px;
+  min-height: 52px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
-  border-radius: 0.75rem;
+  padding: 0.7rem 1.4rem;
+  border-radius: 8px;
   border: 1px solid transparent;
   background: var(--accent);
   color: var(--accent-fg);
-  font: inherit;
-  font-weight: 650;
-  font-size: 1.05rem;
+  font-family: var(--prose-font);
+  font-weight: 500;
+  font-size: 1.15rem;
+  line-height: 1.2;
   cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.btn:hover:not(:disabled):not(.btn-quiet):not(.btn-danger) {
+  background: var(--accent-hover);
 }
 
 .btn:disabled {
@@ -324,29 +359,36 @@ body {
   background: transparent;
   color: var(--fg);
   border-color: var(--border);
-  font-weight: 550;
-  font-size: 1rem;
+  font-family: var(--ui-font);
+  font-weight: 500;
+  font-size: 0.95rem;
   min-height: 44px;
   padding: 0.55rem 0.95rem;
+}
+
+.btn-quiet:hover:not(:disabled) {
+  background: var(--bg-raised);
 }
 
 .btn-danger {
   background: transparent;
   color: var(--danger);
   border-color: var(--danger);
+  font-family: var(--ui-font);
+  font-size: 0.95rem;
 }
 
 .card {
   background: var(--bg-raised);
   border: 1px solid var(--border);
-  border-radius: 1rem;
+  border-radius: 8px;
 }
 
 .field {
   width: 100%;
   min-height: 52px;
   padding: 0.8rem 0.9rem;
-  border-radius: 0.75rem;
+  border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--bg-raised);
   color: var(--fg);
@@ -389,4 +431,132 @@ body {
   clip-path: inset(50%);
   white-space: nowrap;
   border: 0;
+}
+
+/* ------------------------------------------------------------------ the calm shell (#17) */
+
+/* In the base layer, so a `tracking-*` or `font-*` utility on a heading still wins. */
+@layer base {
+  h1,
+  h2,
+  h3 {
+    font-family: var(--prose-font);
+    letter-spacing: -0.012em;
+  }
+}
+
+/*
+ * The reader's chapter bar is fixed to the bottom of the screen. The footer (and the theme
+ * control in it) clears the bar, so its links are never underneath something else.
+ */
+body:has([data-reader]) > .st-footer {
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+}
+.st-show-sm {
+  display: none;
+}
+
+/* Every page's content sits between the header and the footer and takes the slack. */
+body > main {
+  flex: 1 0 auto;
+  width: 100%;
+}
+
+.st-header { border-bottom: 1px solid var(--border); }
+.st-header-in, .st-footer-in { max-width: 1120px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.st-header-in { min-height: 84px; }
+.st-brand { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-height: 44px; justify-content: center; text-align: left; }
+.st-wordmark { font-family: var(--prose-font); font-size: 28px; line-height: 1; letter-spacing: -0.015em; font-weight: 500; }
+.st-byline { font-size: 10.5px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--fg-muted); font-weight: 500; }
+.st-nav { display: flex; align-items: center; gap: 6px; }
+.st-navlink { min-height: 44px; padding: 0 12px; font-size: 14.5px; color: var(--fg-soft); position: relative; border-radius: 6px; transition: color 120ms ease; }
+.st-navlink:hover { color: var(--fg); }
+.st-navlink[aria-current='page'] { color: var(--fg); font-weight: 500; }
+.st-navlink[aria-current='page']::after { content: ''; position: absolute; left: 12px; right: 12px; bottom: 8px; height: 1px; background: currentColor; }
+.st-avatar { width: 44px; height: 44px; display: grid; place-items: center; margin-left: 6px; border-radius: 50%; }
+.st-avatar span { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-fg); font-family: var(--prose-font); font-size: 17px; transition: background-color 120ms ease; }
+.st-avatar:hover span { background: var(--accent-hover); }
+
+.st-main { flex: 1; width: 100%; max-width: 1120px; margin: 0 auto; padding: 48px 24px 44px; }
+.st-footer { border-top: 1px solid var(--border); }
+.st-footer-in { min-height: 64px; font-size: 13px; color: var(--fg-muted); flex-wrap: wrap; }
+.st-footer-links { display: flex; gap: 4px; }
+.st-footer-links a { min-height: 44px; padding: 0 10px; display: inline-flex; align-items: center; text-decoration: none; border-radius: 6px; }
+.st-footer-links a:hover { color: var(--fg); text-decoration: underline; text-underline-offset: 3px; }
+
+
+.st-brand,
+.st-navlink,
+.st-avatar,
+.st-footer-links a {
+  color: inherit;
+  text-decoration: none;
+}
+.st-navlink {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+.st-byline {
+  white-space: nowrap;
+}
+.st-footer-links {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.st-eyebrow { margin: 0; font-family: var(--ui-font); font-size: 11.5px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--fg-muted); font-weight: 500; }
+.st-textlink { min-height: 44px; display: inline-flex; align-items: center; padding: 0 4px; font-size: 14px; color: inherit; text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 4px; transition: text-decoration-color 120ms ease; }
+.st-textlink:hover { text-decoration-color: currentColor; }
+.st-note { margin: 12px 0 0; text-align: center; font-size: 13px; color: var(--fg-muted); text-wrap: balance; }
+.st-chev { transition: transform 150ms ease; flex: none; }
+
+.st-primary { width: 100%; min-height: 54px; padding: 0 24px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; background: var(--accent); color: var(--accent-fg); border: 0; border-radius: 8px; font-family: var(--prose-font); font-size: 19px; font-weight: 500; letter-spacing: -0.005em; text-decoration: none; cursor: pointer; box-shadow: 0 1px 0 rgb(var(--shade) / 0.25), 0 8px 18px -12px rgb(var(--shade) / 0.5); transition: background-color 120ms ease, transform 80ms ease; }
+.st-primary:hover { background: var(--accent-hover); }
+.st-primary:active { transform: translateY(1px); }
+.st-primary svg { transition: transform 150ms ease; }
+.st-primary:hover svg { transform: translateX(3px); }
+
+/* The sample book: a page, not a card. */
+.st-sample { min-width: 0; max-width: 430px; width: 100%; justify-self: center; padding-top: 6px; }
+.st-sample-label { font-family: var(--prose-font); font-size: 15.5px; color: var(--fg-muted); margin-bottom: 14px; }
+.st-book { position: relative; aspect-ratio: 5 / 6.3; padding: 58px 46px 60px; display: flex; flex-direction: column; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 3px;
+  box-shadow:
+    0 2px 0 -1px var(--bg-raised), 0 2px 0 0 var(--border),
+    0 5px 0 -2px var(--bg-raised), 0 5px 0 -1px var(--border),
+    0 8px 0 -3px var(--bg-raised), 0 8px 0 -2px var(--border),
+    0 38px 60px -34px rgb(var(--shade) / 0.42), 0 14px 24px -18px rgb(var(--shade) / 0.22);
+}
+.st-book::before { content: ''; position: absolute; inset: 11px; border: 1px solid var(--line-soft); border-radius: 1px; pointer-events: none; }
+.st-book-by { text-align: center; font-size: 10.5px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--fg-muted); font-weight: 500; }
+.st-book-title { margin: 26px 0 0; text-align: center; font-family: var(--prose-font); font-size: clamp(26px, 3vw, 34px); line-height: 1.14; letter-spacing: -0.018em; text-wrap: balance; }
+.st-ornament { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 26px 0; color: var(--fg-muted); }
+.st-ornament i { width: 30px; height: 1px; background: var(--border); }
+.st-book-prose { font-family: var(--prose-font); font-size: 17.5px; line-height: 1.62; color: var(--fg); }
+.st-book-prose p + p { margin-top: 0.9em; }
+.st-dropcap::first-letter { float: left; font-size: 3.25em; line-height: 0.82; padding: 0.06em 0.09em 0 0; color: var(--accent); font-weight: 400; }
+.st-book-folio { position: absolute; bottom: 26px; left: 0; right: 0; text-align: center; font-family: var(--prose-font); font-size: 13px; color: var(--fg-muted); }
+.st-sample-caption { margin: 24px 0 0; text-align: center; font-family: var(--prose-font); font-style: italic; font-size: 15px; color: var(--fg-muted); }
+
+
+@media (max-width: 650px) {
+  .st-header-in { min-height: 70px; padding: 0 20px; }
+  .st-wordmark { font-size: 24px; }
+  .st-byline { font-size: 9.5px; }
+  .st-hide-sm { display: none; }
+  .st-show-sm { display: inline; }
+  .st-footer-in { padding: 12px 22px; }
+  .st-book { padding: 46px 30px 54px; aspect-ratio: auto; }
+  .st-sample { max-width: none; }
+}
+/* The smallest phones (320px): the byline tightens so the header never pushes sideways. */
+@media (max-width: 380px) {
+  .st-header-in { padding: 0 16px; gap: 8px; }
+  .st-byline { letter-spacing: 0.12em; font-size: 9px; }
+  .st-navlink { padding: 0 8px; }
+}
+/* The app header carries two links and the account: on a phone the byline makes room. */
+@media (max-width: 480px) {
+  .st-header-app .st-byline { display: none; }
+  .st-header-app .st-nav { gap: 0; }
 }

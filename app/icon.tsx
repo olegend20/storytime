@@ -23,7 +23,7 @@ export function Mark() {
     >
       <svg width="360" height="360" viewBox="0 0 100 100" fill="none">
         <path d="M63 22a22 22 0 1 0 14 39 26 26 0 1 1-14-39z" fill="#f2d98c" />
-        <path d="M14 62q18-8 36 0 18-8 36 0v22q-18-8-36 0-18-8-36 0z" fill="#fbf8f2" />
+        <path d="M14 62q18-8 36 0 18-8 36 0v22q-18-8-36 0-18-8-36 0z" fill="#fffdf8" />
         <path d="M50 62v22" stroke="#2b2f5c" strokeWidth="3" />
       </svg>
     </div>

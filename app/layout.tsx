@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
-import { SiteHeader } from '@/components/SiteHeader'
+import { inter, newsreader } from './fonts'
+import { SiteFooter, SiteHeader } from '@/components/SiteHeader'
 import { ThemeScript } from '@/components/ThemeScript'
 import { OfflineReady } from '@/components/OfflineReady'
 
@@ -25,7 +26,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={`${newsreader.variable} ${inter.variable}`} suppressHydrationWarning>
       <head>
         <ThemeScript />
       </head>
@@ -35,6 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </a>
         <SiteHeader />
         {children}
+        <SiteFooter />
         <OfflineReady />
       </body>
     </html>

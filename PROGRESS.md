@@ -876,6 +876,15 @@ Each has an e2e test on desktop and phone (the wake lock and offline tests stub 
 browser APIs). **Gates:** lint ✅ · typecheck ✅ · unit+int 1013 ✅ · e2e mock **132** ✅ ·
 e2e real 4 ✅.
 
+### 2026-10-01 — calm bedtime redesign, PR 1 of 3: foundation + landing (issue #17, DECISIONS #152–#154)
+
+Design tokens re-valued to the paper/evergreen palette across all four themes, Newsreader and
+Inter self-hosted, a quiet header and footer, and the lastten.org landing page at `/`.
+VT-R1 (`test/e2e/landing.spec.ts`), VT-R2 (a11y in light and dark, five widths, 44px targets)
+and VT-R3 (`test/unit/landing-copy.test.ts`) pass; mock e2e 152, unit/int 1098. Still to come:
+PR 2 (creator on the home page, calm waiting state) and PR 3 (library and reader). Deployment
+is issue #18.
+
 ### 2026-09-30 — automated PR review and merge (issue #13, DECISIONS #151)
 
 A Claude reviewer on the owner's subscription reviews every PR from `main`'s copy of the

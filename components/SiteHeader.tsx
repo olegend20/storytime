@@ -2,54 +2,79 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { Person } from './Icons'
 import { ThemeToggle } from './ThemeToggle'
+import { BRAND } from '@/lib/brand'
 
+/** `short` is what a phone shows: both links must fit beside the name at 320px. */
 const LINKS = [
-  { href: '/new', label: 'New story' },
-  { href: '/library', label: 'Library' },
+  { href: '/new', label: 'Tonight’s book', short: 'Tonight' },
+  { href: '/library', label: 'Library', short: 'Library' },
 ]
 
 /**
+ * The app's header (issue #17): the name, two places to go, and the account.
+ *
  * `data-chrome` marks this as furniture: reading mode hides everything so marked, in CSS,
- * before first paint (see globals.css).
+ * before first paint (see globals.css). The home page draws its own header, so this one steps
+ * aside there.
  */
 export function SiteHeader() {
   const pathname = usePathname()
+  if (pathname === '/') return null
   return (
-    <header data-chrome className="border-b border-line bg-raised">
-      <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
-        <Link
-          href="/"
-          className="mr-auto text-lg font-semibold no-underline"
-          style={{ color: 'var(--fg)' }}
-        >
-          StoryTime
+    <header data-chrome className="st-header st-header-app">
+      <div className="st-header-in">
+        <Link href="/" className="st-brand" aria-label={`${BRAND.app}, home`}>
+          <span className="st-wordmark">{BRAND.app}</span>
+          <span className="st-byline">{BRAND.project}</span>
         </Link>
-        <nav aria-label="Main">
-          <ul className="flex list-none items-center gap-1 p-0 m-0">
-            {LINKS.map((link) => {
-              const active = pathname === link.href || pathname.startsWith(`${link.href}/`)
-              return (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    aria-current={active ? 'page' : undefined}
-                    className="tap inline-flex items-center rounded-lg px-3 py-2 text-sm no-underline"
-                    style={{
-                      color: active ? 'var(--accent-fg)' : 'var(--fg)',
-                      background: active ? 'var(--accent)' : 'transparent',
-                      fontWeight: active ? 650 : 500,
-                    }}
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
+        <nav className="st-nav" aria-label="Main">
+          {LINKS.map((link) => {
+            const active = pathname === link.href || pathname.startsWith(`${link.href}/`)
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                aria-current={active ? 'page' : undefined}
+                className="st-navlink"
+                aria-label={link.label}
+              >
+                <span className="st-hide-sm">{link.label}</span>
+                <span className="st-show-sm">{link.short}</span>
+              </Link>
+            )
+          })}
+          <Link
+            href="/settings"
+            className="st-avatar"
+            aria-label="Account and settings"
+            aria-current={pathname.startsWith('/settings') ? 'page' : undefined}
+          >
+            <span>
+              <Person width={17} height={17} />
+            </span>
+          </Link>
         </nav>
-        <ThemeToggle compact />
       </div>
     </header>
+  )
+}
+
+/** The quiet end of every app page: the line we stand behind, two links, and the theme. */
+export function SiteFooter() {
+  const pathname = usePathname()
+  if (pathname === '/') return null
+  return (
+    <footer data-chrome className="st-footer">
+      <div className="st-footer-in">
+        <span>{BRAND.footer}</span>
+        <span className="st-footer-links">
+          <Link href="/#mission">Our mission</Link>
+          <Link href="/privacy">Privacy</Link>
+          <ThemeToggle compact />
+        </span>
+      </div>
+    </footer>
   )
 }

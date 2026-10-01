@@ -105,7 +105,7 @@ export function StoryReader({
   ].filter((part): part is string => Boolean(part))
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pt-6" style={{ paddingBottom: '7rem' }}>
+    <div data-reader className="mx-auto max-w-3xl px-4 pt-6" style={{ paddingBottom: '7rem' }}>
       <div data-chrome className="mb-6">
         {progress !== null && streaming && <StreamProgress value={progress} />}
       </div>

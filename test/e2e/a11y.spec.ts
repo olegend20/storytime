@@ -149,6 +149,42 @@ test.describe('accessibility', () => {
     expect(report('privacy', (await scan(page)).violations)).toEqual([])
   })
 
+  /** VT-R2 (issue #17): the landing page, in the light and the dark it will be seen in. */
+  for (const scheme of ['light', 'dark'] as const) {
+    test(`the landing page has no serious violations (${scheme})`, async ({ page }) => {
+      // The moons fade in one after another. Reduced motion shows them at once (globals.css),
+      // so the scan sees the settled page without waiting on a timer.
+      await page.emulateMedia({ colorScheme: scheme, reducedMotion: 'reduce' })
+      await page.goto('/')
+      await expect(page.locator('.lt-moons-row span').last()).toHaveCSS('opacity', '1')
+      expect(report(`landing-${scheme}`, (await scan(page)).violations)).toEqual([])
+    })
+  }
+
+  test('the landing page fits every width without sideways scrolling', async ({ page }) => {
+    for (const width of [320, 375, 390, 768, 1440]) {
+      await page.setViewportSize({ width, height: 800 })
+      await page.goto('/')
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
+      expect(overflow, `at ${width}px`).toBeLessThanOrEqual(1)
+    }
+  })
+
+  test('every control on the landing page is at least 44 by 44, the action at least 52 high', async ({ page }) => {
+    await page.goto('/')
+    const small = await page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>('a, button, summary')]
+        .filter((el) => el.offsetParent !== null)
+        .map((el) => ({ el, r: el.getBoundingClientRect() }))
+        .filter(({ r }) => r.width < 44 || r.height < 44)
+        .map(({ el, r }) => `${el.textContent?.trim().slice(0, 30)} ${Math.round(r.width)}x${Math.round(r.height)}`),
+    )
+    expect(small).toEqual([])
+    for (const action of await page.locator('a.st-primary').all()) {
+      expect((await action.boundingBox())!.height).toBeGreaterThanOrEqual(52)
+    }
+  })
+
   test('the reader is navigable by keyboard alone', async ({ page }) => {
     await page.goto('/library')
     await resetMock(page)
