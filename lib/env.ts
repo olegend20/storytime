@@ -47,7 +47,11 @@ const ServerEnv = z.object({
   SUPABASE_ANON_KEY: supabaseKey('SUPABASE_ANON_KEY', 'sb_publishable_'),
   SUPABASE_SERVICE_ROLE_KEY: supabaseKey('SUPABASE_SERVICE_ROLE_KEY', 'sb_secret_'),
 
-  /** F8: kill switch and budget cap. Both take effect without a deploy. */
+  /**
+   * F8: kill switch and budget cap. Changing either needs no code change, but a running
+   * instance keeps the value it started with (this module caches the parsed env): on Vercel,
+   * set the variable and redeploy - see DEPLOY.md.
+   */
   GENERATION_ENABLED: Booleanish.default(true),
   DAILY_BUDGET_USD: z.coerce.number().positive().default(5),
 

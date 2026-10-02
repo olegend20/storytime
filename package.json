@@ -7,7 +7,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "prepare": "git config core.hooksPath .githooks",
+    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true",
     "dev": "next dev --hostname 127.0.0.1",
     "build": "next build",
     "start": "next start --hostname 127.0.0.1",
