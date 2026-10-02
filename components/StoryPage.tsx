@@ -23,6 +23,7 @@ export function StoryPage({ id }: { id: string }) {
   const [story, setStory] = useState<LibraryStory | null>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'error'>('loading')
   const kindle = useSendToKindle(id)
+  const [deleteFailed, setDeleteFailed] = useState(false)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -87,11 +88,21 @@ export function StoryPage({ id }: { id: string }) {
         story={readerFromLibraryStory(story)}
         flagged={story.status === 'flagged'}
         // Shown on the page, not in the menu: it must still be there once the menu has closed.
-        notice={<KindleStatus state={kindle.state} />}
+        notice={
+          <>
+            <KindleStatus state={kindle.state} />
+            {deleteFailed && (
+              <p role="alert" className="st-rnotice" data-testid="delete-error">
+                We couldn&rsquo;t delete that story. Nothing was removed — please try again.
+              </p>
+            )}
+          </>
+        }
         actions={
           <>
             <SendToKindleButton state={kindle.state} onSend={() => void kindle.send()} />
             <DeleteStoryButton
+              onFailed={setDeleteFailed}
             onConfirm={async () => {
               await deleteStory(story.id)
               forgetStory(story.id)
@@ -125,12 +136,20 @@ export function StoryPage({ id }: { id: string }) {
 /**
  * Delete, behind one confirmation (F9 "delete story"; F11 "one-click delete" from the parent's
  * side). Inline rather than `window.confirm`: a native dialog cannot be styled for a dark room
- * and cannot say what deletion actually does.
+ * and cannot say what deletion actually does. A failure is reported to the page, which shows
+ * it under the reader's controls: the confirmation lives in a menu, and a message inside a
+ * menu disappears the moment the menu closes.
  */
-function DeleteStoryButton({ onConfirm }: { onConfirm: () => Promise<void> }) {
+function DeleteStoryButton({
+  onConfirm,
+  onFailed,
+}: {
+  onConfirm: () => Promise<void>
+  /** Told when a delete fails (and when a retry starts), so the page can say so outside the menu. */
+  onFailed: (failed: boolean) => void
+}) {
   const [asking, setAsking] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [failed, setFailed] = useState(false)
 
   if (!asking) {
     return (
@@ -149,11 +168,6 @@ function DeleteStoryButton({ onConfirm }: { onConfirm: () => Promise<void> }) {
         Delete this story for good? The characters and running jokes it added stay in the series
         — deleting a story doesn&rsquo;t rewind the series.
       </p>
-      {failed && (
-        <p className="mt-0 mb-3 text-sm" role="alert">
-          That didn&rsquo;t work. Please try again.
-        </p>
-      )}
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
@@ -161,10 +175,10 @@ function DeleteStoryButton({ onConfirm }: { onConfirm: () => Promise<void> }) {
           disabled={busy}
           onClick={() => {
             setBusy(true)
-            setFailed(false)
+            onFailed(false)
             onConfirm().catch(() => {
               setBusy(false)
-              setFailed(true)
+              onFailed(true)
             })
           }}
         >

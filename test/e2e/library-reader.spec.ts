@@ -386,6 +386,28 @@ test('deleting a story removes it from the library and 404s its URL', async ({ p
   expect(apiResponse.status()).toBe(404)
 })
 
+test('a delete that fails says so on the page, where it stays once the menu has closed', async ({ page }) => {
+  await openFirstStory(page)
+  const title = (await page.getByRole('heading', { level: 1 }).innerText()).trim()
+  // A real failure rather than an intercepted one (the service worker makes the request, so
+  // interception is not dependable): remove the story behind the page's back, so the page's
+  // own delete is refused by the server.
+  const gone = await page.request.delete(`/api/mock/stories/${page.url().split('/').pop()}`)
+  expect(gone.ok()).toBe(true)
+  await openStoryActions(page)
+  await page.getByRole('button', { name: 'Delete story' }).click()
+  await page.getByRole('button', { name: 'Yes, delete it' }).click()
+  const alert = page.getByTestId('delete-error')
+  await expect(alert).toBeVisible()
+  await expect(alert).toHaveAttribute('role', 'alert')
+
+  // Close the menu: the message is on the page, not in it, and the story is still here.
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('story-actions')).not.toHaveAttribute('open', '')
+  await expect(alert).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible()
+})
+
 test('cancelling the delete keeps the story', async ({ page }) => {
   await openFirstStory(page)
   const title = (await page.getByRole('heading', { level: 1 }).innerText()).trim()
