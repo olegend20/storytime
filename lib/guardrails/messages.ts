@@ -121,9 +121,17 @@ export function isSafeParentMessage(candidate: string | null, rawInput: string):
 }
 
 /**
- * "Must not echo the offending text back": any run of 4+ consecutive words from the
- * parent's input appearing in the message counts as an echo. Shorter overlaps are
- * unavoidable in normal English ("a story about").
+ * "Must not echo the offending text back".
+ *
+ * Two rules, because inputs come in two shapes:
+ *  - A longer input: any run of 4+ consecutive words from it appearing in the message is an
+ *    echo. Shorter overlaps are unavoidable in normal English ("a story about").
+ *  - A short input (under four words - most topics a parent types): any of its words of
+ *    four letters or more appearing in the message is an echo. The four-word rule gave such
+ *    inputs no protection at all, so a one-word topic could be named straight back to the
+ *    parent (issue #24). Spacing and hyphens are ignored, so "Spider-Man" echoes "spiderman".
+ *
+ * A false positive costs nothing: the parent gets the pre-written template for that reason.
  */
 export function echoesInput(candidate: string, rawInput: string): boolean {
   const norm = (s: string): string[] =>
@@ -133,7 +141,12 @@ export function echoesInput(candidate: string, rawInput: string): boolean {
       .split(/\s+/)
       .filter(Boolean)
   const inputWords = norm(rawInput)
-  if (inputWords.length < 4) return false
+  if (inputWords.length < 4) {
+    const squashed = candidate.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '')
+    const whole = inputWords.join('')
+    if (whole.length >= 4 && squashed.includes(whole)) return true
+    return inputWords.some((word) => word.length >= 4 && squashed.includes(word))
+  }
   const haystack = ` ${norm(candidate).join(' ')} `
   for (let i = 0; i + 4 <= inputWords.length; i += 1) {
     const gram = inputWords.slice(i, i + 4).join(' ')

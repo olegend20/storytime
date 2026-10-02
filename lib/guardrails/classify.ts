@@ -1,4 +1,4 @@
-import { callModel, type GenerationLogSink } from '@/lib/ai/callModel'
+import { callModel, parseJsonLoose, type GenerationLogSink } from '@/lib/ai/callModel'
 import { InputClassification } from '@/lib/schemas/guardrail'
 import { dataBlock, DATA_BLOCK_NOTICE } from './prompt'
 import { INPUT_CLASSIFIER_PROMPT, promptSection, promptVersion } from './prompts'
@@ -26,7 +26,10 @@ export interface ClassifyResult {
   classification: InputClassification
   costUsd: number
   replayed: boolean
-  /** True when the model's JSON did not validate and the fail-closed default was used. */
+  /**
+   * True when the model's JSON did not validate and the fail-closed default was used. A
+   * refusal that only lacked a minimum age is kept (see `salvageRefusal`) and is not degraded.
+   */
   degraded: boolean
 }
 
@@ -60,6 +63,33 @@ function failClosed(youngestAge: number): InputClassification {
     topic_key_hint: null,
     parent_message: null,
   }
+}
+
+/**
+ * Keep a refusal whose only fault is a missing minimum age (issue #24).
+ *
+ * When the classifier declines a topic outright it has no age to recommend, and it says so:
+ * `"min_recommended_age": null`. The contract wants an integer, so the reply used to fail
+ * validation and the fail-closed default replaced it - still a refusal, but with its reason
+ * and its wording thrown away: every specific refusal reached the parent as the vaguest
+ * message we have, and was logged as `other`.
+ *
+ * This fills in the age and re-validates. It only ever does so for `decision: "refuse"`:
+ * an allow with no age, or a reply that is wrong in any other way, is not rescued and still
+ * fails closed. Nothing that was refused becomes allowed.
+ */
+export function salvageRefusal(reply: unknown, youngestAge: number): InputClassification | null {
+  if (typeof reply !== 'object' || reply === null || Array.isArray(reply)) return null
+  const candidate = reply as Record<string, unknown>
+  if (candidate.decision !== 'refuse') return null
+  if (candidate.min_recommended_age !== null && candidate.min_recommended_age !== undefined) return null
+  const parsed = InputClassification.safeParse({
+    ...candidate,
+    min_recommended_age: Math.max(youngestAge, 1),
+  })
+  // The schema still has to accept everything else, and the decision is checked again on the
+  // parsed value rather than trusted from the raw one.
+  return parsed.success && parsed.data.decision === 'refuse' ? parsed.data : null
 }
 
 /**
@@ -110,11 +140,9 @@ export async function classifyInput(input: ClassifyInput): Promise<ClassifyResul
     ...(input.signal ? { signal: input.signal } : {}),
   })
 
-  const degraded = result.data === null
-  const classification = applyAgeBand(
-    degraded ? failClosed(input.youngestAge) : (result.data as InputClassification),
-    input.youngestAge,
-  )
+  const answer = result.data ?? salvageRefusal(parseJsonLoose(result.text), input.youngestAge)
+  const degraded = answer === null
+  const classification = applyAgeBand(answer ?? failClosed(input.youngestAge), input.youngestAge)
 
   return { classification, costUsd: result.costUsd, replayed: result.replayed, degraded }
 }
