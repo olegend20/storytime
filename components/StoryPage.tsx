@@ -103,12 +103,12 @@ export function StoryPage({ id }: { id: string }) {
             <SendToKindleButton state={kindle.state} onSend={() => void kindle.send()} />
             <DeleteStoryButton
               onFailed={setDeleteFailed}
-            onConfirm={async () => {
-              await deleteStory(story.id)
-              forgetStory(story.id)
-              router.push('/library')
-            }}
-          />
+              onConfirm={async () => {
+                await deleteStory(story.id)
+                forgetStory(story.id)
+                router.push('/library')
+              }}
+            />
           </>
         }
         footer={

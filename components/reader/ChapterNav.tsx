@@ -4,6 +4,11 @@ import { useCallback, useEffect, useRef } from 'react'
 import { ArrowLeft, ArrowRight, ChevronDown } from '@/components/Icons'
 import { Phase } from '@/components/Phase'
 
+/** A chapter as a moon: full once read, half while being read, new when still to come. */
+function phaseFor(index: number, current: number): number {
+  return index < current ? 1 : index === current ? 0.5 : 0
+}
+
 /**
  * F9: chapter navigation, and "chapter nav usable" on a 375x812 phone.
  *
@@ -14,11 +19,6 @@ import { Phase } from '@/components/Phase'
  * The picker is a native <dialog>: modal focus containment, Escape to close and correct screen
  * reader semantics come with it, and none of that is worth hand-rolling.
  */
-/** A chapter as a moon: full once read, half while being read, new when still to come. */
-function phaseFor(index: number, current: number): number {
-  return index < current ? 1 : index === current ? 0.5 : 0
-}
-
 export function ChapterNav({
   headings,
   currentIndex,

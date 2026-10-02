@@ -13,6 +13,12 @@ describe('canDropCap', () => {
     expect(canDropCap(first(long))).toBe(true)
   })
 
+  it('a name with an accented or non-English first letter takes one too', () => {
+    expect(canDropCap(first(`Élodie ${long.toLowerCase()}`))).toBe(true)
+    expect(canDropCap(first(`Øyvind ${long.toLowerCase()}`))).toBe(true)
+    expect(canDropCap(first(`7 o'clock came and ${long.toLowerCase()}`))).toBe(false)
+  })
+
   it('a short opening line does not: the next paragraph would wrap around the initial', () => {
     expect(canDropCap(first('Ready? asked Milo.'))).toBe(false)
   })

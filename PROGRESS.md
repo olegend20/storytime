@@ -883,6 +883,14 @@ prose, drop cap, moon-phase chapter bar), theme and story actions behind menus, 
 together". VT-R7/R8 in `test/e2e/library-reader.spec.ts`, VT-R9 in `a11y.spec.ts` (night
 theme, menus, 44px targets); mock e2e 178, real e2e 6, unit 1096. With this the redesign in
 #17 is complete; deployment is #18.
+### 2026-10-01 — first production deployment (issue #18, DECISIONS #158)
+
+Live at https://storytime-rose.vercel.app, with `lastten.org` and `www.lastten.org` attached
+to the Vercel project and waiting on DNS. Hosted Supabase: 11 migrations applied, schema/RLS
+test 6/6 against production, auth site URL and redirects set. Checked from outside: landing
+200, six security headers, protected pages redirect to sign-in, API 401 signed out, no font
+requests to Google. New stories are **paused** (placeholder key) until the owner sets the
+production Anthropic key. `DEPLOY.md` is the runbook and the list of what remains.
 
 ### 2026-10-01 — calm bedtime redesign, PR 2 of 3: creator + calm waiting (issue #17, DECISIONS #155–#156)
 

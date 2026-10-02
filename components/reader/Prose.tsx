@@ -39,7 +39,8 @@ function Token({ token }: { token: Inline }) {
  */
 export function canDropCap(tokens: readonly Inline[]): boolean {
   const first = tokens[0]
-  if (!first || first.kind !== 'text' || !/^[A-Za-z]/.test(first.text)) return false
+  // Any letter, not only A-Z: a story may open with Élodie or Øyvind.
+  if (!first || first.kind !== 'text' || !/^\p{L}/u.test(first.text)) return false
   return tokens.reduce((n, t) => n + t.text.length, 0) >= 140
 }
 

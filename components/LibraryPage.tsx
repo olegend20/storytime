@@ -7,6 +7,7 @@ import { fetchLibrary } from '@/lib/client/api'
 import { friendlyDate, groupBySeries, type SeriesGroup } from '@/lib/client/library'
 import { joinNames } from '@/lib/client/reader'
 import { NullableScrollMemory, scrollKey } from '@/lib/client/storage'
+import { useHydrated } from '@/lib/client/useHydrated'
 import { useStoredJson } from '@/lib/client/useStored'
 import { readMinutes, type LibraryStory } from '@/lib/client/types'
 
@@ -102,6 +103,9 @@ function StoryRow({ story }: { story: LibraryStory }) {
   // finished or sent back to the start; further in = stopped part-way.
   const saved = useStoredJson(scrollKey(story.id), NullableScrollMemory, null)
   const action = saved === null ? 'Read' : saved.y > RESUME_THRESHOLD_PX ? 'Continue reading' : 'Read again'
+  // What this browser remembers is only known once hydrated; until then the label keeps its
+  // place but is not shown, so a row never flashes "Read" before "Continue reading".
+  const hydrated = useHydrated()
 
   return (
     <Link href={`/stories/${story.id}`} className="st-row">
@@ -116,7 +120,7 @@ function StoryRow({ story }: { story: LibraryStory }) {
           <span>{story.content.true_facts.length} true facts</span>
         </p>
       </div>
-      <div className="st-row-action">
+      <div className="st-row-action" style={hydrated ? undefined : { visibility: 'hidden' }}>
         {action}
         <ArrowRight width={16} height={16} />
       </div>
