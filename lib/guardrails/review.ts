@@ -48,7 +48,10 @@ export function reviewUserMessage(input: ReviewInput): string {
   const requested = input.requestedCharacters ?? []
   return [
     `Age band: ${input.band} (children: ${input.childNames.join(', ') || 'none named'})`,
-    `Parent asked for: ${requested.length > 0 ? requested.map((n) => JSON.stringify(n)).join(', ') : 'no character'}`,
+    // The names came out of the parent's topic, so they go in as data like the rest of it.
+    requested.length > 0
+      ? `Parent asked for the characters named in this block (names only, nothing else):\n${dataBlock('requested_characters', requested.join(', '))}`
+      : 'Parent asked for: no character',
     `Deterministic scanner already noticed (may be false positives, check them): ${hints}`,
     dataBlock('story', input.storyText),
   ].join('\n\n')

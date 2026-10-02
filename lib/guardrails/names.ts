@@ -27,21 +27,24 @@ export function nameTokens(name: string): string[] {
 }
 
 /**
- * Two names are the same character when their keys are equal ("Spider-Man" / "Spiderman"),
- * or every word of one is a word of the other ("Sonic" / "Sonic the Hedgehog",
- * "Mario and Luigi" / "Mario"). Words match whole or not at all.
+ * Whether a request names a listed character: the same key ("Spider-Man" / "Spiderman"), or
+ * the request has the listed name's distinguishing word - its first - and the two names
+ * are otherwise nested ("Sonic" / "Sonic the Hedgehog", "Mario and Luigi" / "Mario").
+ * Words match whole or not at all, and a shared trailing word is not enough: "pup" names
+ * neither "Chase the pup" nor "Marshall the pup".
  */
-export function sameCharacter(a: string, b: string): boolean {
-  const ka = nameKey(a)
-  const kb = nameKey(b)
-  if (ka === '' || kb === '') return false
-  if (ka === kb) return true
-  const ta = nameTokens(a)
-  const tb = nameTokens(b)
-  if (ta.length === 0 || tb.length === 0) return false
-  const [shorter, longer] = ta.length <= tb.length ? [ta, tb] : [tb, ta]
-  const have = new Set(longer)
-  return shorter.every((w) => have.has(w))
+export function requestCovers(requested: string, listed: string): boolean {
+  const kr = nameKey(requested)
+  const kl = nameKey(listed)
+  if (kr === '' || kl === '') return false
+  if (kr === kl) return true
+  const tr = nameTokens(requested)
+  const tl = nameTokens(listed)
+  if (tr.length === 0 || tl.length === 0) return false
+  const have = new Set(tr)
+  if (!have.has(tl[0]!)) return false
+  const listedHas = new Set(tl)
+  return tr.every((w) => listedHas.has(w)) || tl.every((w) => have.has(w))
 }
 
 /** Whether a piece of text names the character: one of its words, whole, case-insensitive. */

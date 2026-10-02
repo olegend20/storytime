@@ -1,0 +1,41 @@
+{
+  "purpose": "classify_input",
+  "model": "claude-haiku-4-5-20251001",
+  "response": {
+    "model": "claude-haiku-4-5-20251001",
+    "id": "msg_011CfeFKrhr7RKWetHYfrATQ",
+    "type": "message",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "```json\n{\n  \"decision\": \"allow_with_care\",\n  \"category\": \"commercial_ip_character\",\n  \"care_notes\": \"Peppa Pig stories work well for this age. Keep the story gentle, cozy and sleepy—focus on everyday moments like bedtime routines, playing with family, or simple adventures. Avoid anything that might excite or worry a 3-year-old at bedtime.\",\n  \"min_recommended_age\": 2,\n  \"requested_characters\": [\"Peppa Pig\"],\n  \"topic_key_hint\": \"everyday-life-and-family\",\n  \"parent_message\": null\n}\n```"
+      }
+    ],
+    "container": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "stop_details": null,
+    "usage": {
+      "input_tokens": 1775,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation": {
+        "ephemeral_5m_input_tokens": 0,
+        "ephemeral_1h_input_tokens": 0
+      },
+      "output_tokens": 156,
+      "service_tier": "standard",
+      "inference_geo": "not_available"
+    },
+    "diagnostics": null
+  },
+  "usage": {
+    "input_tokens": 1775,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "output_tokens": 156
+  },
+  "stop_reason": "end_turn",
+  "recorded_at": "2026-10-02T23:05:17.420Z"
+}

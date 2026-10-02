@@ -1,0 +1,41 @@
+{
+  "purpose": "classify_input",
+  "model": "claude-haiku-4-5-20251001",
+  "response": {
+    "model": "claude-haiku-4-5-20251001",
+    "id": "msg_011CfeFLPy3saPwPWheczD9X",
+    "type": "message",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "```json\n{\n  \"decision\": \"refuse\",\n  \"category\": \"off_mission\",\n  \"care_notes\": null,\n  \"min_recommended_age\": 18,\n  \"requested_characters\": [],\n  \"topic_key_hint\": null,\n  \"parent_message\": \"StoryTime makes original educational stories rather than retellings of films—but we'd love to create a story about ice and snow, or how sisters help each other through challenges, with Elsa as a companion if you'd like.\"\n}\n```"
+      }
+    ],
+    "container": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "stop_details": null,
+    "usage": {
+      "input_tokens": 1776,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation": {
+        "ephemeral_5m_input_tokens": 0,
+        "ephemeral_1h_input_tokens": 0
+      },
+      "output_tokens": 126,
+      "service_tier": "standard",
+      "inference_geo": "not_available"
+    },
+    "diagnostics": null
+  },
+  "usage": {
+    "input_tokens": 1776,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "output_tokens": 126
+  },
+  "stop_reason": "end_turn",
+  "recorded_at": "2026-10-02T23:05:24.505Z"
+}
