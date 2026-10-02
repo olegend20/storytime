@@ -886,10 +886,11 @@ of #24), master v3 rule 7 + `prompts/character-rules.v1.md` sent only with those
 the requested names, normalize v2 keys the real subject. `stories.content_notice` (migration
 `20261002000001`) -> `meta` event -> reader (`role="note"`, hidden in Read together).
 
-**Live (owner approved ~$7; spent ≈ $6.45):** L2 corpus re-recorded, $0.39 - refuse recall
+**Live (owner approved ~$7; spent ≈ $6.86):** L2 corpus re-recorded twice ($0.78; the second for a data-block tag the review added to the cached prompt) - refuse recall
 **100% (134/134)**, allow false-refusal **1.2% (1/85)** (both unchanged), care agreement
-91.7% (was 90.0%), **requested characters 10/10** allowed with names, 8 new "character
-carrying refused content" entries all refused, and **0** refusals needed the null-age patch
+91.7% (was 90.0%), **requested characters 10/10, then 9/10** allowed with names (the
+subject-less "Mario and Luigi visit our house for dinner" split between recordings; VT-C1
+allows that one miss), 8 new "character carrying refused content" entries all refused, and **0** refusals needed the null-age patch
 (was 29). Normalize fixtures re-recorded (~$0.02). One real borrowed-character story
 ("Elsa takes Milo and Juno to meet the sharks"): passed the gate first time, 781 words, 233 s,
 **$0.31**, Elsa as companion, no Olaf, no song, the children ask the questions.
@@ -902,7 +903,11 @@ it is the owner's call (≈ $5.6 more). `eval/results/eval-2026-10-02.json` is t
 Found on the way: a rejected fact pack is permanent and the reviewer penalises knowledge
 packs for having no sources (issue #28).
 
-**Gates:** lint ✅ · typecheck ✅ · unit+int **1173** ✅ · guardrails 32 ✅ · schema 6 ✅ ·
+`/code-review` found a borrowed character leaking into the Story Bible and the classifier's
+care notes outliving a dropped name (both fixed, #168–#170); the reviewer agent tightened
+the name matching twice (whole words, the distinguishing word first, names to L4 as data).
+
+**Gates:** lint ✅ · typecheck ✅ · unit+int **1180** ✅ · guardrails 32 ✅ · schema 6 ✅ ·
 e2e mock **190** ✅ · e2e real 6 ✅.
 
 ### 2026-10-01 — calm bedtime redesign, PR 3 of 3: library + reader (issue #17, DECISIONS #157)
