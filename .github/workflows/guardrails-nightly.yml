@@ -18,7 +18,7 @@ jobs:
     # variable LIVE_RUNS_ENABLED=true - a public repo must never run this by default.
     if: vars.LIVE_RUNS_ENABLED == 'true'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
