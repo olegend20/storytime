@@ -33,9 +33,10 @@ export interface ClassifyResult {
    */
   degraded: boolean
   /**
-   * True when the reply broke the contract but was kept by `salvageRefusal`. Recorded on the
-   * guardrail event, so "the contract was met" and "the contract was patched" stay
-   * distinguishable in the logs.
+   * True when the reply broke the contract but was kept by `salvageRefusal`. It is logged
+   * (one `console.warn` line from `classifyInput`) and carried on `GuardInputResult` as
+   * `internalReason: 'l2_refusal_age_filled'`; it is NOT stored on the `guardrail_events`
+   * row, which has no column for a reason.
    */
   salvaged: boolean
 }
@@ -153,6 +154,9 @@ export async function classifyInput(input: ClassifyInput): Promise<ClassifyResul
   const salvaged = result.data === null ? salvageRefusal(parseJsonLoose(result.text), input.youngestAge) : null
   const answer = result.data ?? salvaged
   const degraded = answer === null
+  // The trace for "the contract was patched, not met": in the server log, since the event
+  // row cannot carry it. No input text, only the category the classifier chose.
+  if (salvaged) console.warn(`[guardrails] L2 refusal kept with its age filled in (category: ${salvaged.category})`)
   const classification = applyAgeBand(answer ?? failClosed(input.youngestAge), input.youngestAge)
 
   return {
