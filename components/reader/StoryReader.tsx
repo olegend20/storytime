@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { describeTones, joinNames, type ReaderStory } from '@/lib/client/reader'
 import { friendlyDate } from '@/lib/client/library'
 import { ChapterNav } from './ChapterNav'
+import { Phase } from '@/components/Phase'
 import { Prose } from './Prose'
 import { useWakeLock } from './useWakeLock'
 import { swipeDirection, type Point } from '@/lib/client/swipe'
@@ -14,9 +15,9 @@ import { useScrollMemory } from './useScrollMemory'
 /**
  * The reader. Used both for a saved story (F9) and for a story arriving over SSE (F10).
  *
- * Layout choices all come from the same picture: one column, serif, about 34rem of measure, a
- * fixed nav bar at thumb height, and enough bottom padding that the last line of the story is
- * never hidden behind that bar.
+ * Layout choices all come from the same picture: one narrow column of large serif type, the
+ * title set like a book's title page, a fixed nav bar at thumb height, and enough bottom
+ * padding that the last line of the story is never hidden behind that bar.
  */
 export function StoryReader({
   story,
@@ -24,6 +25,7 @@ export function StoryReader({
   progress = null,
   flagged = false,
   actions,
+  notice,
   footer,
 }: {
   story: ReaderStory
@@ -33,6 +35,8 @@ export function StoryReader({
   flagged?: boolean
   /** Chrome-level actions (delete, etc). Hidden in reading mode. */
   actions?: React.ReactNode
+  /** The outcome of an action (a Kindle send), shown under the controls. Hidden in reading mode. */
+  notice?: React.ReactNode
   footer?: React.ReactNode
 }) {
   /**
@@ -97,42 +101,41 @@ export function StoryReader({
     if (dir === 'prev' && current > 0) goToChapter(current - 1)
   }
 
+  const heroes = joinNames([...story.childNames])
   const meta = [
-    joinNames([...story.childNames]),
     story.readMinutes ? `${story.readMinutes} min read aloud` : null,
     story.tones.length > 0 ? describeTones(story.tones) : null,
     story.createdAt ? friendlyDate(story.createdAt) : null,
   ].filter((part): part is string => Boolean(part))
 
   return (
-    <div data-reader className="mx-auto max-w-3xl px-4 pt-6" style={{ paddingBottom: '7rem' }}>
-      <div data-chrome className="mb-6">
+    <div data-reader className="st-reader">
+      <ReaderControls>{actions}</ReaderControls>
+      {notice ? <div data-chrome>{notice}</div> : null}
+
+      <div data-chrome className="st-rprogress">
         {progress !== null && streaming && <StreamProgress value={progress} />}
       </div>
 
-      <div className="mb-6 flex flex-wrap items-center gap-2">
-        <ReaderControls>{actions}</ReaderControls>
-      </div>
-
-      <header className="mb-8">
-        <h1 className="m-0 font-read text-[clamp(1.75rem,6vw,2.5rem)] leading-tight">
-          {story.title || 'Writing your story…'}
-        </h1>
-        {story.subtitle && (
-          <p className="mt-2 mb-0 font-read text-lg italic" style={{ color: 'var(--fg-muted)' }}>
-            {story.subtitle}
-          </p>
-        )}
+      <header className="st-title-block">
+        {heroes && <p className="st-eyebrow">A bedtime book for {heroes}</p>}
+        <h1 className="st-rtitle">{story.title || 'Writing your story…'}</h1>
+        {story.subtitle && <p className="st-rsub">{story.subtitle}</p>}
         {meta.length > 0 && (
-          <p data-chrome className="mt-3 mb-0 text-sm" style={{ color: 'var(--fg-muted)' }}>
+          <p data-chrome className="st-rmeta">
             {meta.join(' · ')}
           </p>
         )}
+        <div className="st-ornament" aria-hidden>
+          <i />
+          <Phase lit={0.28} size={13} />
+          <i />
+        </div>
       </header>
 
       {flagged && (
         <p
-          className="card mb-8 p-4 text-sm"
+          className="card st-rflag p-4 text-sm"
           role="status"
           style={{ background: 'var(--accent-soft)', borderColor: 'var(--accent)' }}
         >
@@ -157,15 +160,12 @@ export function StoryReader({
               sectionRefs.current[index] = node
             }}
             aria-labelledby={`chapter-heading-${index}`}
-            className="mb-10 scroll-mt-4"
+            className="st-chapter"
           >
-            <h2
-              id={`chapter-heading-${index}`}
-              className="mt-0 mb-4 font-read text-[clamp(1.25rem,4.5vw,1.6rem)] leading-snug"
-            >
+            <h2 id={`chapter-heading-${index}`} className="st-chapter-h">
               {chapter.heading || `Chapter ${index + 1}`}
             </h2>
-            <Prose text={chapter.text} />
+            <Prose text={chapter.text} dropCap={index === 0} />
             {chapter.shout_line && (
               <p className="sound mt-4 mb-0 text-center text-xl">{chapter.shout_line}</p>
             )}
@@ -174,18 +174,16 @@ export function StoryReader({
       </div>
 
       {story.endingLine && (
-        <section aria-label="The end" className="my-10 text-center">
-          <p className="m-0 text-sm tracking-[0.2em] uppercase" style={{ color: 'var(--fg-muted)' }}>
-            The End
-          </p>
-          <p className="prose mx-auto mt-3 mb-0 italic">{story.endingLine}</p>
+        <section aria-label="The end" className="st-end">
+          <p className="st-theend">The End</p>
+          <p className="prose st-ending">{story.endingLine}</p>
         </section>
       )}
 
       <TrueFactsChecklist storyId={streaming ? null : story.id} facts={story.trueFacts} />
 
       {footer && (
-        <div data-chrome className="mt-8">
+        <div data-chrome className="st-rfooter">
           {footer}
         </div>
       )}
@@ -209,7 +207,7 @@ function StreamProgress({ value }: { value: number }) {
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={percent}
-        className="h-1.5 w-full overflow-hidden rounded-full"
+        className="h-1 w-full overflow-hidden rounded-full"
         style={{ background: 'var(--bg-sunken)' }}
       >
         <div

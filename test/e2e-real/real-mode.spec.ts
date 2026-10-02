@@ -203,6 +203,7 @@ test.describe('real mode: a parent’s first session, no model spend', () => {
       // F9 AC: opening a saved story makes zero model calls.
       expect(await logRowCount()).toBe(readLogs)
 
+      await page.getByTestId('story-actions').locator('summary').click()
       await page.getByRole('button', { name: 'Delete story' }).click()
       await page.getByRole('button', { name: 'Yes, delete it' }).click()
       await expect(page).toHaveURL(/\/library$/)

@@ -32,6 +32,9 @@
   --danger-soft: #f3e7e3;
   --focus: #8b6f39;
   --shade: 41 58 52;
+  --tint-sage: #dfe6d6;
+  --tint-mist: #d6e1e8;
+  --tint-sand: #efe2cc;
 
   /* Newsreader and Inter are self-hosted by next/font (app/fonts.ts); the rest are fallbacks. */
   --prose-font: var(--font-newsreader), Georgia, 'Iowan Old Style', 'Times New Roman', serif;
@@ -42,9 +45,10 @@
   /* Set by the reader's text-size control; reading mode multiplies it. */
   --text-scale: 1;
   --reading-boost: 1;
-  --prose-size: calc(1.1875rem * var(--text-scale) * var(--reading-boost));
-  --prose-line: 1.72;
-  --prose-measure: 34rem;
+  --prose-base: 1.3125rem;
+  --prose-size: calc(var(--prose-base) * var(--text-scale) * var(--reading-boost));
+  --prose-line: 1.8;
+  --prose-measure: 40rem;
 }
 
 /* System dark, unless the parent explicitly chose light. */
@@ -66,6 +70,9 @@
     --danger-soft: #3a2622;
     --focus: #e0c078;
     --shade: 0 0 0;
+    --tint-sage: #2b352d;
+    --tint-mist: #27323a;
+    --tint-sand: #3a3428;
   }
 }
 
@@ -87,6 +94,9 @@
   --danger-soft: #3a2622;
   --focus: #e0c078;
   --shade: 0 0 0;
+  --tint-sage: #2b352d;
+  --tint-mist: #27323a;
+  --tint-sand: #3a3428;
 }
 
 /*
@@ -113,6 +123,9 @@
   --danger-soft: #3a2a25;
   --focus: #d9b976;
   --shade: 0 0 0;
+  --tint-sage: #2b352d;
+  --tint-mist: #27323a;
+  --tint-sand: #3a3428;
 }
 :root[data-theme='night'][data-reading='on'] {
   --bg: #0e1311;
@@ -266,16 +279,6 @@ body {
 }
 
 /* ------------------------------------------------------------------ controls */
-
-.tap {
-  min-height: 44px;
-  min-width: 44px;
-}
-/* The chapter bar is used one-handed in the dark: bigger than the usual minimum. */
-.tap-big {
-  min-height: 52px;
-  min-width: 56px;
-}
 
 .chip {
   min-height: 44px;
@@ -600,7 +603,7 @@ body > main {
 .st-dialog { width: min(440px, calc(100vw - 32px)); margin: auto; padding: 0; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-raised); color: var(--fg); box-shadow: 0 30px 60px -24px rgb(var(--shade) / 0.5); }
 .st-dialog::backdrop { background: rgb(var(--shade) / 0.42); }
 .st-dialog-in { padding: 24px 24px 18px; }
-.st-dialog h2 { margin: 0 0 16px; font-size: 25px; font-weight: 400; }
+.st-dialog-in > h2 { margin: 0 0 16px; font-size: 25px; font-weight: 400; }
 .st-dialog-actions { margin-top: 20px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
 
 /* Waiting for the writer. */
@@ -636,3 +639,136 @@ li[data-state='active'] .st-stage-dot::after { content: ''; width: 8px; height: 
 
 /* The in-app privacy note (F11), kept under the creator and kept quiet. */
 .st-privacy-note { margin-top: 64px; max-width: 475px; }
+
+/* ------------------------------------------------------------------ small menus (#17) */
+
+.st-iconbtn { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 8px; color: var(--fg-soft); cursor: pointer; list-style: none; transition: background-color 120ms ease, color 120ms ease; }
+.st-iconbtn::-webkit-details-marker { display: none; }
+.st-iconbtn:hover, .st-menu[open] > .st-iconbtn { background: var(--accent-soft); color: var(--fg); }
+.st-menu { position: relative; }
+.st-menu-panel { position: absolute; z-index: 40; top: calc(100% + 6px); right: 0; min-width: 230px; padding: 10px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 24px 48px -24px rgb(var(--shade) / 0.4), 0 6px 14px -8px rgb(var(--shade) / 0.22); }
+.st-menu-actions { display: grid; gap: 8px; min-width: 250px; }
+.st-menu-actions .btn { width: 100%; justify-content: flex-start; }
+
+/* ------------------------------------------------------------------ the library (#17) */
+
+.st-main-narrow { max-width: 685px; }
+.st-h1-page { margin-top: 0; font-size: clamp(34px, 4.4vw, 46px); }
+.st-library { max-width: 950px; margin: 0 auto; }
+.st-library-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 24px; }
+.st-library-head .st-lead { margin-top: 8px; font-size: 18px; }
+.st-primary-inline { width: auto; min-height: 52px; font-size: 17px; white-space: nowrap; }
+.st-library-wait { margin: 40px 0 0; color: var(--fg-muted); }
+.st-empty { margin-top: 56px; padding: 48px 24px; text-align: center; border: 1px dashed var(--border); border-radius: 8px; }
+.st-empty h2 { margin: 0; font-size: 28px; font-weight: 400; }
+.st-empty p { margin: 8px 0 0; color: var(--fg-muted); }
+.st-group { margin-top: 44px; }
+.st-group-title { margin: 0; font-size: 26px; font-weight: 400; }
+.st-group-count { margin: 2px 0 0; font-size: 13px; color: var(--fg-muted); }
+.st-rows { margin: 14px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--border); }
+.st-row { display: grid; grid-template-columns: 62px minmax(0, 1fr) auto; align-items: center; column-gap: 22px; padding: 16px 8px; margin: 0 -8px; border-bottom: 1px solid var(--border); border-radius: 4px; color: var(--fg); text-decoration: none; transition: background-color 120ms ease; }
+.st-row:hover { background: color-mix(in srgb, var(--bg-raised) 70%, transparent); }
+.st-cover { position: relative; width: 62px; aspect-ratio: 3 / 4; display: grid; place-items: center; padding: 8px 7px; border-radius: 2px; overflow: hidden; box-shadow: 0 1px 0 rgb(var(--shade) / 0.12), 0 6px 12px -8px rgb(var(--shade) / 0.4); transition: transform 150ms ease; }
+.st-cover::before { content: ''; position: absolute; inset: 4px; border: 1px solid color-mix(in srgb, var(--fg) 16%, transparent); }
+.st-cover span { font-family: var(--prose-font); font-size: 8.5px; line-height: 1.22; text-align: center; color: var(--fg); text-wrap: balance; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+.st-cover[data-tint='sage'] { background: var(--tint-sage); }
+.st-cover[data-tint='mist'] { background: var(--tint-mist); }
+.st-cover[data-tint='sand'] { background: var(--tint-sand); }
+.st-row:hover .st-cover { transform: translateY(-2px) rotate(-1.2deg); }
+.st-row-main { min-width: 0; }
+.st-row-title { margin: 0; font-size: 22px; font-weight: 400; line-height: 1.22; letter-spacing: -0.01em; text-wrap: balance; }
+.st-row-meta { margin: 5px 0 0; display: flex; flex-wrap: wrap; font-size: 13.5px; color: var(--fg-muted); }
+.st-row-meta span:not(:last-child)::after { content: '·'; margin: 0 8px; }
+.st-row-action { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; font-size: 14.5px; font-weight: 500; white-space: nowrap; }
+.st-row-action svg { transition: transform 150ms ease; }
+.st-row:hover .st-row-action { text-decoration: underline; text-underline-offset: 4px; }
+.st-row:hover .st-row-action svg { transform: translateX(3px); }
+
+/* ------------------------------------------------------------------ the reader (#17) */
+
+.st-reader { width: 100%; max-width: 685px; margin: 0 auto; padding: 0 24px 7rem; }
+.st-rbar { min-height: 60px; margin: 0 -12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+/* Reading mode removes the Library link; the controls keep to the right. */
+.st-rbar-right { margin-left: auto; display: flex; align-items: center; gap: 2px; }
+.st-rbar-menus { display: flex; align-items: center; gap: 2px; }
+.st-rsize { display: inline-flex; align-items: center; }
+.st-rbtn { min-height: 44px; min-width: 44px; padding: 0 12px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; background: transparent; color: var(--fg-soft); font: inherit; font-size: 14px; text-decoration: none; border-radius: 8px; cursor: pointer; transition: background-color 120ms ease, color 120ms ease; }
+.st-rbtn:hover:not(:disabled) { background: var(--accent-soft); color: var(--fg); }
+.st-rbtn:disabled { cursor: default; color: var(--fg-muted); opacity: 0.55; }
+.st-rbtn-sq { padding: 0; font-family: var(--prose-font); }
+.st-a-sm { font-size: 14px; }
+.st-a-lg { font-size: 21px; line-height: 1; }
+.st-rprogress:not(:empty) { margin: 6px 0 18px; }
+.st-rnotice { margin: 4px 0 8px; padding: 10px 14px; font-size: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-raised); }
+.st-rnotice strong { font-weight: 600; }
+.st-reader-aside { width: 100%; max-width: 685px; margin: 0 auto; padding: 24px 24px 0; display: grid; gap: 12px; justify-items: start; }
+
+.st-title-block { padding-top: 22px; text-align: center; }
+.st-rtitle { margin: 16px 0 0; font-weight: 400; font-size: clamp(34px, 5vw, 47px); line-height: 1.1; letter-spacing: -0.022em; text-wrap: balance; }
+.st-rsub { margin: 12px 0 0; font-family: var(--prose-font); font-style: italic; font-size: 19px; color: var(--fg-soft); }
+.st-rmeta { margin: 12px 0 0; font-size: 13.5px; color: var(--fg-muted); }
+.st-title-block .st-ornament { margin: 30px 0 8px; }
+.st-rflag { margin: 20px 0 8px; }
+
+.st-chapter { margin-bottom: 2.4em; scroll-margin-top: 16px; }
+.st-chapter-h { margin: 1.4em 0 0.75em; font-size: calc(var(--prose-size) * 1.32); font-weight: 500; line-height: 1.25; text-wrap: balance; }
+[data-reader] .prose p { text-wrap: pretty; }
+/*
+ * The first letter of the book, set like a book's. Only on a paragraph Prose has judged able
+ * to carry it (opens with a letter, long enough to wrap), and never larger than 5.25rem, so
+ * the biggest text size on a phone still leaves the column to the words.
+ */
+[data-reader] .prose p.st-dropcap-p::first-letter { float: left; font-size: min(3.4em, 5.25rem); line-height: 0.8; padding: 0.07em 0.09em 0 0; color: var(--accent); }
+
+.st-end { margin: 3em 0 0; text-align: center; }
+.st-theend { margin: 0; font-size: 11.5px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--fg-muted); }
+.st-ending { margin: 16px auto 0; font-style: italic; text-wrap: balance; }
+
+.st-facts { margin-top: 52px; padding-top: 30px; border-top: 1px solid var(--border); }
+.st-facts h2 { margin: 0; font-size: 27px; font-weight: 400; }
+.st-facts-lead { margin: 4px 0 0; color: var(--fg-muted); }
+.st-fact { display: flex; align-items: flex-start; gap: 12px; min-height: 44px; padding: 10px; margin: 0 -10px; border-radius: 8px; cursor: pointer; }
+.st-fact:hover, .st-fact[data-checked='true'] { background: var(--accent-soft); }
+
+.st-rfooter { margin-top: 44px; }
+.st-again { padding-top: 26px; border-top: 1px solid var(--border); text-align: center; }
+.st-again h2 { margin: 0; font-size: 25px; font-weight: 400; }
+.st-again p { margin: 6px 0 0; font-size: 14.5px; color: var(--fg-muted); }
+.st-again > p + p { margin-top: 10px; }
+.st-again-actions { margin-top: 20px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; }
+
+/* The chapter bar: fixed at thumb height, opaque so no line of the story shows through. */
+.st-cbar { position: fixed; inset: auto 0 0 0; z-index: 30; background: var(--bg); border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.st-cbar-in { max-width: 685px; margin: 0 auto; min-height: 60px; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.st-cbar-arrow { min-width: 56px; min-height: 52px; }
+.st-cpick { min-width: 0; min-height: 52px; padding: 0 14px; display: inline-flex; align-items: center; gap: 10px; border: 0; background: transparent; color: var(--fg); font: inherit; font-size: 14px; border-radius: 8px; cursor: pointer; transition: background-color 120ms ease; }
+.st-cpick:hover { background: var(--accent-soft); }
+/* The moons give way before the words do: they clip, the chapter label never does. */
+.st-phases { display: inline-flex; gap: 3px; min-width: 0; overflow: hidden; color: var(--accent); }
+.st-cpick > .truncate { flex: none; }
+.st-dialog-chapters { width: min(28rem, 92vw); }
+.st-chapter-item { width: 100%; min-height: 48px; padding: 8px 12px; display: flex; align-items: center; gap: 12px; border: 0; background: transparent; color: var(--fg); font-family: var(--prose-font); font-size: 17.5px; text-align: left; border-radius: 8px; cursor: pointer; }
+.st-chapter-item svg { flex: none; color: var(--accent); }
+.st-chapter-item:hover, .st-chapter-item[aria-current='true'] { background: var(--accent-soft); }
+.st-chapter-item[aria-current='true'] { font-weight: 600; }
+
+@media (min-width: 651px) {
+  :root { --prose-base: 1.375rem; }
+}
+@media (max-width: 650px) {
+  .st-library-head .st-primary-inline { width: 100%; }
+  .st-row { grid-template-columns: 62px minmax(0, 1fr); column-gap: 16px; align-items: start; }
+  .st-row-action { grid-column: 2; }
+  .st-row-title { font-size: 19.5px; }
+  .st-reader { padding: 0 22px 7rem; }
+  .st-rbar { margin: 0 -14px; }
+  .st-rbtn { padding: 0 8px; font-size: 13.5px; white-space: nowrap; }
+  .st-rbtn-sq { padding: 0; }
+  .st-rbar > .st-rbtn span { display: none; }
+  .st-again-actions .st-primary-inline { width: 100%; }
+  .st-menu-panel { max-width: calc(100vw - 32px); }
+}
+/* The row of moons needs room; on the narrowest phones the words alone say where you are. */
+@media (max-width: 480px) {
+  .st-phases { display: none; }
+}

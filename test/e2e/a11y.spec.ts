@@ -1,6 +1,15 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
-import { creatorReady, MAKE_BOOK, openHeroes, openOptions, resetMock, startStory } from './helpers'
+import {
+  chooseTheme,
+  creatorReady,
+  MAKE_BOOK,
+  openHeroes,
+  openOptions,
+  openStoryActions,
+  resetMock,
+  startStory,
+} from './helpers'
 
 /**
  * F10 VT: "axe-core scan of the form and reader pages reports no serious violations."
@@ -91,8 +100,8 @@ test.describe('accessibility', () => {
     await page.reload()
     await page.getByRole('link', { name: /read/i }).first().click()
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-    await page.getByRole('radio', { name: 'Dark' }).first().click()
-    await page.getByRole('button', { name: 'Reading mode' }).click()
+    await chooseTheme(page, 'Dark')
+    await page.getByRole('button', { name: 'Read together' }).click()
     await expect(page.getByRole('button', { name: 'Done reading' })).toBeVisible()
     const results = await scan(page)
     expect(report('reader+dark+reading', results.violations)).toEqual([])
@@ -163,6 +172,48 @@ test.describe('accessibility', () => {
     await expect(page.getByRole('progressbar', { name: 'Writing the story' })).toBeVisible()
     const results = await scan(page)
     expect(report('streaming', results.violations)).toEqual([])
+  })
+
+  /** VT-R9 (issue #17): the reader in the night theme, with each of its menus open. */
+  test('the reader at night, with the theme and story-actions menus open, has no serious violations', async ({
+    page,
+  }) => {
+    await page.goto('/library')
+    await resetMock(page)
+    await page.reload()
+    await page.getByRole('link', { name: /read/i }).first().click()
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    await chooseTheme(page, 'Night')
+    expect(report('reader+night', (await scan(page)).violations)).toEqual([])
+    await page.getByTestId('theme-menu').locator('summary').click()
+    expect(report('reader+theme-menu', (await scan(page)).violations)).toEqual([])
+    await page.keyboard.press('Escape')
+    // Escape closes the menu and gives focus back to its button.
+    await expect(page.getByTestId('theme-menu').locator('summary')).toBeFocused()
+    await openStoryActions(page)
+    expect(report('reader+story-actions', (await scan(page)).violations)).toEqual([])
+  })
+
+  test('every control in the library and the reader is at least 44 by 44', async ({ page }) => {
+    const small = () =>
+      page.evaluate(() =>
+        // A fact's checkbox is ticked by tapping anywhere on its labelled row, so the row is
+        // the target that has to be big enough, not the 22px box inside it.
+        [...document.querySelectorAll<HTMLElement>('main a, main button, main summary, main label.st-fact')]
+          .filter((el) => el.offsetParent !== null)
+          .map((el) => ({ el, r: el.getBoundingClientRect() }))
+          .filter(({ r }) => r.width < 44 || r.height < 44)
+          .map(({ el, r }) => `${(el.getAttribute('aria-label') ?? el.textContent ?? '').trim().slice(0, 30)} ${Math.round(r.width)}x${Math.round(r.height)}`),
+      )
+    await page.goto('/library')
+    await resetMock(page)
+    await page.reload()
+    await expect(page.getByRole('link', { name: /read/i }).first()).toBeVisible()
+    expect(await small()).toEqual([])
+    await page.getByRole('link', { name: /read/i }).first().click()
+    await expect(page.getByRole('heading', { name: 'True facts from the story' })).toBeVisible()
+    await openStoryActions(page)
+    expect(await small()).toEqual([])
   })
 
   test('the library has no serious violations', async ({ page }) => {

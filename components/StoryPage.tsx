@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ApiError, deleteStory, fetchStory } from '@/lib/client/api'
-import { SendToKindleButton } from '@/components/reader/SendToKindleButton'
+import { ArrowRight } from '@/components/Icons'
+import { KindleStatus, SendToKindleButton, useSendToKindle } from '@/components/reader/SendToKindleButton'
 import { readerFromLibraryStory } from '@/lib/client/reader'
 import { forgetStory, saveScroll } from '@/lib/client/storage'
 import type { LibraryStory } from '@/lib/client/types'
@@ -21,6 +22,8 @@ export function StoryPage({ id }: { id: string }) {
   const router = useRouter()
   const [story, setStory] = useState<LibraryStory | null>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'error'>('loading')
+  const kindle = useSendToKindle(id)
+  const [deleteFailed, setDeleteFailed] = useState(false)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -45,7 +48,7 @@ export function StoryPage({ id }: { id: string }) {
 
   if (state === 'loading') {
     return (
-      <main id="main" className="mx-auto max-w-3xl px-4 py-12">
+      <main id="main" className="st-main st-main-narrow">
         <p style={{ color: 'var(--fg-muted)' }}>Opening the story…</p>
       </main>
     )
@@ -53,8 +56,8 @@ export function StoryPage({ id }: { id: string }) {
 
   if (state === 'missing' || (state === 'ready' && !story)) {
     return (
-      <main id="main" className="mx-auto max-w-3xl px-4 py-12">
-        <h1 className="mt-0 text-2xl">That story isn&rsquo;t here any more</h1>
+      <main id="main" className="st-main st-main-narrow">
+        <h1 className="st-h1 st-h1-page">That story isn&rsquo;t here any more</h1>
         <p style={{ color: 'var(--fg-muted)' }}>
           It may have been deleted. Everything else is still in your library.
         </p>
@@ -67,8 +70,8 @@ export function StoryPage({ id }: { id: string }) {
 
   if (state === 'error' || !story) {
     return (
-      <main id="main" className="mx-auto max-w-3xl px-4 py-12">
-        <h1 className="mt-0 text-2xl">We couldn&rsquo;t open that story</h1>
+      <main id="main" className="st-main st-main-narrow">
+        <h1 className="st-h1 st-h1-page">We couldn&rsquo;t open that story</h1>
         <p style={{ color: 'var(--fg-muted)' }}>
           Nothing is lost — check your connection and try again.
         </p>
@@ -84,34 +87,43 @@ export function StoryPage({ id }: { id: string }) {
       <StoryReader
         story={readerFromLibraryStory(story)}
         flagged={story.status === 'flagged'}
+        // Shown on the page, not in the menu: it must still be there once the menu has closed.
+        notice={
+          <>
+            <KindleStatus state={kindle.state} />
+            {deleteFailed && (
+              <p role="alert" className="st-rnotice" data-testid="delete-error">
+                We couldn&rsquo;t delete that story. Nothing was removed — please try again.
+              </p>
+            )}
+          </>
+        }
         actions={
           <>
-            <SendToKindleButton storyId={story.id} />
+            <SendToKindleButton state={kindle.state} onSend={() => void kindle.send()} />
             <DeleteStoryButton
-            onConfirm={async () => {
-              await deleteStory(story.id)
-              forgetStory(story.id)
-              router.push('/library')
-            }}
-          />
+              onFailed={setDeleteFailed}
+              onConfirm={async () => {
+                await deleteStory(story.id)
+                forgetStory(story.id)
+                router.push('/library')
+              }}
+            />
           </>
         }
         footer={
-          <div className="card p-4 sm:p-6">
-            <h2 className="mt-0 mb-2 text-lg">Read it again?</h2>
-            <p className="mt-0 mb-4 text-sm" style={{ color: 'var(--fg-muted)' }}>
-              Re-reading a story is always free. It never uses one of tonight&rsquo;s three
-              stories.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <button type="button" className="btn" onClick={readAgain}>
+          <div className="st-again">
+            <h2>Read it again?</h2>
+            <p>Re-reading a story is always free. It never uses one of tonight&rsquo;s new stories.</p>
+            <div className="st-again-actions">
+              <button type="button" className="btn btn-quiet" onClick={readAgain}>
                 Read again
               </button>
               <Link href="/library" className="btn btn-quiet no-underline">
-                Library
+                Back to library
               </Link>
-              <Link href="/new" className="btn btn-quiet no-underline">
-                New story
+              <Link href="/new" className="st-primary st-primary-inline">
+                Make another book <ArrowRight />
               </Link>
             </div>
           </div>
@@ -124,12 +136,20 @@ export function StoryPage({ id }: { id: string }) {
 /**
  * Delete, behind one confirmation (F9 "delete story"; F11 "one-click delete" from the parent's
  * side). Inline rather than `window.confirm`: a native dialog cannot be styled for a dark room
- * and cannot say what deletion actually does.
+ * and cannot say what deletion actually does. A failure is reported to the page, which shows
+ * it under the reader's controls: the confirmation lives in a menu, and a message inside a
+ * menu disappears the moment the menu closes.
  */
-function DeleteStoryButton({ onConfirm }: { onConfirm: () => Promise<void> }) {
+function DeleteStoryButton({
+  onConfirm,
+  onFailed,
+}: {
+  onConfirm: () => Promise<void>
+  /** Told when a delete fails (and when a retry starts), so the page can say so outside the menu. */
+  onFailed: (failed: boolean) => void
+}) {
   const [asking, setAsking] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [failed, setFailed] = useState(false)
 
   if (!asking) {
     return (
@@ -148,11 +168,6 @@ function DeleteStoryButton({ onConfirm }: { onConfirm: () => Promise<void> }) {
         Delete this story for good? The characters and running jokes it added stay in the series
         — deleting a story doesn&rsquo;t rewind the series.
       </p>
-      {failed && (
-        <p className="mt-0 mb-3 text-sm" role="alert">
-          That didn&rsquo;t work. Please try again.
-        </p>
-      )}
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
@@ -160,10 +175,10 @@ function DeleteStoryButton({ onConfirm }: { onConfirm: () => Promise<void> }) {
           disabled={busy}
           onClick={() => {
             setBusy(true)
-            setFailed(false)
+            onFailed(false)
             onConfirm().catch(() => {
               setBusy(false)
-              setFailed(true)
+              onFailed(true)
             })
           }}
         >

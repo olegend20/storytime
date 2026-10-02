@@ -92,6 +92,7 @@ test.describe('Send to Kindle', () => {
 
       // Without an address: the button explains and links to Settings.
       await page.goto(`/stories/${story!.id}`)
+      await page.getByTestId('story-actions').locator('summary').click()
       await page.getByTestId('send-to-kindle').click()
       await expect(page.getByTestId('kindle-error')).toContainText('Add your Kindle address')
       await page.getByRole('link', { name: 'Add it in Settings' }).click()
@@ -109,6 +110,7 @@ test.describe('Send to Kindle', () => {
 
       // Send.
       await page.goto(`/stories/${story!.id}`)
+      await page.getByTestId('story-actions').locator('summary').click()
       await page.getByTestId('send-to-kindle').click()
       await expect(page.getByTestId('kindle-sent')).toContainText(`Sent to ${kindle}`)
 
