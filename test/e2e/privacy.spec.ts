@@ -29,7 +29,7 @@ test('no page makes a cross-origin request', async ({ page, baseURL }) => {
   await page.getByRole('link', { name: /read/i }).first().click()
   await expect(page.getByRole('heading', { name: 'True facts from the story' })).toBeVisible()
   await page.goto('/new')
-  await expect(page.getByRole('button', { name: 'Milo 7' })).toBeVisible()
+  await page.getByTestId('heroes').waitFor()
   await startStory(page, 'how bees make honey')
   await expect(page.getByRole('heading', { name: 'Saved to your library' })).toBeVisible({
     timeout: 30_000,

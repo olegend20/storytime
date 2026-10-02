@@ -876,6 +876,14 @@ Each has an e2e test on desktop and phone (the wake lock and offline tests stub 
 browser APIs). **Gates:** lint ✅ · typecheck ✅ · unit+int 1013 ✅ · e2e mock **132** ✅ ·
 e2e real 4 ✅.
 
+### 2026-10-01 — calm bedtime redesign, PR 2 of 3: creator + calm waiting (issue #17, DECISIONS #155–#156)
+
+The creator is now the signed-in home page and the dashboard as well as `/new`; heroes by
+name with a selector dialog, three ideas, Story options disclosure, one action. The waiting
+state is the moon; tic-tac-toe is gone. The creator opens from server-read data and makes no
+API request until the parent acts. VT-R4/R5/R6 in `test/e2e/new-story.spec.ts`, a11y scans of
+the selector, options and waiting screen, 44px targets; mock e2e 166, real e2e 6, unit 1092.
+
 ### 2026-10-01 — calm bedtime redesign, PR 1 of 3: foundation + landing (issue #17, DECISIONS #152–#154)
 
 Design tokens re-valued to the paper/evergreen palette across all four themes, Newsreader and

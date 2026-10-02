@@ -115,8 +115,34 @@ export async function scrollToAndPersist(page: Page, y: number): Promise<number>
   return settled
 }
 
+/** The creator's topic field and its one action, by the names a parent sees (issue #17). */
+export const TOPIC_LABEL = /what shall we discover tonight/i
+export const MAKE_BOOK = /make tonight.s book/i
+
+/** The creator has loaded the family: tonight's heroes are named. */
+export async function creatorReady(page: Page) {
+  await page.getByTestId('heroes').waitFor()
+}
+
+/** Open the heroes selector; the child chips ("Milo 7") live inside it. */
+export async function openHeroes(page: Page) {
+  await page.getByRole('button', { name: /^Change/ }).click()
+  await page.getByRole('dialog', { name: /who.s in tonight.s story/i }).waitFor()
+}
+
+export async function closeHeroes(page: Page) {
+  await page.getByRole('dialog').getByRole('button', { name: 'Done' }).click()
+  await page.getByRole('dialog').waitFor({ state: 'hidden' })
+}
+
+/** Tone and length sit behind "Story options"; open it if it is closed. */
+export async function openOptions(page: Page) {
+  const options = page.locator('details.st-options')
+  if ((await options.getAttribute('open')) === null) await options.locator('summary').click()
+}
+
 /** Fill in the nightly form and submit it. Children and tones default, so this is topic-only. */
 export async function startStory(page: Page, topic: string) {
-  await page.getByLabel(/what.s the story about/i).fill(topic)
-  await page.getByRole('button', { name: 'Start the story' }).click()
+  await page.getByLabel(TOPIC_LABEL).fill(topic)
+  await page.getByRole('button', { name: MAKE_BOOK }).click()
 }

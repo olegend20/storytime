@@ -22,6 +22,11 @@ const LINKS = [
 export function SiteHeader() {
   const pathname = usePathname()
   if (pathname === '/') return null
+  return <AppHeader />
+}
+
+export function AppHeader() {
+  const pathname = usePathname()
   return (
     <header data-chrome className="st-header st-header-app">
       <div className="st-header-in">
@@ -31,7 +36,11 @@ export function SiteHeader() {
         </Link>
         <nav className="st-nav" aria-label="Main">
           {LINKS.map((link) => {
-            const active = pathname === link.href || pathname.startsWith(`${link.href}/`)
+            const active =
+              pathname === link.href ||
+              pathname.startsWith(`${link.href}/`) ||
+              // The creator lives at three addresses.
+              (link.href === '/new' && (pathname === '/' || pathname === '/dashboard'))
             return (
               <Link
                 key={link.href}
@@ -65,6 +74,10 @@ export function SiteHeader() {
 export function SiteFooter() {
   const pathname = usePathname()
   if (pathname === '/') return null
+  return <AppFooter />
+}
+
+export function AppFooter() {
   return (
     <footer data-chrome className="st-footer">
       <div className="st-footer-in">

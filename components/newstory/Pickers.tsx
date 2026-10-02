@@ -2,12 +2,14 @@
 
 import { LengthMinutes, Tone, bandForAges, type Child } from '@/lib/schemas'
 import { MAX_TONES, TONE_LABELS } from '@/lib/client/form'
+import { Check } from '@/components/Icons'
 
 /**
  * The three enum pickers on the nightly form (F10).
  *
  * All three are chip rows rather than selects: on a phone a native select is a full-screen modal
- * per field, which is three extra taps we are explicitly trying not to spend.
+ * per field, which is three extra taps we are explicitly trying not to spend. A selected chip
+ * carries a tick as well as a tint, so the state never rests on colour alone.
  */
 
 export function ChildPicker({
@@ -27,7 +29,7 @@ export function ChildPicker({
 
   return (
     <fieldset className="m-0 border-0 p-0">
-      <legend className="mb-2 p-0 text-base font-semibold">Who&rsquo;s in tonight&rsquo;s story?</legend>
+      <legend className="sr-only-text">Who&rsquo;s in tonight&rsquo;s story?</legend>
       <div className="flex flex-wrap gap-2">
         {options.map((child) => {
           const isSelected = selected.includes(child.id)
@@ -39,8 +41,9 @@ export function ChildPicker({
               aria-pressed={isSelected}
               onClick={() => onToggle(child.id)}
             >
+              {isSelected ? <Check width={13} height={13} /> : null}
               <span>{child.first_name}</span>
-              <span style={{ opacity: 0.75, fontSize: '0.85em' }}>{child.age}</span>
+              <span style={{ color: 'var(--fg-muted)', fontSize: '0.85em', fontWeight: 400 }}>{child.age}</span>
             </button>
           )
         })}
@@ -66,9 +69,7 @@ export function TonePicker({
   const full = selected.length >= MAX_TONES
   return (
     <fieldset className="m-0 border-0 p-0">
-      <legend className="mb-2 p-0 text-base font-semibold">
-        How should it feel? <span style={{ fontWeight: 400 }}>(up to {MAX_TONES})</span>
-      </legend>
+      <legend className="st-legend">How should it feel?</legend>
       <div className="flex flex-wrap gap-2">
         {Tone.options.map((tone) => {
           const isSelected = selected.includes(tone)
@@ -83,6 +84,7 @@ export function TonePicker({
               disabled={disabled}
               onClick={() => onToggle(tone)}
             >
+              {isSelected ? <Check width={13} height={13} /> : null}
               {TONE_LABELS[tone]}
             </button>
           )
@@ -91,7 +93,7 @@ export function TonePicker({
       <p className="mt-2 mb-0 text-sm" style={{ color: 'var(--fg-muted)' }} aria-live="polite">
         {full
           ? `That's the limit of ${MAX_TONES}. Tap one you've chosen to swap it.`
-          : `Choose one or two.`}
+          : `Choose one or two feelings.`}
       </p>
     </fieldset>
   )
@@ -108,18 +110,18 @@ export function LengthPicker({
 }) {
   return (
     <fieldset className="m-0 border-0 p-0">
-      <legend className="mb-2 p-0 text-base font-semibold">How long?</legend>
-      <div role="radiogroup" aria-label="Story length in minutes" className="flex flex-wrap gap-2">
+      <legend className="st-legend">Time together</legend>
+      <div role="radiogroup" aria-label="Story length in minutes" className="st-seg">
         {LENGTHS.map((minutes) => (
           <button
             key={minutes}
             type="button"
             role="radio"
             aria-checked={value === minutes}
-            className="chip"
+            className="st-seg-item"
             onClick={() => onChange(minutes)}
           >
-            {minutes} min{minutes === 10 ? ' · usual' : ''}
+            {minutes} min
           </button>
         ))}
       </div>
