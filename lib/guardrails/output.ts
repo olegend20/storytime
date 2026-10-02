@@ -5,6 +5,7 @@ import { storyText } from '@/lib/schemas/story'
 import { blocklist, maskAllowed, plainPhrasePattern } from './blocklist'
 import { matchPii } from './patterns'
 import { sanitizeStoryText } from './sanitize'
+import { sameCharacter } from './names'
 
 /**
  * L4, first half - the free deterministic output checks. GUARDRAILS.md s4.2, run before
@@ -68,23 +69,14 @@ function franchisePatterns(name: string): RegExp[] {
   ]
 }
 
-/** Letters and digits only, so "Spider-Man", "Spiderman" and "spider man" are one name. */
-function nameKey(name: string): string {
-  return name.normalize('NFKD').replace(/[^\p{L}\p{N}]/gu, '').toLowerCase()
-}
-
 /**
- * Whether a blocklisted franchise name is one the parent asked for. Containment either way,
- * on whole names: asking for "Sonic" covers the list's "Sonic the Hedgehog", and asking for
- * "Mario and Luigi" covers "Mario". Asking for Elsa does not cover Olaf.
+ * Whether a blocklisted franchise name is one the parent asked for: the same name, or one
+ * whose words are all in the other's. "Sonic" covers the list's "Sonic the Hedgehog" and
+ * "Mario and Luigi" covers "Mario"; "Spider-Man", "Spiderman" and "spider man" are one name.
+ * Elsa does not cover Olaf, and "Ann" does not cover "Anna" - whole words, never substrings.
  */
 function isRequested(listed: string, requested: readonly string[]): boolean {
-  const key = nameKey(listed)
-  if (key === '') return false
-  return requested.some((r) => {
-    const want = nameKey(r)
-    return want.length >= 3 && (want.includes(key) || key.includes(want))
-  })
+  return requested.some((r) => sameCharacter(r, listed))
 }
 
 /** Rule 6: a private individual is a name plus an identifying detail. */

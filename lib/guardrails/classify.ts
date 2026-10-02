@@ -2,6 +2,7 @@ import { callModel, parseJsonLoose, type GenerationLogSink } from '@/lib/ai/call
 import { InputClassification } from '@/lib/schemas/guardrail'
 import { dataBlock, DATA_BLOCK_NOTICE } from './prompt'
 import { INPUT_CLASSIFIER_PROMPT, promptSection, promptVersion } from './prompts'
+import { namedInTopic } from './names'
 
 /**
  * L2 - the Haiku input classifier. GUARDRAILS.md s3.3.
@@ -179,7 +180,14 @@ export async function classifyInput(input: ClassifyInput): Promise<ClassifyResul
   // The trace for "the contract was patched, not met": in the server log, since the event
   // row cannot carry it. No input text, only the category the classifier chose.
   if (salvaged) console.warn(`[guardrails] L2 refusal kept with its age filled in (category: ${salvaged.category})`)
-  const classification = applyAgeBand(answer ?? failClosed(input.youngestAge), input.youngestAge)
+  const raw = answer ?? failClosed(input.youngestAge)
+  // Only a character the parent typed into the topic counts (s3.3), and code decides that,
+  // not the model: a name from the child's likes, or one the classifier made up, is dropped
+  // here so nothing downstream can grant rule 7's exception on the model's word alone.
+  const classification = applyAgeBand(
+    { ...raw, requested_characters: namedInTopic(raw.requested_characters, input.topic) },
+    input.youngestAge,
+  )
 
   return {
     classification,

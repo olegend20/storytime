@@ -16,6 +16,7 @@ import { runOutputGate } from '@/lib/guardrails/gate'
 import { guardInput } from '@/lib/guardrails/input'
 import { scanStoryText } from '@/lib/guardrails/output'
 import { reviewSystemPrompt, reviewUserMessage } from '@/lib/guardrails/review'
+import { namedInTopic, sameCharacter } from '@/lib/guardrails/names'
 import { allFixtureStories } from '@/lib/mock/store'
 import { generationEvents } from '@/lib/mock/stream'
 import { InputClassification, SseEvent, StoryBible, tidyRequestedCharacters } from '@/lib/schemas'
@@ -125,6 +126,26 @@ describe('guardInput with a character request', () => {
     expect(events.events).toHaveLength(0)
   })
 
+  it('code checks the names against the topic: a character from the likes, or invented, is dropped', async () => {
+    const input = { topic: 'how bees make honey', likes: ['Elsa', 'Pokémon'], notes: null, youngestAge: 5 }
+    stubClassifier(input, { ...characterReply, care_notes: 'Elsa comes along.', requested_characters: ['Elsa', 'Pikachu'] })
+    const result = await guardInput({ topic_input: input.topic, likes: input.likes, youngestAge: 5 })
+    expect(result.decision).toBe('allow_with_care')
+    expect(result.requestedCharacters).toEqual([])
+    expect(result.classification?.requested_characters).toEqual([])
+  })
+
+  it('a name the parent typed is kept however it was spelled, and the long form is kept for the short', () => {
+    expect(namedInTopic(['Spider-Man'], 'spiderman teaches Juno to climb walls')).toEqual(['Spider-Man'])
+    expect(namedInTopic(['Spider-Man'], 'Spider Man teaches Juno to climb walls')).toEqual(['Spider-Man'])
+    expect(namedInTopic(['Sonic the Hedgehog'], 'Sonic races Theo around the park')).toEqual(['Sonic the Hedgehog'])
+    expect(namedInTopic(['Bluey', 'Bingo'], 'Bluey and Bingo come round for tea')).toEqual(['Bluey', 'Bingo'])
+    expect(namedInTopic(['Elsa', 'Olaf'], 'a story where Elsa helps Milo build a snowman')).toEqual(['Elsa'])
+    // Two letters of a word are not the word.
+    expect(namedInTopic(['Ann'], 'Anna and the snow')).toEqual([])
+    expect(namedInTopic(['The'], 'the history of LEGO')).toEqual([])
+  })
+
   it('age suitability still applies: too old for the youngest child is refused, with no character', async () => {
     const input = { topic: 'Batman explains how bats see in the dark', likes: [], notes: null, youngestAge: 3 }
     stubClassifier(input, { ...characterReply, requested_characters: ['Batman'], min_recommended_age: 6 })
@@ -173,8 +194,20 @@ describe('L3: rule 7 has exactly one exception', () => {
     expect(hard[0]?.quote).toContain('Olaf')
   })
 
-  it('a requested name too short to mean anything unlocks nothing', () => {
-    expect(scanStoryText(elsa, { requestedCharacters: ['El', 'a'] }).hardViolations.map((v) => v.rule)).toEqual([7])
+  it('names match as whole words, never as substrings', () => {
+    expect(scanStoryText(elsa, { requestedCharacters: ['El', 'a', 'Els'] }).hardViolations.map((v) => v.rule)).toEqual([7])
+    const yoshi = 'Yoshi waved at them from the hill and laughed.'
+    expect(scanStoryText(yoshi).hardViolations.map((v) => v.rule)).toEqual([7])
+    expect(scanStoryText(yoshi, { requestedCharacters: ['Yos'] }).hardViolations.map((v) => v.rule)).toEqual([7])
+    expect(scanStoryText(yoshi, { requestedCharacters: ['Yoshi'] }).hardViolations).toEqual([])
+    expect(sameCharacter('Ann', 'Anna')).toBe(false)
+    expect(sameCharacter('Leo', 'Leonardo')).toBe(false)
+    expect(sameCharacter('Max', 'Max Headroom')).toBe(true) // whole word: that IS asking for him
+    expect(sameCharacter('Sonic', 'Sonic the Hedgehog')).toBe(true)
+    expect(sameCharacter('Mario and Luigi', 'Mario')).toBe(true)
+    expect(sameCharacter('spider man', 'Spider-Man')).toBe(true)
+    expect(sameCharacter('Elsa', 'Olaf')).toBe(false)
+    expect(sameCharacter('the', 'Sonic the Hedgehog')).toBe(false)
   })
 
   it('every other hard rule still applies to a story with a requested character', () => {
