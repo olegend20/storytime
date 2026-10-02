@@ -86,7 +86,7 @@ const RESUME_THRESHOLD_PX = 200
 
 /** Three quiet tints for the text-only covers; a story keeps its colour from one visit to the next. */
 const TINTS = ['sage', 'mist', 'sand'] as const
-export function coverTint(storyId: string): (typeof TINTS)[number] {
+function coverTint(storyId: string): (typeof TINTS)[number] {
   let hash = 0
   for (const ch of storyId) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0
   return TINTS[hash % TINTS.length]!
@@ -98,26 +98,28 @@ export function coverTint(storyId: string): (typeof TINTS)[number] {
  * the link, so the target is as big as the row.
  */
 function StoryRow({ story }: { story: LibraryStory }) {
+  // null = this browser has never had the story open; a position near the top = opened, and
+  // finished or sent back to the start; further in = stopped part-way.
   const saved = useStoredJson(scrollKey(story.id), NullableScrollMemory, null)
-  const resume = (saved?.y ?? 0) > RESUME_THRESHOLD_PX
+  const action = saved === null ? 'Read' : saved.y > RESUME_THRESHOLD_PX ? 'Continue reading' : 'Read again'
 
   return (
     <Link href={`/stories/${story.id}`} className="st-row">
-      <span className="st-cover" data-tint={coverTint(story.id)} aria-hidden="true">
+      <div className="st-cover" data-tint={coverTint(story.id)} aria-hidden="true">
         <span>{story.content.title}</span>
-      </span>
-      <span className="st-row-main">
+      </div>
+      <div className="st-row-main">
         <h3 className="st-row-title">{story.content.title}</h3>
-        <span className="st-row-meta">
+        <p className="st-row-meta">
           <span>{friendlyDate(story.created_at)}</span>
           <span>{readMinutes(story)} min read aloud</span>
           <span>{story.content.true_facts.length} true facts</span>
-        </span>
-      </span>
-      <span className="st-row-action">
-        {resume ? 'Continue reading' : 'Read again'}
+        </p>
+      </div>
+      <div className="st-row-action">
+        {action}
         <ArrowRight width={16} height={16} />
-      </span>
+      </div>
     </Link>
   )
 }

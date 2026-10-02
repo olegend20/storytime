@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ApiError, deleteStory, fetchStory } from '@/lib/client/api'
 import { ArrowRight } from '@/components/Icons'
-import { SendToKindleButton } from '@/components/reader/SendToKindleButton'
+import { KindleStatus, SendToKindleButton, useSendToKindle } from '@/components/reader/SendToKindleButton'
 import { readerFromLibraryStory } from '@/lib/client/reader'
 import { forgetStory, saveScroll } from '@/lib/client/storage'
 import type { LibraryStory } from '@/lib/client/types'
@@ -22,6 +22,7 @@ export function StoryPage({ id }: { id: string }) {
   const router = useRouter()
   const [story, setStory] = useState<LibraryStory | null>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'error'>('loading')
+  const kindle = useSendToKindle(id)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -85,9 +86,11 @@ export function StoryPage({ id }: { id: string }) {
       <StoryReader
         story={readerFromLibraryStory(story)}
         flagged={story.status === 'flagged'}
+        // Shown on the page, not in the menu: it must still be there once the menu has closed.
+        notice={<KindleStatus state={kindle.state} />}
         actions={
           <>
-            <SendToKindleButton storyId={story.id} />
+            <SendToKindleButton state={kindle.state} onSend={() => void kindle.send()} />
             <DeleteStoryButton
             onConfirm={async () => {
               await deleteStory(story.id)

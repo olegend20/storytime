@@ -85,13 +85,15 @@ test('the library groups stories by series, newest first', async ({ page }) => {
   await expect(seriesSections.first().getByText(/2 books together/)).toBeVisible()
 })
 
-/** VT-R7 (issue #17): what a row offers follows where the parent actually stopped. */
-test('a row says "Continue reading" only once the story has been read into, and "Read again" otherwise', async ({
+/** VT-R7 (issue #17): what a row offers follows what this parent has actually done with the book. */
+test('a row says Read for an unopened book, Continue reading part-way in, and Read again after', async ({
   page,
 }) => {
   const first = page.locator('.st-row').first()
-  await expect(first).toContainText('Read again')
-  await expect(page.getByText('Continue reading')).toHaveCount(0)
+  // Never opened in this browser: plain "Read" - "again" would not be true.
+  await expect(first.locator('.st-row-action')).toHaveText('Read')
+  // (Scoped to the rows: the page's own line says "ready to read again".)
+  await expect(page.locator('.st-row-action').filter({ hasText: /Continue reading|Read again/ })).toHaveCount(0)
   // Each row carries a text cover (no image), the real read time and the real fact count.
   await expect(first.locator('.st-cover')).toHaveAttribute('data-tint', /sage|mist|sand/)
   await expect(first.locator('img')).toHaveCount(0)
@@ -102,8 +104,8 @@ test('a row says "Continue reading" only once the story has been read into, and 
   await openFirstStory(page)
   await scrollToAndPersist(page, 1500)
   await page.goto('/library')
-  await expect(page.locator('.st-row').first()).toContainText('Continue reading')
-  await expect(page.locator('.st-row').nth(1)).toContainText('Read again')
+  await expect(page.locator('.st-row').first().locator('.st-row-action')).toHaveText('Continue reading')
+  await expect(page.locator('.st-row').nth(1).locator('.st-row-action')).toHaveText('Read')
 
   // Continue resumes; "Read again" in the story sends it back to the top and the row follows.
   await page.locator('.st-row').first().click()
@@ -112,7 +114,7 @@ test('a row says "Continue reading" only once the story has been read into, and 
   await page.getByRole('button', { name: 'Read again' }).click()
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(200)
   await page.goto('/library')
-  await expect(page.locator('.st-row').first()).toContainText('Read again')
+  await expect(page.locator('.st-row').first().locator('.st-row-action')).toHaveText('Read again')
 
   // None of it reached the model or the quota.
   const after = await mockState(page)
@@ -156,6 +158,35 @@ test('all four themes and all five text sizes are there, and the choice persists
   await page.reload()
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Larger text' })).toBeDisabled()
+})
+
+test('only one reader menu is open at a time, and arrow keys on a menu button do not turn the chapter', async ({
+  page,
+}) => {
+  await openFirstStory(page)
+  const theme = page.getByTestId('theme-menu')
+  const actions = page.getByTestId('story-actions')
+  await theme.locator('summary').click()
+  await expect(theme).toHaveAttribute('open', '')
+  await actions.locator('summary').focus()
+  await page.keyboard.press('Enter')
+  await expect(actions).toHaveAttribute('open', '')
+  await expect(theme).not.toHaveAttribute('open', '')
+
+  await page.keyboard.press('Escape')
+  await expect(actions).not.toHaveAttribute('open', '')
+  await expect(actions.locator('summary')).toBeFocused()
+  await page.keyboard.press('ArrowRight')
+  await expect(page.getByRole('button', { name: /^Chapter 1 of \d+$/ })).toBeVisible()
+})
+
+test('the chapter label is never squeezed, even with many chapters on a mid-size phone', async ({ page }) => {
+  await page.setViewportSize({ width: 412, height: 860 })
+  await openFirstStory(page)
+  const label = page.getByTestId('chapters-bar').locator('.truncate')
+  const clipped = await label.evaluate((el) => el.scrollWidth > el.clientWidth)
+  expect(clipped).toBe(false)
+  await expect(label).toHaveText(/^Chapter \d+ of \d+$/)
 })
 
 test('the chapter bar never covers the end of the story or its last buttons', async ({ page }) => {
@@ -517,6 +548,11 @@ test('Send to Kindle reports where the story went, and links to Settings when no
   await page.getByTestId('send-to-kindle').click()
   await expect(page.getByTestId('kindle-error')).toContainText('Add your Kindle address')
   await expect(page.getByRole('link', { name: 'Add it in Settings' })).toHaveAttribute('href', '/settings')
+  // The outcome is on the page, not in the menu: it is still there once the menu has closed.
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('story-actions')).not.toHaveAttribute('open', '')
+  await expect(page.getByTestId('kindle-error')).toBeVisible()
+  await expect(page.getByTestId('kindle-error')).toHaveAttribute('role', 'alert')
   // Reading mode hides the chrome, the menu and its button with it.
   await page.getByRole('button', { name: 'Read together' }).click()
   await expect(page.getByTestId('story-actions')).toBeHidden()

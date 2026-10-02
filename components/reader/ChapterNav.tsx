@@ -14,6 +14,11 @@ import { Phase } from '@/components/Phase'
  * The picker is a native <dialog>: modal focus containment, Escape to close and correct screen
  * reader semantics come with it, and none of that is worth hand-rolling.
  */
+/** A chapter as a moon: full once read, half while being read, new when still to come. */
+function phaseFor(index: number, current: number): number {
+  return index < current ? 1 : index === current ? 0.5 : 0
+}
+
 export function ChapterNav({
   headings,
   currentIndex,
@@ -42,7 +47,7 @@ export function ChapterNav({
     const onKey = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey) return
       const target = event.target as HTMLElement | null
-      if (target && target.closest('input, textarea, select, button, a, dialog, [contenteditable]')) {
+      if (target && target.closest('input, textarea, select, button, a, summary, details, dialog, [contenteditable]')) {
         return
       }
       if (event.key === 'ArrowRight') go(currentIndex + 1)
@@ -71,7 +76,7 @@ export function ChapterNav({
             {/* Where you are in the book, as a row of moons: read, reading, still to come. */}
             <span className="st-phases" aria-hidden="true">
               {headings.map((_, index) => (
-                <Phase key={index} lit={index < currentIndex ? 1 : index === currentIndex ? 0.5 : 0} size={12} />
+                <Phase key={index} lit={phaseFor(index, currentIndex)} size={12} />
               ))}
             </span>
             <span className="truncate">
@@ -117,7 +122,7 @@ export function ChapterNav({
                   go(index)
                 }}
               >
-                <Phase lit={index < currentIndex ? 1 : index === currentIndex ? 0.5 : 0} size={13} />
+                <Phase lit={phaseFor(index, currentIndex)} size={13} />
                 <span>{heading || `Chapter ${index + 1}`}</span>
               </button>
             </li>

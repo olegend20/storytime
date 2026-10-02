@@ -25,6 +25,7 @@ export function StoryReader({
   progress = null,
   flagged = false,
   actions,
+  notice,
   footer,
 }: {
   story: ReaderStory
@@ -34,6 +35,8 @@ export function StoryReader({
   flagged?: boolean
   /** Chrome-level actions (delete, etc). Hidden in reading mode. */
   actions?: React.ReactNode
+  /** The outcome of an action (a Kindle send), shown under the controls. Hidden in reading mode. */
+  notice?: React.ReactNode
   footer?: React.ReactNode
 }) {
   /**
@@ -108,6 +111,7 @@ export function StoryReader({
   return (
     <div data-reader className="st-reader">
       <ReaderControls>{actions}</ReaderControls>
+      {notice ? <div data-chrome>{notice}</div> : null}
 
       <div data-chrome className="st-rprogress">
         {progress !== null && streaming && <StreamProgress value={progress} />}
@@ -161,7 +165,7 @@ export function StoryReader({
             <h2 id={`chapter-heading-${index}`} className="st-chapter-h">
               {chapter.heading || `Chapter ${index + 1}`}
             </h2>
-            <Prose text={chapter.text} />
+            <Prose text={chapter.text} dropCap={index === 0} />
             {chapter.shout_line && (
               <p className="sound mt-4 mb-0 text-center text-xl">{chapter.shout_line}</p>
             )}

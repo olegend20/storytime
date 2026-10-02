@@ -297,7 +297,7 @@ export function NewStoryFlow({
     return (
       <main id="main">
         {stream.error && (
-          <div className="mx-auto max-w-3xl space-y-3 px-4 pt-6">
+          <div className="st-reader-aside">
             <GenerationError error={stream.error} onRetry={() => void submit()} />
             <button type="button" className="btn btn-quiet" onClick={backToForm}>
               Change the topic
@@ -311,21 +311,19 @@ export function NewStoryFlow({
           flagged={stream.quality?.outcome === 'flagged'}
           footer={
             stream.phase === 'done' ? (
-              <div className="card p-4 sm:p-6">
-                <h2 className="mt-0 mb-2 text-lg">Saved to your library</h2>
-                <p className="mt-0 mb-4 text-sm" style={{ color: 'var(--fg-muted)' }}>
-                  You can read it again any night — re-reading is always free.
-                </p>
+              <div className="st-again">
+                <h2>Saved to your library</h2>
+                <p>You can read it again any night — re-reading is always free.</p>
                 <QuotaIndicator quota={quota} />
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="st-again-actions">
+                  <Link href="/library" className="btn btn-quiet no-underline">
+                    Back to library
+                  </Link>
                   {readerStory.id && (
-                    <Link href={`/stories/${readerStory.id}`} className="btn no-underline">
-                      Open the saved story
+                    <Link href={`/stories/${readerStory.id}`} className="st-primary st-primary-inline">
+                      Open the saved story <ArrowRight />
                     </Link>
                   )}
-                  <Link href="/library" className="btn btn-quiet no-underline">
-                    Library
-                  </Link>
                 </div>
               </div>
             ) : null
