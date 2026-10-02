@@ -8,9 +8,18 @@ anywhere in the repo — names only.
 ## How a change reaches production
 
 `main` is the production branch. The Vercel project is connected to this GitHub repo, so a
-merge to `main` builds and deploys by itself; pull requests get preview deployments. Nothing
-is deployed by hand in normal use. (`vercel deploy --prod` from a checkout works too, and is
-how the very first deployment was made.)
+merge to `main` builds and deploys by itself. Nothing is deployed by hand in normal use.
+(`vercel deploy --prod` from a checkout works too, and is how the very first deployment was
+made.)
+
+**Pull requests do not get preview deployments.** `vercel.json` turns automatic deployments
+off for every branch except `main`. A preview would need its own database: the only one
+that exists is production's, and a preview must never be given the production service-role
+key. (The first PR after the project was connected showed why this has to be explicit: its
+preview build failed with "Invalid environment configuration", because the variables are
+set for Production only.) To have previews later, create a second, non-production Supabase
+project, set the Preview environment's variables to it, and remove the rule from
+`vercel.json`. CI's Playwright suites remain the check on a pull request.
 
 Database changes are **not** automatic: after a PR with a new file in `supabase/migrations/`
 merges, apply it with
@@ -33,13 +42,15 @@ RUN_SCHEMA_TESTS=1 SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… SUPABASE_ANON_
 | `ANTHROPIC_API_KEY` | The production key. **A placeholder until the owner sets it** |
 | `LIVE_API` | Must be `1` in production for real model calls (unset means fixture replay) |
 | `GENERATION_ENABLED` | The kill switch. `false` pauses new stories; saved ones still read |
+| `NEXT_PUBLIC_API_MOCK`, `UI_MOCK_API` | **Must be unset in production.** Test-only: the first is inlined at build time and points the whole UI at `/api/mock/*` |
 | `DAILY_BUDGET_USD` | Global daily spend cap (5) |
 | `OWNER_USER_ID` | The owner's auth user id: unlocks `/admin` and the unlimited quota |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `KINDLE_FROM_EMAIL` | Send to Kindle. Unset = the feature says it is not set up, and the landing page does not mention it |
 
 A changed variable takes effect on the **next deployment**, not instantly: after flipping the
 kill switch or the budget cap, redeploy (`vercel redeploy <url>` or Deployments → Redeploy).
-The same switch flipped in a local `.env.local` applies on the next request.
+On Vercel that takes about a minute and needs no code change, which is what "without a
+deploy" in the plan amounts to here; a running instance keeps the values it started with.
 
 ## Sign-in (Supabase Auth)
 
