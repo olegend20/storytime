@@ -1,6 +1,7 @@
 'use client'
 
 import type { QuotaResponse } from '@/lib/schemas'
+import { useHydrated } from '@/lib/client/useHydrated'
 
 /**
  * F10: the quota indicator, "2 of 3 stories left today".
@@ -34,10 +35,12 @@ export function resetTimeLabel(isoOrNull: string | null | undefined): string | n
 }
 
 export function QuotaIndicator({ quota }: { quota: QuotaResponse | null }) {
+  const hydrated = useHydrated()
   if (!quota) return null
   const left = Math.max(0, quota.limit - quota.used)
   const exhausted = left === 0 && !isUnlimited(quota)
-  const reset = resetTimeLabel(quota.resets_at)
+  // The server may render this (issue #17) and does not know the parent's clock or locale.
+  const reset = hydrated ? resetTimeLabel(quota.resets_at) : null
   return (
     <p
       className="m-0 text-sm"

@@ -28,7 +28,6 @@
   --accent-hover: #2c4d3d;
   --accent-fg: #fffdf8;
   --accent-soft: #e9eee3;
-  --accent-warm: #8b6f39; /* the O in tic-tac-toe */
   --danger: #8a3b2e;
   --danger-soft: #f3e7e3;
   --focus: #8b6f39;
@@ -63,7 +62,6 @@
     --accent-hover: #d8e3d0;
     --accent-fg: #161819;
     --accent-soft: #2a2f2c;
-    --accent-warm: #e0c078; /* the O in tic-tac-toe */
     --danger: #f0b3a6;
     --danger-soft: #3a2622;
     --focus: #e0c078;
@@ -85,7 +83,6 @@
   --accent-hover: #d8e3d0;
   --accent-fg: #161819;
   --accent-soft: #2a2f2c;
-  --accent-warm: #e0c078; /* the O in tic-tac-toe */
   --danger: #f0b3a6;
   --danger-soft: #3a2622;
   --focus: #e0c078;
@@ -112,7 +109,6 @@
   --accent-hover: #c8d7b4;
   --accent-fg: #121816;
   --accent-soft: #26322b;
-  --accent-warm: #d9b976; /* the O in tic-tac-toe */
   --danger: #e8a99b;
   --danger-soft: #3a2a25;
   --focus: #d9b976;
@@ -207,15 +203,6 @@ body {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
   border-radius: 0.25rem;
-}
-
-/* Tic-tac-toe while the story is written (components/newstory/TicTacToe.tsx). */
-.ttt-cell {
-  min-height: 72px;
-  transition: transform 120ms ease-out;
-}
-.ttt-cell:not(:disabled):hover {
-  transform: scale(1.04);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -477,7 +464,6 @@ body > main {
 .st-avatar span { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-fg); font-family: var(--prose-font); font-size: 17px; transition: background-color 120ms ease; }
 .st-avatar:hover span { background: var(--accent-hover); }
 
-.st-main { flex: 1; width: 100%; max-width: 1120px; margin: 0 auto; padding: 48px 24px 44px; }
 .st-footer { border-top: 1px solid var(--border); }
 .st-footer-in { min-height: 64px; font-size: 13px; color: var(--fg-muted); flex-wrap: wrap; }
 .st-footer-links { display: flex; gap: 4px; }
@@ -560,3 +546,91 @@ body > main {
   .st-header-app .st-byline { display: none; }
   .st-header-app .st-nav { gap: 0; }
 }
+
+/* ------------------------------------------------------------------ the creator (#17) */
+
+.st-main { flex: 1 0 auto; width: 100%; max-width: 1120px; margin: 0 auto; padding: 48px 24px 44px; }
+.st-home { display: grid; grid-template-columns: minmax(0, 475px) minmax(0, 1fr); gap: 92px; align-items: start; }
+.st-creator { min-width: 0; }
+.st-h1 { margin: 18px 0 0; font-weight: 400; font-size: clamp(38px, 5.2vw, 56px); line-height: 1.08; letter-spacing: -0.024em; text-wrap: balance; }
+.st-h1 em { font-style: italic; letter-spacing: -0.02em; }
+.st-h1-center { text-align: center; margin-top: 14px; }
+.st-lead { margin: 16px 0 0; max-width: 30em; font-family: var(--prose-font); font-size: 19px; line-height: 1.5; color: var(--fg-soft); text-wrap: pretty; }
+.st-label { display: block; margin: 24px 0 10px; font-size: 15px; font-weight: 600; }
+.st-label-sm { display: block; font-size: 12.5px; color: var(--fg-muted); }
+.st-legend { padding: 0; margin: 0 0 10px; font-size: 14px; font-weight: 600; }
+
+.st-heroes { margin-top: 26px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px 9px 16px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px; }
+.st-heroes-names { display: block; font-family: var(--prose-font); font-size: 19px; line-height: 1.3; }
+.st-heroes-quiet { font-size: 16px; color: var(--fg-soft); }
+
+.st-topic { min-height: 58px; padding: 0 18px; font-family: var(--prose-font); font-size: 19px; transition: border-color 120ms ease, box-shadow 120ms ease; }
+.st-topic::placeholder { font-style: italic; }
+.st-topic:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
+.st-topic:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); border-radius: 8px; }
+.st-topic[aria-invalid='true'] { border-color: var(--danger); }
+
+.st-options { margin-top: 20px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-raised); }
+.st-options > summary { min-height: 52px; padding: 6px 14px 6px 16px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; font-size: 14.5px; font-weight: 500; border-radius: 8px; cursor: pointer; list-style: none; }
+.st-options > summary::-webkit-details-marker { display: none; }
+.st-options-summary { display: inline-flex; align-items: center; gap: 8px; font-weight: 400; color: var(--fg-muted); }
+.st-options[open] .st-chev { transform: rotate(180deg); }
+.st-options-body { padding: 18px 16px; border-top: 1px solid var(--line-soft); display: grid; gap: 22px; }
+.st-seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; width: 100%; max-width: 300px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.st-seg-item { min-height: 44px; padding: 0 8px; border: 0; background: transparent; color: var(--fg); font: inherit; font-size: 14px; cursor: pointer; transition: background-color 120ms ease; }
+.st-seg-item + .st-seg-item { border-left: 1px solid var(--border); }
+.st-seg-item:hover { background: var(--bg); }
+.st-seg-item[aria-checked='true'] { background: var(--accent-soft); font-weight: 600; box-shadow: inset 0 0 0 1px var(--accent); }
+.st-seg-item:focus-visible { outline-offset: -3px; }
+
+.st-submit { margin-top: 18px; }
+.st-primary:disabled { cursor: not-allowed; background: var(--bg-sunken); color: var(--fg-muted); box-shadow: inset 0 0 0 1px var(--border); }
+.st-primary:disabled svg { display: none; }
+.st-quota { margin-top: 4px; text-align: center; }
+.st-quota p { font-size: 13px; }
+
+.st-family { margin-top: 64px; padding-top: 22px; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 20px; }
+.st-family h2 { margin: 0; font-size: 22px; font-weight: 400; }
+.st-family p { margin: 0; font-size: 14px; color: var(--fg-muted); }
+.st-family-links { margin-left: auto; display: flex; flex-wrap: wrap; gap: 0 14px; }
+
+/* The heroes selector: a native <dialog>, so focus and Escape are the browser's job. */
+.st-dialog { width: min(440px, calc(100vw - 32px)); margin: auto; padding: 0; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-raised); color: var(--fg); box-shadow: 0 30px 60px -24px rgb(var(--shade) / 0.5); }
+.st-dialog::backdrop { background: rgb(var(--shade) / 0.42); }
+.st-dialog-in { padding: 24px 24px 18px; }
+.st-dialog h2 { margin: 0 0 16px; font-size: 25px; font-weight: 400; }
+.st-dialog-actions { margin-top: 20px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+
+/* Waiting for the writer. */
+.st-waiting { max-width: 640px; margin: 0 auto; padding: 44px 0 24px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.st-waiting-moon { color: var(--accent); margin-bottom: 22px; }
+.st-stages { margin: 30px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; text-align: left; font-family: var(--prose-font); font-size: 19px; }
+.st-stages li { display: flex; align-items: center; gap: 12px; color: var(--fg-muted); transition: color 300ms ease; }
+.st-stages li[data-state='active'] { color: var(--fg); }
+.st-stages li[data-state='done'] { color: var(--fg-soft); }
+.st-stage-dot { flex: none; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--border); display: grid; place-items: center; color: var(--accent-fg); }
+li[data-state='done'] .st-stage-dot { background: var(--accent); border-color: var(--accent); }
+li[data-state='active'] .st-stage-dot { border-color: var(--accent); }
+li[data-state='active'] .st-stage-dot::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: st-breathe 2.4s ease-in-out infinite; }
+.st-waiting-help { margin: 18px 0 0; color: var(--fg-muted); font-size: 14.5px; }
+.st-rule { display: block; width: 44px; height: 1px; background: var(--border); margin: 30px 0 22px; }
+.st-waiting-for { margin: 0 0 4px; font-size: 14px; color: var(--fg-muted); }
+.st-waiting-for strong { color: var(--fg); font-weight: 600; }
+@keyframes st-breathe { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+
+@media (max-width: 900px) {
+  .st-home { grid-template-columns: minmax(0, 1fr); gap: 52px; }
+  .st-creator { max-width: 560px; }
+  .st-sample { justify-self: start; }
+}
+@media (max-width: 650px) {
+  .st-main { padding: 32px 22px 44px; }
+  .st-h1 { font-size: clamp(34px, 11vw, 43px); line-height: 1.09; }
+  .st-lead { font-size: 17.5px; }
+  .st-waiting { padding-top: 20px; }
+  .st-stages { font-size: 17.5px; }
+  .st-family-links { margin-left: 0; }
+}
+
+/* The in-app privacy note (F11), kept under the creator and kept quiet. */
+.st-privacy-note { margin-top: 64px; max-width: 475px; }

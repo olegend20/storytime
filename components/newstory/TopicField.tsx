@@ -5,12 +5,12 @@ import { TOPIC_MAX_LENGTH } from '@/lib/client/validate'
 import type { SuggestedTopic } from '@/lib/client/topics'
 
 /**
- * The topic input and its eight suggested chips (F10).
+ * The topic input and its suggested chips (F10; three at a time since the calm design, #17).
  *
- * The chips carry most of the weight in practice: "8 rotating suggested chips" is how a parent
- * who has no idea tonight still gets to a story in one tap. `warm` chips are marked because a
- * fact pack already exists for them, so that story starts writing immediately - and telling the
- * parent which options are instant is more honest than a uniform row.
+ * The chips carry most of the weight in practice: they are how a parent who has no idea
+ * tonight still gets to a story in one tap, and "More ideas" turns the row over. `warm` chips
+ * are marked because a fact pack already exists for them, so that story starts writing
+ * sooner - and telling the parent which those are is more honest than a uniform row.
  */
 export function TopicField({
   value,
@@ -34,24 +34,24 @@ export function TopicField({
 
   return (
     <div>
-      <label htmlFor={inputId} className="mb-2 block text-base font-semibold">
-        What&rsquo;s the story about?
+      <label htmlFor={inputId} className="st-label">
+        What shall we discover tonight?
       </label>
       <input
         id={inputId}
         ref={inputRef}
-        className="field"
+        className="field st-topic"
         type="text"
         value={value}
         maxLength={TOPIC_MAX_LENGTH}
         autoComplete="off"
         enterKeyHint="go"
-        placeholder="sharks, the history of LEGO, how volcanoes work…"
+        placeholder="How the Moon shines…"
         aria-describedby={message ? `${hintId} ${errorId}` : hintId}
         aria-invalid={message ? true : undefined}
         onChange={(event) => onChange(event.target.value)}
       />
-      <p id={hintId} className="mt-2 mb-0 text-sm" style={{ color: 'var(--fg-muted)' }}>
+      <p id={hintId} className="sr-only-text">
         Anything they want to learn about. True facts come at the end.
       </p>
       {message && (
@@ -60,15 +60,10 @@ export function TopicField({
         </p>
       )}
 
-      <div className="mt-4">
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <h3 className="m-0 text-sm font-semibold" id="suggested-heading">
-            Or pick an idea
-          </h3>
-          <button type="button" className="btn btn-quiet" onClick={onShuffle}>
-            More ideas
-          </button>
-        </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <h3 className="sr-only-text" id="suggested-heading">
+          Or pick an idea
+        </h3>
         <ul aria-labelledby="suggested-heading" className="m-0 flex list-none flex-wrap gap-2 p-0">
           {chips.map((chip) => (
             <li key={chip.topic_key}>
@@ -101,6 +96,9 @@ export function TopicField({
             </li>
           ))}
         </ul>
+        <button type="button" className="st-textlink" onClick={onShuffle}>
+          More ideas
+        </button>
       </div>
     </div>
   )

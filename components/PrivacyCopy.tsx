@@ -57,7 +57,7 @@ export function PrivacyNote({ className = '' }: { className?: string }) {
         First names only — no surnames, no birthdays, no photos. The account is yours, the stories
         are private to your family, and you can delete any story, or everything, in one tap.
       </p>
-      <Link href="/privacy" className="text-sm" style={{ color: 'var(--accent)' }}>
+      <Link href="/privacy" className="st-textlink" style={{ paddingLeft: 0 }}>
         Read the privacy promise
       </Link>
     </aside>

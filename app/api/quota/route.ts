@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseServer } from '@/lib/supabase/server'
-import { QuotaResponse } from '@/lib/schemas/api'
-import { generationAvailable } from '@/lib/limits/guard'
-import { quotaStatus } from '@/lib/limits/quota'
+import { quotaResponseFor } from '@/lib/limits/quota-response'
 
 /**
  * GET /api/quota — the "2 of 3 stories left today" indicator (F10), and the flag that lets
@@ -34,20 +32,9 @@ export async function GET() {
     return NextResponse.json({ code: 'no_family', message: 'No family yet.' }, { status: 404 })
   }
 
-  const [quota, availability] = await Promise.all([
-    quotaStatus({ familyId: family.id as string, timezone: family.timezone as string }),
-    generationAvailable(),
-  ])
+  const body = await quotaResponseFor({ id: family.id as string, timezone: family.timezone as string })
 
-  const body: QuotaResponse = {
-    used: quota.used,
-    limit: quota.limit,
-    ...(quota.unlimited ? { unlimited: true } : {}),
-    resets_at: quota.resetsAt,
-    generation_enabled: availability.enabled,
-  }
-
-  return NextResponse.json(QuotaResponse.parse(body), {
+  return NextResponse.json(body, {
     headers: { 'cache-control': 'no-store' },
   })
 }

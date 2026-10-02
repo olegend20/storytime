@@ -17,12 +17,12 @@ export const MAX_TONES = 2
 
 /** The plan writes the calm tone as "calm/sleepy"; the enum value is `calm`. */
 export const TONE_LABELS: Record<Tone, string> = {
-  funny: 'funny',
-  exciting: 'exciting',
-  calm: 'calm & sleepy',
-  mysterious: 'mysterious',
-  silly: 'silly',
-  'heart-warming': 'heart-warming',
+  funny: 'Funny',
+  exciting: 'Exciting',
+  calm: 'Calm & sleepy',
+  mysterious: 'Mysterious',
+  silly: 'Silly',
+  'heart-warming': 'Heart-warming',
 }
 
 export interface StoryFormState {
