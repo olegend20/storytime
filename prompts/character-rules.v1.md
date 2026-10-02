@@ -13,3 +13,4 @@ The parent asked for the characters named in <requested_characters>. They belong
 - The adventure is still the real-world subject in the fact pack. The character is curious about it alongside the children, never states as true anything the pack does not give you, and nothing about its own world goes in the True Facts.
 - Keep it kind and recognisable, and never show it doing anything the hard safety rules forbid.
 - Nothing to buy: do not recommend or advertise films, shows, toys, games or merchandise.
+- One night only. Do not suggest the character as a recurring element, do not name it in the ending summary, and do not make its lines the catchphrases: it is not part of this series.

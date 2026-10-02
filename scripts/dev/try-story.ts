@@ -14,31 +14,32 @@ import { prepareGeneration, runGeneration, SseChannel } from '@/lib/generate'
 import { productionDeps } from '@/lib/generate/production-deps'
 import type { SseEvent } from '@/lib/schemas'
 
-const URL = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321'
+const DB_URL = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321'
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 async function main(): Promise<void> {
   const topic = process.argv.slice(2).join(' ').trim()
   if (!topic) throw new Error('usage: try-story.ts "<topic>"')
   if (!SERVICE_KEY) throw new Error('SUPABASE_SERVICE_ROLE_KEY is required')
-  if (!URL.includes('127.0.0.1') && !URL.includes('localhost')) {
-    throw new Error(`Refusing to write stories into a non-local database: ${URL}`)
+  if (!DB_URL.includes('127.0.0.1') && !DB_URL.includes('localhost')) {
+    throw new Error(`Refusing to write stories into a non-local database: ${DB_URL}`)
   }
   if (process.env.LIVE_API !== '1') throw new Error('Set LIVE_API=1: this makes real model calls.')
 
-  const db = createClient(URL, SERVICE_KEY, { auth: { persistSession: false } })
+  const db = createClient(DB_URL, SERVICE_KEY, { auth: { persistSession: false } })
   const { data: list } = await db.auth.admin.listUsers({ perPage: 1000 })
   const userId = list?.users.find((u) => u.email === 'dev@storytime.test')?.id
   if (!userId) throw new Error('No seeded family: run `pnpm seed` first.')
-  const { data: family } = await db.from('families').select('id').eq('owner_user_id', userId).single()
-  const { data: children } = await db.from('children').select('id, first_name, age').eq('family_id', family!.id)
+  const { data: family } = await db.from('families').select('id').eq('owner_user_id', userId).maybeSingle()
+  if (!family) throw new Error('No seeded family: run `pnpm seed` first.')
+  const { data: children } = await db.from('children').select('id, first_name, age').eq('family_id', family.id)
   if (!children?.length) throw new Error('The seeded family has no children.')
 
   const sink = new MemoryLogSink()
   const deps = { ...productionDeps(db), db, sink }
   const started = Date.now()
   const prep = await prepareGeneration(
-    family!.id,
+    family.id,
     { child_ids: children.map((c) => c.id), topic_input: topic, tones: ['funny', 'exciting'], length_minutes: 5 },
     deps,
   )

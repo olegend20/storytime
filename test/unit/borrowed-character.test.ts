@@ -7,6 +7,7 @@ import { readerFromLibraryStory, readerFromStream } from '@/lib/client/reader'
 import { buildPrompt, requestBlock } from '@/lib/generate/prompt'
 import {
   borrowsCharacter,
+  confirmCharacters,
   classifierSystemPrompt,
   classifierUserMessage,
   requestedCharacters,
@@ -96,11 +97,20 @@ describe('the classifier contract carries the requested characters', () => {
     expect(tidyRequestedCharacters(['', '   ', '***'])).toEqual([])
   })
 
-  it('a malformed list does not turn an allowed topic into a refusal', () => {
-    const parsed = InputClassification.safeParse({ ...characterReply, requested_characters: null })
-    expect(parsed.success).toBe(true)
-    // The category alone is enough for the notice.
-    if (parsed.success) expect(borrowsCharacter(parsed.data)).toBe(true)
+  it('a malformed list does not turn an allowed topic into a refusal, whatever its shape', () => {
+    for (const shape of [null, 'Elsa', [{ name: 'Elsa' }], 42, [['Elsa']]]) {
+      const parsed = InputClassification.safeParse({ ...characterReply, requested_characters: shape })
+      expect(parsed.success, JSON.stringify(shape)).toBe(true)
+    }
+    expect(InputClassification.parse({ ...characterReply, requested_characters: 'Elsa' }).requested_characters).toEqual(['Elsa'])
+    expect(InputClassification.parse({ ...characterReply, requested_characters: [{ name: 'Elsa' }, 7] }).requested_characters).toEqual(['Elsa'])
+    expect(InputClassification.parse({ ...characterReply, requested_characters: null }).requested_characters).toEqual([])
+  })
+
+  it('the notice follows the confirmed names, not the category', () => {
+    const noNames = InputClassification.parse({ ...characterReply, requested_characters: [] })
+    expect(borrowsCharacter(noNames)).toBe(false)
+    expect(borrowsCharacter(InputClassification.parse(characterReply))).toBe(true)
   })
 
   it('a refusal never carries a character, whatever the reply listed', () => {
@@ -133,17 +143,45 @@ describe('guardInput with a character request', () => {
     expect(result.decision).toBe('allow_with_care')
     expect(result.requestedCharacters).toEqual([])
     expect(result.classification?.requested_characters).toEqual([])
+    // The care notes were written to put Elsa in the story; without her they would send the
+    // writer into a rule-7 rewrite that contradicts itself. They go with the name.
+    expect(result.careNotes).toBeNull()
+    expect(borrowsCharacter(result.classification!)).toBe(false)
+  })
+
+  it('care notes about a real sensitive topic survive when only an extra name was dropped', () => {
+    const reply = InputClassification.parse({
+      ...characterReply,
+      requested_characters: ['Spider-Man', 'Batman'],
+      care_notes: 'How spiders grip walls; Spider-Man comes along.',
+    })
+    const kept = confirmCharacters(reply, 'Spider-Man teaches Juno to climb walls')
+    expect(kept.requested_characters).toEqual(['Spider-Man'])
+    expect(kept.care_notes).toBe(reply.care_notes)
   })
 
   it('a name the parent typed is kept however it was spelled, and the long form is kept for the short', () => {
     expect(namedInTopic(['Spider-Man'], 'spiderman teaches Juno to climb walls')).toEqual(['Spider-Man'])
     expect(namedInTopic(['Spider-Man'], 'Spider Man teaches Juno to climb walls')).toEqual(['Spider-Man'])
-    expect(namedInTopic(['Sonic the Hedgehog'], 'Sonic races Theo around the park')).toEqual(['Sonic the Hedgehog'])
+    expect(namedInTopic(['Sonic the Hedgehog'], 'Sonic races Theo around the park')).toEqual(['Sonic'])
     expect(namedInTopic(['Bluey', 'Bingo'], 'Bluey and Bingo come round for tea')).toEqual(['Bluey', 'Bingo'])
     expect(namedInTopic(['Elsa', 'Olaf'], 'a story where Elsa helps Milo build a snowman')).toEqual(['Elsa'])
     // Two letters of a word are not the word.
     expect(namedInTopic(['Ann'], 'Anna and the snow')).toEqual([])
     expect(namedInTopic(['The'], 'the history of LEGO')).toEqual([])
+    // Accents: "Pokémon" typed with or without, the classifier spelling it either way.
+    expect(namedInTopic(['Pokemon'], 'Pokémon help Theo learn about electricity')).toEqual(['Pokemon'])
+    expect(namedInTopic(['Pokémon'], 'pokemon help Theo learn about electricity')).toEqual(['Pokémon'])
+    expect(sameCharacter('Pokémon', 'Pokemon')).toBe(true)
+  })
+
+  it('a name that only shares a word with the topic is not a name the parent typed', () => {
+    expect(namedInTopic(['Captain America'], 'the history of America')).toEqual([])
+    expect(namedInTopic(['Thomas the Tank Engine'], 'how tank engines work')).toEqual([])
+    expect(namedInTopic(['Minecraft Steve'], 'how Minecraft was invented')).toEqual(['Minecraft'])
+    // What survives is the words the parent typed, so the writer is never handed a longer name.
+    expect(namedInTopic(['Sonic the Hedgehog'], 'Sonic the fast one races Theo')).toEqual(['Sonic'])
+    expect(namedInTopic(['Harry Potter'], 'Harry Potter takes the kids to Hogwarts')).toEqual(['Harry Potter'])
   })
 
   it('age suitability still applies: too old for the youngest child is refused, with no character', async () => {

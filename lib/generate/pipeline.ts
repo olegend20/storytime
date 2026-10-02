@@ -542,6 +542,7 @@ export async function runGeneration(
       storyId: prepared.storyId,
       topic: prepared.topicLabel,
       tones: prepared.request.tones,
+      excludeCharacters: prepared.request.requested_characters,
       // `deps.now` exists so a test can pin this date: it goes into the bible-update prompt,
       // and a prompt that changes at midnight cannot be replayed from a fixture.
       date: (deps.now?.() ?? new Date()).toISOString().slice(0, 10),

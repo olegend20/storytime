@@ -35,6 +35,19 @@ export type GuardrailDecision = z.infer<typeof GuardrailDecision>
 export const MAX_REQUESTED_CHARACTERS = 3
 const MAX_CHARACTER_NAME_LENGTH = 40
 
+/** Whatever shape the model put the names in - a list, one string, objects with a name - as strings. */
+function namesFrom(value: unknown): string[] {
+  if (typeof value === 'string') return [value]
+  if (!Array.isArray(value)) return []
+  return value.flatMap((item) => {
+    if (typeof item === 'string') return [item]
+    if (item && typeof item === 'object' && typeof (item as { name?: unknown }).name === 'string') {
+      return [(item as { name: string }).name]
+    }
+    return []
+  })
+}
+
 /** Trimmed, de-duplicated, at most three, each a short plain name. */
 export function tidyRequestedCharacters(names: readonly string[]): string[] {
   const seen = new Set<string>()
@@ -67,9 +80,9 @@ export const InputClassification = z.object({
    * writer's request.
    */
   requested_characters: z
-    .array(z.string())
-    .nullish()
-    .transform((names) => tidyRequestedCharacters(names ?? [])),
+    .unknown()
+    .optional()
+    .transform((value) => tidyRequestedCharacters(namesFrom(value))),
   topic_key_hint: z.string().trim().max(120).nullable().default(null),
   /** Shown to the parent verbatim. Must never echo the offending text (s5). */
   parent_message: z.string().trim().max(400).nullable().default(null),

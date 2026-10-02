@@ -76,6 +76,25 @@ function failClosed(youngestAge: number): InputClassification {
 }
 
 /**
+ * Only a character the parent typed into the topic counts (s3.3), and code decides that, not
+ * the model: a name from the child's likes, or one the classifier made up, is dropped so
+ * nothing downstream can grant rule 7's exception on the model's word alone. And when the
+ * classifier thought it saw a character that is not there, its care notes - written to put
+ * that character in the story - go with it: the writer would otherwise be told to include
+ * someone rule 7 then forbids, and pay for a rewrite that contradicts itself.
+ */
+export function confirmCharacters(reply: InputClassification, topic: string): InputClassification {
+  const confirmed = namedInTopic(reply.requested_characters, topic)
+  if (confirmed.length === reply.requested_characters.length) return reply
+  const aboutCharacter = reply.category === 'commercial_ip_character' || reply.requested_characters.length > 0
+  return {
+    ...reply,
+    requested_characters: confirmed,
+    care_notes: confirmed.length === 0 && aboutCharacter ? null : reply.care_notes,
+  }
+}
+
+/**
  * The characters a parent asked for, as the rest of the pipeline may rely on them
  * (issue #27). A refusal never carries any: nothing is written, so nothing is borrowed.
  */
@@ -84,16 +103,12 @@ export function requestedCharacters(classification: InputClassification): string
 }
 
 /**
- * Whether the reader must show the borrowed-character notice. Either signal is enough - the
- * names or the category - so a reply that gives one without the other errs towards telling
- * the parent.
+ * Whether the reader must show the borrowed-character notice: exactly when the writer is
+ * given a character, which is exactly when a confirmed name is on the list. A category with
+ * no surviving name means no character reaches the story, so no notice.
  */
 export function borrowsCharacter(classification: InputClassification): boolean {
-  if (classification.decision === 'refuse') return false
-  return (
-    classification.requested_characters.length > 0 ||
-    classification.category === 'commercial_ip_character'
-  )
+  return requestedCharacters(classification).length > 0
 }
 
 /**
@@ -181,13 +196,7 @@ export async function classifyInput(input: ClassifyInput): Promise<ClassifyResul
   // row cannot carry it. No input text, only the category the classifier chose.
   if (salvaged) console.warn(`[guardrails] L2 refusal kept with its age filled in (category: ${salvaged.category})`)
   const raw = answer ?? failClosed(input.youngestAge)
-  // Only a character the parent typed into the topic counts (s3.3), and code decides that,
-  // not the model: a name from the child's likes, or one the classifier made up, is dropped
-  // here so nothing downstream can grant rule 7's exception on the model's word alone.
-  const classification = applyAgeBand(
-    { ...raw, requested_characters: namedInTopic(raw.requested_characters, input.topic) },
-    input.youngestAge,
-  )
+  const classification = applyAgeBand(confirmCharacters(raw, input.topic), input.youngestAge)
 
   return {
     classification,
