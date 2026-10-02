@@ -31,3 +31,6 @@ supabase/.branches/
 
 # F15 guardrail corpus run artefacts (uploaded by the nightly workflow).
 test/guardrails/results/
+
+# Vercel project link (per machine).
+.vercel
