@@ -143,8 +143,18 @@ export function echoesInput(candidate: string, rawInput: string): boolean {
 }
 
 /**
- * Final parent-facing copy for an L2 decision: the classifier's own message when it is
- * safe and useful, the template otherwise.
+ * Final parent-facing copy for an L2 decision.
+ *
+ * A refusal always gets the template for its reason - copy the owner wrote, in
+ * `config/guardrails/messages.json`. The classifier's own wording is never shown for a
+ * refusal: asked why it declined, a model tends to name the thing it declined ("X is a
+ * branded character..."), and no after-the-fact check can reliably spot that for every
+ * input - short titles, accents, a like rather than the topic (issue #24). s5 is a hard
+ * requirement, so the only safe rule is not to show it.
+ *
+ * The one exception is `too_mature_for_band`, where the subject itself is legitimate and the
+ * classifier's job is to offer a gentler angle on it: its message is used when it passes the
+ * checks below, and the template otherwise.
  */
 export function parentMessageFor(
   classification: InputClassification,
@@ -156,6 +166,7 @@ export function parentMessageFor(
     youngestName: context.youngestName ?? null,
     alternative: null,
   })
+  if (classification.category !== 'too_mature_for_band') return template
   if (isSafeParentMessage(classification.parent_message, context.rawInput)) {
     return classification.parent_message as string
   }

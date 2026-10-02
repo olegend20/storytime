@@ -1,8 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fixtureKey, writeFixture } from '@/lib/ai/fixtures'
 import { modelForRole } from '@/lib/ai/pricing'
 import { MemoryLogSink } from '@/lib/ai/types'
-import { classifierSystemPrompt, classifierUserMessage } from '@/lib/guardrails/classify'
+import { classifierSystemPrompt, classifierUserMessage, classifyInput } from '@/lib/guardrails/classify'
 import { MemoryGuardrailSink, setGuardrailSink } from '@/lib/guardrails/events'
 import { guardInput } from '@/lib/guardrails/input'
 import { messages } from '@/lib/guardrails/messages'
@@ -36,7 +36,8 @@ afterEach(() => setGuardrailSink(new MemoryGuardrailSink()))
 /** Mirrors exactly what callModel() sends for a classify_input call. */
 function stubClassifier(
   input: { topic: string; likes?: string[]; notes?: string | null; youngestAge: number },
-  answer: InputClassification,
+  // `object` as well, so a test can stub a reply that breaks the contract (issue #24).
+  answer: InputClassification | object,
 ): void {
   const model = modelForRole('helper')
   const system = [
@@ -209,5 +210,66 @@ describe('L2 wiring through guardInput', () => {
     expect(result.decision).toBe('refuse')
     expect(result.internalReason).toBe('l2_unparseable_fail_closed')
     expect(result.parentMessage).toBe(messages.refuse.other)
+  })
+})
+
+/**
+ * Issue #24, through the real wiring. The classifier's production reply for a declined topic
+ * has `min_recommended_age: null`, which fails the contract. This proves the whole path -
+ * callModel's text/data, salvage, age band, event, copy - and would catch a change to
+ * `callModel` that quietly brought back the fail-closed `other`.
+ */
+describe('a refusal with no age, end to end (issue #24)', () => {
+  const input = { topic: 'a famous film superhero', likes: [], notes: null, youngestAge: 4 }
+  const production = {
+    decision: 'refuse',
+    category: 'commercial_ip_character',
+    care_notes: null,
+    min_recommended_age: null,
+    topic_key_hint: null,
+    parent_message: 'That hero is a branded character, so we cannot tell that story.',
+  }
+
+  it('classifyInput keeps the refusal and its category, says so in the log, and is not degraded', async () => {
+    stubClassifier(input, production)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const result = await classifyInput({ ...input, sink: logs })
+      expect(result.degraded).toBe(false)
+      expect(result.salvaged).toBe(true)
+      expect(result.classification).toMatchObject({ decision: 'refuse', category: 'commercial_ip_character' })
+      const lines = warn.mock.calls.map((c) => String(c[0]))
+      expect(lines.some((l) => l.includes('age filled in') && l.includes('commercial_ip_character'))).toBe(true)
+      // The trace never carries what the parent typed.
+      expect(lines.join(' ')).not.toContain(input.topic)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('guardInput refuses with the template for that reason, logs the right category, and writes no story', async () => {
+    stubClassifier(input, production)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const result = await guardInput({ topic_input: input.topic, youngestAge: 4, sink: logs })
+      expect(result.decision).toBe('refuse')
+      expect(result.category).toBe('commercial_ip_character')
+      expect(result.internalReason).toBe('l2_refusal_age_filled')
+      expect(result.parentMessage).toBe(messages.refuse.commercial_ip_character)
+      expect(result.parentMessage).not.toContain('branded character')
+      expect(events.events.map((e) => e.category)).toEqual(['commercial_ip_character'])
+      expect(logs.rows.map((r) => r.purpose)).toEqual(['classify_input'])
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('the same broken reply with decision "allow" is not rescued: it fails closed as before', async () => {
+    const allowed = { ...input, topic: 'how lighthouses work' }
+    stubClassifier(allowed, { ...production, decision: 'allow', category: 'educational', parent_message: null })
+    const result = await classifyInput({ ...allowed, sink: logs })
+    expect(result.degraded).toBe(true)
+    expect(result.salvaged).toBe(false)
+    expect(result.classification).toMatchObject({ decision: 'refuse', category: 'other' })
   })
 })

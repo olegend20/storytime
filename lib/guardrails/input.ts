@@ -105,7 +105,7 @@ export async function guardInput(request: GuardInputRequest): Promise<GuardInput
   }
 
   const topic = l1.sanitized.topic_input ?? ''
-  const { classification, costUsd, degraded } = await classifyInput({
+  const { classification, costUsd, degraded, salvaged } = await classifyInput({
     topic,
     likes: l1.sanitized.likes,
     notes: l1.sanitized.notes,
@@ -123,7 +123,7 @@ export async function guardInput(request: GuardInputRequest): Promise<GuardInput
     parentMessage: null,
     careNotes: classification.care_notes,
     topicKeyHint: classification.topic_key_hint,
-    internalReason: degraded ? 'l2_unparseable_fail_closed' : null,
+    internalReason: degraded ? 'l2_unparseable_fail_closed' : salvaged ? 'l2_refusal_age_filled' : null,
     field: null,
     classification,
     costUsd,

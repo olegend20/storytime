@@ -1,4 +1,4 @@
-import { callModel, type GenerationLogSink } from '@/lib/ai/callModel'
+import { callModel, parseJsonLoose, type GenerationLogSink } from '@/lib/ai/callModel'
 import { InputClassification } from '@/lib/schemas/guardrail'
 import { dataBlock, DATA_BLOCK_NOTICE } from './prompt'
 import { INPUT_CLASSIFIER_PROMPT, promptSection, promptVersion } from './prompts'
@@ -26,8 +26,19 @@ export interface ClassifyResult {
   classification: InputClassification
   costUsd: number
   replayed: boolean
-  /** True when the model's JSON did not validate and the fail-closed default was used. */
+  /**
+   * True when the model's JSON did not validate and the fail-closed default was used. A
+   * refusal whose only fault was its minimum age is kept (see `salvageRefusal`) and is not
+   * degraded.
+   */
   degraded: boolean
+  /**
+   * True when the reply broke the contract but was kept by `salvageRefusal`. It is logged
+   * (one `console.warn` line from `classifyInput`) and carried on `GuardInputResult` as
+   * `internalReason: 'l2_refusal_age_filled'`; it is NOT stored on the `guardrail_events`
+   * row, which has no column for a reason.
+   */
+  salvaged: boolean
 }
 
 export function classifierSystemPrompt(): string {
@@ -60,6 +71,36 @@ function failClosed(youngestAge: number): InputClassification {
     topic_key_hint: null,
     parent_message: null,
   }
+}
+
+/**
+ * Keep a refusal whose only fault is its minimum age (issue #24).
+ *
+ * When the classifier declines a topic outright it has no age to recommend, and it says so:
+ * `"min_recommended_age": null` (or 0, or 21, or "N/A"). The contract wants an integer from
+ * 1 to 18, so the reply used to fail validation and the fail-closed default replaced it -
+ * still a refusal, but with its reason thrown away: every specific refusal reached the
+ * parent as the vaguest message we have, and was logged as `other`.
+ *
+ * For a refusal the age carries no meaning, so this overwrites an unusable one and
+ * re-validates. It only ever does so for `decision: "refuse"` with a refusal category: an
+ * allow, a reply that contradicts itself (refuse + `educational`), or one that is wrong in
+ * any other way is not rescued and still fails closed. Nothing refused becomes allowed.
+ */
+export function salvageRefusal(reply: unknown, youngestAge: number): InputClassification | null {
+  if (typeof reply !== 'object' || reply === null || Array.isArray(reply)) return null
+  const candidate = reply as Record<string, unknown>
+  if (candidate.decision !== 'refuse' || candidate.category === 'educational') return null
+  const age = candidate.min_recommended_age
+  const usable = typeof age === 'number' && Number.isInteger(age) && age >= 1 && age <= 18
+  if (usable) return null // the age was not the problem: leave it to fail closed
+  const parsed = InputClassification.safeParse({
+    ...candidate,
+    min_recommended_age: Math.max(youngestAge, 1),
+  })
+  // The schema still has to accept everything else, and the decision is checked again on the
+  // parsed value rather than trusted from the raw one.
+  return parsed.success && parsed.data.decision === 'refuse' ? parsed.data : null
 }
 
 /**
@@ -110,13 +151,21 @@ export async function classifyInput(input: ClassifyInput): Promise<ClassifyResul
     ...(input.signal ? { signal: input.signal } : {}),
   })
 
-  const degraded = result.data === null
-  const classification = applyAgeBand(
-    degraded ? failClosed(input.youngestAge) : (result.data as InputClassification),
-    input.youngestAge,
-  )
+  const salvaged = result.data === null ? salvageRefusal(parseJsonLoose(result.text), input.youngestAge) : null
+  const answer = result.data ?? salvaged
+  const degraded = answer === null
+  // The trace for "the contract was patched, not met": in the server log, since the event
+  // row cannot carry it. No input text, only the category the classifier chose.
+  if (salvaged) console.warn(`[guardrails] L2 refusal kept with its age filled in (category: ${salvaged.category})`)
+  const classification = applyAgeBand(answer ?? failClosed(input.youngestAge), input.youngestAge)
 
-  return { classification, costUsd: result.costUsd, replayed: result.replayed, degraded }
+  return {
+    classification,
+    costUsd: result.costUsd,
+    replayed: result.replayed,
+    degraded,
+    salvaged: salvaged !== null,
+  }
 }
 
 export function classifierPromptVersion(): number {
