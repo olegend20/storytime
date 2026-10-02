@@ -28,9 +28,16 @@ export interface ClassifyResult {
   replayed: boolean
   /**
    * True when the model's JSON did not validate and the fail-closed default was used. A
-   * refusal that only lacked a minimum age is kept (see `salvageRefusal`) and is not degraded.
+   * refusal whose only fault was its minimum age is kept (see `salvageRefusal`) and is not
+   * degraded.
    */
   degraded: boolean
+  /**
+   * True when the reply broke the contract but was kept by `salvageRefusal`. Recorded on the
+   * guardrail event, so "the contract was met" and "the contract was patched" stay
+   * distinguishable in the logs.
+   */
+  salvaged: boolean
 }
 
 export function classifierSystemPrompt(): string {
@@ -66,23 +73,26 @@ function failClosed(youngestAge: number): InputClassification {
 }
 
 /**
- * Keep a refusal whose only fault is a missing minimum age (issue #24).
+ * Keep a refusal whose only fault is its minimum age (issue #24).
  *
  * When the classifier declines a topic outright it has no age to recommend, and it says so:
- * `"min_recommended_age": null`. The contract wants an integer, so the reply used to fail
- * validation and the fail-closed default replaced it - still a refusal, but with its reason
- * and its wording thrown away: every specific refusal reached the parent as the vaguest
- * message we have, and was logged as `other`.
+ * `"min_recommended_age": null` (or 0, or 21, or "N/A"). The contract wants an integer from
+ * 1 to 18, so the reply used to fail validation and the fail-closed default replaced it -
+ * still a refusal, but with its reason thrown away: every specific refusal reached the
+ * parent as the vaguest message we have, and was logged as `other`.
  *
- * This fills in the age and re-validates. It only ever does so for `decision: "refuse"`:
- * an allow with no age, or a reply that is wrong in any other way, is not rescued and still
- * fails closed. Nothing that was refused becomes allowed.
+ * For a refusal the age carries no meaning, so this overwrites an unusable one and
+ * re-validates. It only ever does so for `decision: "refuse"` with a refusal category: an
+ * allow, a reply that contradicts itself (refuse + `educational`), or one that is wrong in
+ * any other way is not rescued and still fails closed. Nothing refused becomes allowed.
  */
 export function salvageRefusal(reply: unknown, youngestAge: number): InputClassification | null {
   if (typeof reply !== 'object' || reply === null || Array.isArray(reply)) return null
   const candidate = reply as Record<string, unknown>
-  if (candidate.decision !== 'refuse') return null
-  if (candidate.min_recommended_age !== null && candidate.min_recommended_age !== undefined) return null
+  if (candidate.decision !== 'refuse' || candidate.category === 'educational') return null
+  const age = candidate.min_recommended_age
+  const usable = typeof age === 'number' && Number.isInteger(age) && age >= 1 && age <= 18
+  if (usable) return null // the age was not the problem: leave it to fail closed
   const parsed = InputClassification.safeParse({
     ...candidate,
     min_recommended_age: Math.max(youngestAge, 1),
@@ -140,11 +150,18 @@ export async function classifyInput(input: ClassifyInput): Promise<ClassifyResul
     ...(input.signal ? { signal: input.signal } : {}),
   })
 
-  const answer = result.data ?? salvageRefusal(parseJsonLoose(result.text), input.youngestAge)
+  const salvaged = result.data === null ? salvageRefusal(parseJsonLoose(result.text), input.youngestAge) : null
+  const answer = result.data ?? salvaged
   const degraded = answer === null
   const classification = applyAgeBand(answer ?? failClosed(input.youngestAge), input.youngestAge)
 
-  return { classification, costUsd: result.costUsd, replayed: result.replayed, degraded }
+  return {
+    classification,
+    costUsd: result.costUsd,
+    replayed: result.replayed,
+    degraded,
+    salvaged: salvaged !== null,
+  }
 }
 
 export function classifierPromptVersion(): number {

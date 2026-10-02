@@ -121,17 +121,9 @@ export function isSafeParentMessage(candidate: string | null, rawInput: string):
 }
 
 /**
- * "Must not echo the offending text back".
- *
- * Two rules, because inputs come in two shapes:
- *  - A longer input: any run of 4+ consecutive words from it appearing in the message is an
- *    echo. Shorter overlaps are unavoidable in normal English ("a story about").
- *  - A short input (under four words - most topics a parent types): any of its words of
- *    four letters or more appearing in the message is an echo. The four-word rule gave such
- *    inputs no protection at all, so a one-word topic could be named straight back to the
- *    parent (issue #24). Spacing and hyphens are ignored, so "Spider-Man" echoes "spiderman".
- *
- * A false positive costs nothing: the parent gets the pre-written template for that reason.
+ * "Must not echo the offending text back": any run of 4+ consecutive words from the
+ * parent's input appearing in the message counts as an echo. Shorter overlaps are
+ * unavoidable in normal English ("a story about").
  */
 export function echoesInput(candidate: string, rawInput: string): boolean {
   const norm = (s: string): string[] =>
@@ -141,12 +133,7 @@ export function echoesInput(candidate: string, rawInput: string): boolean {
       .split(/\s+/)
       .filter(Boolean)
   const inputWords = norm(rawInput)
-  if (inputWords.length < 4) {
-    const squashed = candidate.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '')
-    const whole = inputWords.join('')
-    if (whole.length >= 4 && squashed.includes(whole)) return true
-    return inputWords.some((word) => word.length >= 4 && squashed.includes(word))
-  }
+  if (inputWords.length < 4) return false
   const haystack = ` ${norm(candidate).join(' ')} `
   for (let i = 0; i + 4 <= inputWords.length; i += 1) {
     const gram = inputWords.slice(i, i + 4).join(' ')
@@ -156,8 +143,18 @@ export function echoesInput(candidate: string, rawInput: string): boolean {
 }
 
 /**
- * Final parent-facing copy for an L2 decision: the classifier's own message when it is
- * safe and useful, the template otherwise.
+ * Final parent-facing copy for an L2 decision.
+ *
+ * A refusal always gets the template for its reason - copy the owner wrote, in
+ * `config/guardrails/messages.json`. The classifier's own wording is never shown for a
+ * refusal: asked why it declined, a model tends to name the thing it declined ("X is a
+ * branded character..."), and no after-the-fact check can reliably spot that for every
+ * input - short titles, accents, a like rather than the topic (issue #24). s5 is a hard
+ * requirement, so the only safe rule is not to show it.
+ *
+ * The one exception is `too_mature_for_band`, where the subject itself is legitimate and the
+ * classifier's job is to offer a gentler angle on it: its message is used when it passes the
+ * checks below, and the template otherwise.
  */
 export function parentMessageFor(
   classification: InputClassification,
@@ -169,6 +166,7 @@ export function parentMessageFor(
     youngestName: context.youngestName ?? null,
     alternative: null,
   })
+  if (classification.category !== 'too_mature_for_band') return template
   if (isSafeParentMessage(classification.parent_message, context.rawInput)) {
     return classification.parent_message as string
   }
