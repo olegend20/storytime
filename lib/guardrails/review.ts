@@ -15,6 +15,8 @@ export interface ReviewInput {
   storyText: string
   band: AgeBand
   childNames: string[]
+  /** Characters the parent asked for by name: rule 7's one exception (issue #27). */
+  requestedCharacters?: readonly string[]
   /** Soft signals from the deterministic scan, passed as things to check. */
   hints?: OutputViolation[]
   familyId?: string | null
@@ -43,8 +45,10 @@ export function reviewUserMessage(input: ReviewInput): string {
     input.hints && input.hints.length > 0
       ? input.hints.map((h) => `rule ${h.rule}`).join(', ')
       : 'nothing'
+  const requested = input.requestedCharacters ?? []
   return [
     `Age band: ${input.band} (children: ${input.childNames.join(', ') || 'none named'})`,
+    `Parent asked for: ${requested.length > 0 ? requested.map((n) => JSON.stringify(n)).join(', ') : 'no character'}`,
     `Deterministic scanner already noticed (may be false positives, check them): ${hints}`,
     dataBlock('story', input.storyText),
   ].join('\n\n')

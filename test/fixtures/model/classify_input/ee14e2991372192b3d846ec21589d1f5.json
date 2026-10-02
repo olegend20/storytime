@@ -1,0 +1,41 @@
+{
+  "purpose": "classify_input",
+  "model": "claude-haiku-4-5-20251001",
+  "response": {
+    "model": "claude-haiku-4-5-20251001",
+    "id": "msg_011Cfe86PFvuzX2nspgwdztP",
+    "type": "message",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "```json\n{\n  \"decision\": \"allow_with_care\",\n  \"category\": \"commercial_ip_character\",\n  \"care_notes\": \"Peppa Pig is a familiar, comforting character for this age. Keep the story gentle and bedtime-focused—perhaps Peppa getting ready for sleep, a calm adventure, or learning something simple about the world. Avoid any conflict, loud noise, or anything that might wake rather than soothe.\",\n  \"min_recommended_age\": 2,\n  \"requested_characters\": [\"Peppa Pig\"],\n  \"topic_key_hint\": null,\n  \"parent_message\": null\n}\n```"
+      }
+    ],
+    "container": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "stop_details": null,
+    "usage": {
+      "input_tokens": 1770,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation": {
+        "ephemeral_5m_input_tokens": 0,
+        "ephemeral_1h_input_tokens": 0
+      },
+      "output_tokens": 155,
+      "service_tier": "standard",
+      "inference_geo": "not_available"
+    },
+    "diagnostics": null
+  },
+  "usage": {
+    "input_tokens": 1770,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "output_tokens": 155
+  },
+  "stop_reason": "end_turn",
+  "recorded_at": "2026-10-02T21:30:27.003Z"
+}

@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { LengthMinutes, Tone } from './common'
 import { Child } from './child'
-import { StoryOutput, StoryRecord } from './story'
+import { ContentNotice, StoryOutput, StoryRecord } from './story'
 import { QualityResult } from './quality'
 
 /**
@@ -48,6 +48,8 @@ export const SseEvent = z.discriminatedUnion('type', [
     age_band: z.string(),
     target_words: z.object({ min: z.number(), max: z.number() }),
     topic_label: z.string(),
+    /** Set when the reader must show a notice with the story (issue #27). */
+    content_notice: ContentNotice.nullable().default(null),
   }),
   /** A chapter opens. Emitted before its deltas. */
   z.object({

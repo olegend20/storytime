@@ -1,0 +1,41 @@
+{
+  "purpose": "classify_input",
+  "model": "claude-haiku-4-5-20251001",
+  "response": {
+    "model": "claude-haiku-4-5-20251001",
+    "id": "msg_011Cfe86Y4WdWTMW7vb7vf9p",
+    "type": "message",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "```json\n{\n  \"decision\": \"refuse\",\n  \"category\": \"real_private_person\",\n  \"care_notes\": null,\n  \"min_recommended_age\": 18,\n  \"requested_characters\": [],\n  \"topic_key_hint\": null,\n  \"parent_message\": \"StoryTime makes stories about real historical figures, places and how things work, not about real people in the child's life—we'd need to leave that to you and your child's conversations together.\"\n}\n```"
+      }
+    ],
+    "container": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "stop_details": null,
+    "usage": {
+      "input_tokens": 1783,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation": {
+        "ephemeral_5m_input_tokens": 0,
+        "ephemeral_1h_input_tokens": 0
+      },
+      "output_tokens": 120,
+      "service_tier": "standard",
+      "inference_geo": "not_available"
+    },
+    "diagnostics": null
+  },
+  "usage": {
+    "input_tokens": 1783,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "output_tokens": 120
+  },
+  "stop_reason": "end_turn",
+  "recorded_at": "2026-10-02T21:30:28.506Z"
+}

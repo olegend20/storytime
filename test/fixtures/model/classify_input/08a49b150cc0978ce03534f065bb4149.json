@@ -1,0 +1,41 @@
+{
+  "purpose": "classify_input",
+  "model": "claude-haiku-4-5-20251001",
+  "response": {
+    "model": "claude-haiku-4-5-20251001",
+    "id": "msg_011Cfe86wfaAMtEDuWeWo7ks",
+    "type": "message",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "```json\n{\n  \"decision\": \"refuse\",\n  \"category\": \"horror_scary\",\n  \"care_notes\": null,\n  \"min_recommended_age\": 18,\n  \"requested_characters\": [],\n  \"topic_key_hint\": null,\n  \"parent_message\": \"Pennywise is a horror character designed to frighten; a bedtime story about a scary clown under the bed isn't suitable for a 6-year-old. We'd be happy to tell a different story about clowns, circuses, or even friendly characters instead.\"\n}\n```"
+      }
+    ],
+    "container": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "stop_details": null,
+    "usage": {
+      "input_tokens": 1775,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation": {
+        "ephemeral_5m_input_tokens": 0,
+        "ephemeral_1h_input_tokens": 0
+      },
+      "output_tokens": 137,
+      "service_tier": "standard",
+      "inference_geo": "not_available"
+    },
+    "diagnostics": null
+  },
+  "usage": {
+    "input_tokens": 1775,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "output_tokens": 137
+  },
+  "stop_reason": "end_turn",
+  "recorded_at": "2026-10-02T21:30:34.031Z"
+}

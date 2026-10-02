@@ -88,6 +88,7 @@ export async function POST(req: Request): Promise<Response> {
       child_names: names.length > 0 ? names : source.child_names,
       series_title: names.length > 0 ? names.join(' & ') : source.series_title,
       sequence: source.sequence,
+      content_notice: scenario === 'borrowed_character' ? ('borrowed_character' as const) : null,
     }
     if (scenario !== 'midstream_failure') {
       state.quotaUsed += 1

@@ -10,6 +10,7 @@ import {
   writeBible,
 } from '@/lib/bible'
 import { findFactPack, getOrBuildFactPack } from '@/lib/topics'
+import { borrowsCharacter, requestedCharacters } from '@/lib/guardrails/classify'
 import { targetWords, type GenerationRequest, type QualityResult } from '@/lib/schemas'
 import {
   GuardrailsInputGuard,
@@ -99,6 +100,7 @@ async function generateOne(input: GenerateInput, db: SupabaseClient): Promise<Pi
       topic_key: scenario.topic_key,
       avoid: bible.content.avoid,
       care_notes: guard.decision === 'allow_with_care' ? guard.care_notes : null,
+      requested_characters: requestedCharacters(guard),
       rewrite_reasons: [],
     }
     const prepared: PreparedGeneration = {
@@ -114,6 +116,7 @@ async function generateOne(input: GenerateInput, db: SupabaseClient): Promise<Pi
       topicLabel: pack.topic_label,
       quota: await new UnmeteredQuotaService().preflight(),
       bibleVersion: bible.version,
+      contentNotice: borrowsCharacter(guard) ? 'borrowed_character' : null,
     }
 
     const channel = new SseChannel()

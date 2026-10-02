@@ -68,9 +68,31 @@ function failClosed(youngestAge: number): InputClassification {
     category: 'other',
     care_notes: null,
     min_recommended_age: Math.max(youngestAge, 1),
+    requested_characters: [],
     topic_key_hint: null,
     parent_message: null,
   }
+}
+
+/**
+ * The characters a parent asked for, as the rest of the pipeline may rely on them
+ * (issue #27). A refusal never carries any: nothing is written, so nothing is borrowed.
+ */
+export function requestedCharacters(classification: InputClassification): string[] {
+  return classification.decision === 'refuse' ? [] : classification.requested_characters
+}
+
+/**
+ * Whether the reader must show the borrowed-character notice. Either signal is enough - the
+ * names or the category - so a reply that gives one without the other errs towards telling
+ * the parent.
+ */
+export function borrowsCharacter(classification: InputClassification): boolean {
+  if (classification.decision === 'refuse') return false
+  return (
+    classification.requested_characters.length > 0 ||
+    classification.category === 'commercial_ip_character'
+  )
 }
 
 /**

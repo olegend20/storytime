@@ -141,6 +141,7 @@ describe('s3.3 age-band enforcement is deterministic, not just advisory', () => 
     category: 'educational',
     care_notes: 'Focus on the engineering and the rescue.',
     min_recommended_age: 7,
+    requested_characters: [],
     topic_key_hint: 'the-titanic',
     parent_message: null,
   }
@@ -162,6 +163,7 @@ describe('s3.3 age-band enforcement is deterministic, not just advisory', () => 
       decision: 'refuse',
       category: 'too_mature_for_band',
       min_recommended_age: 3,
+      requested_characters: [],
     }
     const fixed = applyAgeBand(contradictory, 8)
     expect(fixed.decision).toBe('refuse')

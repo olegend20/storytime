@@ -32,12 +32,44 @@ export type GuardrailCategory = z.infer<typeof GuardrailCategory>
 export const GuardrailDecision = z.enum(['allow', 'allow_with_care', 'refuse'])
 export type GuardrailDecision = z.infer<typeof GuardrailDecision>
 
+export const MAX_REQUESTED_CHARACTERS = 3
+const MAX_CHARACTER_NAME_LENGTH = 40
+
+/** Trimmed, de-duplicated, at most three, each a short plain name. */
+export function tidyRequestedCharacters(names: readonly string[]): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const raw of names) {
+    // A name is letters, digits, spaces and a little punctuation ("Spider-Man", "R2-D2",
+    // "Winnie-the-Pooh", "Mr. Incredible"). Anything else is dropped, not passed on.
+    const name = raw.replace(/[^\p{L}\p{N} .'&-]/gu, '').replace(/\s+/g, ' ').trim()
+    if (name === '' || name.length > MAX_CHARACTER_NAME_LENGTH) continue
+    const key = name.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(name)
+    if (out.length === MAX_REQUESTED_CHARACTERS) break
+  }
+  return out
+}
+
 /** L2 classifier output - GUARDRAILS.md s3.3. */
 export const InputClassification = z.object({
   decision: GuardrailDecision,
   category: GuardrailCategory,
   care_notes: z.string().trim().max(800).nullable().default(null),
   min_recommended_age: z.number().int().min(1).max(18),
+  /**
+   * Fictional characters from a film, game, show or book that the parent asked for by name
+   * in the topic (issue #27). Non-empty only with `category: 'commercial_ip_character'` on
+   * an `allow_with_care`. Tidied rather than rejected: a sloppy list must not turn an
+   * allowed topic into a fail-closed refusal, and it is capped because it reaches the
+   * writer's request.
+   */
+  requested_characters: z
+    .array(z.string())
+    .nullish()
+    .transform((names) => tidyRequestedCharacters(names ?? [])),
   topic_key_hint: z.string().trim().max(120).nullable().default(null),
   /** Shown to the parent verbatim. Must never echo the offending text (s5). */
   parent_message: z.string().trim().max(400).nullable().default(null),

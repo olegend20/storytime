@@ -153,6 +153,10 @@ export async function chooseTheme(page: Page, name: 'Auto' | 'Light' | 'Dark' | 
   if ((await menu.getAttribute('open')) === null) await menu.locator('summary').click()
   await menu.getByRole('radio', { name }).click()
   await page.keyboard.press('Escape')
+  // Nav links and icon buttons fade their colour over 120ms (hover polish). On a theme change
+  // that fade passes through low contrast, and an axe scan started inside it fails on the
+  // header rather than on anything the theme did. Let it finish first.
+  await page.waitForTimeout(250)
 }
 
 export async function openStoryActions(page: Page) {

@@ -1,4 +1,4 @@
-import type { Tone, TrueFact } from '@/lib/schemas'
+import type { ContentNotice, Tone, TrueFact } from '@/lib/schemas'
 import type { StreamState, StreamingChapter } from './generate'
 import { readMinutes, type LibraryStory } from './types'
 
@@ -24,6 +24,8 @@ export interface ReaderStory {
   /** Read-aloud estimate in minutes; null while the story is still arriving. */
   readMinutes: number | null
   createdAt: string | null
+  /** What the parent should know before sharing this story, if anything (issue #27). */
+  contentNotice: ContentNotice | null
 }
 
 export function readerFromLibraryStory(story: LibraryStory): ReaderStory {
@@ -39,6 +41,7 @@ export function readerFromLibraryStory(story: LibraryStory): ReaderStory {
     tones: story.tones,
     readMinutes: readMinutes(story),
     createdAt: story.created_at,
+    contentNotice: story.content_notice,
   }
 }
 
@@ -59,6 +62,7 @@ export function readerFromStream(
     readMinutes:
       state.wordCount !== null && state.wordCount > 0 ? Math.max(1, Math.round(state.wordCount / 140)) : null,
     createdAt: null,
+    contentNotice: state.meta?.content_notice ?? null,
   }
 }
 

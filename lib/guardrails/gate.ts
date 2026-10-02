@@ -29,6 +29,8 @@ export interface OutputGateInput {
   childNames: string[]
   knownOtherNames?: string[]
   extraAllowed?: string[]
+  /** Characters the parent asked for by name: rule 7's one exception (issue #27). */
+  requestedCharacters?: readonly string[]
   /** 1 on the first pass, 2 on the story written after a rewrite request. */
   attempt: 1 | 2
   familyId?: string | null
@@ -66,6 +68,7 @@ export async function runOutputGate(input: OutputGateInput): Promise<OutputGateR
     childNames: input.childNames,
     ...(input.knownOtherNames ? { knownOtherNames: input.knownOtherNames } : {}),
     ...(input.extraAllowed ? { extraAllowed: input.extraAllowed } : {}),
+    ...(input.requestedCharacters ? { requestedCharacters: input.requestedCharacters } : {}),
   })
 
   const hard = structure.violations.filter((v) => v.severity === 'hard')
@@ -100,6 +103,7 @@ export async function runOutputGate(input: OutputGateInput): Promise<OutputGateR
     storyText: storyText(input.story),
     band: input.band,
     childNames: input.childNames,
+    ...(input.requestedCharacters ? { requestedCharacters: input.requestedCharacters } : {}),
     hints: soft,
     familyId: input.familyId ?? null,
     storyId: input.storyId ?? null,
