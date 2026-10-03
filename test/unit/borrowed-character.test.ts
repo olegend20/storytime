@@ -197,7 +197,10 @@ describe('guardInput with a character request', () => {
   it('a name that only shares a word with the topic is not a name the parent typed', () => {
     expect(namedInTopic(['Captain America'], 'the history of America')).toEqual([])
     expect(namedInTopic(['Thomas the Tank Engine'], 'how tank engines work')).toEqual([])
-    expect(namedInTopic(['Minecraft Steve'], 'how Minecraft was invented')).toEqual(['Minecraft'])
+    expect(namedInTopic(['Minecraft Steve'], 'how Minecraft was invented')).toEqual([])
+    expect(namedInTopic(['Princess Peach'], 'a princess who studies volcanoes')).toEqual([])
+    expect(namedInTopic(['Iron Man'], 'how iron is made')).toEqual([])
+    expect(namedInTopic(['Captain America'], "Captain Cook's voyages")).toEqual([])
     // What survives is the words the parent typed, so the writer is never handed a longer name.
     expect(namedInTopic(['Sonic the Hedgehog'], 'Sonic the fast one races Theo')).toEqual(['Sonic'])
     expect(namedInTopic(['Harry Potter'], 'Harry Potter takes the kids to Hogwarts')).toEqual(['Harry Potter'])
@@ -259,7 +262,7 @@ describe('L3: rule 7 has exactly one exception', () => {
     expect(scanStoryText(yoshi, { requestedCharacters: ['Yoshi'] }).hardViolations).toEqual([])
     expect(requestCovers('Ann', 'Anna')).toBe(false)
     expect(requestCovers('Leo', 'Leonardo')).toBe(false)
-    expect(requestCovers('Max', 'Max Headroom')).toBe(true) // whole word, the distinguishing one
+    expect(requestCovers('Max', 'Max Headroom')).toBe(false) // shorter, and "Max" is no character on its own
     expect(requestCovers('Sonic', 'Sonic the Hedgehog')).toBe(true)
     expect(requestCovers('Mario and Luigi', 'Mario')).toBe(true)
     expect(requestCovers('spider man', 'Spider-Man')).toBe(true)
@@ -269,7 +272,12 @@ describe('L3: rule 7 has exactly one exception', () => {
     expect(requestCovers('pup', 'Chase the pup')).toBe(false)
     expect(requestCovers('pup', 'Marshall the pup')).toBe(false)
     expect(requestCovers('dog', 'Bingo the dog')).toBe(false)
-    expect(requestCovers('Chase', 'Chase the pup')).toBe(true)
+    expect(requestCovers('Chase', 'Chase the pup')).toBe(false) // same: only the full listed name, or a listed short form
+    expect(requestCovers('Chase the pup', 'Chase the pup')).toBe(true)
+    // A one-word request shorter than the listed name must be a character itself.
+    expect(requestCovers('Princess', 'Princess Peach')).toBe(false)
+    expect(requestCovers('Princess', 'Princess Leia')).toBe(false)
+    expect(requestCovers('Princess Peach', 'Princess Peach')).toBe(true)
   })
 
   it('every other hard rule still applies to a story with a requested character', () => {

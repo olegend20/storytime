@@ -2,10 +2,13 @@
  * Comparing character names (issue #27). Rule 7's one exception is granted by name, so the
  * comparison has to be strict about what a name is: whole words, never substrings, so that
  * "Ann" never stands for "Anna" and "pup" never unlocks "Chase the pup". A name's first word
- * is its distinguishing one: "Max" does cover "Max Headroom", as "Sonic" covers "Sonic the
- * Hedgehog" - which means a composite blocklist entry ("Anna and Olaf") is waived by its
- * first name alone, so every such Y must also be listed on its own (Olaf is).
+ * is its distinguishing one: "Sonic" covers "Sonic the
+ * Hedgehog", when that first word is a listed character on its own - which means a composite
+ * blocklist entry ("Anna and Olaf") is waived by its first name alone, so every such Y must
+ * also be listed on its own (Olaf is).
  */
+
+import { blocklist } from './blocklist'
 
 /** Lower-case words of letters and digits. NFKD then the marks dropped, so "Pokémon" is one word. */
 function words(text: string): string[] {
@@ -29,12 +32,22 @@ export function nameTokens(name: string): string[] {
   return words(name).filter((w) => !STOP_WORDS.has(w))
 }
 
+/** The keys of every franchise name the output scan knows. */
+const KNOWN_CHARACTER_KEYS = new Set((blocklist.output.franchise_characters ?? []).map(nameKey))
+
+/** Whether a name, on its own, is one the output scan lists ("Sonic" is; "Princess" is not). */
+export function isKnownCharacter(name: string): boolean {
+  return KNOWN_CHARACTER_KEYS.has(nameKey(name))
+}
+
 /**
  * Whether a request names a listed character: the same key ("Spider-Man" / "Spiderman"), or
  * the request has the listed name's distinguishing word - its first - and the two names
  * are otherwise nested ("Sonic" / "Sonic the Hedgehog", "Mario and Luigi" / "Mario").
  * Words match whole or not at all, and a shared trailing word is not enough: "pup" names
- * neither "Chase the pup" nor "Marshall the pup".
+ * neither "Chase the pup" nor "Marshall the pup". A request SHORTER than the listed name
+ * covers it only if the request is itself a listed character: "Sonic" is, so it covers the
+ * long form; "Princess" is not, so it covers neither Peach nor Leia.
  */
 export function requestCovers(requested: string, listed: string): boolean {
   const kr = nameKey(requested)
@@ -47,14 +60,23 @@ export function requestCovers(requested: string, listed: string): boolean {
   const have = new Set(tr)
   if (!have.has(tl[0]!)) return false
   const listedHas = new Set(tl)
-  return tr.every((w) => listedHas.has(w)) || tl.every((w) => have.has(w))
+  if (tr.every((w) => listedHas.has(w))) return tr.length >= tl.length || KNOWN_CHARACTER_KEYS.has(kr)
+  return tl.every((w) => have.has(w))
 }
 
-/** Whether a piece of text names the character: one of its words, whole, case-insensitive. */
+/**
+ * Whether a piece of text names the character: all of its words, whole, case-insensitive,
+ * or the name run together. "Spider-Man" is in "Spider-Man waved" and "spiderman's web",
+ * not in "the old man at the lighthouse".
+ */
 export function mentionsCharacter(text: string, name: string): boolean {
-  const have = new Set(words(text))
-  const tokens = nameTokens(name).filter((w) => w.length >= 3)
-  return tokens.length > 0 && tokens.some((w) => have.has(w))
+  const textWords = words(text)
+  const have = new Set(textWords)
+  const tokens = nameTokens(name)
+  if (tokens.length === 0) return false
+  if (tokens.every((w) => have.has(w))) return true
+  const key = nameKey(name)
+  return key.length >= 3 && textWords.some((w) => w === key)
 }
 
 const MAX_NAME_WORDS = 4
@@ -66,7 +88,8 @@ const MAX_NAME_WORDS = 4
  * "spider-man" and "Spider Man" both match "Spider-Man". A name the parent typed only the
  * start of ("Sonic" for the classifier's "Sonic the Hedgehog") is kept as the words they
  * typed. A name whose first word is not in the topic - from the child's likes, invented, or
- * "Captain America" on "the history of America" - is dropped.
+ * "Captain America" on "the history of America" - is dropped, and so is one the parent typed
+ * only a generic start of.
  */
 export function namedInTopic(names: readonly string[], topic: string): string[] {
   const topicWords = words(topic)
@@ -94,7 +117,15 @@ export function namedInTopic(names: readonly string[], topic: string): string[] 
     if (typed === 0) continue
     const kept = own.slice(0, typed)
     if (kept.join('').length < 3) continue
-    out.push(typed === own.length ? name.trim() : kept.map(capitalise).join(' '))
+    if (typed === own.length) {
+      out.push(name.trim())
+      continue
+    }
+    // Only part of the name was typed. That part stands on its own only when it is a
+    // character in its own right ("Sonic" for "Sonic the Hedgehog"); a generic start
+    // ("Princess" for "Princess Peach", "Captain", "Iron") names nobody and is dropped.
+    const typedName = kept.map(capitalise).join(' ')
+    if (isKnownCharacter(typedName)) out.push(typedName)
   }
   return out
 }

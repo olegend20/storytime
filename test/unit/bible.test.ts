@@ -349,6 +349,18 @@ describe('F4: the no-model fallback keeps continuity', () => {
     expect(next.last_story).toEqual({ title: elsa.title, ending: NEUTRAL_ENDING })
     expect(next.children.every((c) => c.role_notes === null)).toBe(true)
     expect(next.topics_covered.map((t) => t.topic)).toContain('sharks')
+    // Only the character goes: a shared common word is not a mention.
+    const spidey = {
+      ...proposal,
+      recurring: [
+        { name: 'The old man at the lighthouse', type: 'character' as const, rule: 'waves them off', last_used: '2026-10-02' },
+        { name: 'Spider-Man', type: 'character' as const, rule: 'swings in', last_used: '2026-10-02' },
+      ],
+      catchphrases: ['MAN OVERBOARD!', 'Go, Spiderman, go!'],
+    }
+    const pruned = withoutCharacters(spidey, ['Spider-Man'])
+    expect(pruned.recurring.map((r) => r.name)).toEqual(['The old man at the lighthouse'])
+    expect(pruned.catchphrases).toEqual(['MAN OVERBOARD!'])
     // Nothing else is touched, and no names means no change at all.
     expect(withoutCharacters(proposal, [])).toBe(proposal)
     expect(JSON.stringify(next)).not.toMatch(/elsa/i)
