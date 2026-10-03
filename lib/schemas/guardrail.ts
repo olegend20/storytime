@@ -74,8 +74,9 @@ export const InputClassification = z.object({
   min_recommended_age: z.number().int().min(1).max(18),
   /**
    * Fictional characters from a film, game, show or book that the parent asked for by name
-   * in the topic (issue #27). Non-empty only with `category: 'commercial_ip_character'` on
-   * an `allow_with_care`. Tidied rather than rejected: a sloppy list must not turn an
+   * in the topic (issue #27). After `confirmCharacters` (lib/guardrails/classify.ts) it is
+   * non-empty only with `category: 'commercial_ip_character'` on an `allow_with_care`, and
+   * holds only names the parent typed. Tidied rather than rejected: a sloppy list must not turn an
    * allowed topic into a fail-closed refusal, and it is capped because it reaches the
    * writer's request.
    */

@@ -84,13 +84,21 @@ function failClosed(youngestAge: number): InputClassification {
  * someone rule 7 then forbids, and pay for a rewrite that contradicts itself.
  */
 export function confirmCharacters(reply: InputClassification, topic: string): InputClassification {
+  if (reply.decision === 'refuse') return { ...reply, requested_characters: [] }
+  // Always the confirmed list: a name may come back shortened to what the parent typed
+  // ("Sonic the Hedgehog" -> "Sonic"), not only dropped.
   const confirmed = namedInTopic(reply.requested_characters, topic)
-  if (confirmed.length === reply.requested_characters.length) return reply
-  const aboutCharacter = reply.category === 'commercial_ip_character' || reply.requested_characters.length > 0
+  if (confirmed.length === 0) {
+    const aboutCharacter = reply.category === 'commercial_ip_character' || reply.requested_characters.length > 0
+    return { ...reply, requested_characters: [], care_notes: aboutCharacter ? null : reply.care_notes }
+  }
+  // A confirmed name means a character request, whatever the model labelled it: the
+  // category the schema documents, and allow_with_care so the care notes reach the writer.
   return {
     ...reply,
+    decision: 'allow_with_care',
+    category: 'commercial_ip_character',
     requested_characters: confirmed,
-    care_notes: confirmed.length === 0 && aboutCharacter ? null : reply.care_notes,
   }
 }
 

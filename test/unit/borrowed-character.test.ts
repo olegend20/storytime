@@ -149,6 +149,25 @@ describe('guardInput with a character request', () => {
     expect(borrowsCharacter(result.classification!)).toBe(false)
   })
 
+  it('a name shortened to what the parent typed is what the writer gets', () => {
+    const reply = InputClassification.parse({ ...characterReply, requested_characters: ['Sonic the Hedgehog'] })
+    expect(confirmCharacters(reply, 'Sonic races Theo around the park').requested_characters).toEqual(['Sonic'])
+  })
+
+  it('a confirmed name is a character request whatever the model labelled it', () => {
+    const plain = InputClassification.parse({
+      ...characterReply,
+      decision: 'allow',
+      category: 'educational',
+      requested_characters: ['Elsa'],
+    })
+    const fixed = confirmCharacters(plain, 'Elsa shows Milo how snow forms')
+    expect(fixed).toMatchObject({ decision: 'allow_with_care', category: 'commercial_ip_character', requested_characters: ['Elsa'] })
+    expect(fixed.care_notes).toBe(plain.care_notes)
+    const refused = InputClassification.parse({ ...characterReply, decision: 'refuse', category: 'horror_scary' })
+    expect(confirmCharacters(refused, 'Spider-Man teaches Juno to climb walls').requested_characters).toEqual([])
+  })
+
   it('care notes about a real sensitive topic survive when only an extra name was dropped', () => {
     const reply = InputClassification.parse({
       ...characterReply,

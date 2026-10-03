@@ -1,7 +1,10 @@
 /**
  * Comparing character names (issue #27). Rule 7's one exception is granted by name, so the
  * comparison has to be strict about what a name is: whole words, never substrings, so that
- * "Ann" never stands for "Anna" and "Max" never unlocks "Max Headroom".
+ * "Ann" never stands for "Anna" and "pup" never unlocks "Chase the pup". A name's first word
+ * is its distinguishing one: "Max" does cover "Max Headroom", as "Sonic" covers "Sonic the
+ * Hedgehog" - which means a composite blocklist entry ("Anna and Olaf") is waived by its
+ * first name alone, so every such Y must also be listed on its own (Olaf is).
  */
 
 /** Lower-case words of letters and digits. NFKD then the marks dropped, so "Pokémon" is one word. */
