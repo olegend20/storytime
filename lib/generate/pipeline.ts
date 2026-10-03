@@ -7,6 +7,7 @@ import { parentMessage, type ParentMessageKey } from '@/lib/messages'
 import {
   GenerateStoryBody,
   HTTP_STATUS_FOR_ERROR,
+  type ContentNotice,
   type ErrorBody,
   type FactPack,
   type GenerationRequest,
@@ -36,6 +37,7 @@ import {
   TopicNormalizationError,
 } from '@/lib/topics'
 import { runQualityGate } from '@/lib/quality'
+import { borrowsCharacter, requestedCharacters } from '@/lib/guardrails/classify'
 import { buildPrompt } from './prompt'
 import { parseStoryOutput } from './parse'
 import { salvageTrueFacts } from './normalize'
@@ -92,6 +94,8 @@ export interface PreparedGeneration {
   topicLabel: string
   quota: QuotaState
   bibleVersion: number
+  /** What the reader must tell the parent about this story, if anything (issue #27). */
+  contentNotice: ContentNotice | null
 }
 
 export type PrepareResult =
@@ -235,6 +239,7 @@ export async function prepareGeneration(
     topic_key: topicKey,
     avoid: bible.content.avoid,
     care_notes: guard.decision === 'allow_with_care' ? guard.care_notes : null,
+    requested_characters: requestedCharacters(guard),
     rewrite_reasons: [],
   }
 
@@ -253,6 +258,7 @@ export async function prepareGeneration(
       topicLabel,
       quota,
       bibleVersion: bible.version,
+      contentNotice: borrowsCharacter(guard) ? 'borrowed_character' : null,
     },
   }
 }
@@ -301,6 +307,7 @@ export async function runGeneration(
           age_band: prepared.band,
           target_words: prepared.request.target_words,
           topic_label: prepared.topicLabel,
+          content_notice: prepared.contentNotice,
         }),
       onChapterStart: (index, heading) =>
         channel.push({ type: 'chapter_start', index, heading }),
@@ -510,6 +517,7 @@ export async function runGeneration(
       word_count: wordCount,
       quality: gate.result,
       status,
+      content_notice: prepared.contentNotice,
     })
     if (insertError) throw new GenerationFailed(`saving the story failed: ${insertError.message}`)
 
@@ -534,6 +542,7 @@ export async function runGeneration(
       storyId: prepared.storyId,
       topic: prepared.topicLabel,
       tones: prepared.request.tones,
+      excludeCharacters: prepared.request.requested_characters,
       // `deps.now` exists so a test can pin this date: it goes into the bible-update prompt,
       // and a prompt that changes at midnight cannot be replayed from a fixture.
       date: (deps.now?.() ?? new Date()).toISOString().slice(0, 10),

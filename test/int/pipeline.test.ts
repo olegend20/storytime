@@ -40,6 +40,7 @@ import { STORY_OUTPUT_FORMAT } from '@/lib/generate/output-schema'
 import { buildBibleUpdateMessage } from '@/lib/bible'
 import { loadPrompt } from '@/lib/prompts'
 import { modelForRole } from '@/lib/ai'
+import { untrustedBlock } from '@/lib/datablock'
 
 /**
  * F6 + F7 integration: the streamed half of the pipeline, end to end.
@@ -193,6 +194,7 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
         topic_key: FIXTURE_TOPIC_KEY,
         avoid: [],
         care_notes: null,
+        requested_characters: [],
         rewrite_reasons: [],
       },
       factPack: {
@@ -218,6 +220,7 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
         generation_enabled: true,
       },
       bibleVersion: bible.version,
+      contentNotice: null,
     }
   }
 
@@ -371,10 +374,11 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
 
     const { data: row } = await family.db
       .from('stories')
-      .select('status, word_count, quality, title, age_band, fact_pack_id, topic_key')
+      .select('status, word_count, quality, title, age_band, fact_pack_id, topic_key, content_notice')
       .eq('id', run.storyId)
       .single()
     const stored = row as {
+      content_notice: string | null
       status: string
       word_count: number
       quality: { outcome: string; deterministic_passed: boolean; review: unknown }
@@ -390,6 +394,9 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     expect(stored.age_band).toBe('A')
     expect(stored.fact_pack_id).toBe(factPackId)
     expect(stored.topic_key).toBe(FIXTURE_TOPIC_KEY)
+    // Issue #27: an ordinary story carries no notice, on the row or in the stream.
+    expect(stored.content_notice).toBeNull()
+    expect(events.find((e) => e.type === 'meta')).toMatchObject({ content_notice: null })
 
     // F8 AC: quota touched exactly once, and only after the insert.
     expect(quota.calls).toEqual(['consumeQuota'])
@@ -442,6 +449,31 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     expect(bible.content.last_story?.title).toBe(story.title)
     expect(bible.token_estimate).toBeLessThanOrEqual(800)
     expect(bible.content.topics_covered.map((t) => t.topic)).toContain(FIXTURE_TOPIC_LABEL)
+  })
+
+  it('VT-C3: a story that borrows a character says so in the meta event and on the stored row', async () => {
+    const run: PreparedGeneration = { ...(await prepared()), contentNotice: 'borrowed_character' }
+    stubResponsesFor(run)
+
+    const { events, result } = await collect(run, {
+      db: family.db,
+      sink: new MemoryLogSink(),
+      quota: new RecordingQuota(),
+      now: () => FIXED_NOW,
+    })
+    expect(result.status).toBe('ready')
+
+    // In `meta`, so the reader shows it with the title, before a word of the story.
+    const meta = events.find((e) => e.type === 'meta')
+    expect(meta).toMatchObject({ type: 'meta', content_notice: 'borrowed_character' })
+
+    const { data: row } = await family.db
+      .from('stories')
+      .select('content_notice')
+      .eq('id', run.storyId)
+      .single()
+    expect((row as { content_notice: string | null }).content_notice).toBe('borrowed_character')
+    if (result.bibleUpdate) await result.bibleUpdate
   })
 
   it('F7 VT: a hard safety violation triggers exactly one rewrite carrying the reasons', async () => {
@@ -749,6 +781,7 @@ describe.skipIf(!available)('F6 prepareGeneration failure paths (int, no model c
           category: 'weapons_instructions' as const,
           care_notes: null,
           min_recommended_age: 18,
+          requested_characters: [],
           topic_key_hint: null,
           parent_message: null,
         }),
@@ -774,6 +807,7 @@ describe.skipIf(!available)('F6 prepareGeneration failure paths (int, no model c
           category: 'too_mature_for_band' as const,
           care_notes: null,
           min_recommended_age: 8,
+          requested_characters: [],
           topic_key_hint: null,
           parent_message: "That one's a bit much for a 4-year-old.",
         }),
@@ -784,6 +818,72 @@ describe.skipIf(!available)('F6 prepareGeneration failure paths (int, no model c
       expect(result.status).toBe(422)
       expect(result.error.code).toBe('too_mature_for_band')
       expect(result.error.message).toBe("That one's a bit much for a 4-year-old.")
+    }
+  })
+
+  it('VT-C3: a requested character reaches the writer\'s request and sets the notice', async () => {
+    const topic = 'Spider-Man teaches Juno to climb walls'
+    const topicKey = `vt-c3-how-animals-climb-walls-${randomUUID().slice(0, 8)}`
+    // The normalizer keys the real-world subject; the pack is the shared, brand-free one.
+    stubFixture(
+      'normalize',
+      callFixtureKey({
+        model: modelForRole('helper'),
+        system: [{ text: loadPrompt('normalize').body }],
+        messages: [{ role: 'user', content: `${untrustedBlock('topic', topic)}\n\nReturn the normalization JSON.` }],
+        maxTokens: 400,
+      }),
+      JSON.stringify({
+        topic_key: topicKey,
+        topic_label: 'How animals climb walls',
+        is_appropriate_for_children: true,
+        reason: 'a nature topic',
+      }),
+    )
+    await insertFactPack(family.db, topicKey, FIXTURE_FACT_PACK, 'How animals climb walls')
+    try {
+      const character = {
+        decision: 'allow_with_care' as const,
+        category: 'commercial_ip_character' as const,
+        care_notes: 'Teach how geckos and spiders grip. Spider-Man comes along; the children lead.',
+        min_recommended_age: 4,
+        requested_characters: ['Spider-Man'],
+        topic_key_hint: 'how-animals-climb-walls',
+        parent_message: null,
+      }
+      const result = await prepareGeneration(
+        family.familyId,
+        { ...base(), topic_input: topic },
+        { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), inputGuard: { check: async () => character } },
+      )
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      expect(result.prepared.contentNotice).toBe('borrowed_character')
+      expect(result.prepared.request.requested_characters).toEqual(['Spider-Man'])
+      expect(result.prepared.request.care_notes).toBe(character.care_notes)
+      // The character is not the topic: nothing about it reaches the shared fact pack's key.
+      expect(result.prepared.topicKey).toBe(topicKey)
+      expect(result.prepared.topicLabel).toBe('How animals climb walls')
+
+      // The same request with an ordinary classification carries neither.
+      const plain = await prepareGeneration(
+        family.familyId,
+        { ...base(), topic_input: topic },
+        {
+          db: family.db,
+          sink: new MemoryLogSink(),
+          quota: new RecordingQuota(),
+          inputGuard: {
+            check: async () => ({ ...character, decision: 'allow' as const, category: 'educational' as const, care_notes: null, requested_characters: [] }),
+          },
+        },
+      )
+      expect(plain.ok).toBe(true)
+      if (!plain.ok) return
+      expect(plain.prepared.contentNotice).toBeNull()
+      expect(plain.prepared.request.requested_characters).toEqual([])
+    } finally {
+      await family.db.from('fact_packs').delete().eq('topic_key', topicKey)
     }
   })
 

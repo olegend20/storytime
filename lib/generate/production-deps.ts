@@ -84,6 +84,7 @@ export class GuardrailsInputGuard implements InputGuard {
       category: r.category,
       care_notes: r.careNotes,
       min_recommended_age: r.classification?.min_recommended_age ?? 1,
+      requested_characters: r.requestedCharacters,
       topic_key_hint: r.topicKeyHint,
       parent_message: r.parentMessage,
     }
@@ -100,11 +101,13 @@ export class GuardrailsSafetyReviewer implements SafetyReviewer {
     ...[story, request, opts]: Parameters<SafetyReviewer['review']>
   ): Promise<OutputSafetyReview> {
     const childNames = request.children.map((c) => c.name)
-    const structure = scanStoryStructure(story, { childNames })
+    const requestedCharacters = request.requested_characters
+    const structure = scanStoryStructure(story, { childNames, requestedCharacters })
     const { review } = await reviewOutput({
       storyText: storyText(story),
       band: request.age_band,
       childNames,
+      requestedCharacters,
       hints: structure.violations,
       familyId: opts.familyId ?? null,
       storyId: opts.storyId ?? null,

@@ -5,6 +5,7 @@ import { storyText } from '@/lib/schemas/story'
 import { blocklist, maskAllowed, plainPhrasePattern } from './blocklist'
 import { matchPii } from './patterns'
 import { sanitizeStoryText } from './sanitize'
+import { requestCovers } from './names'
 
 /**
  * L4, first half - the free deterministic output checks. GUARDRAILS.md s4.2, run before
@@ -30,6 +31,11 @@ export interface OutputScanContext {
   childNames?: string[]
   /** Extra allowlisted phrases for this topic, e.g. "blood cells" for a biology story. */
   extraAllowed?: string[]
+  /**
+   * Characters the parent asked for by name. Rule 7's one exception (issue #27): these may
+   * take part; every other franchise character is still a hard violation.
+   */
+  requestedCharacters?: readonly string[]
 }
 
 export interface OutputScanResult {
@@ -61,6 +67,16 @@ function franchisePatterns(name: string): RegExp[] {
     // "with Elsa", "alongside Sonic"
     new RegExp(`\\b${ACCOMPANY_PREFIX}\\s+${escaped}(?![\\p{L}])`, 'iu'),
   ]
+}
+
+/**
+ * Whether a blocklisted franchise name is one the parent asked for (`requestCovers`):
+ * "Sonic" covers the list's "Sonic the Hedgehog", "Mario and Luigi" covers "Mario", and
+ * "Spider-Man", "Spiderman" and "spider man" are one name. Elsa does not cover Olaf, "Ann"
+ * does not cover "Anna", and "pup" covers nobody - whole words, the distinguishing one first.
+ */
+function isRequested(listed: string, requested: readonly string[]): boolean {
+  return requested.some((r) => requestCovers(r, listed))
 }
 
 /** Rule 6: a private individual is a name plus an identifying detail. */
@@ -141,8 +157,10 @@ export function scanStoryText(raw: string, context: OutputScanContext = {}): Out
 
   addPhraseHits(masked, text, violations)
 
-  // Rule 7 - a branded character taking part.
+  // Rule 7 - a branded character taking part, unless the parent asked for that one.
+  const requested = context.requestedCharacters ?? []
   for (const name of blocklist.output.franchise_characters ?? []) {
+    if (isRequested(name, requested)) continue
     let matched = false
     for (const re of franchisePatterns(name)) {
       const m = re.exec(text)

@@ -2,7 +2,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import nodemailer, { type Transporter } from 'nodemailer'
 import { serverEnv } from '@/lib/env'
 import { supabaseService } from '@/lib/supabase/service'
-import type { StoryOutput } from '@/lib/schemas'
+import type { ContentNotice, StoryOutput } from '@/lib/schemas'
+import { CONTENT_NOTICE_COPY } from '@/lib/client/content-notice'
 import { safeTimeZone, usageDateFor } from '@/lib/limits/timezone'
 import { isKindleAddress, normalizeKindleAddress } from './address'
 import { buildEpub, epubFilename, EPUB_MIME } from './epub'
@@ -96,7 +97,7 @@ export interface SendStoryInput {
   familyId: string
   /** The parent's saved address; null when none is set. */
   kindleEmail: string | null
-  story: { id: string; title: string; content: StoryOutput }
+  story: { id: string; title: string; content: StoryOutput; content_notice?: ContentNotice | null }
   childNames: readonly string[]
   /** The family's IANA zone: the daily limit is their calendar day, like the story quota. */
   timezone?: string | null
@@ -163,14 +164,16 @@ export async function sendStoryToKindle(input: SendStoryInput): Promise<SendStor
     story: { ...input.story.content, title: input.story.title },
     childNames: input.childNames,
     id: input.story.id,
+    notice: input.story.content_notice ? CONTENT_NOTICE_COPY[input.story.content_notice] : null,
   })
+  const notice = input.story.content_notice ? `\n\n${CONTENT_NOTICE_COPY[input.story.content_notice]}` : ''
   const filename = epubFilename(input.story.title)
   try {
     await sender.send({
       to,
       from,
       subject: input.story.title,
-      text: `${input.story.title}\n\nA StoryTime story, sent to your Kindle. Open it from your library on the device.`,
+      text: `${input.story.title}\n\nA StoryTime story, sent to your Kindle. Open it from your library on the device.${notice}`,
       attachment: { filename, content, contentType: EPUB_MIME },
     })
   } catch (err) {

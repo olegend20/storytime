@@ -876,6 +876,40 @@ Each has an e2e test on desktop and phone (the wake lock and offline tests stub 
 browser APIs). **Gates:** lint ✅ · typecheck ✅ · unit+int 1013 ✅ · e2e mock **132** ✅ ·
 e2e real 4 ✅.
 
+### 2026-10-02 — a character the parent asks for (issue #27, DECISIONS #160–#167)
+
+Owner decision: loosen "no branded characters" - a character the parent names in the topic
+is written in, as a companion, with a notice on the reader. Classifier v2 (`allow_with_care`
+/ `commercial_ip_character`, names in `requested_characters`, integer age always - the root
+of #24), master v3 rule 7 + `prompts/character-rules.v1.md` sent only with those requests
+(the cached block is at its 5,000-token ceiling: 4,994), output-review v3, L3 exempts exactly
+the requested names, normalize v2 keys the real subject. `stories.content_notice` (migration
+`20261002000001`) -> `meta` event -> reader (`role="note"`, hidden in Read together).
+
+**Live (owner approved ~$7; spent ≈ $6.86):** L2 corpus re-recorded twice ($0.78; the second for a data-block tag the review added to the cached prompt) - refuse recall
+**100% (134/134)**, allow false-refusal **1.2% (1/85)** (both unchanged), care agreement
+91.7% (was 90.0%), **requested characters 10/10, then 9/10** allowed with names (the
+subject-less "Mario and Luigi visit our house for dinner" split between recordings; VT-C1
+allows that one miss), 8 new "character carrying refused content" entries all refused, and **0** refusals needed the null-age patch
+(was 29). Normalize fixtures re-recorded (~$0.02). One real borrowed-character story
+("Elsa takes Milo and Juno to meet the sharks"): passed the gate first time, 781 words, 233 s,
+**$0.31**, Elsa as companion, no Olaf, no song, the children ask the questions.
+
+**F13 eval, rule 5:** the "before" run (master v2 pinned) cost **$5.62 against a $2.36
+estimate** (calibration made 18 judge calls not 10; three stories paid for rewrites) and
+**FAILS on its own**: mean 3.28 (need 4), two stories discarded by the gate (video-games,
+titanic). The "after" run was stopped before its first call to stay inside the approval;
+it is the owner's call (≈ $5.6 more). `eval/results/eval-2026-10-02.json` is the baseline.
+Found on the way: a rejected fact pack is permanent and the reviewer penalises knowledge
+packs for having no sources (issue #28).
+
+`/code-review` found a borrowed character leaking into the Story Bible and the classifier's
+care notes outliving a dropped name (both fixed, #168–#170); the reviewer agent tightened
+the name matching twice (whole words, the distinguishing word first, names to L4 as data).
+
+**Gates:** lint ✅ · typecheck ✅ · unit+int **1180** ✅ · guardrails 32 ✅ · schema 6 ✅ ·
+e2e mock **190** ✅ · e2e real 6 ✅.
+
 ### 2026-10-01 — calm bedtime redesign, PR 3 of 3: library + reader (issue #17, DECISIONS #157)
 
 Library rows with text covers and Continue/Read again; reader restyled (title page, larger

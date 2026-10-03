@@ -10,6 +10,7 @@ import { useWakeLock } from './useWakeLock'
 import { swipeDirection, type Point } from '@/lib/client/swipe'
 import { ReaderControls } from './ReaderControls'
 import { TrueFactsChecklist } from './TrueFactsChecklist'
+import { CONTENT_NOTICE_COPY } from '@/lib/client/content-notice'
 import { useScrollMemory } from './useScrollMemory'
 
 /**
@@ -132,6 +133,12 @@ export function StoryReader({
           <i />
         </div>
       </header>
+
+      {story.contentNotice && (
+        <p data-chrome data-testid="content-notice" role="note" className="st-rborrowed">
+          {CONTENT_NOTICE_COPY[story.contentNotice]}
+        </p>
+      )}
 
       {flagged && (
         <p

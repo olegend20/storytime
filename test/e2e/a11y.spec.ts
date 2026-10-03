@@ -174,6 +174,21 @@ test.describe('accessibility', () => {
     expect(report('streaming', results.violations)).toEqual([])
   })
 
+  /** VT-C4 (issue #27): the borrowed-character notice, in the day and the night theme. */
+  test('the reader with the borrowed-character notice has no serious violations, day or night', async ({ page }) => {
+    test.slow()
+    await page.goto('/new')
+    await resetMock(page)
+    await page.reload()
+    await creatorReady(page)
+    await startStory(page, '!character Elsa explains how snow forms')
+    await expect(page.getByTestId('content-notice')).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByRole('heading', { name: 'Saved to your library' })).toBeVisible({ timeout: 30_000 })
+    expect(report('notice', (await scan(page)).violations)).toEqual([])
+    await chooseTheme(page, 'Night')
+    expect(report('notice at night', (await scan(page)).violations)).toEqual([])
+  })
+
   /** VT-R9 (issue #17): the reader in the night theme, with each of its menus open. */
   test('the reader at night, with the theme and story-actions menus open, has no serious violations', async ({
     page,

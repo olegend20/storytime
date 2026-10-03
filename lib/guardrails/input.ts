@@ -6,7 +6,7 @@ import type {
   InputClassification,
 } from '@/lib/schemas/guardrail'
 import { checkPayload, type L1Payload } from './l1'
-import { classifyInput } from './classify'
+import { classifyInput, requestedCharacters } from './classify'
 import { logGuardrailEvent } from './events'
 import { parentMessageFor, refusalMessage } from './messages'
 import type { GuardedField } from './sanitize'
@@ -41,6 +41,8 @@ export interface GuardInputResult {
   /** For `allow_with_care`, the writer's handling notes (s3.3). */
   careNotes: string | null
   topicKeyHint: string | null
+  /** Characters the parent asked for by name (issue #27). Empty on every refusal. */
+  requestedCharacters: string[]
   /** Internal diagnostics. Logged, never shown. */
   internalReason: string | null
   field: GuardedField | null
@@ -54,6 +56,7 @@ export interface GuardInputResult {
 export async function guardInput(request: GuardInputRequest): Promise<GuardInputResult> {
   const l1 = checkPayload(request)
   const base = {
+    requestedCharacters: [] as string[],
     sanitized: l1.sanitized,
     classification: null,
     costUsd: 0,
@@ -123,6 +126,7 @@ export async function guardInput(request: GuardInputRequest): Promise<GuardInput
     parentMessage: null,
     careNotes: classification.care_notes,
     topicKeyHint: classification.topic_key_hint,
+    requestedCharacters: requestedCharacters(classification),
     internalReason: degraded ? 'l2_unparseable_fail_closed' : salvaged ? 'l2_refusal_age_filled' : null,
     field: null,
     classification,

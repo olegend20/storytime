@@ -1,10 +1,10 @@
 {
   "$comment": "GUARDRAILS.md s5. Parent-facing copy. Short, kind, non-judgmental. NEVER echo the offending text, NEVER name the layer, the category or the triggering word. Placeholders: {age}, {child}, {alternative}, {reset_time}. Anything not in that list is a bug (asserted in test/unit/guardrail-messages.test.ts). `error_codes` maps the SSE/HTTP error codes in lib/schemas/api.ts onto this same copy, so a parent never sees two different wordings for one situation.",
-  "updated_at": "2026-09-27",
+  "updated_at": "2026-10-02",
   "refuse": {
     "default": "We can't make a story about that. Pick something fun to learn about and we'll get started.",
     "off_mission": "StoryTime makes learning adventures for kids. Try a topic like how bees make honey or the history of bicycles.",
-    "commercial_ip_character": "We can't put characters from films and games into a story, but we can tell the real story behind them - try the history of LEGO or how video games were invented.",
+    "commercial_ip_character": "We couldn't turn that one into a bedtime story. Try the same character on a gentler adventure - learning how rainbows form, or how fast a cheetah runs.",
     "real_private_person": "Our stories are about the wider world rather than people you know. Try a place, an animal, an invention or a moment in history.",
     "prompt_injection": "Something in that request didn't look like a story topic. Try describing it in a few plain words, like volcanoes or the history of flight.",
     "sexual": "We can't make a story about that. Pick something fun to learn about and we'll get started.",

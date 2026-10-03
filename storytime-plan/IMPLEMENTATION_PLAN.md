@@ -173,7 +173,7 @@ One static block, ~3,000–5,000 tokens, identical for every story call. Marked 
 3. **Age-band rules** (see §4.5): vocabulary, sentence length, peril level, humour style, word count per minute.
 4. **Series continuity rules**: use the Story Bible; reuse recurring characters/devices when present; add at most one new recurring element per story; reference the previous story's ending in the cold open; never contradict the bible.
 5. **Fact handling rules**: use only facts from the Fact Pack or well-established general knowledge; if a fact is a popular legend, say so in-story ("that might be a bit of an exaggeration"); never invent dates, names or numbers; the True Facts list must only contain items present in the fact pack.
-6. **Safety rules**: no graphic violence, death handled gently and only when the topic requires it, no romance, no real living private individuals, no brand mascots/characters beyond factual history, no scary cliffhangers at bedtime, upbeat ending always.
+6. **Safety rules**: no graphic violence, death handled gently and only when the topic requires it, no romance, no real living private individuals, no brand mascots/characters beyond factual history unless the parent asked for that character by name (GUARDRAILS.md §3.3 and §4.1 rule 7), no scary cliffhangers at bedtime, upbeat ending always.
 7. **Output contract**: respond with JSON only, matching the story schema (§4.4). No prose outside the JSON.
 8. **Style anchors**: 3 short excerpts (≤ 120 words each) from the reference stories showing (a) a younger-kids chapter, (b) an older-kid chapter, (c) a True Facts list. Excerpts only; do not include full stories.
 

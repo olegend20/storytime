@@ -65,6 +65,14 @@ export function storyWordCount(story: StoryOutput): number {
   return total
 }
 
+/**
+ * Something a parent should know about a story before sharing it, shown on the reader.
+ * `borrowed_character`: the parent asked for a character that belongs to someone else
+ * (GUARDRAILS.md s3.3, issue #27).
+ */
+export const ContentNotice = z.enum(['borrowed_character'])
+export type ContentNotice = z.infer<typeof ContentNotice>
+
 /** The request block handed to the writer (s6 F6). */
 export const GenerationRequest = z.object({
   children: z
@@ -87,6 +95,8 @@ export const GenerationRequest = z.object({
   avoid: z.array(z.string()).default([]),
   /** GUARDRAILS.md s3.3 care_notes, when the classifier returned allow_with_care. */
   care_notes: z.string().nullable().default(null),
+  /** Characters the parent asked for by name; hard rule 7's one exception (issue #27). */
+  requested_characters: z.array(z.string()).default([]),
   /** Populated only on a rewrite: the gate/guardrail reasons from the failed attempt. */
   rewrite_reasons: z.array(z.string()).default([]),
 })
@@ -106,5 +116,6 @@ export const StoryRecord = z.object({
   content: StoryOutput,
   word_count: z.number().int().nonnegative(),
   status: StoryStatus,
+  content_notice: ContentNotice.nullable().default(null),
 })
 export type StoryRecord = z.infer<typeof StoryRecord>

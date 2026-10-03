@@ -10,7 +10,7 @@ import {
   writeBible,
   loadBible,
 } from './store'
-import { deterministicBibleUpdate, mergeBible, type BibleUpdateMeta } from './merge'
+import { deterministicBibleUpdate, mergeBible, withoutCharacters, type BibleUpdateMeta } from './merge'
 
 /**
  * `updateBibleFromStory` (F4). Runs in the background after a story is saved: the parent
@@ -36,6 +36,8 @@ export interface UpdateBibleOptions {
   date?: string
   maxAttempts?: number
   signal?: AbortSignal
+  /** Characters borrowed for this one story (issue #27): kept out of the series memory. */
+  excludeCharacters?: readonly string[]
 }
 
 export interface UpdateBibleResult {
@@ -158,6 +160,7 @@ export async function updateBibleFromStory(
     proposal = deterministicBibleUpdate(record.content, story, meta)
     usedFallback = true
   }
+  proposal = withoutCharacters(proposal, opts.excludeCharacters ?? [])
 
   // ---- phase 2: the write ----
   for (let writeAttempt = 1; writeAttempt <= maxAttempts; writeAttempt += 1) {

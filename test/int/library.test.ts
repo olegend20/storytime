@@ -123,6 +123,22 @@ describe.runIf(dbUp)('F9 library, reader and delete (real routes, RLS)', () => {
     expect(story?.content.chapters.length).toBeGreaterThan(0)
   })
 
+  it('VT-C3: a stored notice comes back with the story, and the database accepts no other value', async () => {
+    const db = serviceClient()
+    expect((await getLibraryStory(parent.client, storyIds[0]!))?.content_notice).toBeNull()
+    const { error: bad } = await db.from('stories').update({ content_notice: 'anything else' }).eq('id', storyIds[0]!)
+    expect(bad?.message).toMatch(/check constraint/i)
+    const { error } = await db.from('stories').update({ content_notice: 'borrowed_character' }).eq('id', storyIds[0]!)
+    expect(error).toBeNull()
+    try {
+      expect((await getLibraryStory(parent.client, storyIds[0]!))?.content_notice).toBe('borrowed_character')
+      const listed = (await listLibrary(parent.client)).find((s) => s.id === storyIds[0])
+      expect(listed?.content_notice).toBe('borrowed_character')
+    } finally {
+      await db.from('stories').update({ content_notice: null }).eq('id', storyIds[0]!)
+    }
+  })
+
   it('treats a malformed id as not found rather than an error', async () => {
     expect(await getLibraryStory(parent.client, 'not-a-uuid')).toBeNull()
     expect(await deleteLibraryStory(parent.client, 'not-a-uuid')).toBe(false)

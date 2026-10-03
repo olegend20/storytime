@@ -5,6 +5,7 @@ import {
   type StoryOutput,
   type TopicCovered,
 } from '@/lib/schemas'
+import { mentionsCharacter } from '@/lib/guardrails/names'
 import { enforceBibleLimits } from './limits'
 
 /**
@@ -101,6 +102,31 @@ export function mergeBible(
     avoid: dedupeStrings(proposed.avoid, base.avoid).slice(0, 10),
   })
 }
+
+/**
+ * A character the parent borrowed for one night (issue #27) must not become part of the
+ * series: the next story has no rule-7 exception for it, and a bible that says "the guide
+ * greets them like old friends" would send the writer straight into a violation. Applied to
+ * every proposal - the model's and the deterministic one - before it is merged.
+ */
+export function withoutCharacters(bible: StoryBible, names: readonly string[]): StoryBible {
+  if (names.length === 0) return bible
+  const mentions = (text: string | null | undefined): boolean =>
+    typeof text === 'string' && names.some((n) => mentionsCharacter(text, n))
+  return {
+    ...bible,
+    children: bible.children.map((c) => (mentions(c.role_notes) ? { ...c, role_notes: null } : c)),
+    recurring: bible.recurring.filter((r) => !mentions(r.name) && !mentions(r.rule)),
+    catchphrases: bible.catchphrases.filter((s) => !mentions(s)),
+    last_story:
+      bible.last_story && mentions(bible.last_story.ending)
+        ? { ...bible.last_story, ending: NEUTRAL_ENDING }
+        : bible.last_story,
+  }
+}
+
+/** Stands in for an ending that named a borrowed character: true of every story, names nobody. */
+export const NEUTRAL_ENDING = 'Back home, safe, and ready for sleep.'
 
 /**
  * The update we can make without a model: record the topic, the ending and the tones, and

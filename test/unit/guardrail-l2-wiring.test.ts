@@ -64,6 +64,7 @@ const allow: InputClassification = {
   category: 'educational',
   care_notes: null,
   min_recommended_age: 4,
+  requested_characters: [],
   topic_key_hint: 'how-bees-make-honey',
   parent_message: null,
 }
@@ -90,6 +91,7 @@ describe('L2 wiring through guardInput', () => {
       decision: 'allow_with_care',
       care_notes: 'Focus on the engineering and the rescue; do not describe drowning.',
       min_recommended_age: 7,
+      requested_characters: [],
       topic_key_hint: 'the-titanic',
     })
     const result = await guardInput({ topic_input: input.topic, youngestAge: 7, sink: logs })
@@ -104,6 +106,7 @@ describe('L2 wiring through guardInput', () => {
       decision: 'allow_with_care',
       care_notes: 'Focus on the engineering.',
       min_recommended_age: 7,
+      requested_characters: [],
       topic_key_hint: 'the-titanic',
     })
     const result = await guardInput({
@@ -126,6 +129,7 @@ describe('L2 wiring through guardInput', () => {
       category: 'commercial_ip_character',
       care_notes: null,
       min_recommended_age: 4,
+      requested_characters: [],
       topic_key_hint: null,
       parent_message: null,
     })
@@ -226,6 +230,7 @@ describe('a refusal with no age, end to end (issue #24)', () => {
     category: 'commercial_ip_character',
     care_notes: null,
     min_recommended_age: null,
+    requested_characters: [],
     topic_key_hint: null,
     parent_message: 'That hero is a branded character, so we cannot tell that story.',
   }

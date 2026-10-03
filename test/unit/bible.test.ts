@@ -17,6 +17,8 @@ import {
   refreshBibleChildren,
   mergeBible,
   deterministicBibleUpdate,
+  withoutCharacters,
+  NEUTRAL_ENDING,
   buildBibleUpdateMessage,
   type ChildProfile,
 } from '@/lib/bible'
@@ -318,6 +320,50 @@ describe('F4: the no-model fallback keeps continuity', () => {
     expect(next.catchphrases).toContain('WHOOOOSH!')
     expect(next.tone_history).toEqual(['funny', 'exciting'])
     expect(bibleFitsLimit(next)).toBe(true)
+  })
+
+  // Issue #27: a character borrowed for one night is not part of the series. The next story
+  // has no rule-7 exception for it, so nothing in the bible may ask the writer to bring it back.
+  it('keeps a borrowed character out of the series memory, wherever the proposal put it', () => {
+    const base = emptyBible([child('Milo', 7), child('Juno', 4)])
+    const elsa: StoryOutput = {
+      ...story,
+      chapters: story.chapters.map((c, i) => ({ ...c, shout_line: i === 0 ? 'ELSA, FREEZE IT!' : i === 1 ? 'SPLOOSH!' : null })),
+      bible_suggestions: {
+        new_recurring: [
+          { name: 'Elsa', type: 'character', rule: 'arrives through a swirl of light' },
+          { name: 'The glowing tooth brick', type: 'device', rule: 'hums when Elsa is near' },
+          { name: 'Grandpa Greenie', type: 'character', rule: 'a 400-year-old Greenland shark guide' },
+        ],
+        ending_summary: 'They said goodnight to Elsa and the tooth brick glowed.',
+      },
+    }
+    const proposal = deterministicBibleUpdate(
+      { ...base, children: base.children.map((c) => ({ ...c, role_notes: 'held Elsa\'s hand' })) },
+      elsa,
+      { topic: 'sharks', storyId: null, date: '2026-10-02', tones: ['funny'] },
+    )
+    const next = withoutCharacters(proposal, ['Elsa'])
+    expect(next.recurring.map((r) => r.name)).toEqual(['Grandpa Greenie'])
+    expect(next.catchphrases).toEqual(['SPLOOSH!'])
+    expect(next.last_story).toEqual({ title: elsa.title, ending: NEUTRAL_ENDING })
+    expect(next.children.every((c) => c.role_notes === null)).toBe(true)
+    expect(next.topics_covered.map((t) => t.topic)).toContain('sharks')
+    // Only the character goes: a shared common word is not a mention.
+    const spidey = {
+      ...proposal,
+      recurring: [
+        { name: 'The old man at the lighthouse', type: 'character' as const, rule: 'waves them off', last_used: '2026-10-02' },
+        { name: 'Spider-Man', type: 'character' as const, rule: 'swings in', last_used: '2026-10-02' },
+      ],
+      catchphrases: ['MAN OVERBOARD!', 'Go, Spiderman, go!'],
+    }
+    const pruned = withoutCharacters(spidey, ['Spider-Man'])
+    expect(pruned.recurring.map((r) => r.name)).toEqual(['The old man at the lighthouse'])
+    expect(pruned.catchphrases).toEqual(['MAN OVERBOARD!'])
+    // Nothing else is touched, and no names means no change at all.
+    expect(withoutCharacters(proposal, [])).toBe(proposal)
+    expect(JSON.stringify(next)).not.toMatch(/elsa/i)
   })
 })
 
