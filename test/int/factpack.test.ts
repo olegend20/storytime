@@ -335,6 +335,31 @@ describe.skipIf(!available)('F5 fact pack lock and use_count (int)', () => {
     expect(state.calls).toHaveLength(4)
   })
 
+  it('VT-FP3: a takeover build killed mid-way keeps its strikes through the stale-lock path', async () => {
+    const key = uniqueKey('fp3d')
+    const { state, builder } = modeBuilder(key)
+    const rejecting = async (candidate: unknown) => ({
+      deterministic: { accept: true as const, reasons: [] as never[], pack: candidate as ReturnType<typeof goodFactPack>, tokenEstimate: 900 },
+      model: { accept: false, quality_score: 1, reasons: ['vague filler'] },
+    })
+    await expect(getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: rejecting as never })).rejects.toThrow(FactPackRejectedError)
+    await expect(getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: rejecting as never, rejectionWindowsMs: [PAST, PAST] })).rejects.toThrow(FactPackRejectedError)
+    expect(state.calls).toHaveLength(4)
+    // The takeover happened, then the process died: the row is left `building` with the
+    // record in it. The next request takes the stale lock (the age is a seam: the trigger
+    // cannot be aged) and its build is rejected too - that is strike three, not strike one.
+    const { error } = await db.from('fact_packs').update({ status: 'building', model: 'pending' }).eq('topic_key', key)
+    expect(error).toBeNull()
+    await expect(getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: rejecting as never, staleLockMs: PAST })).rejects.toThrow(FactPackRejectedError)
+    const { data } = await db.from('fact_packs').select('status, content').eq('topic_key', key).maybeSingle()
+    expect((data as { status: string }).status).toBe('rejected')
+    expect((data as { content: { rejections: number } }).content.rejections).toBe(3)
+    expect(state.calls).toHaveLength(6)
+    // And with three strikes nothing is built again, however old.
+    await expect(getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: rejecting as never, rejectionWindowsMs: [PAST, PAST] })).rejects.toThrow(FactPackRejectedError)
+    expect(state.calls).toHaveLength(6)
+  })
+
   it('VT-FP1: when the research retry cannot run, the first rejection still stands for its window', async () => {
     const key = uniqueKey('fp1c')
     let calls = 0

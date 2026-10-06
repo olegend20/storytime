@@ -30,14 +30,17 @@ export const BUILD_LOCK_STALE_MS = 10 * 60_000
  * family. Now a topic that is really unwritable costs at most three builds, ever.
  */
 export const REJECTION_WINDOWS_MS: readonly number[] = [24 * 60 * 60_000, 7 * 24 * 60 * 60_000]
-/** Kept for callers that only need the first window. */
-export const REJECTED_RETRY_AFTER_MS = REJECTION_WINDOWS_MS[0]!
 
 /** What a `rejected` row keeps in `content`. */
 interface RejectionRecord {
   review_reasons: string[]
   /** How many builds have been rejected, this one included. Absent on rows from before #28 (= 1). */
   rejections: number
+}
+
+function hasRejectionRecord(row: RawRow): boolean {
+  const c = row.content as Partial<RejectionRecord> | null | undefined
+  return row.status === 'rejected' || (!!c && Number.isInteger(c.rejections) && (c.rejections as number) > 0)
 }
 
 function rejectionOf(row: RawRow): RejectionRecord {
@@ -107,6 +110,8 @@ export interface GetOrBuildOptions {
    * `updated_at` trigger cannot be aged from a test, so a test shortens the windows instead.
    */
   rejectionWindowsMs?: readonly number[]
+  /** Test seam: when a `building` row counts as abandoned (default BUILD_LOCK_STALE_MS). */
+  staleLockMs?: number
 }
 
 export interface GetOrBuildResult {
@@ -163,6 +168,7 @@ async function claimBuild(
   db: SupabaseClient,
   existing: RawRow | null,
   windows: readonly number[],
+  staleLockMs: number,
 ): Promise<string | null> {
   if (existing && existing.status === 'rejected' && rejectionExpired(existing, windows)) {
     let takeover = db
@@ -204,7 +210,7 @@ async function claimBuild(
   if (!current) throw new Error(`claimBuild: ${error?.message ?? 'insert returned no row'}`)
   if (current.status !== 'building') return null
 
-  if (rowAgeMs(current) > BUILD_LOCK_STALE_MS) {
+  if (rowAgeMs(current) > staleLockMs) {
     const { data: taken } = await db
       .from('fact_packs')
       .update({ model: 'pending' })
@@ -328,10 +334,13 @@ export async function getOrBuildFactPack(
   if (existing && existing.status === 'rejected' && !rejectionExpired(existing, windows)) {
     return finish(existing, false)
   }
-  const prior = existing?.status === 'rejected' ? rejectionOf(existing) : null
+  // The strikes so far. A `building` row can carry them too: a takeover build that was
+  // killed rather than thrown (the 300 s route limit) leaves the record in `content`, and
+  // the stale-lock path must not restart the topic at zero.
+  const prior = existing && hasRejectionRecord(existing) ? rejectionOf(existing) : null
   const priorRejections = prior?.rejections ?? 0
 
-  const ownedId = await claimBuild(topicKey, topicLabel, db, existing, windows)
+  const ownedId = await claimBuild(topicKey, topicLabel, db, existing, windows, opts.staleLockMs ?? BUILD_LOCK_STALE_MS)
   if (!ownedId) {
     // Another request is building. Wait for it rather than paying for a second build.
     return finish(await waitForBuild(topicKey, db, opts), false)
