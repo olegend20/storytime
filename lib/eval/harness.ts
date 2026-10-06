@@ -39,7 +39,14 @@ export interface EvalScenarioRecord {
   word_count: number
   target_words: { min: number; max: number }
   word_count_in_range: boolean
-  gate: { outcome: string; hard_violations: number; failures: string[]; scary_level: number | null } | null
+  gate: {
+    outcome: string
+    hard_violations: number
+    /** The rule numbers behind `hard_violations`, so a discarded story explains itself. */
+    hard_violation_rules: number[]
+    failures: string[]
+    scary_level: number | null
+  } | null
   judge_ok: boolean
   judge_error: string | null
   scores_raw: JudgeScore['scores'] | null
@@ -212,6 +219,7 @@ export async function runEval(config: EvalConfig = {}): Promise<EvalResult> {
         ? {
             outcome: generated.gate.outcome ?? 'unknown',
             hard_violations: generated.gate.hard_violations?.length ?? 0,
+            hard_violation_rules: (generated.gate.hard_violations ?? []).map((v) => v.rule),
             failures: (generated.gate.failures ?? []).map((f) => f.check),
             scary_level: observedScary,
           }

@@ -343,3 +343,9 @@ The owner's first real stories: every first draft sent back, every rewrite faile
 | 169 | **When code drops the classifier's names, it drops the classifier's care notes with them, and the notice follows the confirmed names only.** `confirmCharacters()`. Also from the review. | The care notes were written to put that character in the story. Without the name, the writer would be told to include someone rule 7 forbids. |
 | 170 | **The Kindle book carries the notice too** (title page and the mail text). | The copy most likely to be forwarded was the one copy without the owner's wording. |
 
+## 2026-10-06 — the judge sees shout lines as a parent does
+
+| # | Decision | Why |
+|---|---|---|
+| 174 | **The eval renderer shows a chapter's shout line as its own bold line (`**WHOOOOSH!**`), as the reader and the reference stories do; and the eval result records the gate's rule numbers (`hard_violation_rules`), not only their count.** | eval-2026-10-02 rendered every shout line as "(shout-along line: …)" and the judge marked six of eight stories down for bracketed stage directions that no parent ever sees - three "worst moments" were that string. The baseline's 3.28 is partly the harness. And "5 hard violations" on a discarded story told nobody which rule. |
+
