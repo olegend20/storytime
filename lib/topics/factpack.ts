@@ -144,13 +144,16 @@ async function claimBuild(
   if (existing.status === 'rejected' && rejectionExpired(existing, now)) {
     // Issue #28: an old rejection is rebuilt. The compare-and-swap on `status` means two
     // simultaneous requests still produce one build: the loser sees `building` and waits.
-    const { data: retaken } = await db
+    // Matching the timestamp this caller saw closes the gap where a fresh rejection, written
+    // between the read and this update, would be taken over as if it were the old one.
+    let takeover = db
       .from('fact_packs')
       .update({ status: 'building', model: 'pending', topic_label: topicLabel })
       .eq('id', existing.id)
       .eq('status', 'rejected')
-      .select('id')
-      .maybeSingle()
+    if (existing.updated_at) takeover = takeover.eq('updated_at', existing.updated_at)
+    const { data: retaken, error: takeoverError } = await takeover.select('id').maybeSingle()
+    if (takeoverError) throw new Error(`fact_packs takeover: ${takeoverError.message}`)
     return retaken ? String((retaken as { id: string }).id) : null
   }
   if (existing.status !== 'building') return null
