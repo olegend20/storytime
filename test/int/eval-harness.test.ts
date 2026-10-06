@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { existsSync, mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { MemoryLogSink } from '@/lib/ai'
+import { MemoryLogSink, ModelCallError } from '@/lib/ai'
 import { EVAL_PASS_CRITERIA } from '@/lib/schemas'
 import {
   compareEvalRuns,
@@ -10,6 +10,7 @@ import {
   runEval,
   type EvalResult,
   calibrationReusable,
+  isInfrastructureFailure,
 } from '@/lib/eval/harness'
 import {
   nextResultPath,
@@ -161,6 +162,33 @@ describe('F13 eval harness', () => {
     expect(result.summary.disqualified).toBe(1)
     expect(result.summary.passed).toBe(false)
     expect(result.scenarios.filter((r) => r.judge_ok)).toHaveLength(7)
+  })
+
+  it('a scenario the API would not run is not the writer\'s fault: not scored, not disqualified, still a failed run', async () => {
+    const base = syntheticProvider()
+    const provider: StoryProvider = async (input) => {
+      if (input.scenario.id === 'titanic-band-b') {
+        throw new ModelCallError('classify_input call failed: 400 credit balance is too low', {
+          purpose: 'classify_input', model: 'claude-haiku-4-5-20251001', attempts: 1, retryable: false, status: 400,
+        })
+      }
+      if (input.scenario.id === 'bees-band-a-5min') throw new Error('write stream failed: overloaded_error')
+      return base(input)
+    }
+    const result = await withScriptedJudge(() => runEval({ provider, sink: new MemoryLogSink() }), script({}))
+    const titanic = result.scenarios.find((r) => r.scenario_id === 'titanic-band-b')!
+    expect(titanic.caps_applied).toEqual(['not_run:infrastructure'])
+    expect(titanic.overall_final).toBeNull()
+    expect(titanic.disqualified).toBe(false)
+    expect(titanic.judge_error).toMatch(/^not run: /)
+    expect(result.summary.not_run).toEqual(['bees-band-a-5min', 'titanic-band-b'])
+    expect(result.summary.disqualified).toBe(0)
+    // The six that ran are the mean; the run still fails, because two books were not delivered.
+    expect(result.summary.scored).toBe(6)
+    expect(result.summary.mean_overall).toBe(5)
+    expect(result.summary.passed).toBe(false)
+    expect(result.summary.failures.join(' ')).toMatch(/not run \(the API, not the writer\): bees-band-a-5min, titanic-band-b/)
+    expect(isInfrastructureFailure(new Error('story output unusable: repair_failed'))).toBe(false)
   })
 
   it('a calibration that passed today is handed over at once and can be reused by the next run', async () => {

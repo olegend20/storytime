@@ -1,4 +1,4 @@
-import { MemoryLogSink, modelForRole, type GenerationLogSink } from '@/lib/ai'
+import { MemoryLogSink, ModelCallError, modelForRole, type GenerationLogSink } from '@/lib/ai'
 import {
   EVAL_PASS_CRITERIA,
   JUDGE_CRITERIA,
@@ -72,6 +72,8 @@ export interface EvalSummary {
   scenarios: number
   scored: number
   judge_errors: number
+  /** Scenarios the API would not run (no credit, outage): not the writer's, not in the mean. */
+  not_run: string[]
   mean_overall: number
   min_overall: number
   worst_scenario: string | null
@@ -140,13 +142,34 @@ export function calibrationReusable(
   return null
 }
 
-/** The record for a scenario whose story was never made: disqualified, scored 1, nothing judged. */
+/**
+ * An error that says nothing about the writer: the API refused or failed the call itself
+ * (no credit, bad key, overloaded, a 5xx, a retry budget spent). Such a scenario is
+ * recorded as not run, and kept out of the mean and the disqualified count - it still fails
+ * the run, since a story was not delivered.
+ */
+export function isInfrastructureFailure(err: unknown): boolean {
+  const text = err instanceof Error ? err.message : String(err)
+  // Anthropic reports an exhausted balance as a 400 invalid_request_error, so the words count.
+  if (/credit balance|overloaded|rate limit|ECONNRESET|ETIMEDOUT|fetch failed/i.test(text)) return true
+  if (err instanceof ModelCallError) {
+    const status = err.detail.status
+    return status === 401 || status === 402 || status === 403 || status === 429 || (status !== undefined && status >= 500) || err.detail.retryable
+  }
+  return false
+}
+
+/**
+ * The record for a scenario whose story was never made. The writer's doing: disqualified,
+ * scored 1, nothing judged. The API's doing: not run, scored nothing.
+ */
 function failedRecord(
   scenario: EvalScenario,
   context: JudgeContext,
   band: AgeBand,
   reason: string,
   generationCostUsd: number,
+  infrastructure: boolean,
 ): EvalScenarioRecord {
   return {
     scenario_id: scenario.id,
@@ -160,12 +183,12 @@ function failedRecord(
     word_count_in_range: false,
     gate: null,
     judge_ok: false,
-    judge_error: `no story: ${reason}`,
+    judge_error: `${infrastructure ? 'not run' : 'no story'}: ${reason}`,
     scores_raw: null,
     overall_raw: null,
-    overall_final: 1,
-    caps_applied: ['no_story:overall=1'],
-    disqualified: true,
+    overall_final: infrastructure ? null : 1,
+    caps_applied: infrastructure ? ['not_run:infrastructure'] : ['no_story:overall=1'],
+    disqualified: !infrastructure,
     cap_context: null,
     best_moment: null,
     worst_moment: null,
@@ -268,7 +291,8 @@ export async function runEval(config: EvalConfig = {}): Promise<EvalResult> {
       // away the rest of a paid run (eval-2026-10-06 died on scenario 2 of 8 this way).
       if (config.signal?.aborted) throw err
       const reason = err instanceof Error ? err.message : String(err)
-      progress(`no story for ${scenario.id}: ${reason}`)
+      const infrastructure = isInfrastructureFailure(err)
+      progress(`no story for ${scenario.id}${infrastructure ? ' (not the writer: the API)' : ''}: ${reason}`)
       // What it cost before it failed (the write, a repair) is still money spent.
       const spent =
         'rows' in sink
@@ -276,7 +300,7 @@ export async function runEval(config: EvalConfig = {}): Promise<EvalResult> {
               .filter((r) => r.story_id === storyId && !JUDGE_PURPOSES.has(r.purpose))
               .reduce((n, r) => n + r.cost_usd, 0)
           : 0
-      records.push(failedRecord(scenario, context, band, reason, round6(spent)))
+      records.push(failedRecord(scenario, context, band, reason, round6(spent), infrastructure))
       continue
     }
 
@@ -432,13 +456,15 @@ export function summarize(records: EvalScenarioRecord[]): EvalSummary {
     .filter((r) => r.scary_level_check && r.scary_level_check.ok === false)
     .map((r) => r.scenario_id)
   const disqualified = records.filter((r) => r.disqualified).length
-  const judgeErrors = records.filter((r) => !r.judge_ok).length
+  const notRun = records.filter((r) => r.caps_applied.includes('not_run:infrastructure')).map((r) => r.scenario_id)
+  const judgeErrors = records.filter((r) => !r.judge_ok && !r.caps_applied.includes('not_run:infrastructure')).length
 
   const meanOverall = mean(overalls)
   const minOverall = min(overalls)
 
   const failures: string[] = []
   if (judgeErrors > 0) failures.push(`${judgeErrors} scenario(s) returned judge_error`)
+  if (notRun.length > 0) failures.push(`not run (the API, not the writer): ${notRun.join(', ')}`)
   if (!(meanOverall >= EVAL_PASS_CRITERIA.mean_overall_min)) {
     failures.push(`mean overall ${fmt(meanOverall)} < ${EVAL_PASS_CRITERIA.mean_overall_min}`)
   }
@@ -460,6 +486,7 @@ export function summarize(records: EvalScenarioRecord[]): EvalSummary {
     scenarios: records.length,
     scored: scored.length,
     judge_errors: judgeErrors,
+    not_run: notRun,
     mean_overall: Math.round(meanOverall * 100) / 100,
     min_overall: Math.round(minOverall * 100) / 100,
     worst_scenario: worst?.scenario_id ?? null,
