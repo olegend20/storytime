@@ -192,7 +192,11 @@ async function claimBuild(
         topic_label: topicLabel,
         // Carry the old rejection forward (count and reasons): if this build throws, the row
         // goes back to being that rejection rather than a fresh start at zero strikes.
-        content: rejectionOf(existing) satisfies RejectionRecord,
+        content: {
+          ...rejectionOf(existing),
+          // A row from before #28 carries no timestamp of its own; the row's is the one.
+          rejected_at: rejectionOf(existing).rejected_at ?? existing.updated_at ?? new Date().toISOString(),
+        } satisfies RejectionRecord,
         quality_score: null,
       })
       .eq('id', existing.id)
