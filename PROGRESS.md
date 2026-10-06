@@ -876,6 +876,21 @@ Each has an e2e test on desktop and phone (the wake lock and offline tests stub 
 browser APIs). **Gates:** lint ✅ · typecheck ✅ · unit+int 1013 ✅ · e2e mock **132** ✅ ·
 e2e real 4 ✅.
 
+### 2026-10-06 — a rejected fact pack is not forever (issue #28, DECISIONS #171–#173)
+
+The first new topic after launch died in the fact-pack review: a knowledge-written pack
+(#139) was rejected for having no sources, and a `rejected` row was final. Three changes:
+the reviewer (`factpack-review.v2`) never faults a pack for sources it was told not to have;
+a rejected knowledge pack is researched (with sources) before the topic is rejected; a
+rejection expires (a day, then a week, then final) and the next request rebuilds, one build
+at a time. `/code-review` found two cost holes (an outage during the retry; an unwritable
+topic re-researched daily) - both closed.
+VT-FP1–FP4 in `test/int/factpack.test.ts` and `test/unit/factpack-review-prompt.test.ts`.
+**Live (VT-FP5):** `how-animals-climb-walls`, rejected on 2026-10-02, rebuilt through the
+expiry path from knowledge, accepted at 4.5 with 22 facts - **$0.034**, 32 s.
+
+**Gates:** lint ✅ · typecheck ✅ · unit+int **1189** ✅ · guardrails 32 ✅ · e2e mock 190 ✅ · e2e real 6 ✅.
+
 ### 2026-10-02 — a character the parent asks for (issue #27, DECISIONS #160–#167)
 
 Owner decision: loosen "no branded characters" - a character the parent names in the topic
