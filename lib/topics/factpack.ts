@@ -171,8 +171,9 @@ async function claimBuild(
         status: 'building',
         model: 'pending',
         topic_label: topicLabel,
-        // Carry the count forward; the reasons and score belong to the old rejection.
-        content: { review_reasons: [], rejections: rejectionOf(existing).rejections },
+        // Carry the old rejection forward (count and reasons): if this build throws, the row
+        // goes back to being that rejection rather than a fresh start at zero strikes.
+        content: rejectionOf(existing) satisfies RejectionRecord,
         quality_score: null,
       })
       .eq('id', existing.id)
@@ -327,7 +328,8 @@ export async function getOrBuildFactPack(
   if (existing && existing.status === 'rejected' && !rejectionExpired(existing, windows)) {
     return finish(existing, false)
   }
-  const priorRejections = existing?.status === 'rejected' ? rejectionOf(existing).rejections : 0
+  const prior = existing?.status === 'rejected' ? rejectionOf(existing) : null
+  const priorRejections = prior?.rejections ?? 0
 
   const ownedId = await claimBuild(topicKey, topicLabel, db, existing, windows)
   if (!ownedId) {
@@ -411,6 +413,17 @@ export async function getOrBuildFactPack(
     return finish(data as RawRow, true)
   } catch (err) {
     if (err instanceof FactPackRejectedError) throw err
+    if (prior) {
+      // A takeover build that failed (a 529, a timeout, an abort) puts the old rejection
+      // back, strikes and all: deleting the row would restart the topic at zero and let a
+      // transient error keep an unwritable topic alive forever (DECISIONS #173).
+      await db
+        .from('fact_packs')
+        .update({ status: 'rejected', content: prior satisfies RejectionRecord })
+        .eq('id', ownedId)
+        .eq('status', 'building')
+      throw err
+    }
     // Release the lock so the next request can retry rather than poll a dead build.
     await db.from('fact_packs').delete().eq('id', ownedId).eq('status', 'building')
     throw err

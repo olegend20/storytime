@@ -313,6 +313,28 @@ describe.skipIf(!available)('F5 fact pack lock and use_count (int)', () => {
     expect(state.calls).toHaveLength(6)
   })
 
+  it('VT-FP3: a takeover build that throws puts the old rejection back, strikes and all', async () => {
+    const key = uniqueKey('fp3c')
+    const { state, builder } = modeBuilder(key)
+    const rejecting = async (candidate: unknown) => ({
+      deterministic: { accept: true as const, reasons: [] as never[], pack: candidate as ReturnType<typeof goodFactPack>, tokenEstimate: 900 },
+      model: { accept: false, quality_score: 1, reasons: ['vague filler'] },
+    })
+    // Two strikes.
+    await expect(getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: rejecting as never })).rejects.toThrow(FactPackRejectedError)
+    await expect(getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: rejecting as never, rejectionWindowsMs: [PAST, PAST] })).rejects.toThrow(FactPackRejectedError)
+    expect(state.calls).toHaveLength(4)
+    // The window expires again and the takeover build throws.
+    const exploding = async (): Promise<BuildFactPackResult> => { throw new Error('529 overloaded') }
+    await expect(getOrBuildFactPack(key, 'A topic', { db, builder: exploding as never, rejectionWindowsMs: [PAST, PAST] })).rejects.toThrow('529 overloaded')
+    const { data } = await db.from('fact_packs').select('status, content').eq('topic_key', key).maybeSingle()
+    expect((data as { status: string }).status).toBe('rejected')
+    expect((data as { content: { rejections: number; review_reasons: string[] } }).content).toEqual({ rejections: 2, review_reasons: ['vague filler'] })
+    // Inside the (real) window: no build.
+    await expect(getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: rejecting as never })).rejects.toThrow(FactPackRejectedError)
+    expect(state.calls).toHaveLength(4)
+  })
+
   it('VT-FP1: when the research retry cannot run, the first rejection still stands for its window', async () => {
     const key = uniqueKey('fp1c')
     let calls = 0
