@@ -146,6 +146,7 @@ function failedRecord(
   context: JudgeContext,
   band: AgeBand,
   reason: string,
+  generationCostUsd: number,
 ): EvalScenarioRecord {
   return {
     scenario_id: scenario.id,
@@ -171,7 +172,7 @@ function failedRecord(
     continuity_reference: null,
     scary_level_check: null,
     editor_notes: [],
-    generation_cost_usd: 0,
+    generation_cost_usd: generationCostUsd,
     judge_cost_usd: 0,
     latency_total_ms: 0,
   }
@@ -268,7 +269,14 @@ export async function runEval(config: EvalConfig = {}): Promise<EvalResult> {
       if (config.signal?.aborted) throw err
       const reason = err instanceof Error ? err.message : String(err)
       progress(`no story for ${scenario.id}: ${reason}`)
-      records.push(failedRecord(scenario, context, band, reason))
+      // What it cost before it failed (the write, a repair) is still money spent.
+      const spent =
+        'rows' in sink
+          ? (sink as MemoryLogSink).rows
+              .filter((r) => r.story_id === storyId && !JUDGE_PURPOSES.has(r.purpose))
+              .reduce((n, r) => n + r.cost_usd, 0)
+          : 0
+      records.push(failedRecord(scenario, context, band, reason, round6(spent)))
       continue
     }
 

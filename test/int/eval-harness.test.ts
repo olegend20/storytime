@@ -128,11 +128,25 @@ describe('F13 eval harness', () => {
   it('a scenario whose story cannot be made is the worst result, not the end of the run', async () => {
     const base = syntheticProvider()
     const provider: StoryProvider = async (input) => {
-      if (input.scenario.id === 'video-games-band-c-solo') throw new Error('story output unusable: repair_failed')
+      if (input.scenario.id === 'video-games-band-c-solo') {
+        // The write and the repair were paid for before the story was given up on.
+        for (const [purpose, cost] of [['write', 0.26], ['repair', 0.02]] as const) {
+          await input.sink?.write({
+            purpose, model: input.writingModel, story_id: input.storyId, family_id: null, fact_pack_id: null,
+            input_tokens: 1, output_tokens: 1, cache_read_tokens: 0, cache_write_tokens: 0,
+            cost_usd: cost, latency_ms: 1, ok: false, error: 'repair_failed',
+          })
+        }
+        throw new Error('story output unusable: repair_failed')
+      }
       return base(input)
     }
+    let sink = new MemoryLogSink()
     const result = await withScriptedJudge(
-      () => runEval({ provider, sink: new MemoryLogSink() }),
+      () => {
+        sink = new MemoryLogSink()
+        return runEval({ provider, sink })
+      },
       script({}),
     )
     expect(result.scenarios).toHaveLength(8)
@@ -142,6 +156,8 @@ describe('F13 eval harness', () => {
     expect(failed.overall_final).toBe(1)
     expect(failed.disqualified).toBe(true)
     expect(failed.caps_applied).toEqual(['no_story:overall=1'])
+    expect(failed.generation_cost_usd).toBeCloseTo(0.28, 6)
+    expect(result.cost.generation_usd).toBeGreaterThanOrEqual(0.28)
     expect(result.summary.disqualified).toBe(1)
     expect(result.summary.passed).toBe(false)
     expect(result.scenarios.filter((r) => r.judge_ok)).toHaveLength(7)
