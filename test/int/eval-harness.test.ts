@@ -22,11 +22,13 @@ import {
   loadLivePipeline,
   pipelineModeFromEnv,
   storyFixturePath,
+  type StoryProvider,
 } from '@/lib/eval/pipeline'
 import { syntheticProvider } from '@/lib/eval/synthetic'
 import { evalScenarios } from '@/lib/eval/scenarios'
 import { pairwiseResponse, scoreResponse, withScriptedJudge } from '../helpers/judge-fixtures'
 import type { JudgeScoreWithExcerpts } from '@/lib/eval/judge'
+import type { CalibrationResult } from '@/lib/eval/calibration'
 
 /**
  * F13 - the eval harness end to end in fixture mode.
@@ -119,6 +121,68 @@ describe('F13 eval harness', () => {
     if ('skipped' in result.calibration) throw new Error('unreachable')
     expect(result.calibration.passed).toBe(true)
     expect(result.judge_prompt.version).toBe('judge.v2')
+  })
+
+  // eval-2026-10-06 died on scenario 2 of 8 when the writer produced no story, after $2.27.
+  it('a scenario whose story cannot be made is the worst result, not the end of the run', async () => {
+    const base = syntheticProvider()
+    const provider: StoryProvider = async (input) => {
+      if (input.scenario.id === 'video-games-band-c-solo') throw new Error('story output unusable: repair_failed')
+      return base(input)
+    }
+    const result = await withScriptedJudge(
+      () => runEval({ provider, sink: new MemoryLogSink() }),
+      script({}),
+    )
+    expect(result.scenarios).toHaveLength(8)
+    const failed = result.scenarios.find((r) => r.scenario_id === 'video-games-band-c-solo')!
+    expect(failed.judge_ok).toBe(false)
+    expect(failed.judge_error).toMatch(/no story: story output unusable/)
+    expect(failed.overall_final).toBe(1)
+    expect(failed.disqualified).toBe(true)
+    expect(failed.caps_applied).toEqual(['no_story:overall=1'])
+    expect(result.summary.disqualified).toBe(1)
+    expect(result.summary.passed).toBe(false)
+    expect(result.scenarios.filter((r) => r.judge_ok)).toHaveLength(7)
+  })
+
+  it('a calibration that passed today is handed over at once and can be reused by the next run', async () => {
+    let handed: CalibrationResult | null = null
+    const first = await withScriptedJudge(
+      () => runEval({ provider: syntheticProvider(), sink: new MemoryLogSink(), onCalibration: (c) => { handed = c } }),
+      script({}),
+    )
+    expect(handed).not.toBeNull()
+    if ('skipped' in first.calibration) throw new Error('unreachable')
+    expect(handed!.passed).toBe(true)
+    expect(handed!.judge_prompt.sha256).toBe(first.calibration.judge_prompt.sha256)
+
+    // The second run spends nothing on calibration: only the eight SCORE calls are made.
+    // (withScriptedJudge re-runs the function once per missing fixture, so the sink is made
+    // inside it and the last run's rows are the ones counted.)
+    let sink = new MemoryLogSink()
+    const second = await withScriptedJudge(
+      () => {
+        sink = new MemoryLogSink()
+        return runEval({ provider: syntheticProvider(), sink, reuseCalibration: handed! })
+      },
+      () => scoreResponse(ALL_FIVES),
+    )
+    if ('skipped' in second.calibration) throw new Error('unreachable')
+    expect(second.calibration.passed).toBe(true)
+    expect(second.calibration.notes).toContain('reused from an earlier run today')
+    // (the synthetic provider logs the pretend generation calls too; the judge's are the point)
+    expect(sink.rows.filter((r) => r.purpose === 'judge_pairwise')).toHaveLength(0)
+    expect(sink.rows.filter((r) => r.purpose === 'judge_score')).toHaveLength(8)
+
+    // A calibration from another judge prompt, or one that failed, is not reused.
+    const stale = { ...handed!, judge_prompt: { ...handed!.judge_prompt, sha256: 'deadbeef' } }
+    const third = await withScriptedJudge(
+      () => runEval({ provider: syntheticProvider(), sink: new MemoryLogSink(), reuseCalibration: stale }),
+      script({}),
+    )
+    if ('skipped' in third.calibration) throw new Error('unreachable')
+    expect(third.calibration.notes).not.toContain('reused from an earlier run today')
   })
 
   it('reports nothing at all when calibration fails', async () => {

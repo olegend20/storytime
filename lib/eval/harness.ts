@@ -5,6 +5,7 @@ import {
   MAX_SCARY_LEVEL,
   targetWords,
   wordCountWithinTolerance,
+  type AgeBand,
   type JudgeScore,
 } from '@/lib/schemas'
 import { JUDGE_PURPOSES } from './bakeoff'
@@ -109,8 +110,53 @@ export interface EvalConfig {
   provider?: StoryProvider
   sink?: GenerationLogSink
   skipCalibration?: boolean
+  /**
+   * A calibration that already passed today, to reuse instead of paying for it again
+   * (≈ $1.70 of every run). Honoured only if it passed and was made with the same judge
+   * prompt; otherwise calibration runs as usual.
+   */
+  reuseCalibration?: CalibrationResult
+  /** Called the moment calibration finishes, so the result is on disk before the eval runs. */
+  onCalibration?: (result: CalibrationResult) => void
   signal?: AbortSignal
   onProgress?: (line: string) => void
+}
+
+/** The record for a scenario whose story was never made: disqualified, scored 1, nothing judged. */
+function failedRecord(
+  scenario: EvalScenario,
+  context: JudgeContext,
+  band: AgeBand,
+  reason: string,
+): EvalScenarioRecord {
+  return {
+    scenario_id: scenario.id,
+    why: scenario.why,
+    band,
+    children: scenario.children.map((c) => ({ name: c.name, age: c.age })),
+    topic_key: scenario.topic_key,
+    length_minutes: scenario.length_minutes,
+    word_count: 0,
+    target_words: context.target_words,
+    word_count_in_range: false,
+    gate: null,
+    judge_ok: false,
+    judge_error: `no story: ${reason}`,
+    scores_raw: null,
+    overall_raw: null,
+    overall_final: 1,
+    caps_applied: ['no_story:overall=1'],
+    disqualified: true,
+    cap_context: null,
+    best_moment: null,
+    worst_moment: null,
+    continuity_reference: null,
+    scary_level_check: null,
+    editor_notes: [],
+    generation_cost_usd: 0,
+    judge_cost_usd: 0,
+    latency_total_ms: 0,
+  }
 }
 
 function judgeContextFor(scenario: EvalScenario): JudgeContext {
@@ -148,9 +194,16 @@ export async function runEval(config: EvalConfig = {}): Promise<EvalResult> {
         'skipCalibration was set. F13 AC requires calibration to pass before results count; ' +
         'a result with this flag set is a harness test, not an eval result.',
     }
+  } else if (
+    config.reuseCalibration?.passed &&
+    config.reuseCalibration.judge_prompt.sha256 === prompt.sha256
+  ) {
+    progress(`Reusing the calibration from ${config.reuseCalibration.ran_at} (same judge prompt)`)
+    calibration = { ...config.reuseCalibration, notes: [...config.reuseCalibration.notes, 'reused from an earlier run today'] }
   } else {
     progress('Running judge calibration (JUDGE_AGENT.md §5)…')
     calibration = await runCalibration({ sink, ...(config.signal ? { signal: config.signal } : {}) })
+    config.onCalibration?.(calibration)
     if (!calibration.passed) {
       const failed = calibration.expectations.filter((e) => !e.passed).map((e) => e.id)
       throw new Error(
@@ -175,14 +228,25 @@ export async function runEval(config: EvalConfig = {}): Promise<EvalResult> {
     const band = scenarioBand(scenario)
     const storyId = `eval:${scenario.id}`
     progress(`generate ${scenario.id}`)
-    const generated = await pipeline.generate({
-      scenario,
-      writingModel,
-      sample: 1,
-      sink,
-      storyId,
-      ...(config.signal ? { signal: config.signal } : {}),
-    })
+    let generated: Awaited<ReturnType<StoryPipeline['generate']>>
+    try {
+      generated = await pipeline.generate({
+        scenario,
+        writingModel,
+        sample: 1,
+        sink,
+        storyId,
+        ...(config.signal ? { signal: config.signal } : {}),
+      })
+    } catch (err) {
+      // A story that could not be made IS a result - the worst one - not a reason to throw
+      // away the rest of a paid run (eval-2026-10-06 died on scenario 2 of 8 this way).
+      if (config.signal?.aborted) throw err
+      const reason = err instanceof Error ? err.message : String(err)
+      progress(`no story for ${scenario.id}: ${reason}`)
+      records.push(failedRecord(scenario, context, band, reason))
+      continue
+    }
 
     progress(`score ${scenario.id}`)
     const scored = await scoreStory({
