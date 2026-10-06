@@ -129,6 +129,12 @@ export interface BuildFactPackOptions {
   signal?: AbortSignal
   /** Overrides the role's model. Used by the bake-off, not by production. */
   model?: string
+  /**
+   * Skip the knowledge stage and research from the start. `getOrBuildFactPack` sets this
+   * when a knowledge-written pack was rejected by the review (issue #28): the second try is
+   * the path with sources, not the same call again.
+   */
+  forceResearch?: boolean
 }
 
 export interface BuildFactPackResult {
@@ -288,7 +294,10 @@ export async function buildFactPack(
 
   // ---- stage 0: from knowledge ----
   const knowledgeStarted = Date.now()
-  const known = await writeFromKnowledge(topicKey, topicLabel, shared)
+  // Forced research (issue #28: the knowledge pack was already rejected) skips this stage.
+  const known = opts.forceResearch
+    ? { candidate: null, coverage: 'unknown' as Coverage, facts: 0, costUsd: 0 }
+    : await writeFromKnowledge(topicKey, topicLabel, shared)
   const knowledge = Date.now() - knowledgeStarted
   if (known.coverage === 'solid' && known.facts >= KNOWLEDGE_MIN_FACTS) {
     console.info(`[factpack] "${topicKey}": written from knowledge in ${Math.round(knowledge / 1000)}s`)
@@ -303,7 +312,9 @@ export async function buildFactPack(
     }
   }
   console.info(
-    `[factpack] "${topicKey}": model coverage ${known.coverage} (${known.facts} facts) - researching`,
+    opts.forceResearch
+      ? `[factpack] "${topicKey}": researching, as asked`
+      : `[factpack] "${topicKey}": model coverage ${known.coverage} (${known.facts} facts) - researching`,
   )
 
   // ---- stage 1: research, in parallel ----
