@@ -354,7 +354,15 @@ export async function getOrBuildFactPack(
   // The strikes so far. A `building` row can carry them too: a takeover build that was
   // killed rather than thrown (the 300 s route limit) leaves the record in `content`, and
   // the stale-lock path must not restart the topic at zero.
-  const prior = existing && hasRejectionRecord(existing) ? rejectionOf(existing) : null
+  const prior =
+    existing && hasRejectionRecord(existing)
+      ? {
+          ...rejectionOf(existing),
+          // A row from before #28 has no timestamp of its own: the row's stands in, so a
+          // restore after a failed takeover never restarts the window.
+          rejected_at: rejectionOf(existing).rejected_at ?? existing.updated_at ?? new Date().toISOString(),
+        }
+      : null
   const priorRejections = prior?.rejections ?? 0
 
   const ownedId = await claimBuild(topicKey, topicLabel, db, existing, windows, opts.staleLockMs ?? BUILD_LOCK_STALE_MS)
