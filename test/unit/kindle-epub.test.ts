@@ -69,6 +69,20 @@ describe('the EPUB', () => {
   })
 })
 
+describe('the EPUB carries the story\'s notice (issue #27)', () => {
+  it('puts the notice on the title page, escaped, and leaves it out when there is none', () => {
+    const story = goodStory()
+    const notice = "This story borrows a character that belongs to someone else. It's made for reading at home — please don't share or publish it."
+    const withNotice = epubFiles({ story, childNames: ['Milo'], id: 's', notice })
+    const title = withNotice.find((f) => f.path === 'OEBPS/title.xhtml')!.content
+    expect(title).toContain('class="notice"')
+    expect(title).toContain('belongs to someone else')
+    expect(title).toContain('don&apos;t share')
+    const without = epubFiles({ story, childNames: ['Milo'], id: 's' })
+    expect(without.find((f) => f.path === 'OEBPS/title.xhtml')!.content).not.toContain('notice')
+  })
+})
+
 describe('a Send-to-Kindle address', () => {
   it('is name@kindle.com or name@free.kindle.com, case-insensitive, and nothing else', () => {
     expect(isKindleAddress('milo_abc123@kindle.com')).toBe(true)

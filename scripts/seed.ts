@@ -26,7 +26,7 @@ async function main(): Promise<void> {
 
   let userId = created?.user?.id
   if (!userId) {
-    const { data: list } = await db.auth.admin.listUsers()
+    const { data: list } = await db.auth.admin.listUsers({ perPage: 1000 })
     userId = list?.users.find((u) => u.email === email)?.id
   }
   if (!userId) throw new Error('could not resolve the seed user id')

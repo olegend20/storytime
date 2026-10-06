@@ -94,7 +94,7 @@ export type PromiseFeature =
 
 export const PROMISES: ReadonlyArray<{ title: string; body: string; feature: PromiseFeature }> = [
   { title: 'Free for families', body: 'Free to make, free to reread.', feature: 'no-payment' },
-  { title: 'Words, not screens', body: 'Text only. No videos, no characters to sell, no adverts.', feature: 'text-only' },
+  { title: 'Words, not screens', body: 'Text only. No videos, nothing to buy, no adverts.', feature: 'text-only' },
   {
     title: 'Only what a story needs',
     body: 'First name, age, what they love and how they read. Never a surname, a photo or a location.',

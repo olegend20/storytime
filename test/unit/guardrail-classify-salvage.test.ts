@@ -12,6 +12,7 @@ const refusal = {
   category: 'commercial_ip_character',
   care_notes: null,
   min_recommended_age: null,
+  requested_characters: [],
   topic_key_hint: null,
   parent_message: 'We would love to tell the story of how comic books were invented instead.',
 }
@@ -24,6 +25,7 @@ describe('salvageRefusal', () => {
       category: 'commercial_ip_character',
       parent_message: refusal.parent_message,
       min_recommended_age: 4,
+      requested_characters: [],
     })
   })
 
@@ -71,7 +73,7 @@ describe('salvageRefusal', () => {
     const specific = refusalMessage({ category: 'commercial_ip_character', field: 'topic_input', internalReason: null })
     const generic = refusalMessage({ category: 'other', field: 'topic_input', internalReason: null })
     expect(specific).not.toBe(generic)
-    expect(specific).toMatch(/real story behind them/i)
+    expect(specific).toMatch(/gentler adventure/i)
   })
 })
 
@@ -88,6 +90,7 @@ describe('what the parent is shown', () => {
     category,
     care_notes: null,
     min_recommended_age: 4,
+    requested_characters: [],
     topic_key_hint: null,
     parent_message: message,
   })

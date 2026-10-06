@@ -25,6 +25,7 @@ const META: SseEvent = {
   age_band: 'A',
   target_words: { min: 1300, max: 1700 },
   topic_label: 'the history of LEGO',
+  content_notice: null,
 }
 
 function apply(actions: readonly StreamAction[]) {

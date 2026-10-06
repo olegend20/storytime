@@ -118,6 +118,7 @@ export interface RequestOptions {
   rewriteReasons?: string[]
   avoid?: string[]
   careNotes?: string | null
+  requestedCharacters?: string[]
 }
 
 export function request(opts: RequestOptions = {}): GenerationRequest {
@@ -142,6 +143,7 @@ export function request(opts: RequestOptions = {}): GenerationRequest {
     topic_key: 'history-of-lego',
     avoid: opts.avoid ?? [],
     care_notes: opts.careNotes ?? null,
+    requested_characters: opts.requestedCharacters ?? [],
     rewrite_reasons: opts.rewriteReasons ?? [],
   }
 }

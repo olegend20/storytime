@@ -31,7 +31,7 @@ export async function POST(_req: Request, { params }: Ctx) {
       familyId: ctx.family.id,
       kindleEmail: ctx.family.kindle_email,
       timezone: ctx.family.timezone,
-      story: { id: story.id, title: story.title, content: story.content },
+      story: { id: story.id, title: story.title, content: story.content, content_notice: story.content_notice },
       childNames: story.child_names,
     })
     return apiOk({ sent: { to: result.to, filename: result.filename, sent_today: result.sentToday } })

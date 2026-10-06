@@ -21,6 +21,8 @@ export interface EpubInput {
   /** A stable id for the book, so re-sending replaces rather than duplicates on the device. */
   id: string
   language?: string
+  /** What the reader says about the story, carried into the book's title page (issue #27). */
+  notice?: string | null
 }
 
 export const EPUB_MIME = 'application/epub+zip'
@@ -84,6 +86,7 @@ h1 { font-size: 1.8em; margin: 1em 0 0.3em; }
 h2 { font-size: 1.3em; margin: 1.4em 0 0.6em; }
 p { margin: 0 0 0.9em; }
 .subtitle { font-style: italic; margin-bottom: 1.5em; }
+.notice { font-size: 0.85em; margin-top: 2em; }
 .sound { letter-spacing: 0.04em; }
 .shout { text-align: center; font-weight: 700; margin: 1em 0 1.5em; }
 .ending { text-align: center; font-style: italic; margin-top: 2em; }
@@ -113,6 +116,7 @@ export function epubFiles(input: EpubInput): { path: string; content: string }[]
         `<h1>${xml(title)}</h1>`,
         story.subtitle ? `<p class="subtitle">${xml(story.subtitle)}</p>` : '',
         input.childNames.length > 0 ? `<p>A StoryTime story for ${xml(joinNames(input.childNames))}.</p>` : '',
+        input.notice ? `<p class="notice">${xml(input.notice)}</p>` : '',
       ]
         .filter((s) => s !== '')
         .join('\n'),

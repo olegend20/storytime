@@ -13,7 +13,7 @@ import { LibraryStory, SuggestedTopicsResponse } from '@/lib/schemas'
  */
 
 const STORY_COLUMNS =
-  'id, family_id, series_id, topic_input, topic_key, fact_pack_id, tones, length_minutes, age_band, title, content, word_count, status, created_at'
+  'id, family_id, series_id, topic_input, topic_key, fact_pack_id, tones, length_minutes, age_band, title, content, word_count, status, content_notice, created_at'
 
 interface StoryRow {
   id: string
@@ -29,6 +29,7 @@ interface StoryRow {
   content: unknown
   word_count: number
   status: string
+  content_notice: string | null
   created_at: string
 }
 

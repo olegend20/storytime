@@ -112,6 +112,15 @@ export function requestBlock(request: GenerationRequest): string {
     request.avoid.length > 0
       ? dataBlock('avoid', request.avoid.map((a) => `- ${escapeForDataBlock(a)}`).join('\n'))
       : '',
+    // Hard rule 7's one exception (issue #27). The names are escaped data; the rules beside
+    // them are our own text, sent only with the few stories that need them so the cached
+    // master block stays the same bytes for everyone.
+    request.requested_characters.length > 0
+      ? field('requested_characters', request.requested_characters.join(', '))
+      : '',
+    request.requested_characters.length > 0
+      ? dataBlock('character_rules', loadPrompt('character-rules').body)
+      : '',
     request.care_notes
       ? dataBlock('handle_with_care', escapeForDataBlock(request.care_notes))
       : '',

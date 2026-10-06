@@ -394,3 +394,47 @@ test('with no feeling chosen, Story options opens itself and says why the button
   await page.getByRole('button', { name: 'Mysterious', exact: true }).click()
   await expect(page.getByTestId('options-summary')).toHaveText('Calm & sleepy + Mysterious · 10 min')
 })
+
+/**
+ * VT-C4 (issue #27): a parent may ask for a character from a film, game or book. The story
+ * is written, and the reader says once, quietly, that the character belongs to someone else.
+ * `!character` is the mock backend's stand-in for the classifier recognising one.
+ */
+test('a story that borrows a character says so while it is written and when it is reopened', async ({ page }) => {
+  test.slow()
+  await startStory(page, '!character Spider-Man teaches us to climb walls')
+
+  // With the title, before the story has finished arriving.
+  const notice = page.getByTestId('content-notice')
+  await expect(notice).toBeVisible({ timeout: 15_000 })
+  await expect(notice).toHaveText(
+    'This story borrows a character that belongs to someone else. It’s made for reading at home with your family — please don’t share or publish it.',
+  )
+  // A note, so a screen reader meets it as one; not an alert - nothing has gone wrong.
+  await expect(page.getByRole('note')).toHaveCount(1)
+  await expect(page.getByRole('alert').filter({ hasText: /borrows a character/ })).toHaveCount(0)
+
+  await expect(page.getByRole('heading', { name: 'Saved to your library' })).toBeVisible({ timeout: 30_000 })
+  const title = (await page.getByRole('heading', { level: 1 }).innerText()).trim()
+  const overflow = await horizontalOverflow(page)
+  expect(overflow.widest, `element overflows the viewport: ${JSON.stringify(overflow.widest)}`).toBeNull()
+
+  // It is furniture: Read together shows the story and nothing else.
+  await page.getByRole('button', { name: 'Read together' }).click()
+  await expect(notice).toBeHidden()
+  await page.getByRole('button', { name: 'Done reading' }).click()
+  await expect(notice).toBeVisible()
+
+  // And it is stored with the story, not remembered by the page.
+  await page.goto('/library')
+  await page.getByRole('link').filter({ hasText: title }).first().click()
+  await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible()
+  await expect(page.getByTestId('content-notice')).toBeVisible()
+})
+
+test('an ordinary story carries no notice', async ({ page }) => {
+  test.slow()
+  await startStory(page, 'the history of soccer')
+  await expect(page.getByRole('heading', { name: 'Saved to your library' })).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByTestId('content-notice')).toHaveCount(0)
+})

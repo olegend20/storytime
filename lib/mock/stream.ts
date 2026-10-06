@@ -95,6 +95,7 @@ export function generationEvents(story: LibraryStory, opts: StreamOptions): unkn
     age_band: story.age_band,
     target_words: target,
     topic_label: story.topic_label,
+    content_notice: story.content_notice,
   }
   events.push(meta)
 

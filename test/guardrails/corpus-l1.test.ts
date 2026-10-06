@@ -137,7 +137,6 @@ describe('s6/s7 refuse set - L1-marked entries must be caught by L1 alone', () =
       'real_private_person',
       'horror_scary',
       'adult_relationships',
-      'commercial_ip_character',
       'prompt_injection',
       'off_mission',
       'other',

@@ -100,6 +100,7 @@ export class PermissiveInputGuard implements InputGuard {
       category: 'educational',
       care_notes: null,
       min_recommended_age: 1,
+      requested_characters: [],
       topic_key_hint: null,
       parent_message: null,
     }

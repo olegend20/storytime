@@ -56,6 +56,32 @@ describe('F5 VT: an inappropriate topic is refused', () => {
   })
 })
 
+/**
+ * Issue #27: a requested character is no longer an inappropriate topic, and it is never the
+ * subject. The fact pack is shared by every family, so its key and label name the real-world
+ * thing the story teaches and leave the character out.
+ */
+describe('a topic that names a character is keyed on the real-world subject', () => {
+  const CHARACTER = /spider-?man|elsa|sonic|pikachu|peppa|frozen|pokemon/i
+  for (const input of [
+    'Spider-Man teaches Juno to climb walls',
+    'a story where Elsa helps Milo build a snowman',
+    'Sonic races Theo around the park',
+    'a Peppa Pig bedtime story',
+  ]) {
+    it(`"${input}"`, async () => {
+      const result = await normalizeTopic(input)
+      expect(result.is_appropriate_for_children).toBe(true)
+      expect(result.topic_key).not.toMatch(CHARACTER)
+      expect(result.topic_label).not.toMatch(CHARACTER)
+    })
+  }
+
+  it('the factual history of a toy or a game keeps its key', async () => {
+    expect((await normalizeTopic('how Nintendo started')).is_appropriate_for_children).toBe(true)
+  })
+})
+
 describe('F5: normalizeTopic input guards (no model call)', () => {
   it('refuses to spend a call on a one-character topic', async () => {
     const sink = new MemoryLogSink()
