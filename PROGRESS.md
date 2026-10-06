@@ -892,7 +892,7 @@ in video games, rule 10 in sharks, a truncated 15-minute story) - the three case
 is for. Remaining rungs: 3 (shorter retry), 4 (fallback writer, owner's pick), 5 (shelf
 story), the `delivered / requested` metric in eval and dashboard.
 
-**Gates:** lint ✅ · typecheck ✅ · unit+int **1194** ✅ · guardrails 32 ✅ · schema 6 ✅ ·
+**Gates:** lint ✅ · typecheck ✅ · unit+int **1216** ✅ · guardrails 32 ✅ · schema 6 ✅ ·
 e2e mock 190 ✅ · e2e real 6 ✅.
 ### 2026-10-06 — a rejected fact pack is not forever (issue #28, DECISIONS #171–#173)
 
