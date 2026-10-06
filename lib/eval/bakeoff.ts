@@ -70,7 +70,7 @@ export interface BakeoffStoryRecord {
   band: string
   word_count: number
   target_words: { min: number; max: number }
-  gate: { outcome: string; hard_violations: number; failures: string[] } | null
+  gate: { outcome: string; hard_violations: number; hard_violation_rules: number[]; failures: string[] } | null
   judge_ok: boolean
   judge_error: string | null
   scores_raw: JudgeScore['scores'] | null
@@ -303,6 +303,7 @@ export async function runBakeoff(config: BakeoffConfig = {}): Promise<BakeoffRes
             ? {
                 outcome: generated.gate.outcome ?? 'unknown',
                 hard_violations: generated.gate.hard_violations?.length ?? 0,
+                hard_violation_rules: (generated.gate.hard_violations ?? []).map((v) => v.rule),
                 failures: (generated.gate.failures ?? []).map((f) => f.check),
               }
             : null,
