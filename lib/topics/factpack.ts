@@ -16,15 +16,42 @@ import { reviewFactPack, trimFactPackToBudget } from './review'
  */
 
 export const BUILD_POLL_INTERVAL_MS = 250
-export const BUILD_POLL_TIMEOUT_MS = 180_000
+/**
+ * A waiter gives up after this. Since issue #28 a build can be two builds and two reviews in
+ * a row (knowledge, research), so this sits just under the route's 300 s `maxDuration`.
+ */
+export const BUILD_POLL_TIMEOUT_MS = 270_000
 /** A `building` row older than this is assumed abandoned and may be taken over. */
 export const BUILD_LOCK_STALE_MS = 10 * 60_000
 /**
- * A `rejected` row older than this is rebuilt by the next request (issue #28). Before: a
- * topic whose first pack failed the review was dead for every family, forever. Now a
- * rejection costs the topic a day, and a topic costs at most one build a day.
+ * How long a rejection stands before the next request rebuilds the topic (issue #28), by
+ * how many times it has been rejected: a day after the first, a week after the second, and
+ * after the third the topic is given up on. Before: one rejection was forever, for every
+ * family. Now a topic that is really unwritable costs at most three builds, ever.
  */
-export const REJECTED_RETRY_AFTER_MS = 24 * 60 * 60_000
+export const REJECTION_WINDOWS_MS: readonly number[] = [24 * 60 * 60_000, 7 * 24 * 60 * 60_000]
+/** Kept for callers that only need the first window. */
+export const REJECTED_RETRY_AFTER_MS = REJECTION_WINDOWS_MS[0]!
+
+/** What a `rejected` row keeps in `content`. */
+interface RejectionRecord {
+  review_reasons: string[]
+  /** How many builds have been rejected, this one included. Absent on rows from before #28 (= 1). */
+  rejections: number
+}
+
+function rejectionOf(row: RawRow): RejectionRecord {
+  const c = (row.content ?? {}) as Partial<RejectionRecord>
+  return {
+    review_reasons: Array.isArray(c.review_reasons) ? c.review_reasons : ['previously rejected'],
+    rejections: Number.isInteger(c.rejections) && (c.rejections as number) > 0 ? (c.rejections as number) : 1,
+  }
+}
+
+/** Age of a row by its `updated_at`; NaN when unknown. One computation for every window. */
+function rowAgeMs(row: RawRow): number {
+  return row.updated_at ? Date.now() - Date.parse(row.updated_at) : Number.NaN
+}
 
 const PACK_COLUMNS =
   'id, topic_key, topic_label, content, sources, model, version, use_count, quality_score, status, updated_at'
@@ -36,6 +63,14 @@ export class FactPackRejectedError extends Error {
   ) {
     super(`Fact pack for "${topicKey}" was rejected: ${reasons.join('; ')}`)
     this.name = 'FactPackRejectedError'
+  }
+}
+
+/** The request that owned the build threw and released the lock; a retry may succeed. */
+export class FactPackBuildFailedError extends Error {
+  constructor(readonly topicKey: string) {
+    super(`The "${topicKey}" fact pack build failed in another request; try again`)
+    this.name = 'FactPackBuildFailedError'
   }
 }
 
@@ -67,8 +102,11 @@ export interface GetOrBuildOptions {
    */
   builder?: typeof buildFactPack
   reviewer?: typeof reviewFactPack
-  /** Test seam for the rejection window: the `updated_at` trigger cannot be aged. */
-  now?: () => number
+  /**
+   * Test seam: the rejection windows, in ms (default REJECTION_WINDOWS_MS). The
+   * `updated_at` trigger cannot be aged from a test, so a test shortens the windows instead.
+   */
+  rejectionWindowsMs?: readonly number[]
 }
 
 export interface GetOrBuildResult {
@@ -115,14 +153,36 @@ function toRecord(row: RawRow): FactPackRecord {
 /**
  * Claim the build. Returns the row id when this caller owns it, null when someone else
  * already does. The insert races on the unique `topic_key`, which is what makes the lock
- * correct without a transaction.
+ * correct without a transaction. An expired rejection (issue #28) is taken over instead,
+ * with a compare-and-swap on `status` and the `updated_at` this caller read, so a fresh
+ * rejection written in between is never mistaken for the old one.
  */
 async function claimBuild(
   topicKey: string,
   topicLabel: string,
   db: SupabaseClient,
-  now: () => number = Date.now,
+  existing: RawRow | null,
+  windows: readonly number[],
 ): Promise<string | null> {
+  if (existing && existing.status === 'rejected' && rejectionExpired(existing, windows)) {
+    let takeover = db
+      .from('fact_packs')
+      .update({
+        status: 'building',
+        model: 'pending',
+        topic_label: topicLabel,
+        // Carry the count forward; the reasons and score belong to the old rejection.
+        content: { review_reasons: [], rejections: rejectionOf(existing).rejections },
+        quality_score: null,
+      })
+      .eq('id', existing.id)
+      .eq('status', 'rejected')
+    if (existing.updated_at) takeover = takeover.eq('updated_at', existing.updated_at)
+    const { data: retaken, error: takeoverError } = await takeover.select('id').maybeSingle()
+    if (takeoverError) throw new Error(`fact_packs takeover: ${takeoverError.message}`)
+    return retaken ? String((retaken as { id: string }).id) : null
+  }
+
   const { data, error } = await db
     .from('fact_packs')
     .insert({
@@ -139,31 +199,15 @@ async function claimBuild(
   if (!error && data) return String((data as { id: string }).id)
 
   // Lost the race, or a previous attempt left a stale lock we can take over.
-  const existing = await readRow(topicKey, db)
-  if (!existing) throw new Error(`claimBuild: ${error?.message ?? 'insert returned no row'}`)
-  if (existing.status === 'rejected' && rejectionExpired(existing, now)) {
-    // Issue #28: an old rejection is rebuilt. The compare-and-swap on `status` means two
-    // simultaneous requests still produce one build: the loser sees `building` and waits.
-    // Matching the timestamp this caller saw closes the gap where a fresh rejection, written
-    // between the read and this update, would be taken over as if it were the old one.
-    let takeover = db
-      .from('fact_packs')
-      .update({ status: 'building', model: 'pending', topic_label: topicLabel })
-      .eq('id', existing.id)
-      .eq('status', 'rejected')
-    if (existing.updated_at) takeover = takeover.eq('updated_at', existing.updated_at)
-    const { data: retaken, error: takeoverError } = await takeover.select('id').maybeSingle()
-    if (takeoverError) throw new Error(`fact_packs takeover: ${takeoverError.message}`)
-    return retaken ? String((retaken as { id: string }).id) : null
-  }
-  if (existing.status !== 'building') return null
+  const current = await readRow(topicKey, db)
+  if (!current) throw new Error(`claimBuild: ${error?.message ?? 'insert returned no row'}`)
+  if (current.status !== 'building') return null
 
-  const updatedAt = existing.updated_at ? Date.parse(existing.updated_at) : Date.now()
-  if (Number.isFinite(updatedAt) && Date.now() - updatedAt > BUILD_LOCK_STALE_MS) {
+  if (rowAgeMs(current) > BUILD_LOCK_STALE_MS) {
     const { data: taken } = await db
       .from('fact_packs')
       .update({ model: 'pending' })
-      .eq('id', existing.id)
+      .eq('id', current.id)
       .eq('status', 'building')
       .select('id')
       .maybeSingle()
@@ -181,11 +225,15 @@ async function waitForBuild(
   const timeout = opts.pollTimeoutMs ?? BUILD_POLL_TIMEOUT_MS
   const deadline = Date.now() + timeout
 
+  const windows = opts.rejectionWindowsMs ?? REJECTION_WINDOWS_MS
   for (;;) {
     const row = await readRow(topicKey, db)
+    // The builder deletes its row when the build itself throws. Nothing is coming: say so now
+    // rather than after the full timeout, so the parent can try again.
+    if (!row) throw new FactPackBuildFailedError(topicKey)
     // An expired rejection is about to be taken over by whoever won the claim (issue #28):
     // it is not an answer, so keep waiting for the row it becomes.
-    if (row && row.status !== 'building' && !(row.status === 'rejected' && rejectionExpired(row, opts.now))) {
+    if (row.status !== 'building' && !(row.status === 'rejected' && rejectionExpired(row, windows))) {
       return row
     }
     if (Date.now() >= deadline) throw new FactPackTimeoutError(topicKey)
@@ -193,10 +241,16 @@ async function waitForBuild(
   }
 }
 
-/** Issue #28: a rejection older than REJECTED_RETRY_AFTER_MS no longer stands. */
-function rejectionExpired(row: RawRow, now: () => number = Date.now): boolean {
-  const at = row.updated_at ? Date.parse(row.updated_at) : Number.NaN
-  return Number.isFinite(at) && now() - at > REJECTED_RETRY_AFTER_MS
+/**
+ * Issue #28: whether a rejection has stood for its window. The window grows with the count
+ * (REJECTION_WINDOWS_MS); past the last one the rejection is final.
+ */
+function rejectionExpired(row: RawRow, windows: readonly number[]): boolean {
+  const { rejections } = rejectionOf(row)
+  const window = windows[rejections - 1]
+  if (window === undefined) return false
+  const age = rowAgeMs(row)
+  return Number.isFinite(age) && age > window
 }
 
 /**
@@ -256,13 +310,10 @@ export async function getOrBuildFactPack(
   const db = opts.db ?? supabaseService()
   const countUse = opts.countUse !== false
 
+  const windows = opts.rejectionWindowsMs ?? REJECTION_WINDOWS_MS
+
   const finish = async (row: RawRow, built: boolean): Promise<GetOrBuildResult> => {
-    if (row.status === 'rejected') {
-      const reasons = Array.isArray((row.content as { review_reasons?: unknown })?.review_reasons)
-        ? ((row.content as { review_reasons: string[] }).review_reasons ?? [])
-        : ['previously rejected']
-      throw new FactPackRejectedError(topicKey, reasons)
-    }
+    if (row.status === 'rejected') throw new FactPackRejectedError(topicKey, rejectionOf(row).review_reasons)
     const record = toRecord(row)
     if (countUse) {
       const next = await incrementFactPackUse(record.id, db)
@@ -273,30 +324,43 @@ export async function getOrBuildFactPack(
 
   const existing = await readRow(topicKey, db)
   if (existing && existing.status === 'ready') return finish(existing, false)
-  if (existing && existing.status === 'rejected' && !rejectionExpired(existing, opts.now)) {
+  if (existing && existing.status === 'rejected' && !rejectionExpired(existing, windows)) {
     return finish(existing, false)
   }
+  const priorRejections = existing?.status === 'rejected' ? rejectionOf(existing).rejections : 0
 
-  const ownedId = await claimBuild(topicKey, topicLabel, db, opts.now)
+  const ownedId = await claimBuild(topicKey, topicLabel, db, existing, windows)
   if (!ownedId) {
     // Another request is building. Wait for it rather than paying for a second build.
     return finish(await waitForBuild(topicKey, db, opts), false)
   }
 
+  const reject = async (reasons: string[], model: string, qualityScore: number | null) => {
+    await db
+      .from('fact_packs')
+      .update({
+        content: { review_reasons: reasons, rejections: priorRejections + 1 } satisfies RejectionRecord,
+        model,
+        status: 'rejected',
+        quality_score: qualityScore,
+      })
+      .eq('id', ownedId)
+    throw new FactPackRejectedError(topicKey, reasons)
+  }
+
   try {
+    const common = {
+      factPackId: ownedId,
+      ...(opts.sink ? { sink: opts.sink } : {}),
+      ...(opts.signal ? { signal: opts.signal } : {}),
+    }
     const attempt = async (forceResearch: boolean) => {
       const build = await (opts.builder ?? buildFactPack)(topicKey, topicLabel, {
-        factPackId: ownedId,
+        ...common,
         ...(forceResearch ? { forceResearch } : {}),
-        ...(opts.sink ? { sink: opts.sink } : {}),
-        ...(opts.signal ? { signal: opts.signal } : {}),
       })
       const { candidate } = trimFactPackToBudget(build.candidate)
-      const { deterministic, model } = await (opts.reviewer ?? reviewFactPack)(candidate, {
-        factPackId: ownedId,
-        ...(opts.sink ? { sink: opts.sink } : {}),
-        ...(opts.signal ? { signal: opts.signal } : {}),
-      })
+      const { deterministic, model } = await (opts.reviewer ?? reviewFactPack)(candidate, common)
       const accepted = deterministic.accept && !!deterministic.pack && model.accept
       // A deterministic rejection skips the model and echoes its reasons into `model`.
       const reasons = accepted ? [] : [...new Set([...deterministic.reasons, ...model.reasons])]
@@ -305,30 +369,29 @@ export async function getOrBuildFactPack(
 
     let result = await attempt(false)
     // Issue #28: a pack written from knowledge that the review turned down gets the path
-    // with sources before the topic is given up on. One more build, never a loop.
+    // with sources before the topic is given up on. One more build, never a loop. If that
+    // second build cannot run at all (a search outage), the first rejection is still
+    // recorded - the topic is parked for its window, not rebuilt on every request.
     if (!result.accepted && result.build.mode === 'knowledge') {
       console.info(
         `[factpack] "${topicKey}": knowledge pack rejected (${result.reasons.join('; ')}) - researching`,
       )
-      const second = await attempt(true)
+      let second: typeof result
+      try {
+        second = await attempt(true)
+      } catch (err) {
+        const why = err instanceof Error ? err.message : String(err)
+        await reject([...result.reasons, `research failed: ${why.slice(0, 200)}`], result.build.model, result.model.quality_score)
+        throw err // unreachable: reject() throws
+      }
       result = second.accepted
         ? second
         : { ...second, reasons: [...new Set([...result.reasons, ...second.reasons])] }
     }
     const { build, deterministic, model, reasons } = result
 
-    if (!result.accepted || !deterministic.pack) {
-      await db
-        .from('fact_packs')
-        .update({
-          content: { review_reasons: reasons },
-          model: build.model,
-          status: 'rejected',
-          quality_score: model.quality_score,
-        })
-        .eq('id', ownedId)
-      throw new FactPackRejectedError(topicKey, reasons)
-    }
+    if (!result.accepted || !deterministic.pack) await reject(reasons, build.model, model.quality_score)
+    if (!deterministic.pack) throw new Error('unreachable: rejected packs throw above')
 
     const { data, error } = await db
       .from('fact_packs')

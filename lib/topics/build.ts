@@ -294,11 +294,12 @@ export async function buildFactPack(
 
   // ---- stage 0: from knowledge ----
   const knowledgeStarted = Date.now()
+  // Forced research (issue #28: the knowledge pack was already rejected) skips this stage.
   const known = opts.forceResearch
     ? { candidate: null, coverage: 'unknown' as Coverage, facts: 0, costUsd: 0 }
     : await writeFromKnowledge(topicKey, topicLabel, shared)
   const knowledge = Date.now() - knowledgeStarted
-  if (!opts.forceResearch && known.coverage === 'solid' && known.facts >= KNOWLEDGE_MIN_FACTS) {
+  if (known.coverage === 'solid' && known.facts >= KNOWLEDGE_MIN_FACTS) {
     console.info(`[factpack] "${topicKey}": written from knowledge in ${Math.round(knowledge / 1000)}s`)
     return {
       candidate: known.candidate,

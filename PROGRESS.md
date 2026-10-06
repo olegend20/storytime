@@ -882,7 +882,9 @@ The first new topic after launch died in the fact-pack review: a knowledge-writt
 (#139) was rejected for having no sources, and a `rejected` row was final. Three changes:
 the reviewer (`factpack-review.v2`) never faults a pack for sources it was told not to have;
 a rejected knowledge pack is researched (with sources) before the topic is rejected; a
-rejection expires after 24 hours and the next request rebuilds, one build at a time.
+rejection expires (a day, then a week, then final) and the next request rebuilds, one build
+at a time. `/code-review` found two cost holes (an outage during the retry; an unwritable
+topic re-researched daily) - both closed.
 VT-FP1–FP4 in `test/int/factpack.test.ts` and `test/unit/factpack-review-prompt.test.ts`.
 **Live (VT-FP5):** `how-animals-climb-walls`, rejected on 2026-10-02, rebuilt through the
 expiry path from knowledge, accepted at 4.5 with 22 facts - **$0.034**, 32 s.

@@ -6,6 +6,7 @@ import {
   findFactPack,
   incrementFactPackUse,
   FactPackRejectedError,
+  FactPackBuildFailedError,
   type BuildFactPackResult,
 } from '@/lib/topics'
 import { databaseAvailable, serviceClient, deleteFactPack } from '../helpers/pipeline-db'
@@ -252,7 +253,10 @@ describe.skipIf(!available)('F5 fact pack lock and use_count (int)', () => {
     expect(state.calls).toHaveLength(2)
   })
 
-  it('VT-FP3: a rejection older than a day is rebuilt by the next request, once', async () => {
+  /** A rejection window that has always already passed (see the clock note in VT-FP3). */
+  const PAST = Number.NEGATIVE_INFINITY
+
+  it('VT-FP3: an expired rejection is rebuilt by the next request, once, and the count grows', async () => {
     const key = uniqueKey('fp3')
     const { state, builder } = modeBuilder(key)
     const rejecting = async (candidate: unknown) => ({
@@ -261,25 +265,94 @@ describe.skipIf(!available)('F5 fact pack lock and use_count (int)', () => {
     })
     await expect(getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: rejecting as never })).rejects.toThrow(FactPackRejectedError)
     expect(state.calls).toHaveLength(2)
+    const row = async () => (await db.from('fact_packs').select('status, content, quality_score').eq('topic_key', key).maybeSingle()).data as { status: string; content: { rejections: number; review_reasons: string[] }; quality_score: number | null }
+    expect((await row()).content.rejections).toBe(1)
 
-    // 23 hours later: still the same answer, nothing built.
-    const soon = () => Date.now() + 23 * 3_600_000
-    await expect(getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: rejecting as never, now: soon })).rejects.toThrow(FactPackRejectedError)
+    // Inside the window (the default, a day): still rejected, nothing built.
+    await expect(getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: rejecting as never })).rejects.toThrow(FactPackRejectedError)
     expect(state.calls).toHaveLength(2)
 
-    // 25 hours later: rebuilt, by one of two simultaneous requests. (The `updated_at`
-    // trigger cannot be aged from here, so the clock is the seam.)
-    const later = () => Date.now() + 25 * 3_600_000
+    // Past the window (the `updated_at` trigger cannot be aged, so the window is the seam; a
+    // window of -Infinity rather than 0 because the database clock runs a few ms behind this
+    // process): rebuilt, by one of two simultaneous requests.
+    const expired = { rejectionWindowsMs: [PAST, PAST] }
     const { seen, reviewer } = reviewerPreferringSources()
     const [a, b] = await Promise.all([
-      getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: reviewer as never, now: later }),
-      getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: reviewer as never, now: later, pollIntervalMs: 20 }),
+      getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: reviewer as never, ...expired }),
+      getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: reviewer as never, ...expired, pollIntervalMs: 20 }),
     ])
     expect(a.record.status).toBe('ready')
     expect(b.record.id).toBe(a.record.id)
     expect([a.built, b.built].filter(Boolean)).toHaveLength(1)
     expect(state.calls).toHaveLength(4) // the first night's two, then knowledge + research once
     expect(seen.calls).toBe(2)
+  })
+
+  it('VT-FP3: a second rejection waits a week, a third is final', async () => {
+    const key = uniqueKey('fp3b')
+    const { state, builder } = modeBuilder(key)
+    const rejecting = async (candidate: unknown) => ({
+      deterministic: { accept: true as const, reasons: [] as never[], pack: candidate as ReturnType<typeof goodFactPack>, tokenEstimate: 900 },
+      model: { accept: false, quality_score: 1, reasons: ['not a topic for us'] },
+    })
+    const content = async () => (await db.from('fact_packs').select('content').eq('topic_key', key).maybeSingle()).data as { content: { rejections: number } }
+    // First rejection, then (window expired) a second.
+    await expect(getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: rejecting as never })).rejects.toThrow(FactPackRejectedError)
+    await expect(getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: rejecting as never, rejectionWindowsMs: [PAST, PAST] })).rejects.toThrow(FactPackRejectedError)
+    expect((await content()).content.rejections).toBe(2)
+    expect(state.calls).toHaveLength(4)
+    // The second window is the second entry; with only one window configured the second
+    // rejection is final, however old - and with the real windows it would wait a week.
+    await expect(getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: rejecting as never, rejectionWindowsMs: [PAST] })).rejects.toThrow(FactPackRejectedError)
+    expect(state.calls).toHaveLength(4)
+    // Third strike, then nothing more, ever.
+    await expect(getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: rejecting as never, rejectionWindowsMs: [PAST, PAST] })).rejects.toThrow(FactPackRejectedError)
+    expect((await content()).content.rejections).toBe(3)
+    expect(state.calls).toHaveLength(6)
+    await expect(getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: rejecting as never, rejectionWindowsMs: [PAST, PAST] })).rejects.toThrow(FactPackRejectedError)
+    expect(state.calls).toHaveLength(6)
+  })
+
+  it('VT-FP1: when the research retry cannot run, the first rejection still stands for its window', async () => {
+    const key = uniqueKey('fp1c')
+    let calls = 0
+    const builder = async (_k: string, label: string, o?: { forceResearch?: boolean }): Promise<BuildFactPackResult> => {
+      calls += 1
+      if (o?.forceResearch) throw new Error('web search unavailable')
+      return { candidate: { ...goodFactPack(), topic_key: key, topic_label: label }, model: 'test', webSearches: 0, costUsd: 0.03, mode: 'knowledge' }
+    }
+    const rejecting = async (candidate: unknown) => ({
+      deterministic: { accept: true as const, reasons: [] as never[], pack: candidate as ReturnType<typeof goodFactPack>, tokenEstimate: 900 },
+      model: { accept: false, quality_score: 2, reasons: ['vague filler'] },
+    })
+    await expect(getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: rejecting as never })).rejects.toThrow(FactPackRejectedError)
+    expect(calls).toBe(2)
+    const { data } = await db.from('fact_packs').select('status, content').eq('topic_key', key).maybeSingle()
+    expect((data as { status: string }).status).toBe('rejected')
+    expect((data as { content: { review_reasons: string[] } }).content.review_reasons).toEqual(['vague filler', 'research failed: web search unavailable'])
+    // The next request tonight pays nothing - the outage does not become a knowledge call per request.
+    await expect(getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: rejecting as never })).rejects.toThrow(FactPackRejectedError)
+    expect(calls).toBe(2)
+  })
+
+  it('a waiter whose builder gave up is told at once, not after the timeout', async () => {
+    const key = uniqueKey('waiter')
+    const slowExploder = async (): Promise<BuildFactPackResult> => {
+      await new Promise((r) => setTimeout(r, 150))
+      throw new Error('web search unavailable')
+    }
+    const started = Date.now()
+    const [a, b] = await Promise.allSettled([
+      getOrBuildFactPack(key, 'A topic', { db, builder: slowExploder as never }),
+      (async () => {
+        await new Promise((r) => setTimeout(r, 40))
+        return getOrBuildFactPack(key, 'A topic', { db, builder: slowExploder as never, pollIntervalMs: 20, pollTimeoutMs: 10_000 })
+      })(),
+    ])
+    expect(a.status).toBe('rejected')
+    expect(b.status).toBe('rejected')
+    if (b.status === 'rejected') expect(b.reason).toBeInstanceOf(FactPackBuildFailedError)
+    expect(Date.now() - started).toBeLessThan(5_000)
   })
 
   it('releases the lock when the build itself throws, so the next request can retry', async () => {
