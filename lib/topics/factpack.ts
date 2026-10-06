@@ -391,6 +391,8 @@ export async function getOrBuildFactPack(
       try {
         second = await attempt(true)
       } catch (err) {
+        // A parent closing the tab is not a strike against the topic: release and rethrow.
+        if (opts.signal?.aborted) throw err
         const why = err instanceof Error ? err.message : String(err)
         await reject([...result.reasons, `research failed: ${why.slice(0, 200)}`], result.build.model, result.model.quality_score)
         throw err // unreachable: reject() throws
