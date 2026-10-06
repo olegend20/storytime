@@ -122,6 +122,24 @@ export interface EvalConfig {
   onProgress?: (line: string) => void
 }
 
+/**
+ * Why a calibration result may NOT stand in for this run's, or null when it may: it must
+ * have passed, today (UTC date), with the judge model `config/models.json` names now and
+ * the judge prompt on disk now. JUDGE_AGENT.md §5: calibration is a property of the judge.
+ */
+export function calibrationReusable(
+  c: CalibrationResult,
+  promptSha256: string,
+  now: Date = new Date(),
+): string | null {
+  if (!c.passed) return 'it did not pass'
+  if (c.judge_prompt.sha256 !== promptSha256) return `the judge prompt changed (${c.judge_prompt.sha256} -> ${promptSha256})`
+  const judge = modelForRole('judge_primary')
+  if (c.judge_model !== judge) return `the judge model changed (${c.judge_model} -> ${judge})`
+  if (c.ran_at.slice(0, 10) !== now.toISOString().slice(0, 10)) return `it ran on ${c.ran_at.slice(0, 10)}, not today`
+  return null
+}
+
 /** The record for a scenario whose story was never made: disqualified, scored 1, nothing judged. */
 function failedRecord(
   scenario: EvalScenario,
@@ -194,13 +212,19 @@ export async function runEval(config: EvalConfig = {}): Promise<EvalResult> {
         'skipCalibration was set. F13 AC requires calibration to pass before results count; ' +
         'a result with this flag set is a harness test, not an eval result.',
     }
-  } else if (
-    config.reuseCalibration?.passed &&
-    config.reuseCalibration.judge_prompt.sha256 === prompt.sha256
-  ) {
-    progress(`Reusing the calibration from ${config.reuseCalibration.ran_at} (same judge prompt)`)
-    calibration = { ...config.reuseCalibration, notes: [...config.reuseCalibration.notes, 'reused from an earlier run today'] }
+  } else if (config.reuseCalibration && calibrationReusable(config.reuseCalibration, prompt.sha256) === null) {
+    progress(`Reusing the calibration from ${config.reuseCalibration.ran_at} (same day, judge and prompt)`)
+    calibration = {
+      ...config.reuseCalibration,
+      // Paid for by the earlier run, not this one.
+      cost_usd: 0,
+      judge_calls: 0,
+      notes: [...config.reuseCalibration.notes, 'reused from an earlier run today'],
+    }
   } else {
+    if (config.reuseCalibration) {
+      progress(`Not reusing the calibration offered: ${calibrationReusable(config.reuseCalibration, prompt.sha256)}`)
+    }
     progress('Running judge calibration (JUDGE_AGENT.md §5)…')
     calibration = await runCalibration({ sink, ...(config.signal ? { signal: config.signal } : {}) })
     config.onCalibration?.(calibration)

@@ -9,6 +9,7 @@ import {
   formatEval,
   runEval,
   type EvalResult,
+  calibrationReusable,
 } from '@/lib/eval/harness'
 import {
   nextResultPath,
@@ -174,15 +175,31 @@ describe('F13 eval harness', () => {
     // (the synthetic provider logs the pretend generation calls too; the judge's are the point)
     expect(sink.rows.filter((r) => r.purpose === 'judge_pairwise')).toHaveLength(0)
     expect(sink.rows.filter((r) => r.purpose === 'judge_score')).toHaveLength(8)
+    // Paid for by the first run: this run's cost record carries none of it.
+    expect(second.calibration.cost_usd).toBe(0)
+    expect(second.calibration.judge_calls).toBe(0)
+    const scoreCost = second.scenarios.reduce((n, r) => n + r.judge_cost_usd, 0)
+    expect(second.cost.judge_usd).toBeCloseTo(scoreCost, 6)
+    expect(first.cost.judge_usd).toBeGreaterThan(scoreCost)
 
-    // A calibration from another judge prompt, or one that failed, is not reused.
-    const stale = { ...handed!, judge_prompt: { ...handed!.judge_prompt, sha256: 'deadbeef' } }
+    // Not reused: another judge prompt, a failed one, another judge model, another day.
+    const good = handed!
+    for (const [why, bad] of [
+      ['prompt', { ...good, judge_prompt: { ...good.judge_prompt, sha256: 'deadbeef' } }],
+      ['failed', { ...good, passed: false }],
+      ['model', { ...good, judge_model: 'claude-haiku-4-5-20251001' }],
+      ['day', { ...good, ran_at: '2026-09-28T20:00:00.000Z' }],
+    ] as const) {
+      expect(calibrationReusable(bad, good.judge_prompt.sha256), why).not.toBeNull()
+    }
+    expect(calibrationReusable(good, good.judge_prompt.sha256)).toBeNull()
     const third = await withScriptedJudge(
-      () => runEval({ provider: syntheticProvider(), sink: new MemoryLogSink(), reuseCalibration: stale }),
+      () => runEval({ provider: syntheticProvider(), sink: new MemoryLogSink(), reuseCalibration: { ...good, ran_at: '2026-09-28T20:00:00.000Z' } }),
       script({}),
     )
     if ('skipped' in third.calibration) throw new Error('unreachable')
     expect(third.calibration.notes).not.toContain('reused from an earlier run today')
+    expect(third.calibration.cost_usd).toBeGreaterThan(0)
   })
 
   it('reports nothing at all when calibration fails', async () => {

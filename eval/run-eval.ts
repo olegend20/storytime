@@ -101,7 +101,16 @@ async function main(): Promise<void> {
   }
 
   const reusePath = value('calibration')
-  const reuseCalibration = reusePath ? readResultFile<CalibrationResult>(reusePath) : undefined
+  let reuseCalibration: CalibrationResult | undefined
+  if (reusePath) {
+    try {
+      reuseCalibration = readResultFile<CalibrationResult>(reusePath)
+    } catch (err) {
+      console.error(`--calibration=${reusePath}: cannot read it (${err instanceof Error ? err.message : String(err)})`)
+      process.exitCode = 1
+      return
+    }
+  }
   let calibrationPath: string | null = null
 
   let result: EvalResult
