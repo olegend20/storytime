@@ -36,6 +36,12 @@ interface RejectionRecord {
   review_reasons: string[]
   /** How many builds have been rejected, this one included. Absent on rows from before #28 (= 1). */
   rejections: number
+  /**
+   * When the rejection was made (ISO). The window is measured from here, not from the row's
+   * `updated_at`: a takeover that is abandoned restores the record, and the trigger would
+   * otherwise restart the window on that write. Absent on rows from before #28.
+   */
+  rejected_at?: string
 }
 
 function hasRejectionRecord(row: RawRow): boolean {
@@ -48,7 +54,14 @@ function rejectionOf(row: RawRow): RejectionRecord {
   return {
     review_reasons: Array.isArray(c.review_reasons) ? c.review_reasons : ['previously rejected'],
     rejections: Number.isInteger(c.rejections) && (c.rejections as number) > 0 ? (c.rejections as number) : 1,
+    ...(typeof c.rejected_at === 'string' ? { rejected_at: c.rejected_at } : {}),
   }
+}
+
+/** Age of a rejection: from its own timestamp when it has one, else the row's. */
+function rejectionAgeMs(row: RawRow): number {
+  const at = rejectionOf(row).rejected_at
+  return at ? Date.now() - Date.parse(at) : rowAgeMs(row)
 }
 
 /** Age of a row by its `updated_at`; NaN when unknown. One computation for every window. */
@@ -256,7 +269,7 @@ function rejectionExpired(row: RawRow, windows: readonly number[]): boolean {
   const { rejections } = rejectionOf(row)
   const window = windows[rejections - 1]
   if (window === undefined) return false
-  const age = rowAgeMs(row)
+  const age = rejectionAgeMs(row)
   return Number.isFinite(age) && age > window
 }
 
@@ -350,7 +363,11 @@ export async function getOrBuildFactPack(
     await db
       .from('fact_packs')
       .update({
-        content: { review_reasons: reasons, rejections: priorRejections + 1 } satisfies RejectionRecord,
+        content: {
+          review_reasons: reasons,
+          rejections: priorRejections + 1,
+          rejected_at: new Date().toISOString(),
+        } satisfies RejectionRecord,
         model,
         status: 'rejected',
         quality_score: qualityScore,

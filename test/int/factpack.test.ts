@@ -324,12 +324,19 @@ describe.skipIf(!available)('F5 fact pack lock and use_count (int)', () => {
     await expect(getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: rejecting as never })).rejects.toThrow(FactPackRejectedError)
     await expect(getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: rejecting as never, rejectionWindowsMs: [PAST, PAST] })).rejects.toThrow(FactPackRejectedError)
     expect(state.calls).toHaveLength(4)
+    const secondRejectedAt = ((await db.from('fact_packs').select('content').eq('topic_key', key).maybeSingle()).data as { content: { rejected_at: string } }).content.rejected_at
+    await new Promise((r) => setTimeout(r, 5))
     // The window expires again and the takeover build throws.
     const exploding = async (): Promise<BuildFactPackResult> => { throw new Error('529 overloaded') }
     await expect(getOrBuildFactPack(key, 'A topic', { db, builder: exploding as never, rejectionWindowsMs: [PAST, PAST] })).rejects.toThrow('529 overloaded')
     const { data } = await db.from('fact_packs').select('status, content').eq('topic_key', key).maybeSingle()
     expect((data as { status: string }).status).toBe('rejected')
-    expect((data as { content: { rejections: number; review_reasons: string[] } }).content).toEqual({ rejections: 2, review_reasons: ['vague filler'] })
+    const restored = (data as { content: { rejections: number; review_reasons: string[]; rejected_at: string } }).content
+    expect(restored).toMatchObject({ rejections: 2, review_reasons: ['vague filler'] })
+    // The window runs from the original rejection, not from the restore: an abandoned
+    // takeover does not close the topic for another week.
+    expect(Date.parse(restored.rejected_at)).toBeLessThan(Date.now())
+    expect(restored.rejected_at).toBe(secondRejectedAt)
     // Inside the (real) window: no build.
     await expect(getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: rejecting as never })).rejects.toThrow(FactPackRejectedError)
     expect(state.calls).toHaveLength(4)
