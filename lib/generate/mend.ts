@@ -20,9 +20,36 @@ import type { OutputViolation, StoryOutput } from '@/lib/schemas'
 
 export interface Passage {
   chapter: number
-  /** The exact sentence(s) in the chapter text that hold the quote. */
+  /** The exact sentence(s) in the chapter text that hold the quote: a raw slice of it. */
   text: string
+  /** Where `text` starts in the chapter. */
+  start: number
   rule: number
+}
+
+/** Does a sentence end here? A terminator, then closing quotes/brackets, then whitespace or the end. */
+const SENTENCE_END = /[.!?]["'”’)\]]*(?=\s|$)/g
+
+/** The raw slice of `text` holding the whole sentences that cover [at, at + length). */
+function sentencesAround(text: string, at: number, length: number): { start: number; end: number } {
+  // Backwards: the previous sentence end (or a paragraph break) before `at`.
+  let start = 0
+  const before = text.slice(0, at)
+  const para = before.lastIndexOf('\n\n')
+  SENTENCE_END.lastIndex = 0
+  for (const m of before.matchAll(SENTENCE_END)) start = Math.max(start, m.index + m[0].length)
+  start = Math.max(start, para === -1 ? 0 : para + 2)
+  while (start < at && /\s/.test(text[start]!)) start++
+  // Forwards: the next sentence end (or paragraph break) at or after the hit ends.
+  const from = at + length
+  const rest = text.slice(from)
+  const nextPara = rest.indexOf('\n\n')
+  SENTENCE_END.lastIndex = 0
+  const m = SENTENCE_END.exec(rest)
+  let end = text.length
+  if (m) end = Math.min(end, from + m.index + m[0].length)
+  if (nextPara !== -1) end = Math.min(end, from + nextPara)
+  return { start, end }
 }
 
 /** The quote as the scanner gives it, without its ellipses, trimmed. */
@@ -38,52 +65,71 @@ function bareQuote(quote: string): string {
 export function locateViolation(story: StoryOutput, violation: OutputViolation): Passage | null {
   const quote = bareQuote(violation.quote)
   if (quote === '') return null
-  const candidates = [quote, ...splitSentences(quote).filter((s) => s.length >= 12)]
+  // The quote whole; then its own sentences; then its longest run of words the text has
+  // (a reviewer paraphrases, a scanner's window straddles a paragraph break).
+  const words = quote.split(/\s+/).filter((w) => w !== '')
+  const runs: string[] = []
+  for (let n = Math.min(words.length, 8); n >= 4; n--) {
+    for (let i = 0; i + n <= words.length; i++) runs.push(words.slice(i, i + n).join(' '))
+  }
+  const candidates = [quote, ...splitSentences(quote).filter((s) => s.length >= 12), ...runs]
   for (const needle of candidates) {
     for (const [chapter, ch] of story.chapters.entries()) {
       const at = ch.text.indexOf(needle)
       if (at === -1) continue
-      // Expand to whole sentences around the hit.
-      const sentences = splitSentences(ch.text)
-      const hit: string[] = []
-      let cursor = 0
-      for (const sentence of sentences) {
-        const start = ch.text.indexOf(sentence, cursor)
-        if (start === -1) continue
-        const end = start + sentence.length
-        cursor = end
-        if (end > at && start < at + needle.length) hit.push(sentence)
-      }
-      if (hit.length > 0) return { chapter, text: hit.join(' '), rule: violation.rule }
+      const { start, end } = sentencesAround(ch.text, at, needle.length)
+      const text = ch.text.slice(start, end)
+      if (text.trim() === '') continue
+      return { chapter, text, start, rule: violation.rule }
     }
   }
   return null
 }
 
-/** One passage per distinct (chapter, text), so overlapping quotes do not fight. */
-export function passagesFor(story: StoryOutput, violations: readonly OutputViolation[]): Passage[] {
+/**
+ * One passage per distinct (chapter, start), so overlapping quotes do not fight, and the
+ * hard violations that could not be placed at all - a quote the text does not contain.
+ */
+export function passagesFor(
+  story: StoryOutput,
+  violations: readonly OutputViolation[],
+): { passages: Passage[]; unlocated: OutputViolation[] } {
   const seen = new Set<string>()
-  const out: Passage[] = []
+  const passages: Passage[] = []
+  const unlocated: OutputViolation[] = []
   for (const v of violations) {
     if (v.severity !== 'hard') continue
     const p = locateViolation(story, v)
-    if (!p) continue
-    const key = `${p.chapter}:${p.text}`
+    if (!p) {
+      unlocated.push(v)
+      continue
+    }
+    const key = `${p.chapter}:${p.start}`
     if (seen.has(key)) continue
     seen.add(key)
-    out.push(p)
+    passages.push(p)
   }
-  return out
+  return { passages, unlocated }
 }
 
-/** Replace `find` with `replace` inside a chapter's text, once, where the text has it. */
-function applyEdit(story: StoryOutput, edit: { chapter: number; find: string; replace: string }): StoryOutput | null {
-  const ch = story.chapters[edit.chapter]
+/**
+ * Replace `find` with `replace` inside the passage it was asked about - never an earlier
+ * look-alike elsewhere in the chapter. The passage is re-found by its text first, since an
+ * earlier edit may have moved it.
+ */
+function applyEdit(
+  story: StoryOutput,
+  passage: Passage,
+  edit: { find: string; replace: string },
+): StoryOutput | null {
+  const ch = story.chapters[passage.chapter]
   if (!ch) return null
-  const at = ch.text.indexOf(edit.find)
-  if (at === -1) return null
-  const text = ch.text.slice(0, at) + edit.replace + ch.text.slice(at + edit.find.length)
-  const chapters = story.chapters.map((c, i) => (i === edit.chapter ? { ...c, text } : c))
+  const passageAt = ch.text.indexOf(passage.text, Math.max(0, passage.start - 2))
+  if (passageAt === -1) return null
+  const within = ch.text.indexOf(edit.find, passageAt)
+  if (within === -1 || within + edit.find.length > passageAt + passage.text.length) return null
+  const text = ch.text.slice(0, within) + edit.replace + ch.text.slice(within + edit.find.length)
+  const chapters = story.chapters.map((c, i) => (i === passage.chapter ? { ...c, text } : c))
   return { ...story, chapters }
 }
 
@@ -91,7 +137,7 @@ function applyEdit(story: StoryOutput, edit: { chapter: number; find: string; re
 function removePassage(story: StoryOutput, passage: Passage): StoryOutput | null {
   const ch = story.chapters[passage.chapter]
   if (!ch) return null
-  const at = ch.text.indexOf(passage.text)
+  const at = ch.text.indexOf(passage.text, Math.max(0, passage.start - 2))
   if (at === -1) return null
   const text = (ch.text.slice(0, at) + ch.text.slice(at + passage.text.length))
     .replace(/[ \t]{2,}/g, ' ')
@@ -161,7 +207,7 @@ export async function mendStory(
   violations: readonly OutputViolation[],
   opts: MendOptions = {},
 ): Promise<MendResult> {
-  const passages = passagesFor(story, violations)
+  const { passages } = passagesFor(story, violations)
   if (passages.length === 0) return { story, edits: 0, passages: 0, costUsd: 0 }
 
   const result = await callModel({
@@ -178,13 +224,16 @@ export async function mendStory(
 
   let mended = story
   let edits = 0
+  const done = new Set<Passage>()
   for (const edit of MendReply.parse(parseJsonLoose(result.text))) {
-    // Only passages we asked about may change, and only where the text still has them.
-    if (!passages.some((p) => p.chapter === edit.chapter && p.text.includes(edit.find))) continue
-    const next = applyEdit(mended, edit)
+    // Only a passage we asked about may change, once, and only inside its own bounds.
+    const passage = passages.find((p) => !done.has(p) && p.chapter === edit.chapter && p.text.includes(edit.find))
+    if (!passage) continue
+    const next = applyEdit(mended, passage, edit)
     if (!next) continue
     mended = next
     edits += 1
+    done.add(passage)
   }
   return { story: mended, edits, passages: passages.length, costUsd: result.costUsd }
 }
@@ -196,14 +245,22 @@ export async function mendStory(
 export function cutViolations(
   story: StoryOutput,
   violations: readonly OutputViolation[],
-): { story: StoryOutput; cut: number } {
+): { story: StoryOutput; cut: number; complete: boolean } {
+  const { passages, unlocated } = passagesFor(story, violations)
   let out = story
   let cut = 0
-  for (const passage of passagesFor(story, violations)) {
+  let failed = 0
+  // Last passage first, so earlier offsets stay valid as text is removed.
+  for (const passage of [...passages].sort((a, b) => b.chapter - a.chapter || b.start - a.start)) {
     const next = removePassage(out, passage)
-    if (!next) continue
+    if (!next) {
+      failed += 1
+      continue
+    }
     out = next
     cut += 1
   }
-  return { story: out, cut }
+  // Complete only when every hard violation was placed and every passage went: a story
+  // with a breach still in it is never "cut".
+  return { story: out, cut, complete: unlocated.length === 0 && failed === 0 && cut > 0 }
 }

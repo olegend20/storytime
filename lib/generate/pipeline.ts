@@ -38,7 +38,6 @@ import {
 } from '@/lib/topics'
 import { runQualityGate } from '@/lib/quality'
 import { borrowsCharacter, requestedCharacters } from '@/lib/guardrails/classify'
-import { scanStoryStructure } from '@/lib/guardrails/output'
 import { cutViolations, mendStory } from './mend'
 import { buildPrompt } from './prompt'
 import { parseStoryOutput } from './parse'
@@ -432,19 +431,23 @@ export async function runGeneration(
     // (one helper call, seconds) and re-runs the gate; rung 2 cuts them (free). What is
     // tallied here is saved with the story as `quality.mended`.
     const mended = { edits: 0, cut: 0, rules: new Set<number>() }
+    // The whole gate again on text the ladder changed - the safety review included, even
+    // when a deterministic check fails, because the mend model wrote that text for a story
+    // that had already breached a rule.
     const regate = (attempt: 1 | 2, request: GenerationRequest) =>
       runQualityGate({
         story,
         request,
         factPack: pack,
         attempt,
+        reviewDespiteFailures: true,
         familyId: prepared.familyId,
         storyId: prepared.storyId,
         ...(sink ? { sink } : {}),
         ...(deps.safetyReviewer ? { safetyReviewer: deps.safetyReviewer } : {}),
         ...(deps.extraBlocklists ? { extraBlocklists: deps.extraBlocklists } : {}),
       })
-    const mend = async (request: GenerationRequest): Promise<boolean> => {
+    const mend = async (attempt: 1 | 2, request: GenerationRequest): Promise<boolean> => {
       const violations = gate.result.hard_violations
       const result = await mendStory(story, violations, {
         familyId: prepared.familyId,
@@ -455,15 +458,19 @@ export async function runGeneration(
       for (const v of violations) mended.rules.add(v.rule)
       mended.edits += result.edits
       story = result.story
-      gate = await regate(2, request)
+      gate = await regate(attempt, request)
       return true
     }
 
     // Rung 1 in place of the full rewrite: when the only thing wrong with attempt 1 is a
-    // hard-rule breach, ten seconds of mending beats two minutes of rewriting.
+    // hard-rule breach, ten seconds of mending beats two minutes of rewriting. Regated as
+    // attempt 1, so if the mend did not clear it the full rewrite still follows, briefed
+    // with whatever survived.
     if (gate.needsRewrite && onlyHardRuleBreaches(gate.result)) {
-      const fixed = await mend(prepared.request)
-      if (fixed) console.info(`[generate] mended attempt 1 in place of a rewrite (${[...mended.rules].join(', ')})`)
+      const fixed = await mend(1, prepared.request)
+      if (fixed && !gate.needsRewrite) {
+        console.info(`[generate] mended attempt 1 in place of a rewrite (${[...mended.rules].join(', ')})`)
+      }
     }
 
     // ---- at most one rewrite (F6 AC: two writing-model calls maximum) ----
@@ -538,38 +545,38 @@ export async function runGeneration(
       }
     }
 
-    if (firstAttempt) gate.result.first_attempt = firstAttempt
-    if (normalized.length > 0) {
-      gate.result.normalized = normalized
-      console.info(`[generate] fixed locally, no model call: ${normalized.join(' | ')}`)
-    }
-
-    // Issue #32: before a discard, mend (rung 1) and then cut (rung 2). A breach that
-    // survives both is the one discard left - and the free scan is what says so.
+    // Issue #32: before a discard, mend (rung 1) and then cut (rung 2). A cut counts only
+    // when every hard violation was placed and removed, and what it leaves goes through
+    // the whole gate again; a breach that survives both is the one discard left.
     if (gate.result.outcome === 'discarded') {
       const request: GenerationRequest = { ...prepared.request, rewrite_reasons: gate.result.rewrite_reasons }
-      await mend(request)
+      await mend(2, request)
       if (gate.result.outcome === 'discarded') {
-        const cut = cutViolations(story, gate.result.hard_violations)
-        if (cut.cut > 0) {
-          const childNames = prepared.request.children.map((c) => c.name)
-          const scan = scanStoryStructure(cut.story, {
-            childNames,
-            requestedCharacters: prepared.request.requested_characters,
-          })
-          if (scan.hardViolations.length === 0) {
-            for (const v of gate.result.hard_violations) mended.rules.add(v.rule)
+        const violations = gate.result.hard_violations
+        const cut = cutViolations(story, violations)
+        if (cut.complete) {
+          const before = story
+          story = cut.story
+          gate = await regate(2, request)
+          if (gate.result.outcome === 'discarded') {
+            story = before // nothing shipped from the cut; the record describes the discard
+          } else {
+            for (const v of violations) mended.rules.add(v.rule)
             mended.cut += cut.cut
-            story = cut.story
-            gate = {
-              ...gate,
-              result: { ...gate.result, outcome: 'flagged', hard_violations: [] },
-              status: 'flagged',
-              needsRewrite: false,
+            // A story that lost a sentence is shown with the "second look" banner, however
+            // clean the gate now finds it.
+            if (gate.result.outcome === 'pass') {
+              gate = { ...gate, result: { ...gate.result, outcome: 'flagged' }, status: 'flagged' }
             }
           }
         }
       }
+    }
+
+    if (firstAttempt) gate.result.first_attempt = firstAttempt
+    if (normalized.length > 0) {
+      gate.result.normalized = normalized
+      console.info(`[generate] fixed locally, no model call: ${normalized.join(' | ')}`)
     }
     if (mended.edits > 0 || mended.cut > 0) {
       gate.result.mended = { edits: mended.edits, cut: mended.cut, rules: [...mended.rules].sort((a, b) => a - b) }

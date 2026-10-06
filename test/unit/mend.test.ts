@@ -52,7 +52,7 @@ describe('locating a violation', () => {
   it('finds the whole sentence holding a reviewer quote, in the right chapter', () => {
     const story = storyWith([KEEP, PATS, ELSA])
     const where = locateViolation(story, { rule: 10, quote: 'patted the whale shark', severity: 'hard' })
-    expect(where).toEqual({ chapter: 1, text: PATS, rule: 10 })
+    expect(where).toMatchObject({ chapter: 1, text: PATS, rule: 10 })
   })
 
   it('finds the scanner\'s windowed quote (with its ellipses and context) the same way', () => {
@@ -63,10 +63,33 @@ describe('locating a violation', () => {
     expect(where?.text).toContain(ELSA)
   })
 
+  it('a passage is a raw slice of the chapter: paragraph breaks and newlines inside sentences survive', () => {
+    const story = goodStory()
+    story.chapters[1]!.text = `${KEEP}\n\n${ELSA}\n${PATS}\n\nThe end of the chapter.`
+    // A scanner window straddling the paragraph break.
+    const windowed = `…${KEEP.slice(-25)}\n\n${ELSA.slice(0, 30)}…`
+    const where = locateViolation(story, { rule: 7, quote: windowed, severity: 'hard' })!
+    expect(story.chapters[1]!.text.slice(where.start, where.start + where.text.length)).toBe(where.text)
+    expect(where.text).toContain(ELSA)
+    // A sentence that holds a newline is still one sentence.
+    const sign = 'The sign read:\nNO SWIMMING, said Juno.'
+    story.chapters[1]!.text = `${KEEP} ${sign} Then she jumped in anyway.`
+    const jump = locateViolation(story, { rule: 10, quote: 'NO SWIMMING, said Juno', severity: 'hard' })!
+    expect(jump.text).toBe(sign)
+    expect(cutViolations(story, [{ rule: 10, quote: 'NO SWIMMING, said Juno', severity: 'hard' }]).story.chapters[1]!.text).toBe(`${KEEP} Then she jumped in anyway.`)
+  })
+
+  it('a paraphrased quote is placed by its longest run of words the text has', () => {
+    const story = storyWith([KEEP, PATS])
+    const where = locateViolation(story, { rule: 10, quote: 'Juno reached out and patted the whale shark happily', severity: 'hard' })
+    expect(where?.text).toBe(PATS)
+  })
+
   it('returns null for a quote the story does not have, and skips soft violations', () => {
     const story = storyWith([KEEP])
     expect(locateViolation(story, { rule: 3, quote: 'it was right behind him', severity: 'hard' })).toBeNull()
-    expect(passagesFor(story, [{ rule: 7, quote: KEEP, severity: 'soft' }])).toEqual([])
+    expect(passagesFor(story, [{ rule: 7, quote: KEEP, severity: 'soft' }])).toEqual({ passages: [], unlocated: [] })
+    expect(passagesFor(story, [{ rule: 3, quote: 'it was right behind him', severity: 'hard' }]).unlocated).toHaveLength(1)
   })
 })
 
@@ -98,26 +121,35 @@ describe('rung 1: the mend', () => {
     expect(calls.made[0]!.purpose).toBe('mend')
     expect(calls.made[0]!.role).toBe('helper')
     const content = (calls.made[0]!.messages as { content: string }[])[0]!.content
-    expect(content).toBe(mendUserMessage(passagesFor(story, violations)))
+    expect(content).toBe(mendUserMessage(passagesFor(story, violations).passages))
     expect(content).toContain('<passages>')
     expect(content).toContain('7. No branded fictional characters')
   })
 
-  it('applies no edit it did not ask for, none it cannot find, and none that balloons', async () => {
+  it('applies no edit it did not ask for, none it cannot place, none that balloons, and each passage once', async () => {
     const story = storyWith([KEEP, ELSA])
     calls.reply = JSON.stringify({
       edits: [
         { chapter: 1, find: KEEP, replace: 'Milo did something else.' }, // not a passage
-        { chapter: 1, find: 'Then Elsa waved', replace: 'x' }, // inside a passage but shorter than the passage: allowed? no - find must be within passage text; it is
         { chapter: 0, find: ELSA, replace: 'wrong chapter' },
-        { chapter: 1, find: ELSA, replace: 'A'.repeat(ELSA.length * 3 + 201) },
+        { chapter: 1, find: ELSA, replace: 'A'.repeat(ELSA.length * 3 + 201) }, // balloons
+        { chapter: 1, find: 'Then Elsa waved', replace: 'x' }, // inside the passage: applied
+        { chapter: 1, find: 'pond froze solid', replace: 'y' }, // same passage again: not applied
       ],
     })
     const result = await mendStory(story, [{ rule: 7, quote: ELSA, severity: 'hard' }])
-    // Only the partial-but-inside edit applied.
     expect(result.edits).toBe(1)
     expect(result.story.chapters[1]!.text).toBe(`${KEEP} x her hand and the pond froze solid.`)
     expect(result.story.chapters[0]!.text).toBe(story.chapters[0]!.text)
+  })
+
+  it('a short find edits the passage, never an earlier look-alike in the chapter', async () => {
+    const earlier = 'Juno reached out for the torch.'
+    const story = storyWith([earlier, KEEP, PATS])
+    calls.reply = JSON.stringify({ edits: [{ chapter: 1, find: 'Juno reached out', replace: 'Juno looked out' }] })
+    const result = await mendStory(story, [{ rule: 10, quote: 'patted the whale shark', severity: 'hard' }])
+    expect(result.edits).toBe(1)
+    expect(result.story.chapters[1]!.text).toBe([earlier, KEEP, PATS.replace('Juno reached out', 'Juno looked out')].join(' '))
   })
 
   it('makes no call when nothing can be located', async () => {
@@ -139,13 +171,24 @@ describe('rung 1: the mend', () => {
 describe('rung 2: the cut', () => {
   it('removes the sentences holding the quotes and tidies the gap', () => {
     const story = storyWith([KEEP, ELSA, PATS])
-    const { story: cut, cut: n } = cutViolations(story, [
+    const { story: cut, cut: n, complete } = cutViolations(story, [
       { rule: 7, quote: 'Elsa waved her hand', severity: 'hard' },
       { rule: 10, quote: 'patted the whale shark', severity: 'hard' },
     ])
     expect(n).toBe(2)
+    expect(complete).toBe(true)
     expect(cut.chapters[1]!.text).toBe(KEEP)
     expect(cut.chapters[0]).toEqual(story.chapters[0])
+  })
+
+  it('is not complete when any hard violation could not be placed: a breach must never stay in', () => {
+    const story = storyWith([KEEP, ELSA])
+    const result = cutViolations(story, [
+      { rule: 7, quote: 'Elsa waved her hand', severity: 'hard' },
+      { rule: 2, quote: 'a paraphrase the text does not contain', severity: 'hard' },
+    ])
+    expect(result.cut).toBe(1)
+    expect(result.complete).toBe(false)
   })
 
   it('never empties a chapter', () => {

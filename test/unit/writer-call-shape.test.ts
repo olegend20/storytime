@@ -39,7 +39,7 @@ const { streamModel } = await import('@/lib/ai/streamModel')
 const { STORY_OUTPUT_FORMAT } = await import('@/lib/generate/output-schema')
 const { ModelCallError } = await import('@/lib/ai/types')
 const { WRITER_MAX_TOKENS, WRITER_STORY_TOKENS_MAX } = await import('@/lib/generate/pipeline')
-const { capabilities } = await import('@/lib/ai/pricing')
+const { capabilities, modelForRole } = await import('@/lib/ai/pricing')
 const { targetWords } = await import('@/lib/schemas')
 
 const saved = process.env.LIVE_API
@@ -113,6 +113,7 @@ describe('the writer never runs out of room for the story', () => {
     const storyTokens = Math.ceil(longest * 1.15 * 1.6) + 800
     expect(storyTokens).toBeLessThanOrEqual(WRITER_STORY_TOKENS_MAX)
     expect(WRITER_MAX_TOKENS - WRITER_STORY_TOKENS_MAX).toBeGreaterThan(50_000)
-    expect(Number(capabilities('claude-sonnet-5').max_output)).toBeGreaterThanOrEqual(WRITER_MAX_TOKENS)
+    // The configured writer, whichever the owner picks (CLAUDE.md rule 2: never a literal).
+    expect(Number(capabilities(modelForRole('writer')).max_output)).toBeGreaterThanOrEqual(WRITER_MAX_TOKENS)
   })
 })

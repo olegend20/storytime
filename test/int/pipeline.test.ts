@@ -37,7 +37,7 @@ import {
 import { buildPrompt } from '@/lib/generate/prompt'
 import { buildQualityReviewMessage, measuredForReview } from '@/lib/quality/review'
 import { WRITER_MAX_TOKENS } from '@/lib/generate/pipeline'
-import { MEND_MAX_TOKENS, mendUserMessage, passagesFor } from '@/lib/generate/mend'
+import { MEND_MAX_TOKENS, cutViolations, mendUserMessage, passagesFor } from '@/lib/generate/mend'
 import { STORY_OUTPUT_FORMAT } from '@/lib/generate/output-schema'
 import { buildBibleUpdateMessage } from '@/lib/bible'
 import { loadPrompt } from '@/lib/prompts'
@@ -574,7 +574,7 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       callFixtureKey({
         model: helperModel,
         system: [{ text: loadPrompt('mend').body }],
-        messages: [{ role: 'user', content: mendUserMessage(passagesFor(story, violations)) }],
+        messages: [{ role: 'user', content: mendUserMessage(passagesFor(story, violations).passages) }],
         maxTokens: MEND_MAX_TOKENS,
       }),
       JSON.stringify({ edits }),
@@ -650,14 +650,19 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     const violations: OutputViolation[] = [{ rule: 10, quote, severity: 'hard' }]
     const rewritten = stubRewrittenStory()
     const rewrittenQuote = rewritten.chapters[0]!.text.split(/(?<=[.!?])\s+/)[0]!
-    stubMendFor(run, rewritten, [{ rule: 10, quote: rewrittenQuote.slice(0, 30), severity: 'hard' }], [])
+    const rewrittenViolations: OutputViolation[] = [{ rule: 10, quote: rewrittenQuote.slice(0, 30), severity: 'hard' }]
+    stubMendFor(run, rewritten, rewrittenViolations, [])
+    // The cut story goes through the whole gate again: its review and bible fixtures.
+    const afterCut = cutViolations(rewritten, rewrittenViolations)
+    expect(afterCut.complete).toBe(true)
+    stubMendFor(run, afterCut.story, [], [])
     let reviewCall = 0
     const safetyReviewer = {
-      review: async (): Promise<OutputSafetyReview> => {
+      review: async (story: StoryOutput): Promise<OutputSafetyReview> => {
         reviewCall += 1
         if (reviewCall === 1) return { ...hardViolation(quote, 10), scary_level: 2 }
-        // The rewrite breaches too, on its own first sentence.
-        return hardViolation(rewrittenQuote.slice(0, 30), 10)
+        // The rewrite breaches too, on its own first sentence - until that sentence is gone.
+        return story.chapters[0]!.text.includes(rewrittenQuote) ? hardViolation(rewrittenQuote.slice(0, 30), 10) : clean
       },
     }
     const sink = new MemoryLogSink()
@@ -667,7 +672,12 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     expect(result.writeCalls).toBe(2)
     expect(result.quality?.outcome).toBe('flagged')
     expect(result.quality?.mended).toEqual({ edits: 0, cut: 1, rules: [10] })
+    // The record describes the cut story, gate and safety review included.
     expect(result.quality?.hard_violations).toEqual([])
+    expect(result.quality?.safety?.safe).toBe(true)
+    expect(result.quality?.word_count).toBe(result.wordCount)
+    expect(result.quality?.first_attempt?.reasons[0]).toBe('GUARDRAILS rule 10 breached')
+    expect(reviewCall).toBe(3)
     // The offending sentence is gone; the story is saved and announced, quota consumed.
     expect(result.story?.chapters[0]!.text).not.toContain(rewrittenQuote)
     expect(result.story?.chapters[0]!.text.length).toBeGreaterThan(0)
