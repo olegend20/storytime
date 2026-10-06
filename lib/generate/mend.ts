@@ -72,7 +72,11 @@ export function locateViolation(story: StoryOutput, violation: OutputViolation):
   for (let n = Math.min(words.length, 8); n >= 4; n--) {
     for (let i = 0; i + n <= words.length; i++) runs.push(words.slice(i, i + n).join(' '))
   }
-  const candidates = [quote, ...splitSentences(quote).filter((s) => s.length >= 12), ...runs]
+  // A scanner quote is a window cut mid-sentence at both ends: its first and last pieces
+  // are fragments of the harmless sentences around the hit, so the middle ones go first.
+  const pieces = splitSentences(quote).filter((s) => s.length >= 12)
+  const ordered = pieces.length >= 3 ? [...pieces.slice(1, -1), pieces[0]!, pieces.at(-1)!] : pieces
+  const candidates = [quote, ...ordered, ...runs]
   for (const needle of candidates) {
     for (const [chapter, ch] of story.chapters.entries()) {
       const at = ch.text.indexOf(needle)

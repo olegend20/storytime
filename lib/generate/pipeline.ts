@@ -8,6 +8,7 @@ import {
   GenerateStoryBody,
   HTTP_STATUS_FOR_ERROR,
   type ContentNotice,
+  MAX_SCARY_LEVEL,
   type ErrorBody,
   type FactPack,
   type GenerationRequest,
@@ -36,7 +37,7 @@ import {
   normalizeTopic,
   TopicNormalizationError,
 } from '@/lib/topics'
-import { runQualityGate } from '@/lib/quality'
+import { reviewPassed, runQualityGate } from '@/lib/quality'
 import { borrowsCharacter, requestedCharacters } from '@/lib/guardrails/classify'
 import { cutViolations, mendStory } from './mend'
 import { buildPrompt } from './prompt'
@@ -264,16 +265,19 @@ export async function prepareGeneration(
   }
 }
 
-/** The reasons the mend call can act on: a located quote, not a judgement of the whole story. */
-const HARD_RULE_REASON = /^GUARDRAILS rule \d+ breached$|^output safety review returned safe: false$/
-
-/** Attempt 1 failed only on hard-rule breaches: nothing for a full rewrite to add. */
-export function onlyHardRuleBreaches(result: QualityResult): boolean {
+/**
+ * Attempt 1 failed only on hard-rule breaches - located quotes the mend can act on - and on
+ * nothing a full rewrite would be needed for. Decided from the structure of the result, not
+ * from the wording of its reasons (CLAUDE.md: reasons are prose, codes are the contract).
+ */
+export function onlyHardRuleBreaches(result: QualityResult, band: AgeBand): boolean {
+  const safety = result.safety
   return (
     result.failures.length === 0 &&
     result.hard_violations.length > 0 &&
-    result.rewrite_reasons.length > 0 &&
-    result.rewrite_reasons.every((r) => HARD_RULE_REASON.test(r))
+    (result.review === null || reviewPassed(result.review, band)) &&
+    (safety === null ||
+      (safety.scary_level <= MAX_SCARY_LEVEL[band] && safety.positive_portrayal && safety.ending_safe))
   )
 }
 
@@ -466,7 +470,7 @@ export async function runGeneration(
     // hard-rule breach, ten seconds of mending beats two minutes of rewriting. Regated as
     // attempt 1, so if the mend did not clear it the full rewrite still follows, briefed
     // with whatever survived.
-    if (gate.needsRewrite && onlyHardRuleBreaches(gate.result)) {
+    if (gate.needsRewrite && onlyHardRuleBreaches(gate.result, prepared.band)) {
       const fixed = await mend(1, prepared.request)
       if (fixed && !gate.needsRewrite) {
         console.info(`[generate] mended attempt 1 in place of a rewrite (${[...mended.rules].join(', ')})`)
@@ -530,19 +534,22 @@ export async function runGeneration(
           ...(deps.extraBlocklists ? { extraBlocklists: deps.extraBlocklists } : {}),
         })
       } else {
-        // Keep attempt 1's story and flag it rather than show the parent nothing.
+        // Keep attempt 1's story rather than show the parent nothing. If it still holds a
+        // hard-rule breach it goes down the ladder below (mend, cut) like any second breach,
+        // instead of shipping flagged with the breach in it.
+        const breached = gate.result.hard_violations.length > 0
         gate = {
           ...gate,
           result: {
             ...gate.result,
-            outcome: 'flagged',
+            outcome: breached ? 'discarded' : 'flagged',
             attempt: 2,
             rewrite_reasons: [
               ...gate.result.rewrite_reasons,
               `rewrite output unusable: ${parsed.reason}`,
             ],
           },
-          status: 'flagged',
+          status: breached ? 'failed' : 'flagged',
           needsRewrite: false,
         }
       }

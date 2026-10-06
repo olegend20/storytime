@@ -33,9 +33,11 @@ describe('deployment configuration', () => {
     expect(match).not.toBeNull()
     const seconds = Number(match![1])
     // Measured 2026-10-06: ~32,000 output tokens in ~300 s (eval space-race, twice). The
-    // route must outlast the cap at that rate, with a minute for the gate and the save.
+    // route must outlast one write at the cap at that rate, with a minute for the gate, the
+    // mend and the save. A write AND a full rewrite both at the cap cannot fit under
+    // Vercel's ceiling; that is the rare case, and the ladder's later rungs are its answer.
     const secondsPerToken = 300 / 32_000
-    expect(seconds).toBeGreaterThanOrEqual(Math.ceil(WRITER_MAX_TOKENS * secondsPerToken) + 0)
+    expect(seconds).toBeGreaterThanOrEqual(Math.ceil(WRITER_MAX_TOKENS * secondsPerToken) + 60)
     // And stay inside Vercel Pro's Fluid-compute ceiling.
     expect(seconds).toBeLessThanOrEqual(800)
   })

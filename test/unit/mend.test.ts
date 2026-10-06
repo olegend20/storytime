@@ -104,7 +104,7 @@ describe('rung 1: the mend', () => {
     const before = JSON.stringify(story)
     calls.reply = JSON.stringify({
       edits: [
-        { chapter: 1, find: ELSA, replace: '"Elsa came out in 2013," said Milo, and the pond glittered.' },
+        { chapter: 1, find: ELSA, replace: 'Milo pictured Elsa from the film, and the pond glittered.' },
         { chapter: 1, find: PATS, replace: 'Juno waved at the whale shark from the raft. "We just look," said Splash.' },
       ],
     })
@@ -112,7 +112,7 @@ describe('rung 1: the mend', () => {
     expect(result.edits).toBe(2)
     expect(result.passages).toBe(2)
     expect(result.story.chapters[1]!.text).toBe(
-      [KEEP, '"Elsa came out in 2013," said Milo, and the pond glittered.', 'Juno waved at the whale shark from the raft. "We just look," said Splash.'].join(' '),
+      [KEEP, 'Milo pictured Elsa from the film, and the pond glittered.', 'Juno waved at the whale shark from the raft. "We just look," said Splash.'].join(' '),
     )
     // Nothing else moved.
     expect(JSON.stringify({ ...result.story, chapters: result.story.chapters.map((c, i) => (i === 1 ? story.chapters[1] : c)) })).toBe(before)

@@ -33,7 +33,8 @@ given.
 ## How to fix each kind of breach
 
 - **Rule 7, a branded character taking part:** the character stops being a participant. Turn
-  the moment into a fact the guide or a child states ("Mario first appeared in 1981"), or
+  the moment into something the guide or a child says about the character without it
+  taking part ("Milo remembered that Mario is a character from a video game"), or
   give the action to a child or the story's own guide. Never leave the character speaking,
   moving or helping.
 - **Rule 10, unsafe behaviour made appealing:** keep the wonder, remove the act. A child
