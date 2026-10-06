@@ -277,6 +277,9 @@ export async function runEval(config: EvalConfig = {}): Promise<EvalResult> {
     const storyId = `eval:${scenario.id}`
     progress(`generate ${scenario.id}`)
     let generated: Awaited<ReturnType<StoryPipeline['generate']>>
+    // Where this scenario's log rows start, so a failure can count what it spent: the live
+    // pipeline tags its rows with the story's own uuid, not with `storyId` here.
+    const rowsBefore = 'rows' in sink ? (sink as MemoryLogSink).rows.length : 0
     try {
       generated = await pipeline.generate({
         scenario,
@@ -297,7 +300,8 @@ export async function runEval(config: EvalConfig = {}): Promise<EvalResult> {
       const spent =
         'rows' in sink
           ? (sink as MemoryLogSink).rows
-              .filter((r) => r.story_id === storyId && !JUDGE_PURPOSES.has(r.purpose))
+              .slice(rowsBefore)
+              .filter((r) => !JUDGE_PURPOSES.has(r.purpose))
               .reduce((n, r) => n + r.cost_usd, 0)
           : 0
       records.push(failedRecord(scenario, context, band, reason, round6(spent), infrastructure))

@@ -133,7 +133,8 @@ describe('F13 eval harness', () => {
         // The write and the repair were paid for before the story was given up on.
         for (const [purpose, cost] of [['write', 0.26], ['repair', 0.02]] as const) {
           await input.sink?.write({
-            purpose, model: input.writingModel, story_id: input.storyId, family_id: null, fact_pack_id: null,
+            // Tagged like the live pipeline's rows: with the story's own uuid, not `eval:<scenario>`.
+            purpose, model: input.writingModel, story_id: '00000000-0000-4000-8000-0000000000aa', family_id: null, fact_pack_id: null,
             input_tokens: 1, output_tokens: 1, cache_read_tokens: 0, cache_write_tokens: 0,
             cost_usd: cost, latency_ms: 1, ok: false, error: 'repair_failed',
           })
@@ -189,6 +190,15 @@ describe('F13 eval harness', () => {
     expect(result.summary.passed).toBe(false)
     expect(result.summary.failures.join(' ')).toMatch(/not run \(the API, not the writer\): bees-band-a-5min, titanic-band-b/)
     expect(isInfrastructureFailure(new Error('story output unusable: repair_failed'))).toBe(false)
+    // The live pipeline wraps the cause into its own message; the cause still decides.
+    expect(
+      isInfrastructureFailure(
+        new Error('eval scenario space-race produced no story: status failed: write stream to claude-sonnet-5 failed: Your credit balance is too low'),
+      ),
+    ).toBe(true)
+    expect(
+      isInfrastructureFailure(new Error('eval scenario x produced no story: status failed: story output unusable: repair_failed:schema_invalid')),
+    ).toBe(false)
   })
 
   it('a calibration that passed today is handed over at once and can be reused by the next run', async () => {

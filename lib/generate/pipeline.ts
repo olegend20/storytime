@@ -279,6 +279,8 @@ export interface RunGenerationResult {
   writeCalls: number
   /** Resolves when the background bible update finishes. Null when no story was saved. */
   bibleUpdate: Promise<unknown> | null
+  /** Why `status` is `failed`: the underlying error's message. Never shown to a parent. */
+  error?: string
 }
 
 /**
@@ -585,6 +587,7 @@ export async function runGeneration(
       wordCount: 0,
       writeCalls,
       bibleUpdate: null,
+      error: err instanceof Error ? err.message : String(err),
     }
   } finally {
     channel.close()
