@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { WRITER_MAX_TOKENS } from '@/lib/generate/pipeline'
 
 /**
  * Things the first production deployment (issue #18) depended on, pinned so they cannot
@@ -26,9 +27,17 @@ describe('deployment configuration', () => {
     expect(pkg.scripts.prepare).toMatch(/\|\| true$/)
   })
 
-  it('the generation route may run for the full five minutes a story can take', () => {
+  it('the generation route may run as long as the longest write the cap allows', () => {
     const route = readFileSync('app/api/stories/generate/route.ts', 'utf8')
-    expect(route).toMatch(/export const maxDuration = 300\b/)
+    const match = /export const maxDuration = (\d+)\b/.exec(route)
+    expect(match).not.toBeNull()
+    const seconds = Number(match![1])
+    // Measured 2026-10-06: ~32,000 output tokens in ~300 s (eval space-race, twice). The
+    // route must outlast the cap at that rate, with a minute for the gate and the save.
+    const secondsPerToken = 300 / 32_000
+    expect(seconds).toBeGreaterThanOrEqual(Math.ceil(WRITER_MAX_TOKENS * secondsPerToken) + 0)
+    // And stay inside Vercel Pro's Fluid-compute ceiling.
+    expect(seconds).toBeLessThanOrEqual(800)
   })
 
   it('no secret is exposed to the browser: every NEXT_PUBLIC_ name the code reads is a public one', () => {

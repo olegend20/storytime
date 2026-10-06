@@ -143,6 +143,22 @@ describe('rung 1: the mend', () => {
     expect(result.story.chapters[0]!.text).toBe(story.chapters[0]!.text)
   })
 
+  it('a shorter earlier edit does not lose a later passage in the same chapter', async () => {
+    const story = storyWith([KEEP, ELSA, PATS])
+    calls.reply = JSON.stringify({
+      edits: [
+        { chapter: 1, find: ELSA, replace: 'x' },
+        { chapter: 1, find: PATS, replace: 'Juno waved from the raft.' },
+      ],
+    })
+    const result = await mendStory(story, [
+      { rule: 7, quote: 'Elsa waved her hand', severity: 'hard' },
+      { rule: 10, quote: 'patted the whale shark', severity: 'hard' },
+    ])
+    expect(result.edits).toBe(2)
+    expect(result.story.chapters[1]!.text).toBe(`${KEEP} x Juno waved from the raft.`)
+  })
+
   it('a short find edits the passage, never an earlier look-alike in the chapter', async () => {
     const earlier = 'Juno reached out for the torch.'
     const story = storyWith([earlier, KEEP, PATS])

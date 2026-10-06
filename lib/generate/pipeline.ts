@@ -515,6 +515,9 @@ export async function runGeneration(
       })
       if (parsed.ok) {
         ;({ story, notes: normalized } = tidy(parsed))
+        // The rewrite replaced the text: whatever the in-place mend did is not in it.
+        mended.edits = 0
+        mended.rules.clear()
         gate = await runQualityGate({
           story,
           request: rewriteRequest,
@@ -578,12 +581,13 @@ export async function runGeneration(
       gate.result.normalized = normalized
       console.info(`[generate] fixed locally, no model call: ${normalized.join(' | ')}`)
     }
-    if (mended.edits > 0 || mended.cut > 0) {
+    // Recorded only for a story that ships: the record describes the text the parent reads.
+    if (gate.result.outcome !== 'discarded' && (mended.edits > 0 || mended.cut > 0)) {
       gate.result.mended = { edits: mended.edits, cut: mended.cut, rules: [...mended.rules].sort((a, b) => a - b) }
       console.info(`[generate] mended: ${mended.edits} sentence(s) rewritten, ${mended.cut} cut (rules ${[...mended.rules].join(', ')})`)
     }
 
-    // GUARDRAILS.md §4.1: a second HARD safety breach is discarded, quota untouched.
+    // GUARDRAILS.md §4.1: a breach that survived the mend and the cut is discarded, quota untouched.
     if (gate.result.outcome === 'discarded') {
       channel.push({
         type: 'error',

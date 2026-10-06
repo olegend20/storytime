@@ -112,6 +112,19 @@ export function passagesFor(
   return { passages, unlocated }
 }
 
+/** The occurrence of `needle` in `text` closest to `near` - an earlier edit may have moved it either way. */
+function nearestIndexOf(text: string, needle: string, near: number): number {
+  let best = -1
+  let from = 0
+  for (;;) {
+    const at = text.indexOf(needle, from)
+    if (at === -1) break
+    if (best === -1 || Math.abs(at - near) < Math.abs(best - near)) best = at
+    from = at + 1
+  }
+  return best
+}
+
 /**
  * Replace `find` with `replace` inside the passage it was asked about - never an earlier
  * look-alike elsewhere in the chapter. The passage is re-found by its text first, since an
@@ -124,7 +137,7 @@ function applyEdit(
 ): StoryOutput | null {
   const ch = story.chapters[passage.chapter]
   if (!ch) return null
-  const passageAt = ch.text.indexOf(passage.text, Math.max(0, passage.start - 2))
+  const passageAt = nearestIndexOf(ch.text, passage.text, passage.start)
   if (passageAt === -1) return null
   const within = ch.text.indexOf(edit.find, passageAt)
   if (within === -1 || within + edit.find.length > passageAt + passage.text.length) return null
@@ -137,7 +150,7 @@ function applyEdit(
 function removePassage(story: StoryOutput, passage: Passage): StoryOutput | null {
   const ch = story.chapters[passage.chapter]
   if (!ch) return null
-  const at = ch.text.indexOf(passage.text, Math.max(0, passage.start - 2))
+  const at = nearestIndexOf(ch.text, passage.text, passage.start)
   if (at === -1) return null
   const text = (ch.text.slice(0, at) + ch.text.slice(at + passage.text.length))
     .replace(/[ \t]{2,}/g, ' ')

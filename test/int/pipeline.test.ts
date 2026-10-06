@@ -647,7 +647,6 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     // Attempt 1 fails on a mix (so the full rewrite runs); the rewrite breaches too, and the
     // mend call returns nothing usable: that is the case that used to be a discard.
     const quote = SENTENCE.slice(0, 40)
-    const violations: OutputViolation[] = [{ rule: 10, quote, severity: 'hard' }]
     const rewritten = stubRewrittenStory()
     const rewrittenQuote = rewritten.chapters[0]!.text.split(/(?<=[.!?])\s+/)[0]!
     const rewrittenViolations: OutputViolation[] = [{ rule: 10, quote: rewrittenQuote.slice(0, 30), severity: 'hard' }]
@@ -666,7 +665,8 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       },
     }
     const sink = new MemoryLogSink()
-    const { events, result } = await collect(run, { db: family.db, sink, quota: new RecordingQuota(), safetyReviewer, now: () => FIXED_NOW })
+    const quota = new RecordingQuota()
+    const { events, result } = await collect(run, { db: family.db, sink, quota, safetyReviewer, now: () => FIXED_NOW })
 
     expect(result.status).toBe('flagged')
     expect(result.writeCalls).toBe(2)
@@ -684,7 +684,8 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     expect(events.at(-1)?.type).toBe('done')
     const { data: row } = await family.db.from('stories').select('status').eq('id', run.storyId).single()
     expect((row as { status: string }).status).toBe('flagged')
-    expect(violations).toHaveLength(1)
+    // A book was delivered, so it counts against the day: the change from §4.1's discard.
+    expect(quota.calls).toEqual(['consumeQuota'])
     if (result.bibleUpdate) await result.bibleUpdate
   })
 

@@ -27,8 +27,12 @@ import {
 // `lib/prompts.ts` reads prompts/*.md from disk and the pipeline uses node:crypto.
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-// A 10-minute story on a slow night: p95 target is 90 s, the ceiling is generous.
-export const maxDuration = 300
+// A 10-minute story on a slow night: p95 target is 90 s, the ceiling is generous. Raised to
+// 600 s with the writer's cap (issue #32, DECISIONS #177): a write that needs 40,000+ output
+// tokens takes over five minutes, and Vercel must not cut it off before the cap matters.
+// The project runs Fluid compute (Pro ceiling 800 s); test/unit/deploy-config.test.ts
+// ties this number to the cap.
+export const maxDuration = 600
 
 function json(body: ErrorBody, status: number): Response {
   return Response.json(body, { status })
