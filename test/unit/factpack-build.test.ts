@@ -90,6 +90,15 @@ describe('buildFactPack writes from knowledge when the model knows the topic', (
     expect(calls.made.filter((c) => Array.isArray(c.tools))).toHaveLength(RESEARCH_ANGLES.length)
   })
 
+  it('issue #28: forceResearch skips the knowledge stage entirely, however well the model knows the topic', async () => {
+    calls.coverage = 'solid'
+    calls.knowledgeFacts = 24
+    const result = await buildFactPack('retry', 'A retried topic', { model: 'claude-sonnet-5', forceResearch: true })
+    expect(result.mode).toBe('research')
+    expect(calls.made.filter(isKnowledge)).toHaveLength(0)
+    expect(calls.made.filter((c) => Array.isArray(c.tools))).toHaveLength(RESEARCH_ANGLES.length)
+  })
+
   it('researches when "solid" knowledge still yields too few facts', async () => {
     calls.coverage = 'solid'
     calls.knowledgeFacts = 7

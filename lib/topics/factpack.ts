@@ -19,6 +19,12 @@ export const BUILD_POLL_INTERVAL_MS = 250
 export const BUILD_POLL_TIMEOUT_MS = 180_000
 /** A `building` row older than this is assumed abandoned and may be taken over. */
 export const BUILD_LOCK_STALE_MS = 10 * 60_000
+/**
+ * A `rejected` row older than this is rebuilt by the next request (issue #28). Before: a
+ * topic whose first pack failed the review was dead for every family, forever. Now a
+ * rejection costs the topic a day, and a topic costs at most one build a day.
+ */
+export const REJECTED_RETRY_AFTER_MS = 24 * 60 * 60_000
 
 const PACK_COLUMNS =
   'id, topic_key, topic_label, content, sources, model, version, use_count, quality_score, status, updated_at'
@@ -61,6 +67,8 @@ export interface GetOrBuildOptions {
    */
   builder?: typeof buildFactPack
   reviewer?: typeof reviewFactPack
+  /** Test seam for the rejection window: the `updated_at` trigger cannot be aged. */
+  now?: () => number
 }
 
 export interface GetOrBuildResult {
@@ -113,6 +121,7 @@ async function claimBuild(
   topicKey: string,
   topicLabel: string,
   db: SupabaseClient,
+  now: () => number = Date.now,
 ): Promise<string | null> {
   const { data, error } = await db
     .from('fact_packs')
@@ -132,6 +141,18 @@ async function claimBuild(
   // Lost the race, or a previous attempt left a stale lock we can take over.
   const existing = await readRow(topicKey, db)
   if (!existing) throw new Error(`claimBuild: ${error?.message ?? 'insert returned no row'}`)
+  if (existing.status === 'rejected' && rejectionExpired(existing, now)) {
+    // Issue #28: an old rejection is rebuilt. The compare-and-swap on `status` means two
+    // simultaneous requests still produce one build: the loser sees `building` and waits.
+    const { data: retaken } = await db
+      .from('fact_packs')
+      .update({ status: 'building', model: 'pending', topic_label: topicLabel })
+      .eq('id', existing.id)
+      .eq('status', 'rejected')
+      .select('id')
+      .maybeSingle()
+    return retaken ? String((retaken as { id: string }).id) : null
+  }
   if (existing.status !== 'building') return null
 
   const updatedAt = existing.updated_at ? Date.parse(existing.updated_at) : Date.now()
@@ -159,10 +180,20 @@ async function waitForBuild(
 
   for (;;) {
     const row = await readRow(topicKey, db)
-    if (row && row.status !== 'building') return row
+    // An expired rejection is about to be taken over by whoever won the claim (issue #28):
+    // it is not an answer, so keep waiting for the row it becomes.
+    if (row && row.status !== 'building' && !(row.status === 'rejected' && rejectionExpired(row, opts.now))) {
+      return row
+    }
     if (Date.now() >= deadline) throw new FactPackTimeoutError(topicKey)
     await new Promise((resolve) => setTimeout(resolve, interval))
   }
+}
+
+/** Issue #28: a rejection older than REJECTED_RETRY_AFTER_MS no longer stands. */
+function rejectionExpired(row: RawRow, now: () => number = Date.now): boolean {
+  const at = row.updated_at ? Date.parse(row.updated_at) : Number.NaN
+  return Number.isFinite(at) && now() - at > REJECTED_RETRY_AFTER_MS
 }
 
 /**
@@ -239,30 +270,51 @@ export async function getOrBuildFactPack(
 
   const existing = await readRow(topicKey, db)
   if (existing && existing.status === 'ready') return finish(existing, false)
-  if (existing && existing.status === 'rejected') return finish(existing, false)
+  if (existing && existing.status === 'rejected' && !rejectionExpired(existing, opts.now)) {
+    return finish(existing, false)
+  }
 
-  const ownedId = await claimBuild(topicKey, topicLabel, db)
+  const ownedId = await claimBuild(topicKey, topicLabel, db, opts.now)
   if (!ownedId) {
     // Another request is building. Wait for it rather than paying for a second build.
     return finish(await waitForBuild(topicKey, db, opts), false)
   }
 
   try {
-    const build = await (opts.builder ?? buildFactPack)(topicKey, topicLabel, {
-      factPackId: ownedId,
-      ...(opts.sink ? { sink: opts.sink } : {}),
-      ...(opts.signal ? { signal: opts.signal } : {}),
-    })
-    const { candidate } = trimFactPackToBudget(build.candidate)
-    const { deterministic, model } = await (opts.reviewer ?? reviewFactPack)(candidate, {
-      factPackId: ownedId,
-      ...(opts.sink ? { sink: opts.sink } : {}),
-      ...(opts.signal ? { signal: opts.signal } : {}),
-    })
-
-    if (!deterministic.accept || !deterministic.pack || !model.accept) {
+    const attempt = async (forceResearch: boolean) => {
+      const build = await (opts.builder ?? buildFactPack)(topicKey, topicLabel, {
+        factPackId: ownedId,
+        ...(forceResearch ? { forceResearch } : {}),
+        ...(opts.sink ? { sink: opts.sink } : {}),
+        ...(opts.signal ? { signal: opts.signal } : {}),
+      })
+      const { candidate } = trimFactPackToBudget(build.candidate)
+      const { deterministic, model } = await (opts.reviewer ?? reviewFactPack)(candidate, {
+        factPackId: ownedId,
+        ...(opts.sink ? { sink: opts.sink } : {}),
+        ...(opts.signal ? { signal: opts.signal } : {}),
+      })
+      const accepted = deterministic.accept && !!deterministic.pack && model.accept
       // A deterministic rejection skips the model and echoes its reasons into `model`.
-      const reasons = [...new Set([...deterministic.reasons, ...model.reasons])]
+      const reasons = accepted ? [] : [...new Set([...deterministic.reasons, ...model.reasons])]
+      return { build, deterministic, model, accepted, reasons }
+    }
+
+    let result = await attempt(false)
+    // Issue #28: a pack written from knowledge that the review turned down gets the path
+    // with sources before the topic is given up on. One more build, never a loop.
+    if (!result.accepted && result.build.mode === 'knowledge') {
+      console.info(
+        `[factpack] "${topicKey}": knowledge pack rejected (${result.reasons.join('; ')}) - researching`,
+      )
+      const second = await attempt(true)
+      result = second.accepted
+        ? second
+        : { ...second, reasons: [...new Set([...result.reasons, ...second.reasons])] }
+    }
+    const { build, deterministic, model, reasons } = result
+
+    if (!result.accepted || !deterministic.pack) {
       await db
         .from('fact_packs')
         .update({

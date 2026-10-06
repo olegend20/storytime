@@ -165,6 +165,123 @@ describe.skipIf(!available)('F5 fact pack lock and use_count (int)', () => {
     expect(await findFactPack(key, db)).toBeNull()
   })
 
+  /**
+   * Issue #28 (VT-FP1..3). A topic whose first pack failed the review used to be dead for
+   * every family, forever. Now a rejected knowledge pack is researched before the topic is
+   * given up on, and a rejection expires after a day.
+   */
+  function modeBuilder(topicKey: string) {
+    const state = { calls: [] as boolean[] }
+    const builder = async (
+      _key: string,
+      label: string,
+      opts?: { forceResearch?: boolean },
+    ): Promise<BuildFactPackResult> => {
+      state.calls.push(opts?.forceResearch === true)
+      return {
+        candidate: { ...goodFactPack(), topic_key: topicKey, topic_label: label },
+        model: 'test-builder',
+        webSearches: opts?.forceResearch ? 4 : 0,
+        costUsd: 0.1,
+        mode: opts?.forceResearch ? 'research' : 'knowledge',
+      }
+    }
+    return { state, builder }
+  }
+  /** Rejects the knowledge pack, accepts the researched one. */
+  const reviewerPreferringSources = () => {
+    const seen = { calls: 0 }
+    const reviewer = async (candidate: unknown) => {
+      seen.calls += 1
+      const reject = seen.calls === 1
+      return {
+        deterministic: { accept: true as const, reasons: [] as never[], pack: candidate as ReturnType<typeof goodFactPack>, tokenEstimate: 900 },
+        model: reject ? { accept: false, quality_score: 2.8, reasons: ['vague filler'] } : { accept: true, quality_score: 4.4, reasons: [] },
+      }
+    }
+    return { seen, reviewer }
+  }
+
+  it('VT-FP1: a rejected knowledge pack is researched, and the researched pack is what is stored', async () => {
+    const key = uniqueKey('fp1')
+    const { state, builder } = modeBuilder(key)
+    const { seen, reviewer } = reviewerPreferringSources()
+    const result = await getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: reviewer as never })
+    expect(result.built).toBe(true)
+    expect(result.record.status).toBe('ready')
+    expect(state.calls).toEqual([false, true]) // knowledge first, then research forced
+    expect(seen.calls).toBe(2)
+    const { data } = await db.from('fact_packs').select('id').eq('topic_key', key)
+    expect(data).toHaveLength(1)
+  })
+
+  it('VT-FP1: a research pack that is rejected is not built again', async () => {
+    const key = uniqueKey('fp1b')
+    const state = { calls: 0 }
+    const researchOnly = async (_k: string, label: string): Promise<BuildFactPackResult> => {
+      state.calls += 1
+      return { candidate: { ...goodFactPack(), topic_key: key, topic_label: label }, model: 'test', webSearches: 4, costUsd: 0.3, mode: 'research' }
+    }
+    const rejecting = async (candidate: unknown) => ({
+      deterministic: { accept: true as const, reasons: [] as never[], pack: candidate as ReturnType<typeof goodFactPack>, tokenEstimate: 900 },
+      model: { accept: false, quality_score: 1, reasons: ['plainly wrong dates'] },
+    })
+    await expect(getOrBuildFactPack(key, 'A topic', { db, builder: researchOnly, reviewer: rejecting as never })).rejects.toThrow(FactPackRejectedError)
+    expect(state.calls).toBe(1)
+  })
+
+  it('VT-FP2: both attempts rejected -> rejected with both sets of reasons, and no build inside a day', async () => {
+    const key = uniqueKey('fp2')
+    const { state, builder } = modeBuilder(key)
+    let n = 0
+    const rejecting = async (candidate: unknown) => {
+      n += 1
+      return {
+        deterministic: { accept: true as const, reasons: [] as never[], pack: candidate as ReturnType<typeof goodFactPack>, tokenEstimate: 900 },
+        model: { accept: false, quality_score: 1, reasons: [n === 1 ? 'vague filler' : 'still vague'] },
+      }
+    }
+    await expect(getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: rejecting as never })).rejects.toThrow(FactPackRejectedError)
+    expect(state.calls).toEqual([false, true])
+    const { data } = await db.from('fact_packs').select('status, content').eq('topic_key', key).maybeSingle()
+    expect((data as { status: string }).status).toBe('rejected')
+    expect((data as { content: { review_reasons: string[] } }).content.review_reasons).toEqual(['vague filler', 'still vague'])
+
+    // Tonight, the same answer, free.
+    await expect(getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: rejecting as never })).rejects.toThrow(FactPackRejectedError)
+    expect(state.calls).toHaveLength(2)
+  })
+
+  it('VT-FP3: a rejection older than a day is rebuilt by the next request, once', async () => {
+    const key = uniqueKey('fp3')
+    const { state, builder } = modeBuilder(key)
+    const rejecting = async (candidate: unknown) => ({
+      deterministic: { accept: true as const, reasons: [] as never[], pack: candidate as ReturnType<typeof goodFactPack>, tokenEstimate: 900 },
+      model: { accept: false, quality_score: 1, reasons: ['vague filler'] },
+    })
+    await expect(getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: rejecting as never })).rejects.toThrow(FactPackRejectedError)
+    expect(state.calls).toHaveLength(2)
+
+    // 23 hours later: still the same answer, nothing built.
+    const soon = () => Date.now() + 23 * 3_600_000
+    await expect(getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: rejecting as never, now: soon })).rejects.toThrow(FactPackRejectedError)
+    expect(state.calls).toHaveLength(2)
+
+    // 25 hours later: rebuilt, by one of two simultaneous requests. (The `updated_at`
+    // trigger cannot be aged from here, so the clock is the seam.)
+    const later = () => Date.now() + 25 * 3_600_000
+    const { seen, reviewer } = reviewerPreferringSources()
+    const [a, b] = await Promise.all([
+      getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: reviewer as never, now: later }),
+      getOrBuildFactPack(key, 'A topic', { db, builder, reviewer: reviewer as never, now: later, pollIntervalMs: 20 }),
+    ])
+    expect(a.record.status).toBe('ready')
+    expect(b.record.id).toBe(a.record.id)
+    expect([a.built, b.built].filter(Boolean)).toHaveLength(1)
+    expect(state.calls).toHaveLength(4) // the first night's two, then knowledge + research once
+    expect(seen.calls).toBe(2)
+  })
+
   it('releases the lock when the build itself throws, so the next request can retry', async () => {
     const key = uniqueKey('boom')
     let calls = 0
