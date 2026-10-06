@@ -267,8 +267,20 @@ export async function prepareGeneration(
  * A cap, not a cost: only tokens actually generated are billed. The writer thinks before it
  * writes, and the owner's first 1,400-word story used 13,101 output tokens against the old
  * 16,000 cap - so a 15-minute story for an older child could not have finished at all.
+ *
+ * Raised again on 2026-10-06 (issue #32, rung 0): a 15-minute band-C story hit 32,000 twice
+ * in one day - about 6,500 tokens of story under 25,000 of thinking - and the parent got no
+ * book. The story itself is bounded (`WRITER_STORY_TOKENS_MAX`); the thinking is adaptive
+ * and is not. The cap leaves the longest story more than 50,000 tokens of thinking.
  */
-export const WRITER_MAX_TOKENS = 32_000
+export const WRITER_MAX_TOKENS = 64_000
+/**
+ * The most tokens a story's JSON can take: the longest target (15 minutes, band D) at the
+ * top of its tolerance (≈ 5,700 words), at ~1.6 tokens a word for prose inside JSON, plus
+ * headings, True Facts and the bible suggestions. `WRITER_MAX_TOKENS` must leave room for thinking above
+ * this; test/unit/writer-call-shape.test.ts holds the two apart.
+ */
+export const WRITER_STORY_TOKENS_MAX = 12_000
 
 export interface RunGenerationResult {
   storyId: string

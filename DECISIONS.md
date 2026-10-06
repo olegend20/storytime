@@ -343,3 +343,10 @@ The owner's first real stories: every first draft sent back, every rewrite faile
 | 169 | **When code drops the classifier's names, it drops the classifier's care notes with them, and the notice follows the confirmed names only.** `confirmCharacters()`. Also from the review. | The care notes were written to put that character in the story. Without the name, the writer would be told to include someone rule 7 forbids. |
 | 170 | **The Kindle book carries the notice too** (title page and the mail text). | The copy most likely to be forwarded was the one copy without the owner's wording. |
 
+## 2026-10-06 — every parent gets a book (issue #32)
+
+| # | Decision | Why |
+|---|---|---|
+| 176 | **Owner's metric: every customer gets a book, every time, without much added latency.** Delivery is the headline number; quality is measured second. The design is a ladder (issue #32): never discard, degrade - length, polish and at the floor the topic give way; the fourteen hard rules never do. | The eval and production both showed parents getting nothing: a truncated write, two safety breaches, a rejected pack, a dead API. Each is a bedtime with no story. |
+| 177 | **Rung 0: the writer's cap is 64,000 output tokens, and the story's own size is a named bound (`WRITER_STORY_TOKENS_MAX`, 12,000) that the cap must clear by more than 50,000.** 32,000 was never a hard rule (#134: a cap, not a cost); Sonnet 5 allows 128,000. The thinking is adaptive and unbounded; the story is not. A hard ceiling, if ever wanted, is the model's `effort` setting for the longest stories - a quality trade the owner has not asked for. | A 15-minute band-C story hit 32,000 twice on 6 Oct (≈ 6,500 tokens of story under 25,000 of thinking) and the parent got no book, at full cost. |
+
