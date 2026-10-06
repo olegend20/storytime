@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabaseService } from '@/lib/supabase/service'
-import { callModel, streamModel, structuredOutputRejected, ModelRefusalError } from '@/lib/ai'
+import { callModel, streamModel, structuredOutputRejected, ModelCallError, ModelRefusalError } from '@/lib/ai'
 import { serverEnv } from '@/lib/env'
 import { parentMessage, type ParentMessageKey } from '@/lib/messages'
 import {
@@ -587,7 +587,10 @@ export async function runGeneration(
       wordCount: 0,
       writeCalls,
       bibleUpdate: null,
-      error: err instanceof Error ? err.message : String(err),
+      // The status travels with the message so a caller can tell an outage from a bad draft.
+      error:
+        (err instanceof ModelCallError && err.detail.status ? `status=${err.detail.status} ` : '') +
+        (err instanceof Error ? err.message : String(err)),
     }
   } finally {
     channel.close()

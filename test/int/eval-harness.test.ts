@@ -163,6 +163,8 @@ describe('F13 eval harness', () => {
     expect(result.summary.disqualified).toBe(1)
     expect(result.summary.passed).toBe(false)
     expect(result.scenarios.filter((r) => r.judge_ok)).toHaveLength(7)
+    // A story that was never made made no judge call: it is not also a judge error.
+    expect(result.summary.judge_errors).toBe(0)
   })
 
   it('a scenario the API would not run is not the writer\'s fault: not scored, not disqualified, still a failed run', async () => {
@@ -199,6 +201,9 @@ describe('F13 eval harness', () => {
     expect(
       isInfrastructureFailure(new Error('eval scenario x produced no story: status failed: story output unusable: repair_failed:schema_invalid')),
     ).toBe(false)
+    // A 5xx whose text says nothing more still reads as the API's.
+    expect(isInfrastructureFailure(new Error('produced no story: status failed: status=529 write stream failed'))).toBe(true)
+    expect(isInfrastructureFailure(new Error('produced no story: status failed: status=400 output_config invalid'))).toBe(false)
   })
 
   it('a calibration that passed today is handed over at once and can be reused by the next run', async () => {

@@ -525,6 +525,7 @@
   "notes": [
     "Judge payloads are checked blind before every call (lib/eval/blind.ts); the judge never saw a model id.",
     "The weighted overall and the automatic caps are recomputed in our code, not taken from the judge (DECISIONS.md #11/#12).",
-    "Some scenarios have no F7 gate result, so guardrail-breach detection rested on the judge alone."
+    "Some scenarios have no F7 gate result, so guardrail-breach detection rested on the judge alone.",
+    "Annotated after the run (PR #31 review): space-race-band-c-15min hit the writer's 32,000-token output cap again (fixed in #33) and is counted here as both disqualified and a judge error; no judge call was made for it. titanic-band-b is the result that fills the gap in eval-2026-10-06.json."
   ]
 }

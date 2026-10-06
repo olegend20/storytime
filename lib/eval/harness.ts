@@ -151,7 +151,7 @@ export function calibrationReusable(
 export function isInfrastructureFailure(err: unknown): boolean {
   const text = err instanceof Error ? err.message : String(err)
   // Anthropic reports an exhausted balance as a 400 invalid_request_error, so the words count.
-  if (/credit balance|overloaded|rate limit|ECONNRESET|ETIMEDOUT|fetch failed/i.test(text)) return true
+  if (/credit balance|overloaded|rate limit|ECONNRESET|ETIMEDOUT|fetch failed|\bstatus=(?:5\d\d|429|40[123])\b/i.test(text)) return true
   if (err instanceof ModelCallError) {
     const status = err.detail.status
     return status === 401 || status === 402 || status === 403 || status === 429 || (status !== undefined && status >= 500) || err.detail.retryable
@@ -461,7 +461,8 @@ export function summarize(records: EvalScenarioRecord[]): EvalSummary {
     .map((r) => r.scenario_id)
   const disqualified = records.filter((r) => r.disqualified).length
   const notRun = records.filter((r) => r.caps_applied.includes('not_run:infrastructure')).map((r) => r.scenario_id)
-  const judgeErrors = records.filter((r) => !r.judge_ok && !r.caps_applied.includes('not_run:infrastructure')).length
+  // A judge error is a judge call that failed; a story that was never made made no call.
+  const judgeErrors = records.filter((r) => !r.judge_ok && r.caps_applied.length === 0).length
 
   const meanOverall = mean(overalls)
   const minOverall = min(overalls)
