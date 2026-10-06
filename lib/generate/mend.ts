@@ -67,10 +67,21 @@ export function locateViolation(story: StoryOutput, violation: OutputViolation):
   if (quote === '') return null
   // The quote whole; then its own sentences; then its longest run of words the text has
   // (a reviewer paraphrases, a scanner's window straddles a paragraph break).
+  // A run must be long enough to mean something and must occur exactly once in the whole
+  // story: "and the boys were" can sit in any harmless sentence, and a cut placed on the
+  // wrong sentence would ship the breach while removing an innocent line.
   const words = quote.split(/\s+/).filter((w) => w !== '')
+  const all = story.chapters.map((c) => c.text).join('\n')
+  const occursOnce = (needle: string) => {
+    const first = all.indexOf(needle)
+    return first !== -1 && all.indexOf(needle, first + 1) === -1
+  }
   const runs: string[] = []
-  for (let n = Math.min(words.length, 8); n >= 4; n--) {
-    for (let i = 0; i + n <= words.length; i++) runs.push(words.slice(i, i + n).join(' '))
+  for (let n = Math.min(words.length, 8); n >= 5; n--) {
+    for (let i = 0; i + n <= words.length; i++) {
+      const run = words.slice(i, i + n).join(' ')
+      if (occursOnce(run)) runs.push(run)
+    }
   }
   // A scanner quote is a window cut mid-sentence at both ends: its first and last pieces
   // are fragments of the harmless sentences around the hit, so the middle ones go first.

@@ -85,6 +85,12 @@ describe('locating a violation', () => {
     expect(where?.text).toBe(PATS)
   })
 
+  it('a paraphrase made of common words is not placed on a harmless sentence', () => {
+    const story = storyWith(['And the boys were very tired after the long walk home.', 'And the boys were splashing in the deep water alone.'])
+    // "and the boys were" occurs twice; nothing longer and unique matches: not placed.
+    expect(locateViolation(story, { rule: 10, quote: 'and the boys were happy', severity: 'hard' })).toBeNull()
+  })
+
   it('returns null for a quote the story does not have, and skips soft violations', () => {
     const story = storyWith([KEEP])
     expect(locateViolation(story, { rule: 3, quote: 'it was right behind him', severity: 'hard' })).toBeNull()

@@ -884,7 +884,9 @@ own size a named bound - a 15-minute band-C story had hit the cap twice in one d
 Rungs 1–2: a hard-rule breach is mended by one helper call (only the offending sentences;
 `prompts/mend.v1.md`) and the gate runs again; a breach that survives is cut and the story
 ships flagged; mending also replaces the full rewrite when attempt 1 failed only on hard
-rules. VT-D2/VT-D3 in `test/int/pipeline.test.ts`, 9 unit tests in `test/unit/mend.test.ts`.
+rules (decided from the result's structure). VT-D2/VT-D3 in `test/int/pipeline.test.ts`; 15 unit
+tests in `test/unit/mend.test.ts`, 4 in `test/unit/delivery-routing.test.ts`. The route's
+`maxDuration` is 660 s (one write at the cap plus a minute).
 Eval, 6 Oct: 7 of 8 stories written, raw mean 4.11 (was 4.00); three disqualified (rule 7
 in video games, rule 10 in sharks, a truncated 15-minute story) - the three cases the ladder
 is for. Remaining rungs: 3 (shorter retry), 4 (fallback writer, owner's pick), 5 (shelf
