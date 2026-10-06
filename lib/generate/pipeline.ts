@@ -38,6 +38,8 @@ import {
 } from '@/lib/topics'
 import { runQualityGate } from '@/lib/quality'
 import { borrowsCharacter, requestedCharacters } from '@/lib/guardrails/classify'
+import { scanStoryStructure } from '@/lib/guardrails/output'
+import { cutViolations, mendStory } from './mend'
 import { buildPrompt } from './prompt'
 import { parseStoryOutput } from './parse'
 import { salvageTrueFacts } from './normalize'
@@ -263,6 +265,19 @@ export async function prepareGeneration(
   }
 }
 
+/** The reasons the mend call can act on: a located quote, not a judgement of the whole story. */
+const HARD_RULE_REASON = /^GUARDRAILS rule \d+ breached$|^output safety review returned safe: false$/
+
+/** Attempt 1 failed only on hard-rule breaches: nothing for a full rewrite to add. */
+export function onlyHardRuleBreaches(result: QualityResult): boolean {
+  return (
+    result.failures.length === 0 &&
+    result.hard_violations.length > 0 &&
+    result.rewrite_reasons.length > 0 &&
+    result.rewrite_reasons.every((r) => HARD_RULE_REASON.test(r))
+  )
+}
+
 /**
  * A cap, not a cost: only tokens actually generated are billed. The writer thinks before it
  * writes, and the owner's first 1,400-word story used 13,101 output tokens against the old
@@ -413,6 +428,44 @@ export async function runGeneration(
       )
     }
 
+    // Issue #32: the delivery ladder. Rung 1 mends the sentences that broke a hard rule
+    // (one helper call, seconds) and re-runs the gate; rung 2 cuts them (free). What is
+    // tallied here is saved with the story as `quality.mended`.
+    const mended = { edits: 0, cut: 0, rules: new Set<number>() }
+    const regate = (attempt: 1 | 2, request: GenerationRequest) =>
+      runQualityGate({
+        story,
+        request,
+        factPack: pack,
+        attempt,
+        familyId: prepared.familyId,
+        storyId: prepared.storyId,
+        ...(sink ? { sink } : {}),
+        ...(deps.safetyReviewer ? { safetyReviewer: deps.safetyReviewer } : {}),
+        ...(deps.extraBlocklists ? { extraBlocklists: deps.extraBlocklists } : {}),
+      })
+    const mend = async (request: GenerationRequest): Promise<boolean> => {
+      const violations = gate.result.hard_violations
+      const result = await mendStory(story, violations, {
+        familyId: prepared.familyId,
+        storyId: prepared.storyId,
+        ...(sink ? { sink } : {}),
+      })
+      if (result.edits === 0) return false
+      for (const v of violations) mended.rules.add(v.rule)
+      mended.edits += result.edits
+      story = result.story
+      gate = await regate(2, request)
+      return true
+    }
+
+    // Rung 1 in place of the full rewrite: when the only thing wrong with attempt 1 is a
+    // hard-rule breach, ten seconds of mending beats two minutes of rewriting.
+    if (gate.needsRewrite && onlyHardRuleBreaches(gate.result)) {
+      const fixed = await mend(prepared.request)
+      if (fixed) console.info(`[generate] mended attempt 1 in place of a rewrite (${[...mended.rules].join(', ')})`)
+    }
+
     // ---- at most one rewrite (F6 AC: two writing-model calls maximum) ----
     if (gate.needsRewrite) {
       const rewriteRequest: GenerationRequest = {
@@ -489,6 +542,38 @@ export async function runGeneration(
     if (normalized.length > 0) {
       gate.result.normalized = normalized
       console.info(`[generate] fixed locally, no model call: ${normalized.join(' | ')}`)
+    }
+
+    // Issue #32: before a discard, mend (rung 1) and then cut (rung 2). A breach that
+    // survives both is the one discard left - and the free scan is what says so.
+    if (gate.result.outcome === 'discarded') {
+      const request: GenerationRequest = { ...prepared.request, rewrite_reasons: gate.result.rewrite_reasons }
+      await mend(request)
+      if (gate.result.outcome === 'discarded') {
+        const cut = cutViolations(story, gate.result.hard_violations)
+        if (cut.cut > 0) {
+          const childNames = prepared.request.children.map((c) => c.name)
+          const scan = scanStoryStructure(cut.story, {
+            childNames,
+            requestedCharacters: prepared.request.requested_characters,
+          })
+          if (scan.hardViolations.length === 0) {
+            for (const v of gate.result.hard_violations) mended.rules.add(v.rule)
+            mended.cut += cut.cut
+            story = cut.story
+            gate = {
+              ...gate,
+              result: { ...gate.result, outcome: 'flagged', hard_violations: [] },
+              status: 'flagged',
+              needsRewrite: false,
+            }
+          }
+        }
+      }
+    }
+    if (mended.edits > 0 || mended.cut > 0) {
+      gate.result.mended = { edits: mended.edits, cut: mended.cut, rules: [...mended.rules].sort((a, b) => a - b) }
+      console.info(`[generate] mended: ${mended.edits} sentence(s) rewritten, ${mended.cut} cut (rules ${[...mended.rules].join(', ')})`)
     }
 
     // GUARDRAILS.md §4.1: a second HARD safety breach is discarded, quota untouched.

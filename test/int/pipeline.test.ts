@@ -18,6 +18,7 @@ import {
   targetWords,
   wordCountWithinTolerance,
   type OutputSafetyReview,
+  type OutputViolation,
   type SseEvent,
   type StoryBible,
   type StoryOutput,
@@ -36,6 +37,7 @@ import {
 import { buildPrompt } from '@/lib/generate/prompt'
 import { buildQualityReviewMessage, measuredForReview } from '@/lib/quality/review'
 import { WRITER_MAX_TOKENS } from '@/lib/generate/pipeline'
+import { MEND_MAX_TOKENS, mendUserMessage, passagesFor } from '@/lib/generate/mend'
 import { STORY_OUTPUT_FORMAT } from '@/lib/generate/output-schema'
 import { buildBibleUpdateMessage } from '@/lib/bible'
 import { loadPrompt } from '@/lib/prompts'
@@ -546,6 +548,134 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     // The stub story's list says "pull-along duck" for a duck that was pulled along; that is
     // paraphrase, not a foreign term, so nothing was removed and nothing is recorded.
     expect(result.quality?.normalized).toBeUndefined()
+  })
+
+  /**
+   * Issue #32 (VT-D2, VT-D3). The delivery ladder: a hard-rule breach is mended by one
+   * helper call instead of a full rewrite, and a breach that survives the mend is cut, so
+   * the parent gets a (flagged) book instead of nothing.
+   */
+  const SENTENCE = 'The glow grew brighter and brighter, and with a great big WHOOOOSH, the boys were pulled right inside the brick.'
+  const REPLACEMENT = 'The glow grew brighter, and with a great big WHOOOOSH the boys were pulled gently inside the brick.'
+  const hardViolation = (quote: string, rule = 7): OutputSafetyReview => ({
+    safe: false,
+    violations: [{ rule, quote, severity: 'hard' as const }],
+    scary_level: 0,
+    positive_portrayal: true,
+    ending_safe: true,
+  })
+  const clean: OutputSafetyReview = { safe: true, violations: [], scary_level: 0, positive_portrayal: true, ending_safe: true }
+
+  /** The mend call's fixture, plus the review and bible fixtures for the story it produces. */
+  function stubMendFor(run: PreparedGeneration, story: StoryOutput, violations: OutputViolation[], edits: { chapter: number; find: string; replace: string }[]) {
+    const helperModel = modelForRole('helper')
+    stubFixture(
+      'mend',
+      callFixtureKey({
+        model: helperModel,
+        system: [{ text: loadPrompt('mend').body }],
+        messages: [{ role: 'user', content: mendUserMessage(passagesFor(story, violations)) }],
+        maxTokens: MEND_MAX_TOKENS,
+      }),
+      JSON.stringify({ edits }),
+      { input_tokens: 1_200, output_tokens: 90 },
+    )
+    const mended: StoryOutput = {
+      ...story,
+      chapters: story.chapters.map((c, i) => {
+        const edit = edits.find((e) => e.chapter === i)
+        return edit ? { ...c, text: c.text.replace(edit.find, edit.replace) } : c
+      }),
+    }
+    stubFixture(
+      'quality',
+      callFixtureKey({
+        model: helperModel,
+        system: [{ text: loadPrompt('quality-review').body }],
+        messages: [{ role: 'user', content: buildQualityReviewMessage(mended, run.request, FIXTURE_FACT_PACK, measuredForReview(mended, run.request.age_band)) }],
+        maxTokens: 2_000,
+      }),
+      JSON.stringify(STUB_PASSING_REVIEW),
+      { input_tokens: 7_800, output_tokens: 120 },
+    )
+    stubFixture(
+      'bible_update',
+      callFixtureKey({
+        model: helperModel,
+        system: [{ text: loadPrompt('bible-update').body }],
+        messages: [{ role: 'user', content: buildBibleUpdateMessage(BIBLE_AT_START, mended, { topic: run.topicLabel, storyId: run.storyId, date: '2026-09-27', tones: run.request.tones }) }],
+        maxTokens: 4_000,
+      }),
+      JSON.stringify(stubBible(BIBLE_AT_START.children)),
+      { input_tokens: 4_600, output_tokens: 640 },
+    )
+    return mended
+  }
+
+  it('VT-D2: a hard-rule breach on attempt 1 is mended by one helper call, not rewritten', async () => {
+    const run = await prepared()
+    const { story } = stubResponsesFor(run)
+    const violations: OutputViolation[] = [{ rule: 7, quote: SENTENCE.slice(0, 40), severity: 'hard' }]
+    const mended = stubMendFor(run, story, violations, [{ chapter: 0, find: SENTENCE, replace: REPLACEMENT }])
+    let reviewCall = 0
+    const safetyReviewer = {
+      review: async (): Promise<OutputSafetyReview> => (++reviewCall === 1 ? hardViolation(SENTENCE.slice(0, 40)) : clean),
+    }
+    const sink = new MemoryLogSink()
+    const { result } = await collect(run, { db: family.db, sink, quota: new RecordingQuota(), safetyReviewer, now: () => FIXED_NOW })
+
+    expect(result.status).toBe('ready')
+    expect(result.writeCalls).toBe(1)
+    const purposes = sink.rows.map((r) => r.purpose)
+    expect(purposes.filter((p) => p === 'rewrite')).toHaveLength(0)
+    expect(purposes.filter((p) => p === 'mend')).toHaveLength(1)
+    expect(reviewCall).toBe(2)
+    expect(result.quality?.mended).toEqual({ edits: 1, cut: 0, rules: [7] })
+    expect(result.quality?.first_attempt?.reasons).toEqual(['GUARDRAILS rule 7 breached', 'output safety review returned safe: false'])
+    // The sentence changed; every other sentence is byte-identical.
+    expect(result.story?.chapters[0]!.text).toBe(mended.chapters[0]!.text)
+    expect(result.story?.chapters.slice(1)).toEqual(story.chapters.slice(1))
+    const { data: row } = await family.db.from('stories').select('status, content').eq('id', run.storyId).single()
+    expect((row as { status: string }).status).toBe('ready')
+    expect(JSON.stringify((row as { content: unknown }).content)).toContain(REPLACEMENT)
+    if (result.bibleUpdate) await result.bibleUpdate
+  })
+
+  it('VT-D3: a breach that survives the mend is cut, and the story ships flagged instead of discarded', async () => {
+    const run = await prepared()
+    stubResponsesFor(run, { rewriteReasons: ['GUARDRAILS rule 10 breached', 'output safety review returned safe: false', 'scary_level 2 above band A limit'] })
+    // Attempt 1 fails on a mix (so the full rewrite runs); the rewrite breaches too, and the
+    // mend call returns nothing usable: that is the case that used to be a discard.
+    const quote = SENTENCE.slice(0, 40)
+    const violations: OutputViolation[] = [{ rule: 10, quote, severity: 'hard' }]
+    const rewritten = stubRewrittenStory()
+    const rewrittenQuote = rewritten.chapters[0]!.text.split(/(?<=[.!?])\s+/)[0]!
+    stubMendFor(run, rewritten, [{ rule: 10, quote: rewrittenQuote.slice(0, 30), severity: 'hard' }], [])
+    let reviewCall = 0
+    const safetyReviewer = {
+      review: async (): Promise<OutputSafetyReview> => {
+        reviewCall += 1
+        if (reviewCall === 1) return { ...hardViolation(quote, 10), scary_level: 2 }
+        // The rewrite breaches too, on its own first sentence.
+        return hardViolation(rewrittenQuote.slice(0, 30), 10)
+      },
+    }
+    const sink = new MemoryLogSink()
+    const { events, result } = await collect(run, { db: family.db, sink, quota: new RecordingQuota(), safetyReviewer, now: () => FIXED_NOW })
+
+    expect(result.status).toBe('flagged')
+    expect(result.writeCalls).toBe(2)
+    expect(result.quality?.outcome).toBe('flagged')
+    expect(result.quality?.mended).toEqual({ edits: 0, cut: 1, rules: [10] })
+    expect(result.quality?.hard_violations).toEqual([])
+    // The offending sentence is gone; the story is saved and announced, quota consumed.
+    expect(result.story?.chapters[0]!.text).not.toContain(rewrittenQuote)
+    expect(result.story?.chapters[0]!.text.length).toBeGreaterThan(0)
+    expect(events.at(-1)?.type).toBe('done')
+    const { data: row } = await family.db.from('stories').select('status').eq('id', run.storyId).single()
+    expect((row as { status: string }).status).toBe('flagged')
+    expect(violations).toHaveLength(1)
+    if (result.bibleUpdate) await result.bibleUpdate
   })
 
   it('F7 VT: two consecutive failures flag the story - still saved, still shown', async () => {

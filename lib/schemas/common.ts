@@ -45,6 +45,7 @@ export const CallPurpose = z.enum([
   'safety_review',
   'bible_update',
   'repair',
+  'mend',
   'classify_input',
   'judge_score',
   'judge_pairwise',
