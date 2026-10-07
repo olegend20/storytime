@@ -356,20 +356,28 @@ export async function runGeneration(
   const pack = prepared.factPack?.content ?? null
   let writeCalls = 0
 
+  // `meta` carries the story id, the topic and the content notice the reader depends on. It
+  // normally comes from the stream; when the stream produced no title (a write that failed
+  // before it began, an unusable one), it is sent from the finished story before `done`.
+  let metaSent = false
+  const pushMeta = (title: string, subtitle: string | null, targetWords: { min: number; max: number }) => {
+    metaSent = true
+    channel.push({
+      type: 'meta',
+      story_id: prepared.storyId,
+      series_id: prepared.seriesId,
+      title,
+      subtitle,
+      age_band: prepared.band,
+      target_words: targetWords,
+      topic_label: prepared.topicLabel,
+      content_notice: prepared.contentNotice,
+    })
+  }
+
   const emitMetaAndChapters = (): StoryStreamParser =>
     new StoryStreamParser({
-      onMeta: ({ title, subtitle }) =>
-        channel.push({
-          type: 'meta',
-          story_id: prepared.storyId,
-          series_id: prepared.seriesId,
-          title,
-          subtitle,
-          age_band: prepared.band,
-          target_words: prepared.request.target_words,
-          topic_label: prepared.topicLabel,
-          content_notice: prepared.contentNotice,
-        }),
+      onMeta: ({ title, subtitle }) => pushMeta(title, subtitle, prepared.request.target_words),
       onChapterStart: (index, heading) =>
         channel.push({ type: 'chapter_start', index, heading }),
       onChapterDelta: (index, text) => channel.push({ type: 'chapter_delta', index, text }),
@@ -423,6 +431,9 @@ export async function runGeneration(
       })
       .catch(async (err: unknown) => {
         if (!writerUnavailable(err)) throw err
+        // A bake-off run (`writingModel` set) measures that model: a story by another model
+        // would be scored as its own. The outage stays an outage there.
+        if (deps.writingModel) throw err
         const left = deps.deadlineMs === undefined ? Number.POSITIVE_INFINITY : deps.deadlineMs - Date.now()
         if (left < RETRY_MIN_MS) throw err
         const model = deps.fallbackWritingModel ?? modelForRole('writer_fallback')
@@ -789,6 +800,7 @@ export async function runGeneration(
     // `preflight` in prepareGeneration are the whole enforcement - lane 3 cannot check it.
     const quotaAfter = await resolveQuota(deps).consumeQuota(prepared.familyId)
 
+    if (!metaSent) pushMeta(story.title, story.subtitle, request.target_words)
     channel.push({
       type: 'done',
       story_id: prepared.storyId,
