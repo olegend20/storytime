@@ -282,6 +282,9 @@ export function onlyHardRuleBreaches(result: QualityResult, band: AgeBand): bool
   )
 }
 
+/** Below this much time before the request deadline, the ladder cuts instead of mending. */
+export const MEND_MIN_MS = 40_000
+
 /** Time the gate, the mend and the save need after a write. */
 export const AFTER_WRITE_MS = 45_000
 /**
@@ -423,7 +426,8 @@ export async function runGeneration(
       const why = unusable(parsed, streamed.stopReason, streamed.usage.output_tokens)
       // Only if there is time to write it, gate it and save it before the request is killed:
       // a retry the platform cuts off sends the parent nothing at all, not even an error.
-      const left = deps.deadlineMs === undefined ? Number.POSITIVE_INFINITY : deps.deadlineMs - Date.now()
+      const timeLeft = () => (deps.deadlineMs === undefined ? Number.POSITIVE_INFINITY : deps.deadlineMs - Date.now())
+      const left = timeLeft()
       if (left < RETRY_MIN_MS) {
         throw new GenerationFailed(`${why}; no shorter retry: ${Math.round(left / 1000)} s left before the request deadline`)
       }
@@ -441,8 +445,11 @@ export async function runGeneration(
           system: retryPrompt.system,
           messages: retryPrompt.messages,
           maxTokens: WRITER_MAX_TOKENS,
-          // Bounded by the time left, less what the gate and the save need after it.
-          timeoutMs: Math.min(600_000, left - AFTER_WRITE_MS),
+          // Bounded by the time left, less what the gate and the save need after it - measured
+          // at the moment of the call (the no-format fallback comes later), and one attempt
+          // only: callModel's own retries would each get the full timeout again.
+          timeoutMs: Math.min(600_000, timeLeft() - AFTER_WRITE_MS),
+          maxRetries: 0,
           thinking: 'adaptive',
           ...(withFormat ? { outputConfig: { format: STORY_OUTPUT_FORMAT } } : {}),
           familyId: prepared.familyId,
@@ -451,6 +458,7 @@ export async function runGeneration(
         })
       const retried = await retry(structured).catch((err: unknown) => {
         if (!structured || !structuredOutputRejected(err)) throw err
+        if (timeLeft() < RETRY_MIN_MS) throw err
         return retry(false)
       })
       parsed = await parseStoryOutput(retried.text, {
@@ -492,7 +500,11 @@ export async function runGeneration(
     const firstAttempt = retriedShorter
       ? {
           failures: [{ check: 'schema_valid' as const, detail: retriedShorter.why.slice(0, 300) }],
-          reasons: [`output unusable; retried ${retriedShorter.from} -> ${retriedShorter.to} minutes`],
+          reasons: [
+            retriedShorter.from === retriedShorter.to
+              ? `output unusable; retried at ${retriedShorter.to} minutes (already the shortest)`
+              : `output unusable; retried ${retriedShorter.from} -> ${retriedShorter.to} minutes`,
+          ],
         }
       : gate.needsRewrite
         ? { failures: gate.result.failures, reasons: gate.result.rewrite_reasons }
@@ -525,6 +537,10 @@ export async function runGeneration(
         ...(deps.extraBlocklists ? { extraBlocklists: deps.extraBlocklists } : {}),
       })
     const mend = async (attempt: 1 | 2, request: GenerationRequest): Promise<boolean> => {
+      // A mend is two or three helper calls (the edit, the reviews again). Near the request
+      // deadline it is skipped: the cut below is free, and a function the platform kills
+      // sends the parent nothing.
+      if (deps.deadlineMs !== undefined && deps.deadlineMs - Date.now() < MEND_MIN_MS) return false
       const violations = gate.result.hard_violations
       const result = await mendStory(story, violations, {
         familyId: prepared.familyId,
