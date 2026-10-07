@@ -90,16 +90,13 @@ export async function POST(request: Request): Promise<Response> {
   const body = await request.json().catch(() => null)
   // Quota, budget cap, L1/L2 and L4. Without these the pipeline falls back to stubs that
   // allow everything (lib/generate/deps.ts) - this line is what makes the guardrails real.
-  const deps = productionDeps()
+  // The platform kills this function at `maxDuration`; the pipeline plans inside it.
+  const deps = { ...productionDeps(), deadlineMs: startedAt + maxDuration * 1000 }
   const prepared = await prepareGeneration((family as { id: string }).id, body, deps)
   if (!prepared.ok) return json(prepared.error, prepared.status)
 
   const channel = new SseChannel()
-  const run = runGeneration(prepared.prepared, channel, {
-    ...deps,
-    // The platform kills this function at `maxDuration`; the pipeline plans inside it.
-    deadlineMs: startedAt + maxDuration * 1000,
-  }).catch(() => null)
+  const run = runGeneration(prepared.prepared, channel, deps).catch(() => null)
 
   // The bible update is started after `done` and must outlive the streamed response.
   try {
