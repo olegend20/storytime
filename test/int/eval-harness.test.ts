@@ -171,7 +171,7 @@ describe('F13 eval harness', () => {
     const base = syntheticProvider()
     const provider: StoryProvider = async (input) => {
       if (input.scenario.id === 'titanic-band-b') {
-        throw new ModelCallError('classify_input call failed: 400 credit balance is too low', {
+        throw new ModelCallError('classify_input call failed: 400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API."}}', {
           purpose: 'classify_input', model: 'claude-haiku-4-5-20251001', attempts: 1, retryable: false, status: 400,
         })
       }
@@ -199,12 +199,14 @@ describe('F13 eval harness', () => {
     // The live pipeline wraps the cause into its own message; the cause still decides.
     expect(
       isInfrastructureFailure(
-        new Error('eval scenario space-race produced no story: status failed: write stream to claude-sonnet-5 failed: Your credit balance is too low'),
+        new Error('eval scenario space-race produced no story: status failed: status=400 write stream to claude-sonnet-5 failed: 400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low"}}'),
       ),
     ).toBe(true)
     expect(
       isInfrastructureFailure(new Error('eval scenario x produced no story: status failed: story output unusable: repair_failed:schema_invalid')),
     ).toBe(false)
+    // The phrase quoted inside a writer failure is not the API's error.
+    expect(isInfrastructureFailure(new Error('story output unusable: repair_failed; issues: chapter 3 says your credit balance is too low'))).toBe(false)
     // A 5xx whose text says nothing more still reads as the API's.
     expect(isInfrastructureFailure(new Error('produced no story: status failed: status=529 write stream failed'))).toBe(true)
     expect(isInfrastructureFailure(new Error('produced no story: status failed: status=400 output_config invalid'))).toBe(false)
@@ -350,12 +352,18 @@ describe('F13 eval harness', () => {
           provider: async (input) => {
             const base = await syntheticProvider()(input)
             if (!base) throw new Error('unreachable')
-            return { ...base, gate: { ...base.gate, scary_level: 3 } }
+            return {
+              ...base,
+              gate: { ...base.gate, scary_level: 3, hard_violations: [{ rule: 3, quote: 'right behind him', severity: 'hard' as const }] },
+            }
           },
         }),
       responder,
     )
     const titanic = result.scenarios[0]!
+    // The rule numbers travel with the count, so a discarded story explains itself.
+    expect(titanic.gate?.hard_violations).toBe(1)
+    expect(titanic.gate?.hard_violation_rules).toEqual([3])
     expect(titanic.scary_level_check!.observed).toBe(3)
     expect(titanic.scary_level_check!.ok).toBe(false)
     expect(result.summary.scary_level_failures).toEqual(['titanic-band-b'])

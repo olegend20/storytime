@@ -153,7 +153,8 @@ export function isInfrastructureFailure(err: unknown): boolean {
   // Only what the API itself says: a status the pipeline put there (`status=NNN`), or the
   // exhausted-balance phrase Anthropic sends with a plain 400. Words like "overloaded" are
   // not trusted on their own - a writer failure can quote model output that contains them.
-  if (/\bstatus=(?:5\d\d|429|40[123])\b|credit balance is too low/i.test(text)) return true
+  // The balance phrase only inside the API's own error shape, never in quoted story text.
+  if (/\bstatus=(?:5\d\d|429|40[123])\b|invalid_request_error["\s\S]{0,80}credit balance is too low|status=400 [^;]*credit balance is too low/i.test(text)) return true
   if (err instanceof ModelCallError) {
     const status = err.detail.status
     // A status the API sent, and nothing else: a bare `retryable` can be a stream timeout,
@@ -300,7 +301,9 @@ export async function runEval(config: EvalConfig = {}): Promise<EvalResult> {
       const reason = err instanceof Error ? err.message : String(err)
       const infrastructure = isInfrastructureFailure(err)
       progress(`no story for ${scenario.id}${infrastructure ? ' (not the writer: the API)' : ''}: ${reason}`)
-      // What it cost before it failed (the write, a repair) is still money spent.
+      // What it cost before it failed (the write, a repair) is still money spent. Counted from
+      // the rows a recording sink holds (MemoryLogSink and MeteredLogSink, which every caller
+      // uses); a sink that keeps no rows reports 0 here, and the run's cost block still has it.
       const spent =
         'rows' in sink
           ? (sink as MemoryLogSink).rows
