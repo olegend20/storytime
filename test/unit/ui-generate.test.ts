@@ -290,3 +290,20 @@ describe('readGenerationEvents', () => {
     expect(kinds).toEqual(['meta', 'unknown', 'unknown', 'chapter_start'])
   })
 })
+
+/** Issue #32: a rewrite or a shorter retry arrives in `done` with its own title. */
+describe('the reader shows the finished story, not the replaced draft', () => {
+  it('takes the title from done.story over the streamed meta', async () => {
+    const { readerFromStream } = await import('@/lib/client/reader')
+    const afterMeta = streamReducer(initialStreamState, { kind: 'event', event: META })
+    const finished = { ...story.content, title: 'A Shorter Story Tonight', subtitle: null }
+    const done = streamReducer(afterMeta, {
+      kind: 'event',
+      event: { type: 'done', story_id: META.type === 'meta' ? META.story_id : '', story: finished, quality: null, word_count: 700, quota: { used: 1, limit: 3 } } as unknown as SseEvent,
+    })
+    const reader = readerFromStream(done, { childNames: [], tones: [] })
+    expect(reader.title).toBe('A Shorter Story Tonight')
+    expect(reader.subtitle).toBeNull()
+    expect(readerFromStream(afterMeta, { childNames: [], tones: [] }).title).toBe('Milo, Juno and the Brick That Clicked')
+  })
+})

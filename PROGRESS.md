@@ -876,6 +876,13 @@ Each has an e2e test on desktop and phone (the wake lock and offline tests stub 
 browser APIs). **Gates:** lint ✅ · typecheck ✅ · unit+int 1013 ✅ · e2e mock **132** ✅ ·
 e2e real 4 ✅.
 
+### 2026-10-07 — every parent gets a book: rung 3 (issue #32, DECISIONS #179)
+
+An unusable first write is retried once, one length tier shorter, not streamed, and that
+story is saved with its real length; the reader takes the finished story's title from
+`done`. VT-D4 in `test/int/pipeline.test.ts`. Gates: lint ✅ · typecheck ✅ · unit+int **1219** ✅
+· guardrails 32 ✅ · e2e mock 190 ✅ · e2e real 6 ✅.
+
 ### 2026-10-06 — every parent gets a book: rungs 0–2 (issue #32, DECISIONS #176–#178)
 
 Owner's metric: every customer gets a book, every time, without much latency. Issue #32 is

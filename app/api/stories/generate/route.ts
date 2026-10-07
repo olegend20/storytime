@@ -28,11 +28,11 @@ import {
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 // A 10-minute story on a slow night: p95 target is 90 s, the ceiling is generous. Raised to
-// 660 s with the writer's cap (issue #32, DECISIONS #177): a write that needs 40,000+ output
+// 800 s (Vercel Pro's Fluid ceiling) with the writer's cap and rung 3's shorter retry (issue #32, DECISIONS #177): a write that needs 40,000+ output
 // tokens takes over five minutes, and Vercel must not cut it off before the cap matters.
 // The project runs Fluid compute (Pro ceiling 800 s); test/unit/deploy-config.test.ts
 // ties this number to the cap.
-export const maxDuration = 660
+export const maxDuration = 800
 
 function json(body: ErrorBody, status: number): Response {
   return Response.json(body, { status })
@@ -49,6 +49,7 @@ function isPreStreamFailure(value: unknown): value is PreStreamFailure {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  const startedAt = Date.now()
   const supabase = await supabaseServer()
   const {
     data: { user },
@@ -89,7 +90,8 @@ export async function POST(request: Request): Promise<Response> {
   const body = await request.json().catch(() => null)
   // Quota, budget cap, L1/L2 and L4. Without these the pipeline falls back to stubs that
   // allow everything (lib/generate/deps.ts) - this line is what makes the guardrails real.
-  const deps = productionDeps()
+  // The platform kills this function at `maxDuration`; the pipeline plans inside it.
+  const deps = { ...productionDeps(), deadlineMs: startedAt + maxDuration * 1000 }
   const prepared = await prepareGeneration((family as { id: string }).id, body, deps)
   if (!prepared.ok) return json(prepared.error, prepared.status)
 
