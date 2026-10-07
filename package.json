@@ -35,12 +35,12 @@
     "factpacks": "tsx scripts/build-fact-packs.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.128.0",
+    "@anthropic-ai/sdk": "^0.131.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.60.0",
     "jszip": "^3.10.2",
-    "next": "^16.3.6",
-    "nodemailer": "^10.0.12",
+    "next": "^16.3.8",
+    "nodemailer": "^10.0.14",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "zod": "^4.6.5"
