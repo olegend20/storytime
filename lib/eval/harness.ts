@@ -156,7 +156,9 @@ export function isInfrastructureFailure(err: unknown): boolean {
   if (/\bstatus=(?:5\d\d|429|40[123])\b|credit balance is too low/i.test(text)) return true
   if (err instanceof ModelCallError) {
     const status = err.detail.status
-    return status === 401 || status === 402 || status === 403 || status === 429 || (status !== undefined && status >= 500) || err.detail.retryable
+    // A status the API sent, and nothing else: a bare `retryable` can be a stream timeout,
+    // which is a writer that ran too long, not an outage.
+    return status === 401 || status === 402 || status === 403 || status === 429 || (status !== undefined && status >= 500)
   }
   return false
 }

@@ -514,15 +514,15 @@
     ]
   },
   "cost": {
-    "generation_usd": 0.483,
+    "generation_usd": 0.828101,
     "judge_usd": 0.135389,
-    "total_usd": 0.618389,
+    "total_usd": 0.96349,
     "log_rows": 11
   },
   "notes": [
     "Judge payloads are checked blind before every call (lib/eval/blind.ts); the judge never saw a model id.",
     "The weighted overall and the automatic caps are recomputed in our code, not taken from the judge (DECISIONS.md #11/#12).",
     "Some scenarios have no F7 gate result, so guardrail-breach detection rested on the judge alone.",
-    "Reclassified after the run with the rules this PR adds (PR #31 review, 2026-10-07): space-race-band-c-15min was the writer cut off at the 32,000-token cap (a writer-side failure, so no_story and score 1 stand); its cause and its $0.345 of spend were taken from generation_logs. The summary was recomputed."
+    "Reclassified after the run with the rules this PR adds (PR #31 review, 2026-10-07): space-race-band-c-15min was the writer cut off at the 32,000-token cap (a writer-side failure, so no_story and score 1 stand); its cause and its $0.345 of spend were taken from generation_logs. The summary was recomputed. The cost block was brought in line: generation_usd 0.828101 and total_usd 0.96349 include space-race's $0.345."
   ]
 }
