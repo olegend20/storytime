@@ -8,6 +8,7 @@ import {
   GenerateStoryBody,
   HTTP_STATUS_FOR_ERROR,
   type ContentNotice,
+  type LengthMinutes,
   MAX_SCARY_LEVEL,
   type ErrorBody,
   type FactPack,
@@ -281,6 +282,11 @@ export function onlyHardRuleBreaches(result: QualityResult, band: AgeBand): bool
   )
 }
 
+/** One length tier down; the shortest stays where it is. */
+export function shorterLength(minutes: LengthMinutes): LengthMinutes {
+  return minutes === 15 ? 10 : 5
+}
+
 /**
  * A cap, not a cost: only tokens actually generated are billed. The writer thinks before it
  * writes, and the owner's first 1,400-word story used 13,101 output tokens against the old
@@ -353,9 +359,13 @@ export async function runGeneration(
 
     // ---- attempt 1: the streamed write ----
     const parser = emitMetaAndChapters()
+    const bibleAtStart = (await loadBible(prepared.seriesId, { db })).content
+    // The request the saved story was written to: `prepared.request`, unless rung 3 below
+    // had to retry it one length tier shorter.
+    let request: GenerationRequest = prepared.request
     const prompt = buildPrompt({
-      request: prepared.request,
-      bible: (await loadBible(prepared.seriesId, { db })).content,
+      request,
+      bible: bibleAtStart,
       factPack: pack,
     })
     writeCalls += 1
@@ -389,14 +399,55 @@ export async function runGeneration(
       storyId: prepared.storyId,
       ...(sink ? { sink } : {}),
     })
+    // Field paths and rule messages only - never story text. Without them a
+    // `repair_failed:schema_invalid` in the owner's first real session was undiagnosable:
+    // it could equally have been a count, a length cap or a truncated response.
+    const unusable = (p: typeof parsed & { ok: false }, stopReason: string | null | undefined, outputTokens: number) =>
+      `story output unusable: ${p.reason}; stop_reason=${stopReason ?? 'unknown'}; ` +
+      `output_tokens=${outputTokens}; issues: ${p.issues.slice(0, 8).join(' | ')}`
+
+    // Issue #32, rung 3: an unusable first write (cut off, structurally short, unrepairable)
+    // is retried once, one length tier shorter - a shorter story fits every cap and fails
+    // far less. Not streamed: the client already holds attempt 1's chapters, so the retry
+    // arrives in `done`, as a rewrite does. It is the second and last writing call.
+    let retriedShorter: { from: LengthMinutes; to: LengthMinutes; why: string } | null = null
     if (!parsed.ok) {
-      // Field paths and rule messages only - never story text. Without them a
-      // `repair_failed:schema_invalid` in the owner's first real session was undiagnosable:
-      // it could equally have been a count, a length cap or a truncated response.
-      throw new GenerationFailed(
-        `story output unusable: ${parsed.reason}; stop_reason=${streamed.stopReason ?? 'unknown'}; ` +
-          `output_tokens=${streamed.usage.output_tokens}; issues: ${parsed.issues.slice(0, 8).join(' | ')}`,
-      )
+      const why = unusable(parsed, streamed.stopReason, streamed.usage.output_tokens)
+      const to = shorterLength(request.length_minutes)
+      console.warn(`[generate] ${why} - retrying at ${to} minutes (was ${request.length_minutes})`)
+      retriedShorter = { from: request.length_minutes, to, why }
+      request = { ...request, length_minutes: to, target_words: targetWords({ band: prepared.band, minutes: to }) }
+      const retryPrompt = buildPrompt({ request, bible: bibleAtStart, factPack: pack })
+      writeCalls += 1
+      const retry = (withFormat: boolean) =>
+        callModel({
+          purpose: 'rewrite',
+          role: 'writer',
+          ...(deps.writingModel ? { model: deps.writingModel } : {}),
+          system: retryPrompt.system,
+          messages: retryPrompt.messages,
+          maxTokens: WRITER_MAX_TOKENS,
+          timeoutMs: 600_000,
+          thinking: 'adaptive',
+          ...(withFormat ? { outputConfig: { format: STORY_OUTPUT_FORMAT } } : {}),
+          familyId: prepared.familyId,
+          storyId: prepared.storyId,
+          ...(sink ? { sink } : {}),
+        })
+      const retried = await retry(structured).catch((err: unknown) => {
+        if (!structured || !structuredOutputRejected(err)) throw err
+        return retry(false)
+      })
+      parsed = await parseStoryOutput(retried.text, {
+        familyId: prepared.familyId,
+        storyId: prepared.storyId,
+        ...(sink ? { sink } : {}),
+      })
+      if (!parsed.ok) {
+        throw new GenerationFailed(
+          `${why}; the shorter retry too: ${unusable(parsed, retried.stopReason, retried.usage.output_tokens)}`,
+        )
+      }
     }
     // Free local fixes: metadata slips, then True Facts items that cannot stand.
     const tidy = (draft: typeof parsed & { ok: true }) => {
@@ -408,9 +459,11 @@ export async function runGeneration(
     // ---- the gate ----
     let gate = await runQualityGate({
       story,
-      request: prepared.request,
+      request,
       factPack: pack,
-      attempt: 1,
+      // After a shorter retry there is no writing call left: the gate's verdict is final,
+      // and a breach goes down the mend/cut ladder below.
+      attempt: retriedShorter ? 2 : 1,
       // A rewrite follows any failure on attempt 1; brief it fully (DECISIONS #138).
       reviewDespiteFailures: true,
       familyId: prepared.familyId,
@@ -421,9 +474,14 @@ export async function runGeneration(
     })
 
     // Why attempt 1 was sent back. Saved with the story, and logged for the ones never saved.
-    const firstAttempt = gate.needsRewrite
-      ? { failures: gate.result.failures, reasons: gate.result.rewrite_reasons }
-      : null
+    const firstAttempt = retriedShorter
+      ? {
+          failures: [{ check: 'schema_valid' as const, detail: retriedShorter.why.slice(0, 300) }],
+          reasons: [`output unusable; retried ${retriedShorter.from} -> ${retriedShorter.to} minutes`],
+        }
+      : gate.needsRewrite
+        ? { failures: gate.result.failures, reasons: gate.result.rewrite_reasons }
+        : null
     if (firstAttempt) {
       console.warn(
         `[generate] first draft sent back (${prepared.band}, ${prepared.topicKey}): ` +
@@ -471,7 +529,7 @@ export async function runGeneration(
     // attempt 1, so if the mend did not clear it the full rewrite still follows, briefed
     // with whatever survived.
     if (gate.needsRewrite && onlyHardRuleBreaches(gate.result, prepared.band)) {
-      const fixed = await mend(1, prepared.request)
+      const fixed = await mend(1, request)
       if (fixed && !gate.needsRewrite) {
         console.info(`[generate] mended attempt 1 in place of a rewrite (${[...mended.rules].join(', ')})`)
       }
@@ -480,7 +538,7 @@ export async function runGeneration(
     // ---- at most one rewrite (F6 AC: two writing-model calls maximum) ----
     if (gate.needsRewrite) {
       const rewriteRequest: GenerationRequest = {
-        ...prepared.request,
+        ...request,
         rewrite_reasons: gate.result.rewrite_reasons,
       }
       const rewritePrompt = buildPrompt({
@@ -559,15 +617,15 @@ export async function runGeneration(
     // when every hard violation was placed and removed, and what it leaves goes through
     // the whole gate again; a breach that survives both is the one discard left.
     if (gate.result.outcome === 'discarded') {
-      const request: GenerationRequest = { ...prepared.request, rewrite_reasons: gate.result.rewrite_reasons }
-      await mend(2, request)
+      const ladderRequest: GenerationRequest = { ...request, rewrite_reasons: gate.result.rewrite_reasons }
+      await mend(2, ladderRequest)
       if (gate.result.outcome === 'discarded') {
         const violations = gate.result.hard_violations
         const cut = cutViolations(story, violations)
         if (cut.complete) {
           const before = story
           story = cut.story
-          gate = await regate(2, request)
+          gate = await regate(2, ladderRequest)
           if (gate.result.outcome === 'discarded') {
             story = before // nothing shipped from the cut; the record describes the discard
           } else {
@@ -625,7 +683,8 @@ export async function runGeneration(
       topic_key: prepared.topicKey,
       fact_pack_id: prepared.factPack?.id ?? null,
       tones: prepared.request.tones,
-      length_minutes: prepared.request.length_minutes,
+      // The length actually written: shorter than asked when rung 3 retried it.
+      length_minutes: request.length_minutes,
       age_band: prepared.band,
       title: story.title,
       content: story,

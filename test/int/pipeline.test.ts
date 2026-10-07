@@ -42,7 +42,7 @@ import { STORY_OUTPUT_FORMAT } from '@/lib/generate/output-schema'
 import { buildBibleUpdateMessage } from '@/lib/bible'
 import { loadPrompt } from '@/lib/prompts'
 import { modelForRole } from '@/lib/ai'
-import { untrustedBlock } from '@/lib/datablock'
+import { dataBlock as untrustedBlockRaw, untrustedBlock } from '@/lib/datablock'
 
 /**
  * F6 + F7 integration: the streamed half of the pipeline, end to end.
@@ -685,6 +685,76 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     const { data: row } = await family.db.from('stories').select('status').eq('id', run.storyId).single()
     expect((row as { status: string }).status).toBe('flagged')
     // A book was delivered, so it counts against the day: the change from §4.1's discard.
+    expect(quota.calls).toEqual(['consumeQuota'])
+    if (result.bibleUpdate) await result.bibleUpdate
+  })
+
+  /**
+   * Issue #32, rung 3 (VT-D4): an unusable first write - here, prose with no JSON that the
+   * repair cannot save - is retried once, one length tier shorter, and the parent gets that
+   * story instead of nothing.
+   */
+  it('VT-D4: an unusable write is retried one tier shorter, and that story is the one saved', async () => {
+    const run = await prepared()
+    const writer = modelForRole('writer')
+    const helperModel = modelForRole('helper')
+    // Everything the happy path needs (the bible-update fixtures for the rewritten story too).
+    stubResponsesFor(run)
+    // 1. the streamed write returns something that is not a story...
+    const garbage = 'Once upon a time - and then the response stopped'
+    const writePrompt = buildPrompt({ request: run.request, bible: BIBLE_AT_START, factPack: FIXTURE_FACT_PACK })
+    stubFixture(
+      'write',
+      streamFixtureKey({ model: writer, system: writePrompt.system, messages: writePrompt.messages, maxTokens: WRITER_MAX_TOKENS, thinking: 'adaptive', outputFormat: STORY_OUTPUT_FORMAT }),
+      garbage,
+      { input_tokens: 1_400, output_tokens: 32_000 },
+    )
+    // 2. ...and the one repair attempt cannot save it.
+    stubFixture(
+      'repair',
+      callFixtureKey({
+        model: helperModel,
+        system: [{ text: loadPrompt('repair').body }],
+        messages: [{ role: 'user', content: [untrustedBlockRaw('payload', garbage), untrustedBlockRaw('validation_errors', '- no JSON object found in the response'), 'Return the corrected JSON object only.'].join('\n\n') }],
+        maxTokens: 16_000,
+      }),
+      JSON.stringify({ error: 'irreparable', missing: ['chapters'] }),
+    )
+    // 3. the retry, at five minutes instead of ten, returns a story.
+    const shorter = { ...run.request, length_minutes: 5 as const, target_words: targetWords({ band: 'A', minutes: 5 }) }
+    const retryPrompt = buildPrompt({ request: shorter, bible: BIBLE_AT_START, factPack: FIXTURE_FACT_PACK })
+    const retried = stubRewrittenStory()
+    stubFixture(
+      'rewrite',
+      callFixtureKey({ model: writer, system: retryPrompt.system, messages: retryPrompt.messages, maxTokens: WRITER_MAX_TOKENS, thinking: 'adaptive', outputFormat: STORY_OUTPUT_FORMAT }),
+      JSON.stringify(retried),
+      { input_tokens: 1_500, cache_read_tokens: 4_200, output_tokens: 5_300 },
+    )
+    stubFixture(
+      'quality',
+      callFixtureKey({
+        model: helperModel,
+        system: [{ text: loadPrompt('quality-review').body }],
+        messages: [{ role: 'user', content: buildQualityReviewMessage(retried, shorter, FIXTURE_FACT_PACK, measuredForReview(retried, 'A')) }],
+        maxTokens: 2_000,
+      }),
+      JSON.stringify(STUB_PASSING_REVIEW),
+    )
+
+    const sink = new MemoryLogSink()
+    const quota = new RecordingQuota()
+    const { events, result } = await collect(run, { db: family.db, sink, quota, now: () => FIXED_NOW })
+
+    expect(['ready', 'flagged']).toContain(result.status)
+    expect(result.writeCalls).toBe(2)
+    expect(sink.rows.filter((r) => r.purpose === 'rewrite')).toHaveLength(1)
+    expect(result.story?.title).toBe(retried.title)
+    expect(result.quality?.first_attempt?.reasons).toEqual(['output unusable; retried 10 -> 5 minutes'])
+    expect(result.quality?.first_attempt?.failures[0]?.detail).toMatch(/story output unusable: repair_failed/)
+    // The book is the shorter one, saved as such, delivered in `done`, and it counts.
+    const { data: row } = await family.db.from('stories').select('length_minutes, title').eq('id', run.storyId).single()
+    expect(row).toMatchObject({ length_minutes: 5, title: retried.title })
+    expect(events.at(-1)?.type).toBe('done')
     expect(quota.calls).toEqual(['consumeQuota'])
     if (result.bibleUpdate) await result.bibleUpdate
   })

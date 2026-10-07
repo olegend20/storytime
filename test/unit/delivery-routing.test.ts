@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { onlyHardRuleBreaches } from '@/lib/generate/pipeline'
+import { onlyHardRuleBreaches, shorterLength } from '@/lib/generate/pipeline'
 import type { QualityResult } from '@/lib/schemas'
 
 /**
@@ -36,5 +36,13 @@ describe('which failures the mend can take instead of a rewrite', () => {
     expect(onlyHardRuleBreaches({ ...base, safety: { ...base.safety!, ending_safe: false } }, 'A')).toBe(false)
     // The same scary level is within band C's limit.
     expect(onlyHardRuleBreaches({ ...base, safety: { ...base.safety!, scary_level: 2 } }, 'C')).toBe(true)
+  })
+})
+
+describe('rung 3: one length tier shorter', () => {
+  it('15 -> 10 -> 5, and the shortest stays', () => {
+    expect(shorterLength(15)).toBe(10)
+    expect(shorterLength(10)).toBe(5)
+    expect(shorterLength(5)).toBe(5)
   })
 })

@@ -51,8 +51,10 @@ export function readerFromStream(
 ): ReaderStory {
   return {
     id: state.meta?.story_id ?? null,
-    title: state.meta?.title ?? '',
-    subtitle: state.meta?.subtitle ?? null,
+    // The finished story wins: a rewrite or a shorter retry (issue #32) arrives in `done`
+    // with its own title, and the streamed `meta` described the draft that was replaced.
+    title: state.story?.title ?? state.meta?.title ?? '',
+    subtitle: state.story ? state.story.subtitle : (state.meta?.subtitle ?? null),
     chapters: state.chapters,
     endingLine: state.story?.ending_line ?? null,
     trueFacts: state.story?.true_facts ?? [],
