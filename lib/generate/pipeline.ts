@@ -434,8 +434,8 @@ export async function runGeneration(
         // A bake-off run (`writingModel` set) measures that model: a story by another model
         // would be scored as its own. The outage stays an outage there.
         if (deps.writingModel) throw err
-        const left = deps.deadlineMs === undefined ? Number.POSITIVE_INFINITY : deps.deadlineMs - Date.now()
-        if (left < RETRY_MIN_MS) throw err
+        const timeLeft = () => (deps.deadlineMs === undefined ? Number.POSITIVE_INFINITY : deps.deadlineMs - Date.now())
+        if (timeLeft() < RETRY_MIN_MS) throw err
         const model = deps.fallbackWritingModel ?? modelForRole('writer_fallback')
         fallback = { status: err instanceof ModelCallError ? (err.detail.status ?? null) : null, model }
         console.warn(`[generate] writer unavailable (${(err as Error).message.slice(0, 200)}) - writing with ${model}`)
@@ -448,7 +448,8 @@ export async function runGeneration(
             system: prompt.system,
             messages: prompt.messages,
             maxTokens: WRITER_MAX_TOKENS,
-            timeoutMs: Math.min(600_000, left - AFTER_WRITE_MS),
+            // Measured at each call, as rung 3's retry is: the no-format fallback comes later.
+            timeoutMs: Math.min(600_000, timeLeft() - AFTER_WRITE_MS),
             maxRetries: 0,
             thinking: 'adaptive',
             ...(withFormat ? { outputConfig: { format: STORY_OUTPUT_FORMAT } } : {}),
@@ -460,6 +461,7 @@ export async function runGeneration(
         // falls back to the plain write, as the main writer does.
         return once(structured).catch((e: unknown) => {
           if (!structuredOutputRejected(e)) throw e
+          if (timeLeft() < RETRY_MIN_MS) throw e
           structured = false
           return once(false)
         })
