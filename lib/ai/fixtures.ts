@@ -47,6 +47,11 @@ export interface FixturePayload {
   }
   stop_reason: string | null
   recorded_at: string
+  /**
+   * A call that failed instead of answering (a 529, a 5xx): replayed as the same
+   * ModelCallError. Only ever written by tests - recording never captures a failure.
+   */
+  error?: { status: number; message: string }
 }
 
 /**

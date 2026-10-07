@@ -46,3 +46,22 @@ describe('rung 3: one length tier shorter', () => {
     expect(shorterLength(5)).toBe(5)
   })
 })
+
+describe('rung 4: when the writer counts as unavailable', () => {
+  it('overloaded, a server error, rate-limited, a dropped stream: yes', async () => {
+    const { writerUnavailable } = await import('@/lib/generate/pipeline')
+    const { ModelCallError, ModelRefusalError } = await import('@/lib/ai')
+    const err = (status?: number, message = 'x') =>
+      new ModelCallError(message, { purpose: 'write', model: 'm', attempts: 1, retryable: false, ...(status ? { status } : {}) })
+    expect(writerUnavailable(err(529))).toBe(true)
+    expect(writerUnavailable(err(500))).toBe(true)
+    expect(writerUnavailable(err(429))).toBe(true)
+    expect(writerUnavailable(err(undefined, 'write stream failed: overloaded_error'))).toBe(true)
+    expect(writerUnavailable(new Error('socket hang up'))).toBe(true)
+    // Not unavailable: a bad request, an exhausted balance (the fallback fails the same way),
+    // an auth error, a refusal.
+    expect(writerUnavailable(err(400, 'credit balance is too low'))).toBe(false)
+    expect(writerUnavailable(err(401))).toBe(false)
+    expect(writerUnavailable(new ModelRefusalError('m', null, null))).toBe(false)
+  })
+})

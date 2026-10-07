@@ -1,12 +1,13 @@
 import { randomUUID } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabaseService } from '@/lib/supabase/service'
-import { callModel, streamModel, structuredOutputRejected, ModelRefusalError } from '@/lib/ai'
+import { callModel, modelForRole, streamModel, structuredOutputRejected, ModelCallError, ModelRefusalError } from '@/lib/ai'
 import { serverEnv } from '@/lib/env'
 import { parentMessage, type ParentMessageKey } from '@/lib/messages'
 import {
   GenerateStoryBody,
   HTTP_STATUS_FOR_ERROR,
+  type CheckFailure,
   type ContentNotice,
   type LengthMinutes,
   MAX_SCARY_LEVEL,
@@ -282,6 +283,19 @@ export function onlyHardRuleBreaches(result: QualityResult, band: AgeBand): bool
   )
 }
 
+/**
+ * The writer could not be reached at all: overloaded, a server error, rate-limited, a
+ * dropped connection. Not a refusal, not a bad request, not an exhausted balance (the
+ * fallback would fail the same way), not anything the story itself caused.
+ */
+export function writerUnavailable(err: unknown): boolean {
+  if (err instanceof ModelRefusalError) return false
+  const status = err instanceof ModelCallError ? err.detail.status : undefined
+  if (status !== undefined) return status === 429 || status >= 500
+  const text = err instanceof Error ? err.message : String(err)
+  return /overloaded_error|api_error|ECONNRESET|socket hang up|terminated/i.test(text)
+}
+
 /** Below this much time before the request deadline, the ladder cuts instead of mending. */
 export const MEND_MIN_MS = 40_000
 
@@ -342,20 +356,28 @@ export async function runGeneration(
   const pack = prepared.factPack?.content ?? null
   let writeCalls = 0
 
+  // `meta` carries the story id, the topic and the content notice the reader depends on. It
+  // normally comes from the stream; when the stream produced no title (a write that failed
+  // before it began, an unusable one), it is sent from the finished story before `done`.
+  let metaSent = false
+  const pushMeta = (title: string, subtitle: string | null, targetWords: { min: number; max: number }) => {
+    metaSent = true
+    channel.push({
+      type: 'meta',
+      story_id: prepared.storyId,
+      series_id: prepared.seriesId,
+      title,
+      subtitle,
+      age_band: prepared.band,
+      target_words: targetWords,
+      topic_label: prepared.topicLabel,
+      content_notice: prepared.contentNotice,
+    })
+  }
+
   const emitMetaAndChapters = (): StoryStreamParser =>
     new StoryStreamParser({
-      onMeta: ({ title, subtitle }) =>
-        channel.push({
-          type: 'meta',
-          story_id: prepared.storyId,
-          series_id: prepared.seriesId,
-          title,
-          subtitle,
-          age_band: prepared.band,
-          target_words: prepared.request.target_words,
-          topic_label: prepared.topicLabel,
-          content_notice: prepared.contentNotice,
-        }),
+      onMeta: ({ title, subtitle }) => pushMeta(title, subtitle, prepared.request.target_words),
       onChapterStart: (index, heading) =>
         channel.push({ type: 'chapter_start', index, heading }),
       onChapterDelta: (index, text) => channel.push({ type: 'chapter_delta', index, text }),
@@ -396,13 +418,52 @@ export async function runGeneration(
         onText: (delta) => parser.feed(delta),
       })
     let structured = true
-    const streamed = await write(true).catch((err: unknown) => {
-      // A rejected request fails before any text is streamed, so nothing reached the parent.
-      if (!structuredOutputRejected(err)) throw err
-      console.warn(`[generate] structured outputs rejected, writing without: ${(err as Error).message}`)
-      structured = false
-      return write(false)
-    })
+    // Issue #32, rung 4: the writer is unreachable (overloaded, a 5xx, rate-limited). One
+    // non-streamed write by the fallback writer instead - the second and last writing call.
+    let fallback: { status: number | null; model: string } | null = null
+    const streamed = await write(true)
+      .catch((err: unknown) => {
+        // A rejected request fails before any text is streamed, so nothing reached the parent.
+        if (!structuredOutputRejected(err)) throw err
+        console.warn(`[generate] structured outputs rejected, writing without: ${(err as Error).message}`)
+        structured = false
+        return write(false)
+      })
+      .catch(async (err: unknown) => {
+        if (!writerUnavailable(err)) throw err
+        // A bake-off run (`writingModel` set) measures that model: a story by another model
+        // would be scored as its own. The outage stays an outage there.
+        if (deps.writingModel) throw err
+        const left = deps.deadlineMs === undefined ? Number.POSITIVE_INFINITY : deps.deadlineMs - Date.now()
+        if (left < RETRY_MIN_MS) throw err
+        const model = deps.fallbackWritingModel ?? modelForRole('writer_fallback')
+        fallback = { status: err instanceof ModelCallError ? (err.detail.status ?? null) : null, model }
+        console.warn(`[generate] writer unavailable (${(err as Error).message.slice(0, 200)}) - writing with ${model}`)
+        writeCalls += 1
+        const once = (withFormat: boolean) =>
+          callModel({
+            purpose: 'rewrite',
+            role: 'writer',
+            model,
+            system: prompt.system,
+            messages: prompt.messages,
+            maxTokens: WRITER_MAX_TOKENS,
+            timeoutMs: Math.min(600_000, left - AFTER_WRITE_MS),
+            maxRetries: 0,
+            thinking: 'adaptive',
+            ...(withFormat ? { outputConfig: { format: STORY_OUTPUT_FORMAT } } : {}),
+            familyId: prepared.familyId,
+            storyId: prepared.storyId,
+            ...(sink ? { sink } : {}),
+          })
+        // The fallback's support for structured outputs is not assumed: a 400 on the format
+        // falls back to the plain write, as the main writer does.
+        return once(structured).catch((e: unknown) => {
+          if (!structuredOutputRejected(e)) throw e
+          structured = false
+          return once(false)
+        })
+      })
     parser.end()
 
     let parsed = await parseStoryOutput(streamed.text, {
@@ -422,6 +483,9 @@ export async function runGeneration(
     // far less. Not streamed: the client already holds attempt 1's chapters, so the retry
     // arrives in `done`, as a rewrite does. It is the second and last writing call.
     let retriedShorter: { from: LengthMinutes; to: LengthMinutes; why: string } | null = null
+    if (!parsed.ok && fallback) {
+      throw new GenerationFailed(`${unusable(parsed, streamed.stopReason, streamed.usage.output_tokens)}; written by the fallback writer, no call left`)
+    }
     if (!parsed.ok) {
       const why = unusable(parsed, streamed.stopReason, streamed.usage.output_tokens)
       // Only if there is time to write it, gate it and save it before the request is killed:
@@ -486,7 +550,7 @@ export async function runGeneration(
       factPack: pack,
       // After a shorter retry there is no writing call left: the gate's verdict is final,
       // and a breach goes down the mend/cut ladder below.
-      attempt: retriedShorter ? 2 : 1,
+      attempt: retriedShorter || fallback ? 2 : 1,
       // A rewrite follows any failure on attempt 1; brief it fully (DECISIONS #138).
       reviewDespiteFailures: true,
       familyId: prepared.familyId,
@@ -497,7 +561,13 @@ export async function runGeneration(
     })
 
     // Why attempt 1 was sent back. Saved with the story, and logged for the ones never saved.
-    const firstAttempt = retriedShorter
+    const fellBack = fallback as { status: number | null; model: string } | null
+    const firstAttempt = fellBack
+      ? {
+          failures: [] as CheckFailure[],
+          reasons: [`writer unavailable${fellBack.status ? ` (status ${fellBack.status})` : ''}; written by ${fellBack.model}`],
+        }
+      : retriedShorter
       ? {
           failures: [{ check: 'schema_valid' as const, detail: retriedShorter.why.slice(0, 300) }],
           reasons: [
@@ -730,6 +800,7 @@ export async function runGeneration(
     // `preflight` in prepareGeneration are the whole enforcement - lane 3 cannot check it.
     const quotaAfter = await resolveQuota(deps).consumeQuota(prepared.familyId)
 
+    if (!metaSent) pushMeta(story.title, story.subtitle, request.target_words)
     channel.push({
       type: 'done',
       story_id: prepared.storyId,

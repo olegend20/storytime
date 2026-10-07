@@ -29,6 +29,7 @@ import {
   callFixtureKey,
   streamFixtureKey,
   stubBible,
+  stubFailure,
   stubFixture,
   stubRewrittenStory,
   stubStory,
@@ -756,6 +757,8 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     expect(row).toMatchObject({ length_minutes: 5, title: retried.title })
     expect(events.at(-1)?.type).toBe('done')
     expect(quota.calls).toEqual(['consumeQuota'])
+    // The unusable first write streamed no title: `meta` is sent from the retried story.
+    expect(events.filter((e) => e.type === 'meta')).toEqual([expect.objectContaining({ story_id: run.storyId, title: retried.title })])
     if (result.bibleUpdate) await result.bibleUpdate
   })
 
@@ -789,6 +792,96 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     expect(result.writeCalls).toBe(1)
     expect(sink.rows.filter((r) => r.purpose === 'rewrite')).toHaveLength(0)
     // The parent is told, rather than left with a stream that just stops.
+    expect(events.at(-1)).toMatchObject({ type: 'error', code: 'generation_failed', quota_consumed: false })
+  })
+
+  /**
+   * Issue #32, rung 4 (VT-D5): the writer is unreachable (529 overloaded). One non-streamed
+   * write by the fallback writer, and that is the book.
+   */
+  it('VT-D5: when the writer is overloaded, the fallback writer writes the book', async () => {
+    const run = await prepared()
+    stubResponsesFor(run)
+    const writer = modelForRole('writer')
+    const fallbackModel = modelForRole('writer_fallback')
+    const writePrompt = buildPrompt({ request: run.request, bible: BIBLE_AT_START, factPack: FIXTURE_FACT_PACK })
+    stubFailure(
+      'write',
+      streamFixtureKey({ model: writer, system: writePrompt.system, messages: writePrompt.messages, maxTokens: WRITER_MAX_TOKENS, thinking: 'adaptive', outputFormat: STORY_OUTPUT_FORMAT }),
+      529,
+      'overloaded_error: Overloaded',
+    )
+    const byFallback = stubRewrittenStory()
+    stubFixture(
+      'rewrite',
+      callFixtureKey({ model: fallbackModel, system: writePrompt.system, messages: writePrompt.messages, maxTokens: WRITER_MAX_TOKENS, thinking: 'adaptive', outputFormat: STORY_OUTPUT_FORMAT }),
+      JSON.stringify(byFallback),
+    )
+    stubFixture(
+      'quality',
+      callFixtureKey({
+        model: modelForRole('helper'),
+        system: [{ text: loadPrompt('quality-review').body }],
+        messages: [{ role: 'user', content: buildQualityReviewMessage(byFallback, run.request, FIXTURE_FACT_PACK, measuredForReview(byFallback, 'A')) }],
+        maxTokens: 2_000,
+      }),
+      JSON.stringify(STUB_PASSING_REVIEW),
+    )
+    const sink = new MemoryLogSink()
+    const quota = new RecordingQuota()
+    const { events, result } = await collect(run, { db: family.db, sink, quota, now: () => FIXED_NOW })
+
+    expect(['ready', 'flagged']).toContain(result.status)
+    expect(result.writeCalls).toBe(2)
+    expect(result.story?.title).toBe(byFallback.title)
+    const fallbackRows = sink.rows.filter((r) => r.purpose === 'rewrite')
+    expect(fallbackRows).toHaveLength(1)
+    expect(fallbackRows[0]!.model).toBe(fallbackModel)
+    expect(result.quality?.first_attempt?.reasons).toEqual([`writer unavailable (status 529); written by ${fallbackModel}`])
+    expect(events.at(-1)?.type).toBe('done')
+    // Nothing was streamed, so `meta` comes from the finished story, before `done`: the
+    // reader needs its story id, topic and notice.
+    const metas = events.filter((e) => e.type === 'meta')
+    expect(metas).toHaveLength(1)
+    expect(metas[0]).toMatchObject({ story_id: run.storyId, title: byFallback.title, topic_label: run.topicLabel })
+    expect(events.findIndex((e) => e.type === 'meta')).toBeLessThan(events.length - 1)
+    expect(quota.calls).toEqual(['consumeQuota'])
+    if (result.bibleUpdate) await result.bibleUpdate
+  })
+
+  it('VT-D5: a bake-off run (a writing model under test) never falls back - its outage stays an outage', async () => {
+    const run = await prepared()
+    stubResponsesFor(run)
+    const writePrompt = buildPrompt({ request: run.request, bible: BIBLE_AT_START, factPack: FIXTURE_FACT_PACK })
+    const contestant = modelForRole('writer')
+    stubFailure(
+      'write',
+      streamFixtureKey({ model: contestant, system: writePrompt.system, messages: writePrompt.messages, maxTokens: WRITER_MAX_TOKENS, thinking: 'adaptive', outputFormat: STORY_OUTPUT_FORMAT }),
+      529,
+      'overloaded_error: Overloaded',
+    )
+    const sink = new MemoryLogSink()
+    const { result } = await collect(run, { db: family.db, sink, quota: new RecordingQuota(), now: () => FIXED_NOW, writingModel: contestant })
+    expect(result.status).toBe('failed')
+    expect(result.writeCalls).toBe(1)
+    expect(sink.rows.filter((r) => r.purpose === 'rewrite')).toHaveLength(0)
+  })
+
+  it('VT-D5: a bad request or an exhausted balance is not "unavailable": no fallback, a clean error', async () => {
+    const run = await prepared()
+    stubResponsesFor(run)
+    const writePrompt = buildPrompt({ request: run.request, bible: BIBLE_AT_START, factPack: FIXTURE_FACT_PACK })
+    stubFailure(
+      'write',
+      streamFixtureKey({ model: modelForRole('writer'), system: writePrompt.system, messages: writePrompt.messages, maxTokens: WRITER_MAX_TOKENS, thinking: 'adaptive', outputFormat: STORY_OUTPUT_FORMAT }),
+      400,
+      'invalid_request_error: Your credit balance is too low',
+    )
+    const sink = new MemoryLogSink()
+    const { events, result } = await collect(run, { db: family.db, sink, quota: new RecordingQuota(), now: () => FIXED_NOW })
+    expect(result.status).toBe('failed')
+    expect(result.writeCalls).toBe(1)
+    expect(sink.rows.filter((r) => r.purpose === 'rewrite')).toHaveLength(0)
     expect(events.at(-1)).toMatchObject({ type: 'error', code: 'generation_failed', quota_consumed: false })
   })
 

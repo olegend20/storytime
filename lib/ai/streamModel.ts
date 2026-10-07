@@ -91,6 +91,15 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
   if (!isLive()) {
     const fixture = readFixture(opts.purpose, key)
     if (!fixture) throw new MissingFixtureError(opts.purpose, key, model)
+    if (fixture.error) {
+      throw new ModelCallError(`${opts.purpose} stream to ${model} failed: ${fixture.error.message}`, {
+        purpose: opts.purpose,
+        model,
+        attempts: 1,
+        retryable: false,
+        status: fixture.error.status,
+      })
+    }
     const content = (fixture.response as { content?: unknown }).content
     const text = Array.isArray(content)
       ? content

@@ -1,6 +1,6 @@
 {
   "$comment": "Model IDs are config, never hard-coded in source. Swapping the writing model must require no code change (F14 AC).",
-  "updated_at": "2026-09-30",
+  "updated_at": "2026-10-07",
   "sources": [
     {
       "page": "Models overview",
@@ -12,6 +12,12 @@
       "url": "https://platform.claude.com/docs/en/models/overview",
       "fetched": "2026-09-30",
       "note": "pr_reviewer role added"
+    },
+    {
+      "page": "Models overview",
+      "url": "https://platform.claude.com/docs/en/models/overview",
+      "fetched": "2026-10-07",
+      "note": "writer_fallback role added (issue #32 rung 4). The fetch also shows Sonnet 5.5 / Haiku 5.5 current and Sonnet 5 / Haiku 4.5 as legacy (retirement not before late 2027); the writer and helper choices are unchanged pending the owner."
     }
   ],
   "roles": {
@@ -19,6 +25,11 @@
       "model": "claude-sonnet-5",
       "why": "Placeholder default per IMPLEMENTATION_PLAN.md s0. FINAL CHOICE IS THE OWNER'S, from the F14 bake-off. Override with WRITING_MODEL env.",
       "env_override": "WRITING_MODEL"
+    },
+    "writer_fallback": {
+      "model": "claude-haiku-4-5-20251001",
+      "why": "OWNER'S DECISION, 2026-10-06 (issue #32 rung 4, 'approved' with the recommendations): writes the story when the writer is unreachable (overloaded, 5xx, rate-limited). Fast, already priced and in use as the helper. Never the first choice for a story; the parent gets a book instead of none.",
+      "env_override": "FALLBACK_WRITING_MODEL"
     },
     "helper": {
       "model": "claude-haiku-4-5-20251001",
