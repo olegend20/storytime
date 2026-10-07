@@ -38,6 +38,9 @@ vi.mock('@anthropic-ai/sdk', async () => {
 const { streamModel } = await import('@/lib/ai/streamModel')
 const { STORY_OUTPUT_FORMAT } = await import('@/lib/generate/output-schema')
 const { ModelCallError } = await import('@/lib/ai/types')
+const { WRITER_MAX_TOKENS, WRITER_STORY_TOKENS_MAX } = await import('@/lib/generate/pipeline')
+const { capabilities, modelForRole } = await import('@/lib/ai/pricing')
+const { targetWords } = await import('@/lib/schemas')
 
 const saved = process.env.LIVE_API
 afterEach(() => {
@@ -55,14 +58,14 @@ describe('the writing call', () => {
       model: 'claude-sonnet-5',
       system: [{ text: 'master', cache: true }],
       messages: [{ role: 'user', content: 'write' }],
-      maxTokens: 32_000,
+      maxTokens: WRITER_MAX_TOKENS,
       thinking: 'adaptive',
       outputFormat: STORY_OUTPUT_FORMAT,
     })
     const sent = captured.params[0]!
     expect(sent.output_config).toEqual({ format: STORY_OUTPUT_FORMAT })
     expect(sent.thinking).toEqual({ type: 'adaptive' })
-    expect(sent.max_tokens).toBe(32_000)
+    expect(sent.max_tokens).toBe(WRITER_MAX_TOKENS)
     expect((sent.system as { cache_control?: unknown }[])[0]!.cache_control).toEqual({ type: 'ephemeral' })
   })
 
@@ -73,7 +76,7 @@ describe('the writing call', () => {
       purpose: 'write',
       model: 'claude-sonnet-5',
       messages: [{ role: 'user', content: 'write' }],
-      maxTokens: 32_000,
+      maxTokens: WRITER_MAX_TOKENS,
       outputFormat: STORY_OUTPUT_FORMAT,
     }).catch((e: unknown) => e)
     expect(err).toBeInstanceOf(ModelCallError)
@@ -92,5 +95,25 @@ describe('structuredOutputRejected', () => {
     expect(structuredOutputRejected(err(400, 'Your credit balance is too low'))).toBe(false)
     expect(structuredOutputRejected(err(529, 'overloaded: schema'))).toBe(false)
     expect(structuredOutputRejected(new Error('schema'))).toBe(false)
+  })
+})
+
+/**
+ * Issue #32, rung 0: "every parent gets a book". A 15-minute band-C story hit the 32,000
+ * cap twice on 2026-10-06 - the story is a fixed size, the thinking is not - and the parent
+ * got nothing. The cap is a product rule now: the longest story plus generous thinking.
+ */
+describe('the writer never runs out of room for the story', () => {
+  it('the longest story fits in the cap with more than 50,000 tokens left for thinking', () => {
+    const longest = Math.max(
+      ...(['A', 'B', 'C', 'D'] as const).map((band) => targetWords({ band, minutes: 15 }).max),
+    )
+    // Prose inside JSON runs about 1.6 tokens a word; headings, True Facts and the bible
+    // suggestions add a few hundred more.
+    const storyTokens = Math.ceil(longest * 1.15 * 1.6) + 800
+    expect(storyTokens).toBeLessThanOrEqual(WRITER_STORY_TOKENS_MAX)
+    expect(WRITER_MAX_TOKENS - WRITER_STORY_TOKENS_MAX).toBeGreaterThan(50_000)
+    // The configured writer, whichever the owner picks (CLAUDE.md rule 2: never a literal).
+    expect(Number(capabilities(modelForRole('writer')).max_output)).toBeGreaterThanOrEqual(WRITER_MAX_TOKENS)
   })
 })

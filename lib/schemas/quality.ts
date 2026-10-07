@@ -83,6 +83,18 @@ export const QualityResult = z.object({
     .optional(),
   /** Free local fixes applied to the model's output (lib/generate/normalize.ts). */
   normalized: z.array(z.string()).optional(),
+  /**
+   * Issue #32: what the delivery ladder did to a story that broke a hard rule, instead of
+   * discarding it. `edits` sentences rewritten by the mend call, `cut` sentences removed
+   * outright, `rules` the rules that were breached. Optional and additive, like the rest.
+   */
+  mended: z
+    .object({
+      edits: z.number().int().nonnegative(),
+      cut: z.number().int().nonnegative(),
+      rules: z.array(z.number().int()),
+    })
+    .optional(),
 })
 export type QualityResult = z.infer<typeof QualityResult>
 

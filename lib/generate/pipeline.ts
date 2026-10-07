@@ -8,6 +8,7 @@ import {
   GenerateStoryBody,
   HTTP_STATUS_FOR_ERROR,
   type ContentNotice,
+  MAX_SCARY_LEVEL,
   type ErrorBody,
   type FactPack,
   type GenerationRequest,
@@ -36,8 +37,9 @@ import {
   normalizeTopic,
   TopicNormalizationError,
 } from '@/lib/topics'
-import { runQualityGate } from '@/lib/quality'
+import { reviewPassed, runQualityGate } from '@/lib/quality'
 import { borrowsCharacter, requestedCharacters } from '@/lib/guardrails/classify'
+import { cutViolations, mendStory } from './mend'
 import { buildPrompt } from './prompt'
 import { parseStoryOutput } from './parse'
 import { salvageTrueFacts } from './normalize'
@@ -264,11 +266,39 @@ export async function prepareGeneration(
 }
 
 /**
+ * Attempt 1 failed only on hard-rule breaches - located quotes the mend can act on - and on
+ * nothing a full rewrite would be needed for. Decided from the structure of the result, not
+ * from the wording of its reasons (CLAUDE.md: reasons are prose, codes are the contract).
+ */
+export function onlyHardRuleBreaches(result: QualityResult, band: AgeBand): boolean {
+  const safety = result.safety
+  return (
+    result.failures.length === 0 &&
+    result.hard_violations.length > 0 &&
+    (result.review === null || reviewPassed(result.review, band)) &&
+    (safety === null ||
+      (safety.scary_level <= MAX_SCARY_LEVEL[band] && safety.positive_portrayal && safety.ending_safe))
+  )
+}
+
+/**
  * A cap, not a cost: only tokens actually generated are billed. The writer thinks before it
  * writes, and the owner's first 1,400-word story used 13,101 output tokens against the old
  * 16,000 cap - so a 15-minute story for an older child could not have finished at all.
+ *
+ * Raised again on 2026-10-06 (issue #32, rung 0): a 15-minute band-C story hit 32,000 twice
+ * in one day - about 6,500 tokens of story under 25,000 of thinking - and the parent got no
+ * book. The story itself is bounded (`WRITER_STORY_TOKENS_MAX`); the thinking is adaptive
+ * and is not. The cap leaves the longest story more than 50,000 tokens of thinking.
  */
-export const WRITER_MAX_TOKENS = 32_000
+export const WRITER_MAX_TOKENS = 64_000
+/**
+ * The most tokens a story's JSON can take: the longest target (15 minutes, band D) at the
+ * top of its tolerance (≈ 5,700 words), at ~1.6 tokens a word for prose inside JSON, plus
+ * headings, True Facts and the bible suggestions. `WRITER_MAX_TOKENS` must leave room for thinking above
+ * this; test/unit/writer-call-shape.test.ts holds the two apart.
+ */
+export const WRITER_STORY_TOKENS_MAX = 12_000
 
 export interface RunGenerationResult {
   storyId: string
@@ -401,6 +431,52 @@ export async function runGeneration(
       )
     }
 
+    // Issue #32: the delivery ladder. Rung 1 mends the sentences that broke a hard rule
+    // (one helper call, seconds) and re-runs the gate; rung 2 cuts them (free). What is
+    // tallied here is saved with the story as `quality.mended`.
+    const mended = { edits: 0, cut: 0, rules: new Set<number>() }
+    // The whole gate again on text the ladder changed - the safety review included, even
+    // when a deterministic check fails, because the mend model wrote that text for a story
+    // that had already breached a rule.
+    const regate = (attempt: 1 | 2, request: GenerationRequest) =>
+      runQualityGate({
+        story,
+        request,
+        factPack: pack,
+        attempt,
+        reviewDespiteFailures: true,
+        familyId: prepared.familyId,
+        storyId: prepared.storyId,
+        ...(sink ? { sink } : {}),
+        ...(deps.safetyReviewer ? { safetyReviewer: deps.safetyReviewer } : {}),
+        ...(deps.extraBlocklists ? { extraBlocklists: deps.extraBlocklists } : {}),
+      })
+    const mend = async (attempt: 1 | 2, request: GenerationRequest): Promise<boolean> => {
+      const violations = gate.result.hard_violations
+      const result = await mendStory(story, violations, {
+        familyId: prepared.familyId,
+        storyId: prepared.storyId,
+        ...(sink ? { sink } : {}),
+      })
+      if (result.edits === 0) return false
+      for (const v of violations) mended.rules.add(v.rule)
+      mended.edits += result.edits
+      story = result.story
+      gate = await regate(attempt, request)
+      return true
+    }
+
+    // Rung 1 in place of the full rewrite: when the only thing wrong with attempt 1 is a
+    // hard-rule breach, ten seconds of mending beats two minutes of rewriting. Regated as
+    // attempt 1, so if the mend did not clear it the full rewrite still follows, briefed
+    // with whatever survived.
+    if (gate.needsRewrite && onlyHardRuleBreaches(gate.result, prepared.band)) {
+      const fixed = await mend(1, prepared.request)
+      if (fixed && !gate.needsRewrite) {
+        console.info(`[generate] mended attempt 1 in place of a rewrite (${[...mended.rules].join(', ')})`)
+      }
+    }
+
     // ---- at most one rewrite (F6 AC: two writing-model calls maximum) ----
     if (gate.needsRewrite) {
       const rewriteRequest: GenerationRequest = {
@@ -443,6 +519,9 @@ export async function runGeneration(
       })
       if (parsed.ok) {
         ;({ story, notes: normalized } = tidy(parsed))
+        // The rewrite replaced the text: whatever the in-place mend did is not in it.
+        mended.edits = 0
+        mended.rules.clear()
         gate = await runQualityGate({
           story,
           request: rewriteRequest,
@@ -455,20 +534,51 @@ export async function runGeneration(
           ...(deps.extraBlocklists ? { extraBlocklists: deps.extraBlocklists } : {}),
         })
       } else {
-        // Keep attempt 1's story and flag it rather than show the parent nothing.
+        // Keep attempt 1's story rather than show the parent nothing. If it still holds a
+        // hard-rule breach it goes down the ladder below (mend, cut) like any second breach,
+        // instead of shipping flagged with the breach in it.
+        const breached = gate.result.hard_violations.length > 0
         gate = {
           ...gate,
           result: {
             ...gate.result,
-            outcome: 'flagged',
+            outcome: breached ? 'discarded' : 'flagged',
             attempt: 2,
             rewrite_reasons: [
               ...gate.result.rewrite_reasons,
               `rewrite output unusable: ${parsed.reason}`,
             ],
           },
-          status: 'flagged',
+          status: breached ? 'failed' : 'flagged',
           needsRewrite: false,
+        }
+      }
+    }
+
+    // Issue #32: before a discard, mend (rung 1) and then cut (rung 2). A cut counts only
+    // when every hard violation was placed and removed, and what it leaves goes through
+    // the whole gate again; a breach that survives both is the one discard left.
+    if (gate.result.outcome === 'discarded') {
+      const request: GenerationRequest = { ...prepared.request, rewrite_reasons: gate.result.rewrite_reasons }
+      await mend(2, request)
+      if (gate.result.outcome === 'discarded') {
+        const violations = gate.result.hard_violations
+        const cut = cutViolations(story, violations)
+        if (cut.complete) {
+          const before = story
+          story = cut.story
+          gate = await regate(2, request)
+          if (gate.result.outcome === 'discarded') {
+            story = before // nothing shipped from the cut; the record describes the discard
+          } else {
+            for (const v of violations) mended.rules.add(v.rule)
+            mended.cut += cut.cut
+            // A story that lost a sentence is shown with the "second look" banner, however
+            // clean the gate now finds it.
+            if (gate.result.outcome === 'pass') {
+              gate = { ...gate, result: { ...gate.result, outcome: 'flagged' }, status: 'flagged' }
+            }
+          }
         }
       }
     }
@@ -478,8 +588,13 @@ export async function runGeneration(
       gate.result.normalized = normalized
       console.info(`[generate] fixed locally, no model call: ${normalized.join(' | ')}`)
     }
+    // Recorded only for a story that ships: the record describes the text the parent reads.
+    if (gate.result.outcome !== 'discarded' && (mended.edits > 0 || mended.cut > 0)) {
+      gate.result.mended = { edits: mended.edits, cut: mended.cut, rules: [...mended.rules].sort((a, b) => a - b) }
+      console.info(`[generate] mended: ${mended.edits} sentence(s) rewritten, ${mended.cut} cut (rules ${[...mended.rules].join(', ')})`)
+    }
 
-    // GUARDRAILS.md §4.1: a second HARD safety breach is discarded, quota untouched.
+    // GUARDRAILS.md §4.1: a breach that survived the mend and the cut is discarded, quota untouched.
     if (gate.result.outcome === 'discarded') {
       channel.push({
         type: 'error',
