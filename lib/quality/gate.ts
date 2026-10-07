@@ -150,7 +150,8 @@ export async function runQualityGate(opts: GateOptions): Promise<GateOutcome> {
     ? []
     : [...failures.map((f) => f.detail), ...modelFailures]
 
-  // GUARDRAILS.md §4.1: a second HARD safety breach is discarded, not flagged.
+  // GUARDRAILS.md §4.1: a second HARD safety breach is `discarded` here; the pipeline then
+  // mends and cuts before it gives up (issue #32), and only what survives that is lost.
   const outcome: QualityResult['outcome'] = passed
     ? 'pass'
     : attempt === 1

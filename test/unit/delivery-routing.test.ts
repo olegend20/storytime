@@ -1,0 +1,40 @@
+import { describe, expect, it } from 'vitest'
+import { onlyHardRuleBreaches } from '@/lib/generate/pipeline'
+import type { QualityResult } from '@/lib/schemas'
+
+/**
+ * Issue #32: when attempt 1 failed only on located hard-rule breaches, it is mended (ten
+ * seconds) instead of rewritten (two minutes). Decided from the result's structure, so
+ * rewording a reason string can never change the route.
+ */
+const base: QualityResult = {
+  outcome: 'rewrite',
+  attempt: 1,
+  deterministic_passed: true,
+  failures: [],
+  review: null,
+  safety: { safe: false, violations: [{ rule: 7, quote: 'Elsa waved', severity: 'hard' }], scary_level: 0, positive_portrayal: true, ending_safe: true },
+  hard_violations: [{ rule: 7, quote: 'Elsa waved', severity: 'hard' }],
+  rewrite_reasons: ['reworded entirely - the route must not care'],
+  word_count: 1400,
+  target_words: { min: 1300, max: 1700 },
+}
+
+describe('which failures the mend can take instead of a rewrite', () => {
+  it('a hard breach and nothing else: mend', () => {
+    expect(onlyHardRuleBreaches(base, 'A')).toBe(true)
+  })
+  it('no hard breach: rewrite', () => {
+    expect(onlyHardRuleBreaches({ ...base, hard_violations: [] }, 'A')).toBe(false)
+  })
+  it('a deterministic failure as well (length, a missing child): rewrite', () => {
+    expect(onlyHardRuleBreaches({ ...base, failures: [{ check: 'word_count_in_range', detail: 'short' }] }, 'A')).toBe(false)
+  })
+  it('too scary for the band, a child belittled, or an unsafe ending as well: rewrite', () => {
+    expect(onlyHardRuleBreaches({ ...base, safety: { ...base.safety!, scary_level: 2 } }, 'A')).toBe(false)
+    expect(onlyHardRuleBreaches({ ...base, safety: { ...base.safety!, positive_portrayal: false } }, 'A')).toBe(false)
+    expect(onlyHardRuleBreaches({ ...base, safety: { ...base.safety!, ending_safe: false } }, 'A')).toBe(false)
+    // The same scary level is within band C's limit.
+    expect(onlyHardRuleBreaches({ ...base, safety: { ...base.safety!, scary_level: 2 } }, 'C')).toBe(true)
+  })
+})

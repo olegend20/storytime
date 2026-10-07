@@ -876,6 +876,24 @@ Each has an e2e test on desktop and phone (the wake lock and offline tests stub 
 browser APIs). **Gates:** lint ✅ · typecheck ✅ · unit+int 1013 ✅ · e2e mock **132** ✅ ·
 e2e real 4 ✅.
 
+### 2026-10-06 — every parent gets a book: rungs 0–2 (issue #32, DECISIONS #176–#178)
+
+Owner's metric: every customer gets a book, every time, without much latency. Issue #32 is
+the ladder (never discard; degrade). Rung 0: the writer's cap 32k → 64k, with the story's
+own size a named bound - a 15-minute band-C story had hit the cap twice in one day.
+Rungs 1–2: a hard-rule breach is mended by one helper call (only the offending sentences;
+`prompts/mend.v1.md`) and the gate runs again; a breach that survives is cut and the story
+ships flagged; mending also replaces the full rewrite when attempt 1 failed only on hard
+rules (decided from the result's structure). VT-D2/VT-D3 in `test/int/pipeline.test.ts`; 15 unit
+tests in `test/unit/mend.test.ts`, 4 in `test/unit/delivery-routing.test.ts`. The route's
+`maxDuration` is 660 s (one write at the cap plus a minute).
+Eval, 6 Oct: 7 of 8 stories written, raw mean 4.11 (was 4.00); three disqualified (rule 7
+in video games, rule 10 in sharks, a truncated 15-minute story) - the three cases the ladder
+is for. Remaining rungs: 3 (shorter retry), 4 (fallback writer, owner's pick), 5 (shelf
+story), the `delivered / requested` metric in eval and dashboard.
+
+**Gates:** lint ✅ · typecheck ✅ · unit+int **1216** ✅ · guardrails 32 ✅ · schema 6 ✅ ·
+e2e mock 190 ✅ · e2e real 6 ✅.
 ### 2026-10-06 — a rejected fact pack is not forever (issue #28, DECISIONS #171–#173)
 
 The first new topic after launch died in the fact-pack review: a knowledge-written pack

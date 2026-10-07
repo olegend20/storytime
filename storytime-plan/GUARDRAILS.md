@@ -67,7 +67,9 @@ Rules given to the classifier:
 
 ## 4. Output guardrails (applied to every generated story before display)
 
-### 4.1 Hard rules — any breach fails the story and triggers a rewrite; a second breach → story discarded, parent sees "we couldn't make a good story about that tonight", quota not consumed
+### 4.1 Hard rules — any breach fails the story; it is mended, rewritten or cut before it is ever discarded
+
+Owner decision 2026-10-06 (issue #32, DECISIONS #176–#178): every parent gets a book, every time. A breach is handled on a ladder that never relaxes a rule: (1) when a hard rule is the only thing wrong, one helper call rewrites the offending sentences and the whole gate runs again; (2) otherwise the story is rewritten in full once, as before; (3) a breach on the rewrite is mended the same way; (4) a breach that survives the mend is **cut** — the sentences holding it are removed, the whole gate (safety review included) runs on what remains, and the story ships `flagged` with the "we had a second look" banner, quota consumed. Only a breach that cannot be placed in the text, or a chapter that would be emptied, is still **discarded**: the parent sees "we couldn't make a good story about that tonight" and quota is not consumed.
 1. No sexual or romantic content of any kind. No flirting, kissing, "crushes", body descriptions.
 2. No graphic violence: no blood, wounds, weapons used on people or animals on the page, no descriptions of death happening. Historical deaths may be *stated* ("Ole Kirk died in 1958") for bands B+ and never dwelt on; for band A, avoid unless the fact pack marks it essential.
 3. No frightening content aimed at scaring: no monsters chasing children, no darkness-and-silence dread sequences, no "it was right behind him" cliffhangers at chapter ends. Mild peril must be resolved within the same chapter for bands A and B.
