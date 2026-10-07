@@ -150,8 +150,10 @@ export function calibrationReusable(
  */
 export function isInfrastructureFailure(err: unknown): boolean {
   const text = err instanceof Error ? err.message : String(err)
-  // Anthropic reports an exhausted balance as a 400 invalid_request_error, so the words count.
-  if (/credit balance|overloaded|rate limit|ECONNRESET|ETIMEDOUT|fetch failed|\bstatus=(?:5\d\d|429|40[123])\b/i.test(text)) return true
+  // Only what the API itself says: a status the pipeline put there (`status=NNN`), or the
+  // exhausted-balance phrase Anthropic sends with a plain 400. Words like "overloaded" are
+  // not trusted on their own - a writer failure can quote model output that contains them.
+  if (/\bstatus=(?:5\d\d|429|40[123])\b|credit balance is too low/i.test(text)) return true
   if (err instanceof ModelCallError) {
     const status = err.detail.status
     return status === 401 || status === 402 || status === 403 || status === 429 || (status !== undefined && status >= 500) || err.detail.retryable

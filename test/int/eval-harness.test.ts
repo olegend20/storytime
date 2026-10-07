@@ -175,7 +175,7 @@ describe('F13 eval harness', () => {
           purpose: 'classify_input', model: 'claude-haiku-4-5-20251001', attempts: 1, retryable: false, status: 400,
         })
       }
-      if (input.scenario.id === 'bees-band-a-5min') throw new Error('write stream failed: overloaded_error')
+      if (input.scenario.id === 'bees-band-a-5min') throw new Error('produced no story: status failed: status=529 write stream failed: overloaded_error')
       return base(input)
     }
     const result = await withScriptedJudge(() => runEval({ provider, sink: new MemoryLogSink() }), script({}))
@@ -192,6 +192,8 @@ describe('F13 eval harness', () => {
     expect(result.summary.passed).toBe(false)
     expect(result.summary.failures.join(' ')).toMatch(/not run \(the API, not the writer\): bees-band-a-5min, titanic-band-b/)
     expect(isInfrastructureFailure(new Error('story output unusable: repair_failed'))).toBe(false)
+    // The word alone, inside a writer failure, is not the API's word.
+    expect(isInfrastructureFailure(new Error('story output unusable: repair_failed; issues: the shark was overloaded with rate limit jokes'))).toBe(false)
     // The live pipeline wraps the cause into its own message; the cause still decides.
     expect(
       isInfrastructureFailure(
