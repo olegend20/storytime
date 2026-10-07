@@ -59,5 +59,7 @@ describe('the generate route wires the real guardrails and limits', () => {
     const src = readFileSync('app/api/stories/generate/route.ts', 'utf8')
     expect(src).toMatch(/prepareGeneration\(.*,\s*body,\s*deps\)/)
     expect(src).toMatch(/runGeneration\(prepared\.prepared,\s*channel,\s*deps\)/)
+    // ...and carries the request deadline, so a retry never outlives the function (#32).
+    expect(src).toMatch(/const deps = \{ \.\.\.productionDeps\(\), deadlineMs: startedAt \+ maxDuration \* 1000 \}/)
   })
 })

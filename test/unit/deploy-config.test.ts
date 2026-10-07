@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { WRITER_MAX_TOKENS } from '@/lib/generate/pipeline'
+import { RETRY_MIN_MS, WRITER_MAX_TOKENS } from '@/lib/generate/pipeline'
 
 /**
  * Things the first production deployment (issue #18) depended on, pinned so they cannot
@@ -37,7 +37,11 @@ describe('deployment configuration', () => {
     // mend and the save. A write AND a full rewrite both at the cap cannot fit under
     // Vercel's ceiling; that is the rare case, and the ladder's later rungs are its answer.
     const secondsPerToken = 300 / 32_000
-    expect(seconds).toBeGreaterThanOrEqual(Math.ceil(WRITER_MAX_TOKENS * secondsPerToken) + 60)
+    const oneCappedWrite = Math.ceil(WRITER_MAX_TOKENS * secondsPerToken)
+    expect(seconds).toBeGreaterThanOrEqual(oneCappedWrite + 60)
+    // Rung 3 (#32): after a write cut off at the cap there must still be room for the
+    // shorter retry, or it never starts and the truncation case gets no book.
+    expect(seconds * 1000 - oneCappedWrite * 1000).toBeGreaterThanOrEqual(RETRY_MIN_MS)
     // And stay inside Vercel Pro's Fluid-compute ceiling.
     expect(seconds).toBeLessThanOrEqual(800)
   })

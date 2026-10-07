@@ -125,6 +125,12 @@ export interface GenerationDeps {
   factPackReviewer?: GetOrBuildOptions['reviewer']
   now?: () => Date
   /**
+   * When the request will be killed (epoch ms). A step that cannot finish before it is not
+   * started: a function cut off by the platform sends the parent no `error` event at all,
+   * which is worse than a clean failure. Unset (no deadline) outside the route.
+   */
+  deadlineMs?: number
+  /**
    * The writing model for this run, for the F14 bake-off (each contestant writes through the
    * real pipeline). Unset in production, where `config/models.json`'s `writer` role decides.
    */
