@@ -185,6 +185,8 @@ describe('F13 eval harness', () => {
     expect(titanic.disqualified).toBe(false)
     expect(titanic.judge_error).toMatch(/^not run: /)
     expect(result.summary.not_run).toEqual(['bees-band-a-5min', 'titanic-band-b'])
+    // A story that was never written has no word count to be out of range.
+    expect(result.summary.word_count_failures).not.toContain('titanic-band-b')
     expect(result.summary.disqualified).toBe(0)
     // The six that ran are the mean; the run still fails, because two books were not delivered.
     expect(result.summary.scored).toBe(6)

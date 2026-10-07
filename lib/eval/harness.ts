@@ -454,7 +454,9 @@ export function summarize(records: EvalScenarioRecord[]): EvalSummary {
     criterionMeans[crit] = mean(scored.filter((r) => r.scores_raw).map((r) => r.scores_raw![crit]))
   }
 
-  const wordFailures = records.filter((r) => !r.word_count_in_range).map((r) => r.scenario_id)
+  // A story that was never written has no word count to be out of range.
+  const neverWritten = (r: EvalScenarioRecord) => r.caps_applied.some((c) => c.startsWith('no_story') || c.startsWith('not_run'))
+  const wordFailures = records.filter((r) => !neverWritten(r) && !r.word_count_in_range).map((r) => r.scenario_id)
   const continuityFailures = records
     .filter((r) => r.continuity_reference && !r.continuity_reference.ok)
     .map((r) => r.scenario_id)

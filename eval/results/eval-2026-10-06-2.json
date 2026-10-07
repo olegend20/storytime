@@ -394,7 +394,7 @@
       "word_count_in_range": false,
       "gate": null,
       "judge_ok": false,
-      "judge_error": "no story: eval scenario space-race-band-c-15min (claude-sonnet-5, sample 1) produced no story: status failed. See the [generate] line above for the cause.",
+      "judge_error": "no story: story output unusable: repair_failed:schema_invalid; stop_reason=end_turn; output_tokens=32000 (the writer hit the 32,000-token cap, fixed in #33; cause and spend from generation_logs 2026-10-06 21:39 UTC - the harness of the day recorded neither)",
       "scores_raw": null,
       "overall_raw": null,
       "overall_final": 1,
@@ -408,7 +408,7 @@
       "continuity_reference": null,
       "scary_level_check": null,
       "editor_notes": [],
-      "generation_cost_usd": 0,
+      "generation_cost_usd": 0.345101,
       "judge_cost_usd": 0,
       "latency_total_ms": 0
     },
@@ -486,14 +486,13 @@
   "summary": {
     "scenarios": 2,
     "scored": 2,
-    "judge_errors": 1,
+    "judge_errors": 0,
+    "not_run": [],
     "mean_overall": 2.48,
     "min_overall": 1,
     "worst_scenario": "space-race-band-c-15min",
     "disqualified": 1,
-    "word_count_failures": [
-      "space-race-band-c-15min"
-    ],
+    "word_count_failures": [],
     "continuity_failures": [],
     "scary_level_failures": [
       "titanic-band-b"
@@ -508,11 +507,9 @@
     },
     "passed": false,
     "failures": [
-      "1 scenario(s) returned judge_error",
       "mean overall 2.48 < 4",
       "lowest scenario 1.00 (space-race-band-c-15min) < 3.5",
       "1 disqualified story(s)",
-      "word count out of range: space-race-band-c-15min",
       "scary level above the band limit: titanic-band-b"
     ]
   },
@@ -526,6 +523,6 @@
     "Judge payloads are checked blind before every call (lib/eval/blind.ts); the judge never saw a model id.",
     "The weighted overall and the automatic caps are recomputed in our code, not taken from the judge (DECISIONS.md #11/#12).",
     "Some scenarios have no F7 gate result, so guardrail-breach detection rested on the judge alone.",
-    "Annotated after the run (PR #31 review): space-race-band-c-15min hit the writer's 32,000-token output cap again (fixed in #33) and is counted here as both disqualified and a judge error; no judge call was made for it. titanic-band-b is the result that fills the gap in eval-2026-10-06.json."
+    "Reclassified after the run with the rules this PR adds (PR #31 review, 2026-10-07): space-race-band-c-15min was the writer cut off at the 32,000-token cap (a writer-side failure, so no_story and score 1 stand); its cause and its $0.345 of spend were taken from generation_logs. The summary was recomputed."
   ]
 }

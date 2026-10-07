@@ -846,14 +846,14 @@
       "word_count_in_range": false,
       "gate": null,
       "judge_ok": false,
-      "judge_error": "no story: eval scenario space-race-band-c-15min (claude-sonnet-5, sample 1) produced no story: status failed. See the [generate] line above for the cause.",
+      "judge_error": "not run: write stream 400: Your credit balance is too low (generation_logs, 2026-10-06 20:23:02 UTC; the harness of the day did not carry the cause)",
       "scores_raw": null,
       "overall_raw": null,
-      "overall_final": 1,
+      "overall_final": null,
       "caps_applied": [
-        "no_story:overall=1"
+        "not_run:infrastructure"
       ],
-      "disqualified": true,
+      "disqualified": false,
       "cap_context": null,
       "best_moment": null,
       "worst_moment": null,
@@ -884,14 +884,14 @@
       "word_count_in_range": false,
       "gate": null,
       "judge_ok": false,
-      "judge_error": "no story: classify_input call to claude-haiku-4-5-20251001 failed after 1 attempt(s): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CfmcC4t6JaYq4Qdtvz3uW\"}",
+      "judge_error": "not run: classify_input 400: Your credit balance is too low (the API account ran out mid-run)",
       "scores_raw": null,
       "overall_raw": null,
-      "overall_final": 1,
+      "overall_final": null,
       "caps_applied": [
-        "no_story:overall=1"
+        "not_run:infrastructure"
       ],
-      "disqualified": true,
+      "disqualified": false,
       "cap_context": null,
       "best_moment": null,
       "worst_moment": null,
@@ -905,16 +905,17 @@
   ],
   "summary": {
     "scenarios": 8,
-    "scored": 8,
-    "judge_errors": 2,
-    "mean_overall": 2.54,
-    "min_overall": 1,
-    "worst_scenario": "video-games-band-c-solo",
-    "disqualified": 4,
-    "word_count_failures": [
+    "scored": 6,
+    "judge_errors": 0,
+    "not_run": [
       "space-race-band-c-15min",
       "titanic-band-b"
     ],
+    "mean_overall": 3.06,
+    "min_overall": 1,
+    "worst_scenario": "video-games-band-c-solo",
+    "disqualified": 2,
+    "word_count_failures": [],
     "continuity_failures": [],
     "scary_level_failures": [],
     "criterion_means": {
@@ -927,11 +928,10 @@
     },
     "passed": false,
     "failures": [
-      "2 scenario(s) returned judge_error",
-      "mean overall 2.54 < 4",
+      "not run (the API, not the writer): space-race-band-c-15min, titanic-band-b",
+      "mean overall 3.06 < 4",
       "lowest scenario 1.00 (video-games-band-c-solo) < 3.5",
-      "4 disqualified story(s)",
-      "word count out of range: space-race-band-c-15min, titanic-band-b"
+      "2 disqualified story(s)"
     ]
   },
   "cost": {
@@ -944,6 +944,6 @@
     "Judge payloads are checked blind before every call (lib/eval/blind.ts); the judge never saw a model id.",
     "The weighted overall and the automatic caps are recomputed in our code, not taken from the judge (DECISIONS.md #11/#12).",
     "Some scenarios have no F7 gate result, so guardrail-breach detection rested on the judge alone.",
-    "Annotated after the run (PR #31 review): two scenarios produced no story for reasons outside the writer. titanic-band-b failed on the API's 'credit balance is too low' before a word was written; space-race-band-c-15min was cut off at the writer's 32,000-token output cap (fixed in #33). This file was written by the harness before it could tell an infrastructure failure from a writer failure, so both are counted here as disqualified and as judge errors; under the current harness titanic would be not_run. The comparable numbers are over the six stories that were scored: 3.06 final (after the gate's disqualifications) and 4.13 raw. The summary's 2.54 is the mean of all eight records, the two never-made stories included at 1.00."
+    "Reclassified after the run with the rules this PR adds (PR #31 review, 2026-10-07): titanic-band-b and space-race-band-c-15min both failed on the exhausted API balance, so they are not_run, out of the mean and not disqualified. The summary was recomputed with lib/eval/harness.ts summarize(); the six stories that were written are unchanged."
   ]
 }
