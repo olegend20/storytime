@@ -94,6 +94,20 @@ export interface StubUsage {
 }
 
 /** Write a synthetic fixture for `purpose` at `key`, whose single text block is `text`. */
+/** A synthetic fixture for a call that FAILS with this status (issue #32 rung 4). */
+export function stubFailure(purpose: string, key: string, status: number, message: string): string {
+  if (!FIXTURE_ROOT.includes('storytime-fixtures-')) throw new Error(`Refusing to write a synthetic fixture into ${FIXTURE_ROOT}.`)
+  return writeFixture(purpose, key, {
+    purpose: `${purpose} (SYNTHETIC failure - written by test/helpers/fixtures.ts)`,
+    model: 'synthetic',
+    response: { content: [] },
+    usage: { input_tokens: 0, cache_read_tokens: 0, cache_write_tokens: 0, output_tokens: 0 },
+    stop_reason: null,
+    recorded_at: '2026-10-07T00:00:00.000Z',
+    error: { status, message },
+  })
+}
+
 export function stubFixture(
   purpose: string,
   key: string,

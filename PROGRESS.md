@@ -876,6 +876,14 @@ Each has an e2e test on desktop and phone (the wake lock and offline tests stub 
 browser APIs). **Gates:** lint ✅ · typecheck ✅ · unit+int 1013 ✅ · e2e mock **132** ✅ ·
 e2e real 4 ✅.
 
+### 2026-10-07 — every parent gets a book: rung 4 (issue #32, DECISIONS #180)
+
+The writer unreachable (5xx, 429, overloaded) → one non-streamed write by the fallback
+writer (Haiku 4.5, `writer_fallback`), and that is the book. VT-D5 (two cases) in
+`test/int/pipeline.test.ts`; `writerUnavailable` unit-tested. Gates: lint ✅ · typecheck ✅ ·
+unit+int **1223** ✅ · guardrails 32 ✅ · e2e mock 190 ✅ · e2e real 6 ✅. The models page
+(fetched today) lists Sonnet 5.5 / Haiku 5.5 as current: an owner decision, not taken.
+
 ### 2026-10-07 — every parent gets a book: rung 3 (issue #32, DECISIONS #179)
 
 An unusable first write is retried once, one length tier shorter, not streamed, and that

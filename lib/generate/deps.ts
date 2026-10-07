@@ -130,6 +130,8 @@ export interface GenerationDeps {
    * which is worse than a clean failure. Unset (no deadline) outside the route.
    */
   deadlineMs?: number
+  /** Test seam: the fallback writer (issue #32 rung 4). Production uses the `writer_fallback` role. */
+  fallbackWritingModel?: string
   /**
    * The writing model for this run, for the F14 bake-off (each contestant writes through the
    * real pipeline). Unset in production, where `config/models.json`'s `writer` role decides.
