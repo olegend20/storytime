@@ -3,7 +3,7 @@ import { MeteredLogSink } from '@/lib/ai'
 import { estimateEvalCost, formatEstimate } from '@/lib/eval/estimate'
 import { compareEvalRuns, formatEval, runEval, type EvalResult } from '@/lib/eval/harness'
 import { evalScenarios, selectScenarios } from '@/lib/eval/scenarios'
-import { runCalibration, formatCalibration } from '@/lib/eval/calibration'
+import { runCalibration, formatCalibration, type CalibrationResult } from '@/lib/eval/calibration'
 import {
   nextResultPath,
   previousResultPath,
@@ -28,6 +28,8 @@ import { readyFactPackTopics } from '@/lib/topics/factpack'
  *   --fixture            use the fixture pipeline instead of F6 (harness development)
  *   --scenarios=a,b      subset by id (also read from EVAL_SCENARIOS)
  *   --budget=N           approve up to $N for this run (also EVAL_BUDGET_APPROVED_USD)
+ *   --calibration=PATH   reuse a calibration result that passed today with the same judge
+ *                        prompt (≈ $1.70 saved); otherwise calibration runs first
  */
 
 const DEFAULT_BUDGET_CEILING_USD = 20
@@ -98,12 +100,31 @@ async function main(): Promise<void> {
     return
   }
 
+  const reusePath = value('calibration')
+  let reuseCalibration: CalibrationResult | undefined
+  if (reusePath) {
+    try {
+      reuseCalibration = readResultFile<CalibrationResult>(reusePath)
+    } catch (err) {
+      console.error(`--calibration=${reusePath}: cannot read it (${err instanceof Error ? err.message : String(err)})`)
+      process.exitCode = 1
+      return
+    }
+  }
+  let calibrationPath: string | null = null
+
   let result: EvalResult
   try {
     result = await runEval({
       ...(scenarioSpec ? { scenarios: scenarioSpec } : {}),
+      ...(reuseCalibration ? { reuseCalibration } : {}),
       sink,
       onProgress: (line) => console.log(`  … ${line}`),
+      // Written the moment it finishes: a run that dies later keeps its $1.70 of calibration.
+      onCalibration: (calibration) => {
+        calibrationPath = writeResultFile(nextResultPath('calibration-', 'json'), calibration)
+        console.log(`  … calibration ${calibration.passed ? 'passed' : 'FAILED'}; wrote ${calibrationPath}`)
+      },
     })
   } catch (err) {
     console.error(err instanceof Error ? err.message : String(err))
@@ -114,9 +135,9 @@ async function main(): Promise<void> {
 
   // §5: the calibration result gets its own file, whatever the eval did.
   if (!('skipped' in result.calibration)) {
-    const calPath = writeResultFile(nextResultPath('calibration-', 'json'), result.calibration)
     console.log(formatCalibration(result.calibration))
-    console.log(`Wrote ${calPath}`)
+    if (calibrationPath) console.log(`Wrote ${calibrationPath}`)
+    else if (reusePath) console.log(`Calibration reused from ${reusePath}`)
     console.log('')
   }
 

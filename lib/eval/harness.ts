@@ -1,10 +1,11 @@
-import { MemoryLogSink, modelForRole, type GenerationLogSink } from '@/lib/ai'
+import { MemoryLogSink, ModelCallError, modelForRole, type GenerationLogSink } from '@/lib/ai'
 import {
   EVAL_PASS_CRITERIA,
   JUDGE_CRITERIA,
   MAX_SCARY_LEVEL,
   targetWords,
   wordCountWithinTolerance,
+  type AgeBand,
   type JudgeScore,
 } from '@/lib/schemas'
 import { JUDGE_PURPOSES } from './bakeoff'
@@ -39,7 +40,14 @@ export interface EvalScenarioRecord {
   word_count: number
   target_words: { min: number; max: number }
   word_count_in_range: boolean
-  gate: { outcome: string; hard_violations: number; failures: string[]; scary_level: number | null } | null
+  gate: {
+    outcome: string
+    hard_violations: number
+    /** The rule numbers behind `hard_violations`, so a discarded story explains itself. */
+    hard_violation_rules: number[]
+    failures: string[]
+    scary_level: number | null
+  } | null
   judge_ok: boolean
   judge_error: string | null
   scores_raw: JudgeScore['scores'] | null
@@ -64,6 +72,8 @@ export interface EvalSummary {
   scenarios: number
   scored: number
   judge_errors: number
+  /** Scenarios the API would not run (no credit, outage): not the writer's, not in the mean. */
+  not_run: string[]
   mean_overall: number
   min_overall: number
   worst_scenario: string | null
@@ -102,8 +112,98 @@ export interface EvalConfig {
   provider?: StoryProvider
   sink?: GenerationLogSink
   skipCalibration?: boolean
+  /**
+   * A calibration that already passed today, to reuse instead of paying for it again
+   * (≈ $1.70 of every run). Honoured only if it passed and was made with the same judge
+   * prompt; otherwise calibration runs as usual.
+   */
+  reuseCalibration?: CalibrationResult
+  /** Called the moment calibration finishes, so the result is on disk before the eval runs. */
+  onCalibration?: (result: CalibrationResult) => void
   signal?: AbortSignal
   onProgress?: (line: string) => void
+}
+
+/**
+ * Why a calibration result may NOT stand in for this run's, or null when it may: it must
+ * have passed, today (UTC date), with the judge model `config/models.json` names now and
+ * the judge prompt on disk now. JUDGE_AGENT.md §5: calibration is a property of the judge.
+ */
+export function calibrationReusable(
+  c: CalibrationResult,
+  promptSha256: string,
+  now: Date = new Date(),
+): string | null {
+  if (!c.passed) return 'it did not pass'
+  if (c.judge_prompt.sha256 !== promptSha256) return `the judge prompt changed (${c.judge_prompt.sha256} -> ${promptSha256})`
+  const judge = modelForRole('judge_primary')
+  if (c.judge_model !== judge) return `the judge model changed (${c.judge_model} -> ${judge})`
+  if (c.ran_at.slice(0, 10) !== now.toISOString().slice(0, 10)) return `it ran on ${c.ran_at.slice(0, 10)}, not today`
+  return null
+}
+
+/**
+ * An error that says nothing about the writer: the API refused or failed the call itself
+ * (no credit, bad key, overloaded, a 5xx, a retry budget spent). Such a scenario is
+ * recorded as not run, and kept out of the mean and the disqualified count - it still fails
+ * the run, since a story was not delivered.
+ */
+export function isInfrastructureFailure(err: unknown): boolean {
+  const text = err instanceof Error ? err.message : String(err)
+  // Only what the API itself says: a status the pipeline put there (`status=NNN`), or the
+  // exhausted-balance phrase Anthropic sends with a plain 400. Words like "overloaded" are
+  // not trusted on their own - a writer failure can quote model output that contains them.
+  // The balance phrase only inside the API's own error shape, never in quoted story text.
+  if (/\bstatus=(?:5\d\d|429|40[123])\b|invalid_request_error["\s\S]{0,80}credit balance is too low|status=400 [^;]*credit balance is too low/i.test(text)) return true
+  if (err instanceof ModelCallError) {
+    const status = err.detail.status
+    // A status the API sent, and nothing else: a bare `retryable` can be a stream timeout,
+    // which is a writer that ran too long, not an outage.
+    return status === 401 || status === 402 || status === 403 || status === 429 || (status !== undefined && status >= 500)
+  }
+  return false
+}
+
+/**
+ * The record for a scenario whose story was never made. The writer's doing: disqualified,
+ * scored 1, nothing judged. The API's doing: not run, scored nothing.
+ */
+function failedRecord(
+  scenario: EvalScenario,
+  context: JudgeContext,
+  band: AgeBand,
+  reason: string,
+  generationCostUsd: number,
+  infrastructure: boolean,
+): EvalScenarioRecord {
+  return {
+    scenario_id: scenario.id,
+    why: scenario.why,
+    band,
+    children: scenario.children.map((c) => ({ name: c.name, age: c.age })),
+    topic_key: scenario.topic_key,
+    length_minutes: scenario.length_minutes,
+    word_count: 0,
+    target_words: context.target_words,
+    word_count_in_range: false,
+    gate: null,
+    judge_ok: false,
+    judge_error: `${infrastructure ? 'not run' : 'no story'}: ${reason}`,
+    scores_raw: null,
+    overall_raw: null,
+    overall_final: infrastructure ? null : 1,
+    caps_applied: infrastructure ? ['not_run:infrastructure'] : ['no_story:overall=1'],
+    disqualified: !infrastructure,
+    cap_context: null,
+    best_moment: null,
+    worst_moment: null,
+    continuity_reference: null,
+    scary_level_check: null,
+    editor_notes: [],
+    generation_cost_usd: generationCostUsd,
+    judge_cost_usd: 0,
+    latency_total_ms: 0,
+  }
 }
 
 function judgeContextFor(scenario: EvalScenario): JudgeContext {
@@ -141,9 +241,22 @@ export async function runEval(config: EvalConfig = {}): Promise<EvalResult> {
         'skipCalibration was set. F13 AC requires calibration to pass before results count; ' +
         'a result with this flag set is a harness test, not an eval result.',
     }
+  } else if (config.reuseCalibration && calibrationReusable(config.reuseCalibration, prompt.sha256) === null) {
+    progress(`Reusing the calibration from ${config.reuseCalibration.ran_at} (same day, judge and prompt)`)
+    calibration = {
+      ...config.reuseCalibration,
+      // Paid for by the earlier run, not this one.
+      cost_usd: 0,
+      judge_calls: 0,
+      notes: [...config.reuseCalibration.notes, 'reused from an earlier run today'],
+    }
   } else {
+    if (config.reuseCalibration) {
+      progress(`Not reusing the calibration offered: ${calibrationReusable(config.reuseCalibration, prompt.sha256)}`)
+    }
     progress('Running judge calibration (JUDGE_AGENT.md §5)…')
     calibration = await runCalibration({ sink, ...(config.signal ? { signal: config.signal } : {}) })
+    config.onCalibration?.(calibration)
     if (!calibration.passed) {
       const failed = calibration.expectations.filter((e) => !e.passed).map((e) => e.id)
       throw new Error(
@@ -168,14 +281,39 @@ export async function runEval(config: EvalConfig = {}): Promise<EvalResult> {
     const band = scenarioBand(scenario)
     const storyId = `eval:${scenario.id}`
     progress(`generate ${scenario.id}`)
-    const generated = await pipeline.generate({
-      scenario,
-      writingModel,
-      sample: 1,
-      sink,
-      storyId,
-      ...(config.signal ? { signal: config.signal } : {}),
-    })
+    let generated: Awaited<ReturnType<StoryPipeline['generate']>>
+    // Where this scenario's log rows start, so a failure can count what it spent: the live
+    // pipeline tags its rows with the story's own uuid, not with `storyId` here.
+    const rowsBefore = 'rows' in sink ? (sink as MemoryLogSink).rows.length : 0
+    try {
+      generated = await pipeline.generate({
+        scenario,
+        writingModel,
+        sample: 1,
+        sink,
+        storyId,
+        ...(config.signal ? { signal: config.signal } : {}),
+      })
+    } catch (err) {
+      // A story that could not be made IS a result - the worst one - not a reason to throw
+      // away the rest of a paid run (eval-2026-10-06 died on scenario 2 of 8 this way).
+      if (config.signal?.aborted) throw err
+      const reason = err instanceof Error ? err.message : String(err)
+      const infrastructure = isInfrastructureFailure(err)
+      progress(`no story for ${scenario.id}${infrastructure ? ' (not the writer: the API)' : ''}: ${reason}`)
+      // What it cost before it failed (the write, a repair) is still money spent. Counted from
+      // the rows a recording sink holds (MemoryLogSink and MeteredLogSink, which every caller
+      // uses); a sink that keeps no rows reports 0 here, and the run's cost block still has it.
+      const spent =
+        'rows' in sink
+          ? (sink as MemoryLogSink).rows
+              .slice(rowsBefore)
+              .filter((r) => !JUDGE_PURPOSES.has(r.purpose))
+              .reduce((n, r) => n + r.cost_usd, 0)
+          : 0
+      records.push(failedRecord(scenario, context, band, reason, round6(spent), infrastructure))
+      continue
+    }
 
     progress(`score ${scenario.id}`)
     const scored = await scoreStory({
@@ -212,6 +350,7 @@ export async function runEval(config: EvalConfig = {}): Promise<EvalResult> {
         ? {
             outcome: generated.gate.outcome ?? 'unknown',
             hard_violations: generated.gate.hard_violations?.length ?? 0,
+            hard_violation_rules: (generated.gate.hard_violations ?? []).map((v) => v.rule),
             failures: (generated.gate.failures ?? []).map((f) => f.check),
             scary_level: observedScary,
           }
@@ -320,7 +459,9 @@ export function summarize(records: EvalScenarioRecord[]): EvalSummary {
     criterionMeans[crit] = mean(scored.filter((r) => r.scores_raw).map((r) => r.scores_raw![crit]))
   }
 
-  const wordFailures = records.filter((r) => !r.word_count_in_range).map((r) => r.scenario_id)
+  // A story that was never written has no word count to be out of range.
+  const neverWritten = (r: EvalScenarioRecord) => r.caps_applied.some((c) => c.startsWith('no_story') || c.startsWith('not_run'))
+  const wordFailures = records.filter((r) => !neverWritten(r) && !r.word_count_in_range).map((r) => r.scenario_id)
   const continuityFailures = records
     .filter((r) => r.continuity_reference && !r.continuity_reference.ok)
     .map((r) => r.scenario_id)
@@ -328,13 +469,16 @@ export function summarize(records: EvalScenarioRecord[]): EvalSummary {
     .filter((r) => r.scary_level_check && r.scary_level_check.ok === false)
     .map((r) => r.scenario_id)
   const disqualified = records.filter((r) => r.disqualified).length
-  const judgeErrors = records.filter((r) => !r.judge_ok).length
+  const notRun = records.filter((r) => r.caps_applied.includes('not_run:infrastructure')).map((r) => r.scenario_id)
+  // A judge error is a judge call that failed; a story that was never made made no call.
+  const judgeErrors = records.filter((r) => !r.judge_ok && r.caps_applied.length === 0).length
 
   const meanOverall = mean(overalls)
   const minOverall = min(overalls)
 
   const failures: string[] = []
   if (judgeErrors > 0) failures.push(`${judgeErrors} scenario(s) returned judge_error`)
+  if (notRun.length > 0) failures.push(`not run (the API, not the writer): ${notRun.join(', ')}`)
   if (!(meanOverall >= EVAL_PASS_CRITERIA.mean_overall_min)) {
     failures.push(`mean overall ${fmt(meanOverall)} < ${EVAL_PASS_CRITERIA.mean_overall_min}`)
   }
@@ -356,6 +500,7 @@ export function summarize(records: EvalScenarioRecord[]): EvalSummary {
     scenarios: records.length,
     scored: scored.length,
     judge_errors: judgeErrors,
+    not_run: notRun,
     mean_overall: Math.round(meanOverall * 100) / 100,
     min_overall: Math.round(minOverall * 100) / 100,
     worst_scenario: worst?.scenario_id ?? null,

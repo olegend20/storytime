@@ -48,14 +48,22 @@ export function narrativeWordCount(story: JudgeableStory): number {
   return total + countWords(story.ending_line)
 }
 
-/** The story as a parent would read it, so the judge scores prose and not a JSON blob. */
+/**
+ * The story as a parent would read it, so the judge scores prose and not a JSON blob.
+ *
+ * A chapter's shout line is rendered the way the reader shows it and the way the reference
+ * stories write it - a bold line of its own (`**WHOOOOSH!**`) - never as a stage direction.
+ * Until 2026-10-06 it was rendered as "(shout-along line: …)", and the judge, quite
+ * rightly, marked six of eight stories down for bracketed stage directions in the prose
+ * that no parent would ever see (eval-2026-10-02).
+ */
 export function renderStory(story: JudgeableStory): string {
   const lines: string[] = [`TITLE: ${story.title}`]
   if (story.subtitle) lines.push(`SUBTITLE: ${story.subtitle}`)
   lines.push('')
   for (const ch of story.chapters) {
     lines.push(`## ${ch.heading}`, '', ch.text, '')
-    if (ch.shout_line) lines.push(`(shout-along line: ${ch.shout_line})`, '')
+    if (ch.shout_line) lines.push(`**${ch.shout_line}**`, '')
   }
   lines.push('## The End', '', story.ending_line, '')
   lines.push('### True facts from the story (not counted in the word count)', '')

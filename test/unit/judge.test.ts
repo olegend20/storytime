@@ -17,7 +17,7 @@ import {
   parseJudgeScore,
   scoreStory,
 } from '@/lib/eval/judge'
-import { dataBlock, narrativeWordCount, sanitizeForDataBlock } from '@/lib/eval/render'
+import { dataBlock, narrativeWordCount, renderStory, sanitizeForDataBlock } from '@/lib/eval/render'
 import { loadReferenceCases } from '@/lib/eval/references'
 import { SCENARIOS, scenarioBand, scenarioTargetWords } from '@/lib/eval/scenarios'
 import { syntheticStory } from '@/lib/eval/synthetic'
@@ -537,5 +537,21 @@ describe('eval scenarios', () => {
       expect(s.checks.continuity_reference, s.id).toBeTruthy()
       expect(s.checks.continuity_reference!.length, s.id).toBeGreaterThan(0)
     }
+  })
+})
+
+/**
+ * eval-2026-10-02: the renderer showed the judge every shout line as "(shout-along line: …)"
+ * and six of eight stories were marked down for stage directions no parent ever sees. The
+ * judge must see what the reader shows and what the reference stories write.
+ */
+describe('the judge sees shout lines the way a parent does', () => {
+  it('renders a shout line as its own bold line, never as a bracketed note', () => {
+    const story = syntheticStory({ scenario: SCENARIOS[0]!, writingModel: 'claude-sonnet-5', sample: 1 })
+    story.chapters[0]!.shout_line = 'WHOOOOSH!'
+    const rendered = renderStory(story)
+    expect(rendered).toContain('\n**WHOOOOSH!**\n')
+    expect(rendered).not.toMatch(/shout-along line/)
+    expect(rendered).not.toMatch(/\(.*WHOOOOSH.*\)/)
   })
 })

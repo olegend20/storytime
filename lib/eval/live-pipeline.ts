@@ -143,7 +143,7 @@ async function generateOne(input: GenerateInput, db: SupabaseClient): Promise<Pi
     if (!result.story) {
       throw new Error(
         `eval scenario ${scenario.id} (${input.writingModel}, sample ${input.sample}) produced no ` +
-          `story: status ${result.status}. See the [generate] line above for the cause.`,
+          `story: status ${result.status}${result.error ? `: ${result.error}` : ''}`,
       )
     }
 

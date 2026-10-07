@@ -2,13 +2,15 @@ import { describe, expect, it } from 'vitest'
 import { existsSync, mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { MemoryLogSink } from '@/lib/ai'
+import { MemoryLogSink, ModelCallError } from '@/lib/ai'
 import { EVAL_PASS_CRITERIA } from '@/lib/schemas'
 import {
   compareEvalRuns,
   formatEval,
   runEval,
   type EvalResult,
+  calibrationReusable,
+  isInfrastructureFailure,
 } from '@/lib/eval/harness'
 import {
   nextResultPath,
@@ -22,11 +24,13 @@ import {
   loadLivePipeline,
   pipelineModeFromEnv,
   storyFixturePath,
+  type StoryProvider,
 } from '@/lib/eval/pipeline'
 import { syntheticProvider } from '@/lib/eval/synthetic'
 import { evalScenarios } from '@/lib/eval/scenarios'
 import { pairwiseResponse, scoreResponse, withScriptedJudge } from '../helpers/judge-fixtures'
 import type { JudgeScoreWithExcerpts } from '@/lib/eval/judge'
+import type { CalibrationResult } from '@/lib/eval/calibration'
 
 /**
  * F13 - the eval harness end to end in fixture mode.
@@ -121,6 +125,148 @@ describe('F13 eval harness', () => {
     expect(result.judge_prompt.version).toBe('judge.v2')
   })
 
+  // eval-2026-10-06 died on scenario 2 of 8 when the writer produced no story, after $2.27.
+  it('a scenario whose story cannot be made is the worst result, not the end of the run', async () => {
+    const base = syntheticProvider()
+    const provider: StoryProvider = async (input) => {
+      if (input.scenario.id === 'video-games-band-c-solo') {
+        // The write and the repair were paid for before the story was given up on.
+        for (const [purpose, cost] of [['write', 0.26], ['repair', 0.02]] as const) {
+          await input.sink?.write({
+            // Tagged like the live pipeline's rows: with the story's own uuid, not `eval:<scenario>`.
+            purpose, model: input.writingModel, story_id: '00000000-0000-4000-8000-0000000000aa', family_id: null, fact_pack_id: null,
+            input_tokens: 1, output_tokens: 1, cache_read_tokens: 0, cache_write_tokens: 0,
+            cost_usd: cost, latency_ms: 1, ok: false, error: 'repair_failed',
+          })
+        }
+        throw new Error('story output unusable: repair_failed')
+      }
+      return base(input)
+    }
+    let sink = new MemoryLogSink()
+    const result = await withScriptedJudge(
+      () => {
+        sink = new MemoryLogSink()
+        return runEval({ provider, sink })
+      },
+      script({}),
+    )
+    expect(result.scenarios).toHaveLength(8)
+    const failed = result.scenarios.find((r) => r.scenario_id === 'video-games-band-c-solo')!
+    expect(failed.judge_ok).toBe(false)
+    expect(failed.judge_error).toMatch(/no story: story output unusable/)
+    expect(failed.overall_final).toBe(1)
+    expect(failed.disqualified).toBe(true)
+    expect(failed.caps_applied).toEqual(['no_story:overall=1'])
+    expect(failed.generation_cost_usd).toBeCloseTo(0.28, 6)
+    expect(result.cost.generation_usd).toBeGreaterThanOrEqual(0.28)
+    expect(result.summary.disqualified).toBe(1)
+    expect(result.summary.passed).toBe(false)
+    expect(result.scenarios.filter((r) => r.judge_ok)).toHaveLength(7)
+    // A story that was never made made no judge call: it is not also a judge error.
+    expect(result.summary.judge_errors).toBe(0)
+  })
+
+  it('a scenario the API would not run is not the writer\'s fault: not scored, not disqualified, still a failed run', async () => {
+    const base = syntheticProvider()
+    const provider: StoryProvider = async (input) => {
+      if (input.scenario.id === 'titanic-band-b') {
+        throw new ModelCallError('classify_input call failed: 400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API."}}', {
+          purpose: 'classify_input', model: 'claude-haiku-4-5-20251001', attempts: 1, retryable: false, status: 400,
+        })
+      }
+      if (input.scenario.id === 'bees-band-a-5min') throw new Error('produced no story: status failed: status=529 write stream failed: overloaded_error')
+      return base(input)
+    }
+    const result = await withScriptedJudge(() => runEval({ provider, sink: new MemoryLogSink() }), script({}))
+    const titanic = result.scenarios.find((r) => r.scenario_id === 'titanic-band-b')!
+    expect(titanic.caps_applied).toEqual(['not_run:infrastructure'])
+    expect(titanic.overall_final).toBeNull()
+    expect(titanic.disqualified).toBe(false)
+    expect(titanic.judge_error).toMatch(/^not run: /)
+    expect(result.summary.not_run).toEqual(['bees-band-a-5min', 'titanic-band-b'])
+    // A story that was never written has no word count to be out of range.
+    expect(result.summary.word_count_failures).not.toContain('titanic-band-b')
+    expect(result.summary.disqualified).toBe(0)
+    // The six that ran are the mean; the run still fails, because two books were not delivered.
+    expect(result.summary.scored).toBe(6)
+    expect(result.summary.mean_overall).toBe(5)
+    expect(result.summary.passed).toBe(false)
+    expect(result.summary.failures.join(' ')).toMatch(/not run \(the API, not the writer\): bees-band-a-5min, titanic-band-b/)
+    expect(isInfrastructureFailure(new Error('story output unusable: repair_failed'))).toBe(false)
+    // The word alone, inside a writer failure, is not the API's word.
+    expect(isInfrastructureFailure(new Error('story output unusable: repair_failed; issues: the shark was overloaded with rate limit jokes'))).toBe(false)
+    // The live pipeline wraps the cause into its own message; the cause still decides.
+    expect(
+      isInfrastructureFailure(
+        new Error('eval scenario space-race produced no story: status failed: status=400 write stream to claude-sonnet-5 failed: 400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low"}}'),
+      ),
+    ).toBe(true)
+    expect(
+      isInfrastructureFailure(new Error('eval scenario x produced no story: status failed: story output unusable: repair_failed:schema_invalid')),
+    ).toBe(false)
+    // The phrase quoted inside a writer failure is not the API's error.
+    expect(isInfrastructureFailure(new Error('story output unusable: repair_failed; issues: chapter 3 says your credit balance is too low'))).toBe(false)
+    // A 5xx whose text says nothing more still reads as the API's.
+    expect(isInfrastructureFailure(new Error('produced no story: status failed: status=529 write stream failed'))).toBe(true)
+    expect(isInfrastructureFailure(new Error('produced no story: status failed: status=400 output_config invalid'))).toBe(false)
+  })
+
+  it('a calibration that passed today is handed over at once and can be reused by the next run', async () => {
+    let handed: CalibrationResult | null = null
+    const first = await withScriptedJudge(
+      () => runEval({ provider: syntheticProvider(), sink: new MemoryLogSink(), onCalibration: (c) => { handed = c } }),
+      script({}),
+    )
+    expect(handed).not.toBeNull()
+    if ('skipped' in first.calibration) throw new Error('unreachable')
+    expect(handed!.passed).toBe(true)
+    expect(handed!.judge_prompt.sha256).toBe(first.calibration.judge_prompt.sha256)
+
+    // The second run spends nothing on calibration: only the eight SCORE calls are made.
+    // (withScriptedJudge re-runs the function once per missing fixture, so the sink is made
+    // inside it and the last run's rows are the ones counted.)
+    let sink = new MemoryLogSink()
+    const second = await withScriptedJudge(
+      () => {
+        sink = new MemoryLogSink()
+        return runEval({ provider: syntheticProvider(), sink, reuseCalibration: handed! })
+      },
+      () => scoreResponse(ALL_FIVES),
+    )
+    if ('skipped' in second.calibration) throw new Error('unreachable')
+    expect(second.calibration.passed).toBe(true)
+    expect(second.calibration.notes).toContain('reused from an earlier run today')
+    // (the synthetic provider logs the pretend generation calls too; the judge's are the point)
+    expect(sink.rows.filter((r) => r.purpose === 'judge_pairwise')).toHaveLength(0)
+    expect(sink.rows.filter((r) => r.purpose === 'judge_score')).toHaveLength(8)
+    // Paid for by the first run: this run's cost record carries none of it.
+    expect(second.calibration.cost_usd).toBe(0)
+    expect(second.calibration.judge_calls).toBe(0)
+    const scoreCost = second.scenarios.reduce((n, r) => n + r.judge_cost_usd, 0)
+    expect(second.cost.judge_usd).toBeCloseTo(scoreCost, 6)
+    expect(first.cost.judge_usd).toBeGreaterThan(scoreCost)
+
+    // Not reused: another judge prompt, a failed one, another judge model, another day.
+    const good = handed!
+    for (const [why, bad] of [
+      ['prompt', { ...good, judge_prompt: { ...good.judge_prompt, sha256: 'deadbeef' } }],
+      ['failed', { ...good, passed: false }],
+      ['model', { ...good, judge_model: 'claude-haiku-4-5-20251001' }],
+      ['day', { ...good, ran_at: '2026-09-28T20:00:00.000Z' }],
+    ] as const) {
+      expect(calibrationReusable(bad, good.judge_prompt.sha256), why).not.toBeNull()
+    }
+    expect(calibrationReusable(good, good.judge_prompt.sha256)).toBeNull()
+    const third = await withScriptedJudge(
+      () => runEval({ provider: syntheticProvider(), sink: new MemoryLogSink(), reuseCalibration: { ...good, ran_at: '2026-09-28T20:00:00.000Z' } }),
+      script({}),
+    )
+    if ('skipped' in third.calibration) throw new Error('unreachable')
+    expect(third.calibration.notes).not.toContain('reused from an earlier run today')
+    expect(third.calibration.cost_usd).toBeGreaterThan(0)
+  })
+
   it('reports nothing at all when calibration fails', async () => {
     let calls = 0
     await expect(
@@ -206,12 +352,18 @@ describe('F13 eval harness', () => {
           provider: async (input) => {
             const base = await syntheticProvider()(input)
             if (!base) throw new Error('unreachable')
-            return { ...base, gate: { ...base.gate, scary_level: 3 } }
+            return {
+              ...base,
+              gate: { ...base.gate, scary_level: 3, hard_violations: [{ rule: 3, quote: 'right behind him', severity: 'hard' as const }] },
+            }
           },
         }),
       responder,
     )
     const titanic = result.scenarios[0]!
+    // The rule numbers travel with the count, so a discarded story explains itself.
+    expect(titanic.gate?.hard_violations).toBe(1)
+    expect(titanic.gate?.hard_violation_rules).toEqual([3])
     expect(titanic.scary_level_check!.observed).toBe(3)
     expect(titanic.scary_level_check!.ok).toBe(false)
     expect(result.summary.scary_level_failures).toEqual(['titanic-band-b'])
