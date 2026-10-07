@@ -282,6 +282,14 @@ export function onlyHardRuleBreaches(result: QualityResult, band: AgeBand): bool
   )
 }
 
+/** Time the gate, the mend and the save need after a write. */
+export const AFTER_WRITE_MS = 45_000
+/**
+ * Below this, rung 3 does not start: a 5- or 10-minute story takes 60-90 s to write, plus
+ * AFTER_WRITE_MS. A truncated first write usually spent most of the request already.
+ */
+export const RETRY_MIN_MS = 150_000
+
 /** One length tier down; the shortest stays where it is. */
 export function shorterLength(minutes: LengthMinutes): LengthMinutes {
   return minutes === 15 ? 10 : 5
@@ -413,6 +421,12 @@ export async function runGeneration(
     let retriedShorter: { from: LengthMinutes; to: LengthMinutes; why: string } | null = null
     if (!parsed.ok) {
       const why = unusable(parsed, streamed.stopReason, streamed.usage.output_tokens)
+      // Only if there is time to write it, gate it and save it before the request is killed:
+      // a retry the platform cuts off sends the parent nothing at all, not even an error.
+      const left = deps.deadlineMs === undefined ? Number.POSITIVE_INFINITY : deps.deadlineMs - Date.now()
+      if (left < RETRY_MIN_MS) {
+        throw new GenerationFailed(`${why}; no shorter retry: ${Math.round(left / 1000)} s left before the request deadline`)
+      }
       const to = shorterLength(request.length_minutes)
       console.warn(`[generate] ${why} - retrying at ${to} minutes (was ${request.length_minutes})`)
       retriedShorter = { from: request.length_minutes, to, why }
@@ -427,7 +441,8 @@ export async function runGeneration(
           system: retryPrompt.system,
           messages: retryPrompt.messages,
           maxTokens: WRITER_MAX_TOKENS,
-          timeoutMs: 600_000,
+          // Bounded by the time left, less what the gate and the save need after it.
+          timeoutMs: Math.min(600_000, left - AFTER_WRITE_MS),
           thinking: 'adaptive',
           ...(withFormat ? { outputConfig: { format: STORY_OUTPUT_FORMAT } } : {}),
           familyId: prepared.familyId,

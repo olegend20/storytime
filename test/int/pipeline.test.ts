@@ -36,7 +36,7 @@ import {
 } from '../helpers/fixtures'
 import { buildPrompt } from '@/lib/generate/prompt'
 import { buildQualityReviewMessage, measuredForReview } from '@/lib/quality/review'
-import { WRITER_MAX_TOKENS } from '@/lib/generate/pipeline'
+import { RETRY_MIN_MS, WRITER_MAX_TOKENS } from '@/lib/generate/pipeline'
 import { MEND_MAX_TOKENS, cutViolations, mendUserMessage, passagesFor } from '@/lib/generate/mend'
 import { STORY_OUTPUT_FORMAT } from '@/lib/generate/output-schema'
 import { buildBibleUpdateMessage } from '@/lib/bible'
@@ -757,6 +757,39 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     expect(events.at(-1)?.type).toBe('done')
     expect(quota.calls).toEqual(['consumeQuota'])
     if (result.bibleUpdate) await result.bibleUpdate
+  })
+
+  it('VT-D4: with too little time left before the request deadline, no retry starts - a clean error instead', async () => {
+    const run = await prepared()
+    const writer = modelForRole('writer')
+    stubResponsesFor(run)
+    const garbage = 'Once upon a time - and then the response stopped'
+    const writePrompt = buildPrompt({ request: run.request, bible: BIBLE_AT_START, factPack: FIXTURE_FACT_PACK })
+    stubFixture(
+      'write',
+      streamFixtureKey({ model: writer, system: writePrompt.system, messages: writePrompt.messages, maxTokens: WRITER_MAX_TOKENS, thinking: 'adaptive', outputFormat: STORY_OUTPUT_FORMAT }),
+      garbage,
+    )
+    stubFixture(
+      'repair',
+      callFixtureKey({
+        model: modelForRole('helper'),
+        system: [{ text: loadPrompt('repair').body }],
+        messages: [{ role: 'user', content: [untrustedBlockRaw('payload', garbage), untrustedBlockRaw('validation_errors', '- no JSON object found in the response'), 'Return the corrected JSON object only.'].join('\n\n') }],
+        maxTokens: 16_000,
+      }),
+      JSON.stringify({ error: 'irreparable' }),
+    )
+    const sink = new MemoryLogSink()
+    const { events, result } = await collect(run, {
+      db: family.db, sink, quota: new RecordingQuota(), now: () => FIXED_NOW,
+      deadlineMs: Date.now() + RETRY_MIN_MS - 1_000,
+    })
+    expect(result.status).toBe('failed')
+    expect(result.writeCalls).toBe(1)
+    expect(sink.rows.filter((r) => r.purpose === 'rewrite')).toHaveLength(0)
+    // The parent is told, rather than left with a stream that just stops.
+    expect(events.at(-1)).toMatchObject({ type: 'error', code: 'generation_failed', quota_consumed: false })
   })
 
   it('F7 VT: two consecutive failures flag the story - still saved, still shown', async () => {
