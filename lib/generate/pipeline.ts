@@ -109,6 +109,33 @@ export type PrepareResult =
  * Everything up to (but not including) the writing-model call. Ordered cheapest-first
  * (GUARDRAILS.md §1.2): free checks, then the quota, then Haiku, then the fact pack.
  */
+/**
+ * The free checks of `prepareGeneration` (body, kill switch, quota, budget), on their own:
+ * no model call, a few milliseconds. The route answers these with a real HTTP status before
+ * it opens the stream; `prepareGeneration` runs them again, which costs one quota read.
+ */
+export async function precheckGeneration(
+  familyId: string,
+  rawBody: unknown,
+  deps: GenerationDeps = {},
+): Promise<{ ok: true } | ({ ok: false } & PreStreamFailure)> {
+  if (!GenerateStoryBody.safeParse(rawBody).success) {
+    return { ok: false, ...failure('invalid_request', 'invalid_request') }
+  }
+  if (!serverEnv().GENERATION_ENABLED) {
+    return { ok: false, ...failure('service_paused', 'service_paused') }
+  }
+  const quota = await resolveQuota(deps).preflight(familyId)
+  if (!quota.generation_enabled) {
+    const code: GenerationErrorCode = quota.disabled_reason ?? 'service_paused'
+    return { ok: false, ...failure(code, code) }
+  }
+  if (!quota.allowed) {
+    return { ok: false, ...failure('quota_exceeded', 'quota_exceeded', { resets_at: quota.resets_at }) }
+  }
+  return { ok: true }
+}
+
 export async function prepareGeneration(
   familyId: string,
   rawBody: unknown,
@@ -772,13 +799,9 @@ export async function runGeneration(
       quota_consumed: false,
       resets_at: null,
     }
-    if (channel.isOpen) {
-      // Post-stream: the contract says an `error` event on the already-committed 200.
-      channel.push({ type: 'error', ...body })
-    } else {
-      // Nothing sent yet: the route can still answer 502 with a JSON body.
-      channel.fail({ error: body, status: HTTP_STATUS_FOR_ERROR.generation_failed ?? 502 })
-    }
+    // The route opens the stream before the run starts (2026-10-08), so there is always a
+    // committed 200 to report on: an `error` event, which the page shows with a retry.
+    channel.push({ type: 'error', ...body })
     if (err instanceof ModelRefusalError || err instanceof GenerationFailed) {
       console.error(`[generate] ${err.message}`)
     } else {

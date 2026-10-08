@@ -195,6 +195,8 @@ function countWords(text: string): number {
  */
 export function needsFreeRetryNote(error: ErrorBody): boolean {
   if (error.quota_consumed) return false
+  // The story is still being made and will use a story: the free-retry note would be untrue.
+  if (error.code === 'still_making') return false
   const normalized = error.message.toLowerCase().replace(/[‘’]/g, "'")
   return !normalized.includes("didn't use one of your stories")
 }
@@ -202,6 +204,18 @@ export function needsFreeRetryNote(error: ErrorBody): boolean {
 export const FREE_RETRY_NOTE = "Try again — this didn't use one of your stories."
 
 /** What went wrong, before the stream opened. */
+/**
+ * The connection dropped after the server accepted the request: the story is still being
+ * written, and will be saved. Not a failure the parent should retry (that would make a
+ * second story) - the library is where it will appear.
+ */
+export const STILL_MAKING: ErrorBody = {
+  code: 'still_making',
+  message: "We lost the connection, but your story is still being made. It'll be in your library in a few minutes.",
+  quota_consumed: false,
+  resets_at: null,
+}
+
 function fallbackError(code: string, message: string): ErrorBody {
   return { code, message, quota_consumed: false, resets_at: null }
 }
