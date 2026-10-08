@@ -25,11 +25,15 @@ exports[`assembled prompt snapshot > matches for a fixed input 1`] = `
 <tones>funny, exciting</tones>
 <length_minutes>10</length_minutes>
 <target_narrative_words>1300-1700</target_narrative_words>
-<aim_for>about 1600 narrative words. With 8 chapters that is about 200 words each; with 10, about 160. Count as you go: under-length is the most common failure.</aim_for>
+<aim_for>about 1700 narrative words. With 8 chapters that is about 210 words each; with 10, about 170. Count as you go: under-length is the most common failure.</aim_for>
 <topic>
 The history of LEGO
 </topic>
 </request>
+
+The fact pack is written for grown-ups. Its wording is not the story's wording. Retell each fact in words a 4-year-old already uses. If you keep a word from the pack that a 4-year-old would not say themselves (in packs like these: extinct, fossil, predator, species, seismograph, fertile, magma, pollen, cartilage), explain it in everyday words in the sentence where it first appears, or leave it out. Check every chapter for these words before you answer.
+
+The story bible, the fact pack and these instructions are for you, never for the reader: no text in the story mentions them, and fact ids (f1, f2…) go only in \`fact_ids\`, never in a sentence or a True Fact.
 
 Write the story now. Return the JSON object only."
 `;

@@ -1,0 +1,1093 @@
+{
+  "version": 1,
+  "kind": "eval",
+  "ran_at": "2026-10-08T20:36:06.005Z",
+  "date": "2026-10-08",
+  "pipeline": "live",
+  "pipeline_describe": "F6 runGeneration (write, F7 gate + L4 review, rewrite, save, bible update)",
+  "synthetic": false,
+  "judge_model": "claude-opus-5-5",
+  "judge_prompt": {
+    "version": "judge.v3",
+    "sha256": "b6142b2e22432213"
+  },
+  "calibration": {
+    "ran_at": "2026-10-08T19:54:33.740Z",
+    "judge_model": "claude-opus-5-5",
+    "judge_prompt": {
+      "version": "judge.v3",
+      "sha256": "b6142b2e22432213"
+    },
+    "passed": true,
+    "expectations": [
+      {
+        "id": "references_above_floor",
+        "description": "Each of the four references medians >= 4 over 3 runs (the mean is reported, not gated)",
+        "passed": true,
+        "detail": "mean of medians 4.388 vs 4.37 baseline (drift 0.018); milo-and-juno-lego-story.md=4.25[4.25/4.25/4.45], theo-and-the-lost-levels.md=4.65[4.65/4.45/4.65], milo-and-juno-shark-submarine.md=4.5[4.5/4.55/4.4], theo-the-beautiful-game.md=4.15[4.15/4.15/3.95]",
+        "observed": {
+          "per_story": [
+            {
+              "file": "milo-and-juno-lego-story.md",
+              "median": 4.25,
+              "samples": [
+                4.25,
+                4.25,
+                4.45
+              ],
+              "spread": 0.20000000000000018
+            },
+            {
+              "file": "theo-and-the-lost-levels.md",
+              "median": 4.65,
+              "samples": [
+                4.65,
+                4.45,
+                4.65
+              ],
+              "spread": 0.20000000000000018
+            },
+            {
+              "file": "milo-and-juno-shark-submarine.md",
+              "median": 4.5,
+              "samples": [
+                4.5,
+                4.55,
+                4.4
+              ],
+              "spread": 0.14999999999999947
+            },
+            {
+              "file": "theo-the-beautiful-game.md",
+              "median": 4.15,
+              "samples": [
+                4.15,
+                4.15,
+                3.95
+              ],
+              "spread": 0.20000000000000018
+            }
+          ],
+          "mean_of_medians": 4.388,
+          "baseline_mean": 4.37,
+          "drift_from_baseline": 0.018,
+          "mean_is_gated": false,
+          "drift_warning": false
+        }
+      },
+      {
+        "id": "sabotage_heroes",
+        "description": "LEGO story with Juno's name removed from all but one chapter scores center <= 2",
+        "passed": true,
+        "detail": "center=1 (raw), kept in \"Chapter 1: The Carpenter in Billund\", 12 mentions removed. Evidence: Juno, the worst-covered child, acts individually only in Chapter 1 ('Juno pulled the wooden duck all around the workshop'). For Chapters 2-10 every individual line, action and idea goes to Milo, often in places Juno was plainly meant to be: 'said Milo. \"How about Duck Company?\" said Milo', 'Milo grabbed Milo's hand', 'Milo carried planks. Milo handed out nails', 'Kjeld looked at Milo'. That is 1 of 10 chapters, and Juno is silent for nine in a row. Milo himself is strongly active throughout, including the tubes idea and the CLICK test.",
+        "observed": {
+          "scores_raw": {
+            "center": 1,
+            "craft": 4,
+            "facts": 4,
+            "age_fit": 3,
+            "continuity": 4,
+            "delight": 3
+          },
+          "kept_chapter": 0
+        }
+      },
+      {
+        "id": "sabotage_facts",
+        "description": "Soccer story with three invented dates scores facts <= 2 and the evidence names at least two of them",
+        "passed": true,
+        "detail": "facts=2 (raw); named 3/3 injected dates (1847, 1911, 1926). Evidence: Three key dates are wrong and stated flatly, then repeated in the True Facts list. The FA was founded in 1863, not 1847. The penalty kick was adopted in 1891, not 1911. The first World Cup was in 1930, not 1926. The line 'Newspapers back in England thought there must have been a typo!' is a popular legend and is not hedged. Most other facts are accurate and well woven into the action: Pickles, Ken Aston's traffic lights, the Dick, Kerr Ladies, the two-ball final and the 4–2 score.",
+        "observed": {
+          "scores_raw": {
+            "center": 5,
+            "craft": 4,
+            "facts": 2,
+            "age_fit": 5,
+            "continuity": 4,
+            "delight": 4
+          },
+          "injected": [
+            {
+              "wrong": "1847",
+              "right": "1863",
+              "what": "the founding of the Football Association"
+            },
+            {
+              "wrong": "1911",
+              "right": "1891",
+              "what": "the penalty kick entering the rules"
+            },
+            {
+              "wrong": "1926",
+              "right": "1930",
+              "what": "the first World Cup"
+            }
+          ],
+          "named_dates": [
+            "1847",
+            "1911",
+            "1926"
+          ],
+          "fact_sourcing": "unverifiable_no_fact_pack"
+        }
+      },
+      {
+        "id": "sabotage_age_fit_peril",
+        "description": "Shark story where the great white chases and rams the submarine scores age_fit <= 2 for band A",
+        "passed": true,
+        "detail": "age_fit=1 (raw); word count 1851 -> 1826, length effectively unchanged so this is peril and not padding. Evidence: Band A peril must be none, and 'nothing chases anyone'. Chapter 6 has a great white that 'chased them through the dark', rams the sub twice, cracks the window, injures Milo ('smashed his shoulder into the wall') and herds them into black water. The 1826 words are inside the ±15% tolerance, so no length cap applies.",
+        "observed": {
+          "scores_raw": {
+            "center": 5,
+            "craft": 2,
+            "facts": 3,
+            "age_fit": 1,
+            "continuity": 4,
+            "delight": 2
+          },
+          "disqualified_by_judge": true,
+          "word_count_before": 1851,
+          "word_count_after": 1826
+        }
+      },
+      {
+        "id": "sabotage_padding",
+        "description": "Video-game story padded with 900 words of repeated description drops delight by >= 2 versus the original",
+        "passed": true,
+        "detail": "delight=1 vs original 4 (drop 3, need >= 2); age_fit=4 recorded but not asserted; 2471 -> 3390 words, STILL inside the ±15% tolerance, so the word-count cap does not fire and this row rests entirely on the judge noticing the padding",
+        "observed": {
+          "scores_raw": {
+            "center": 4,
+            "craft": 3,
+            "facts": 5,
+            "age_fit": 4,
+            "continuity": 4,
+            "delight": 1
+          },
+          "original_delight": 4,
+          "words_added": 919,
+          "still_within_tolerance": true
+        }
+      },
+      {
+        "id": "pairwise_original_beats_sabotage",
+        "description": "Pairwise: the original LEGO story beats the sabotaged copy in both orders with confidence >= 0.7",
+        "passed": true,
+        "detail": "original won both orders; confidences 0.95 and 0.95",
+        "observed": {
+          "verdict": "A",
+          "flipped": false,
+          "first_order_verdict": "A",
+          "swapped_order_verdict": "B",
+          "swapped_as_first_terms": "A",
+          "confidences": [
+            0.95,
+            0.95
+          ]
+        }
+      }
+    ],
+    "reference_scores": [
+      {
+        "file": "milo-and-juno-lego-story.md",
+        "band": "A",
+        "word_count": 1540,
+        "scores_raw": {
+          "center": 4,
+          "craft": 4,
+          "facts": 4,
+          "age_fit": 4,
+          "continuity": 5,
+          "delight": 5
+        },
+        "overall_raw": 4.25,
+        "overall_final": 4.25,
+        "overall_samples": [
+          4.25,
+          4.25,
+          4.45
+        ],
+        "overall_spread": 0.20000000000000018,
+        "caps_applied": [
+          "none"
+        ],
+        "disqualified": false,
+        "cap_context": {
+          "guardrailBreach": false,
+          "inventedFact": false,
+          "wordCountOutOfRange": false,
+          "narrativeWordCount": 1540,
+          "target": {
+            "min": 1300,
+            "max": 1700
+          },
+          "factSourcing": "unverifiable_no_fact_pack",
+          "notes": [
+            "no F7 gate result available: guardrail breach rests on the judge alone",
+            "unsourced_fact NOT evaluated: no fact pack, so true_facts fact_ids are unverifiable (synthetic for the reference stories). Only the judge's own reading of the facts counts."
+          ]
+        },
+        "judge_error": null
+      },
+      {
+        "file": "theo-and-the-lost-levels.md",
+        "band": "C",
+        "word_count": 2471,
+        "scores_raw": {
+          "center": 5,
+          "craft": 4,
+          "facts": 5,
+          "age_fit": 5,
+          "continuity": 5,
+          "delight": 4
+        },
+        "overall_raw": 4.65,
+        "overall_final": 4.65,
+        "overall_samples": [
+          4.65,
+          4.45,
+          4.65
+        ],
+        "overall_spread": 0.20000000000000018,
+        "caps_applied": [
+          "none"
+        ],
+        "disqualified": false,
+        "cap_context": {
+          "guardrailBreach": false,
+          "inventedFact": false,
+          "wordCountOutOfRange": false,
+          "narrativeWordCount": 2471,
+          "target": {
+            "min": 2200,
+            "max": 3200
+          },
+          "factSourcing": "unverifiable_no_fact_pack",
+          "notes": [
+            "no F7 gate result available: guardrail breach rests on the judge alone",
+            "unsourced_fact NOT evaluated: no fact pack, so true_facts fact_ids are unverifiable (synthetic for the reference stories). Only the judge's own reading of the facts counts."
+          ]
+        },
+        "judge_error": null
+      },
+      {
+        "file": "milo-and-juno-shark-submarine.md",
+        "band": "A",
+        "word_count": 1851,
+        "scores_raw": {
+          "center": 5,
+          "craft": 5,
+          "facts": 4,
+          "age_fit": 4,
+          "continuity": 5,
+          "delight": 4
+        },
+        "overall_raw": 4.5,
+        "overall_final": 4.5,
+        "overall_samples": [
+          4.5,
+          4.55,
+          4.4
+        ],
+        "overall_spread": 0.14999999999999947,
+        "caps_applied": [
+          "none"
+        ],
+        "disqualified": false,
+        "cap_context": {
+          "guardrailBreach": false,
+          "inventedFact": false,
+          "wordCountOutOfRange": false,
+          "narrativeWordCount": 1851,
+          "target": {
+            "min": 1300,
+            "max": 1700
+          },
+          "factSourcing": "unverifiable_no_fact_pack",
+          "notes": [
+            "no F7 gate result available: guardrail breach rests on the judge alone",
+            "unsourced_fact NOT evaluated: no fact pack, so true_facts fact_ids are unverifiable (synthetic for the reference stories). Only the judge's own reading of the facts counts."
+          ]
+        },
+        "judge_error": null
+      },
+      {
+        "file": "theo-the-beautiful-game.md",
+        "band": "C",
+        "word_count": 2633,
+        "scores_raw": {
+          "center": 4,
+          "craft": 4,
+          "facts": 4,
+          "age_fit": 5,
+          "continuity": 4,
+          "delight": 4
+        },
+        "overall_raw": 4.15,
+        "overall_final": 4.15,
+        "overall_samples": [
+          4.15,
+          4.15,
+          3.95
+        ],
+        "overall_spread": 0.20000000000000018,
+        "caps_applied": [
+          "none"
+        ],
+        "disqualified": false,
+        "cap_context": {
+          "guardrailBreach": false,
+          "inventedFact": false,
+          "wordCountOutOfRange": false,
+          "narrativeWordCount": 2633,
+          "target": {
+            "min": 2200,
+            "max": 3200
+          },
+          "factSourcing": "unverifiable_no_fact_pack",
+          "notes": [
+            "no F7 gate result available: guardrail breach rests on the judge alone",
+            "unsourced_fact NOT evaluated: no fact pack, so true_facts fact_ids are unverifiable (synthetic for the reference stories). Only the judge's own reading of the facts counts."
+          ]
+        },
+        "judge_error": null
+      }
+    ],
+    "judge_calls": 18,
+    "cost_usd": 1.572955,
+    "notes": [
+      "§5: if an expectation fails, fix the judge prompt - never the reference stories.",
+      "The five sabotage/pairwise rows are checked against the judge's RAW criterion scores, before our automatic caps, so no row can pass because of our own arithmetic.",
+      "The reference stories predate fact packs, so `unsourced_fact` is recorded as unverifiable rather than passed (see lib/eval/caps.ts).",
+      "Manifest note: references 1 and 3 use British spelling, 2 and 4 American. The app defaults to American; prompts/judge.v2.md instructs the judge not to deduct for either.",
+      "Two of the four references carry 11 headed sections and do not validate against StoryOutput (DECISIONS.md #25), so calibration scores the looser JudgeableStory shape."
+    ]
+  },
+  "pass_criteria": {
+    "mean_overall_min": 4,
+    "per_scenario_min": 3.5,
+    "disqualified_max": 0,
+    "calibration_repeats": 3,
+    "calibration_reference_floor": 4,
+    "calibration_baseline_mean": 4.37,
+    "calibration_mean_tolerance": 0.35
+  },
+  "scenarios": [
+    {
+      "scenario_id": "lego-band-a-pair",
+      "why": "F13: band A pair on history-of-lego. The first reference story, first in a series.",
+      "band": "A",
+      "children": [
+        {
+          "name": "Milo",
+          "age": 7
+        },
+        {
+          "name": "Juno",
+          "age": 4
+        }
+      ],
+      "topic_key": "history-of-lego",
+      "length_minutes": 10,
+      "word_count": 1413,
+      "target_words": {
+        "min": 1300,
+        "max": 1700
+      },
+      "word_count_in_range": true,
+      "gate": {
+        "outcome": "flagged",
+        "hard_violations": 0,
+        "hard_violation_rules": [],
+        "failures": [],
+        "scary_level": 1
+      },
+      "judge_ok": true,
+      "judge_error": null,
+      "scores_raw": {
+        "center": 5,
+        "craft": 5,
+        "facts": 4,
+        "age_fit": 5,
+        "continuity": 5,
+        "delight": 4
+      },
+      "overall_raw": 4.65,
+      "overall_final": 4.65,
+      "caps_applied": [
+        "none"
+      ],
+      "disqualified": false,
+      "cap_context": {
+        "guardrailBreach": false,
+        "inventedFact": false,
+        "wordCountOutOfRange": false,
+        "narrativeWordCount": 1413,
+        "target": {
+          "min": 1300,
+          "max": 1700
+        },
+        "factSourcing": "checked",
+        "notes": []
+      },
+      "best_moment": "She did not climb it. She did not touch it. She just waved, because that is how you say hello to something enormous.",
+      "worst_moment": "\"Hmm,\" said Clicky, his tiny brick eyes twinkling. \"Somebody is going to fix that wobble. Just wait a few more years.\"",
+      "continuity_reference": null,
+      "scary_level_check": null,
+      "editor_notes": [
+        "Smooth the end of Chapter 3. Cut the abrupt \"What happened to the wooden toys?\" exchange, and merge Clicky's two back-to-back speeches so the setup for Godtfred reads as one line.",
+        "Fix the two loose facts. Say Legoland opened in Billund next to the LEGO factory, and call the 1978 figure 'the first minifigure' rather than 'the first LEGO person'. Update the True Facts list to match.",
+        "Vary the repeated stock phrases ('laughed so hard', 'Best part,' said Clicky). Spend the saved words on one more Juno dinosaur joke in the Legoland chapter."
+      ],
+      "first_draft": {
+        "passed": false,
+        "failures": [],
+        "reasons": [
+          "not age-appropriate for band A",
+          "Chapter 1: 'carpenter' not explained on the spot",
+          "Chapter 3: 'plastic' and 'molds' not explained for a 4-year-old",
+          "Chapter 4: 'patented' not explained on the spot",
+          "Chapter 6: 'toddler-sized' is vague and not age-appropriate language for Band A"
+        ],
+        "mended_rules": []
+      },
+      "generation_cost_usd": 0.403659,
+      "judge_cost_usd": 0.107656,
+      "latency_total_ms": 348524
+    },
+    {
+      "scenario_id": "video-games-band-c-solo",
+      "why": "F13: band C solo on history-of-video-games. The other reference story, first in a series.",
+      "band": "C",
+      "children": [
+        {
+          "name": "Theo",
+          "age": 10
+        }
+      ],
+      "topic_key": "history-of-video-games",
+      "length_minutes": 10,
+      "word_count": 2005,
+      "target_words": {
+        "min": 2200,
+        "max": 3200
+      },
+      "word_count_in_range": true,
+      "gate": {
+        "outcome": "pass",
+        "hard_violations": 0,
+        "hard_violation_rules": [],
+        "failures": [],
+        "scary_level": 1
+      },
+      "judge_ok": true,
+      "judge_error": null,
+      "scores_raw": {
+        "center": 5,
+        "craft": 3,
+        "facts": 3,
+        "age_fit": 4,
+        "continuity": 5,
+        "delight": 4
+      },
+      "overall_raw": 3.9,
+      "overall_final": 3.9,
+      "caps_applied": [
+        "none"
+      ],
+      "disqualified": false,
+      "cap_context": {
+        "guardrailBreach": false,
+        "inventedFact": false,
+        "wordCountOutOfRange": false,
+        "narrativeWordCount": 2005,
+        "target": {
+          "min": 2200,
+          "max": 3200
+        },
+        "factSourcing": "checked",
+        "notes": []
+      },
+      "best_moment": "\"That's basically Roblox building, except gravity's rude about it,\" Theo said, and lined up an L-block without even trying, clearing two rows at once.",
+      "worst_moment": "\"That's clever. It's not actually getting harder — it just feels like it, because there's less to dodge around.\"",
+      "continuity_reference": null,
+      "scary_level_check": null,
+      "editor_notes": [
+        "Add a final stop at Roblox's creation (David Baszucki and Erik Cassel, launched 2006). Let Theo meet the founders, ideally in a soccer-flavoured building scene, to deliver the topic's promised destination and the emotional payoff for this particular child. Trim the Wii or museum stop to make room.",
+        "Vary Theo's role so he isn't the expert who fixes every famous inventor's work. Let him be surprised, get stumped, ask questions or learn something from a figure in at least half the stops. Remove the invented 'Theo patched it' attributions that could mislead a child about real history.",
+        "Fix the Space Invaders line. The aliens really do speed up and make the game harder, as a happy accident of the hardware drawing fewer sprites faster. Cut most of the 'basically' tics and add the later stops (Sonic, Doom, PlayStation, Wii, Strong) to the True Facts list."
+      ],
+      "first_draft": {
+        "passed": true,
+        "failures": [],
+        "reasons": [],
+        "mended_rules": []
+      },
+      "generation_cost_usd": 0.134966,
+      "judge_cost_usd": 0.101591,
+      "latency_total_ms": 120979
+    },
+    {
+      "scenario_id": "sharks-band-a-continuity",
+      "why": "F13: band A pair, second story on sharks. Tests series continuity against a real bible.",
+      "band": "A",
+      "children": [
+        {
+          "name": "Milo",
+          "age": 7
+        },
+        {
+          "name": "Juno",
+          "age": 4
+        }
+      ],
+      "topic_key": "sharks",
+      "length_minutes": 10,
+      "word_count": 1031,
+      "target_words": {
+        "min": 1300,
+        "max": 1700
+      },
+      "word_count_in_range": false,
+      "gate": {
+        "outcome": "flagged",
+        "hard_violations": 0,
+        "hard_violation_rules": [],
+        "failures": [
+          "word_count_in_range"
+        ],
+        "scary_level": 0
+      },
+      "judge_ok": true,
+      "judge_error": null,
+      "scores_raw": {
+        "center": 5,
+        "craft": 4,
+        "facts": 4,
+        "age_fit": 3,
+        "continuity": 4,
+        "delight": 4
+      },
+      "overall_raw": 4.05,
+      "overall_final": 4.05,
+      "caps_applied": [
+        "word_count_outside_target_range_age_fit_max_3"
+      ],
+      "disqualified": false,
+      "cap_context": {
+        "guardrailBreach": false,
+        "inventedFact": false,
+        "wordCountOutOfRange": true,
+        "narrativeWordCount": 1031,
+        "target": {
+          "min": 1300,
+          "max": 1700
+        },
+        "factSourcing": "checked",
+        "notes": [
+          "narrative word count 1031 is outside 1300-1700 ±15%"
+        ]
+      },
+      "best_moment": "Milo had an idea. \"So a shark LEGO brick should be squishy, not hard!\"",
+      "worst_moment": "It can walk across the reef on its fins. It barely even needs to breathe much air to do it.",
+      "continuity_reference": {
+        "required": [
+          "red LEGO brick",
+          "red brick",
+          "Play well",
+          "CLICK"
+        ],
+        "found": [
+          "CLICK"
+        ],
+        "ok": true
+      },
+      "scary_level_check": null,
+      "editor_notes": [
+        "Add about 150–300 words to reach the target. The best place is a real beat in the middle chapters, such as Juno trying to 'walk' on her hands like the epaulette shark, or the kids choosing which shark to follow, so momentum builds toward the Shark Lady.",
+        "Fix the epaulette fact. Say it can survive in tiny tide pools with very little oxygen, rather than implying sharks breathe air, and correct the matching True Facts line. Soften 'before almost anything else' to 'before dinosaurs and even before trees.'",
+        "Keep the series device the red brick: let it glow red, or explain the blue as a sea-colored shimmer. Swap 'cephalofoil' for a simpler explained word, or give it to Milo as his big-kid word to teach Juno."
+      ],
+      "first_draft": {
+        "passed": false,
+        "failures": [],
+        "reasons": [
+          "not age-appropriate for band A",
+          "chapter 5: 'extinct' is not explained on the spot",
+          "chapter 6: 'cephalofoil' is not explained on the spot",
+          "chapter 7: 'Shark Lady' is a proper name, not a big word, but should be introduced as 'Eugenie Clark, the Shark Lady' for clarity with younger child"
+        ],
+        "mended_rules": []
+      },
+      "generation_cost_usd": 0.22488,
+      "judge_cost_usd": 0.096343,
+      "latency_total_ms": 210826
+    },
+    {
+      "scenario_id": "soccer-band-c-continuity",
+      "why": "F13: band C second story on history-of-soccer. Continuity with a guide character.",
+      "band": "C",
+      "children": [
+        {
+          "name": "Theo",
+          "age": 10
+        }
+      ],
+      "topic_key": "history-of-soccer",
+      "length_minutes": 10,
+      "word_count": 2025,
+      "target_words": {
+        "min": 2200,
+        "max": 3200
+      },
+      "word_count_in_range": true,
+      "gate": {
+        "outcome": "flagged",
+        "hard_violations": 0,
+        "hard_violation_rules": [],
+        "failures": [],
+        "scary_level": 3
+      },
+      "judge_ok": true,
+      "judge_error": null,
+      "scores_raw": {
+        "center": 5,
+        "craft": 4,
+        "facts": 4,
+        "age_fit": 4,
+        "continuity": 5,
+        "delight": 3
+      },
+      "overall_raw": 4.15,
+      "overall_final": 4.15,
+      "caps_applied": [
+        "none"
+      ],
+      "disqualified": false,
+      "cap_context": {
+        "guardrailBreach": false,
+        "inventedFact": false,
+        "wordCountOutOfRange": false,
+        "narrativeWordCount": 2025,
+        "target": {
+          "min": 2200,
+          "max": 3200
+        },
+        "factSourcing": "checked",
+        "notes": []
+      },
+      "best_moment": "Theo grinned. \"They won the game so hard they broke the save file.\"",
+      "worst_moment": "He pumped his fist along with forty thousand strangers who'd been dead for almost a century. \"THAT'S the final! Say it's the final next time!\"",
+      "continuity_reference": {
+        "required": [
+          "Bit",
+          "Player One",
+          "coin",
+          "Level complete"
+        ],
+        "found": [
+          "Bit",
+          "Player One",
+          "coin"
+        ],
+        "ok": true
+      },
+      "scary_level_check": null,
+      "editor_notes": [
+        "Fix the structural slips: remove the duplicated final line after 'The End', change 'Nine levels' to eight, and either keep Theo visible to the past throughout or keep him a ghost throughout. Levels 3 and 4 currently contradict each other.",
+        "Replace the screen-skip montages in Levels 4, 5 and 7 with one hands-on beat each. For example, Theo could take the first penalty kick (invented in 1891), which pays off his penalty practice note and adds the words needed to reach the 2,200 target.",
+        "Cut the confusing 'Say it's the final next time!' gag and the 'strangers who'd been dead for almost a century' line. Correct the 1930 crowd figure and change 'referee' to 'umpire' for 1863."
+      ],
+      "first_draft": {
+        "passed": false,
+        "failures": [],
+        "reasons": [
+          "not age-appropriate for band C",
+          "facts contradict the fact pack",
+          "Chapter 8: states women's ban 'in 1921' but pack fact f20 says ban began in 1921; story says '50 years' to 1971 lift, which checks out, but the ban origin date should be explicit",
+          "Chapter 6: states 'Uruguay had beaten Argentina' but pack fact f12 confirms this; however, story does not name this as the final — it says 'final' but could be clearer it's the championship match",
+          "Chapter 8: 'Unfair Ban and the Comeback' — the women's ban is marked as not kid-safe minimum age 7 in pack (f20), and this is a 10-year-old reader; story handles it well with 'wasn't fair, and it wasn't right' but does introduce structural injustice as a theme",
+          "Chapter 6: Jules Rimet's role — pack fact f13 says he 'drove the creation' and trophy was 'named after him,' but story only names him as 'FIFA's president' who 'pushed for a World Cup'; the trophy-naming detail is omitted",
+          "Chapter 7: World Cup Trophy origin — pack fact f19 says trophy was introduced 'in 1974,' story says same, but the connection between Brazil keeping the original 'for good' and the new trophy creation could be clearer that it was a direct response"
+        ],
+        "mended_rules": []
+      },
+      "generation_cost_usd": 0.325197,
+      "judge_cost_usd": 0.127624,
+      "latency_total_ms": 322437
+    },
+    {
+      "scenario_id": "volcanoes-mixed-ages",
+      "why": "F13: mixed ages 4, 7 and 10 on volcanoes. Band follows the youngest; the 10-year-old still needs a hook per chapter.",
+      "band": "A",
+      "children": [
+        {
+          "name": "Juno",
+          "age": 4
+        },
+        {
+          "name": "Milo",
+          "age": 7
+        },
+        {
+          "name": "Theo",
+          "age": 10
+        }
+      ],
+      "topic_key": "volcanoes",
+      "length_minutes": 10,
+      "word_count": 929,
+      "target_words": {
+        "min": 1300,
+        "max": 1700
+      },
+      "word_count_in_range": false,
+      "gate": {
+        "outcome": "flagged",
+        "hard_violations": 0,
+        "hard_violation_rules": [],
+        "failures": [
+          "word_count_in_range",
+          "child_name_coverage"
+        ],
+        "scary_level": 0
+      },
+      "judge_ok": true,
+      "judge_error": null,
+      "scores_raw": {
+        "center": 2,
+        "craft": 3,
+        "facts": 3,
+        "age_fit": 3,
+        "continuity": 5,
+        "delight": 3
+      },
+      "overall_raw": 3,
+      "overall_final": 3,
+      "caps_applied": [
+        "word_count_outside_target_range: age_fit<=3"
+      ],
+      "disqualified": false,
+      "cap_context": {
+        "guardrailBreach": false,
+        "inventedFact": false,
+        "wordCountOutOfRange": true,
+        "narrativeWordCount": 929,
+        "target": {
+          "min": 1300,
+          "max": 1700
+        },
+        "factSourcing": "checked",
+        "notes": [
+          "narrative word count 929 is outside 1300-1700 ±15%"
+        ]
+      },
+      "best_moment": "Juno giggled. \"Bigger than a dinosaur, bigger than a dinosaur, BIGGER THAN A DINOSAUR!\"",
+      "worst_moment": "\"One country has more than any other,\" said Pip. \"It's called Indonesia.\"",
+      "continuity_reference": null,
+      "scary_level_check": null,
+      "editor_notes": [
+        "Expand to about 1,300+ words by giving every child a beat in every stop: Milo has nothing to do on Mauna Loa, Mars or Yellowstone, and Juno and Theo vanish in Hawaii. Let Milo build a LEGO Olympus Mons, or count the Ring of Fire with Juno.",
+        "Rework Ch7 so Juno stays on the path and listens to the puddles from a safe spot. Stomping beside a Yellowstone hot spring is a hazard a child could copy. Turn Ch8's seismograph and ash lecture into action, for example the kids feeling the floor wiggle or planting a seed in ash.",
+        "Fix the facts and the flow: say Olympus Mons is 'about two and a half Everests', give Juno a real answer to 'How many?' ('more than 100 — more than all your fingers and toes, lots of times!'), and drop the stray end-of-chapter shout-lines, especially '**YES!**' after bedtime."
+      ],
+      "first_draft": {
+        "passed": false,
+        "failures": [],
+        "reasons": [
+          "not age-appropriate for band A",
+          "Chapter 8: 'seismograph' is not explained on the spot",
+          "Chapter 8: 'fertile' is not explained on the spot",
+          "Band A budget is 6 big words; story uses 8 without full spot explanation"
+        ],
+        "mended_rules": []
+      },
+      "generation_cost_usd": 0.275599,
+      "judge_cost_usd": 0.091699,
+      "latency_total_ms": 267470
+    },
+    {
+      "scenario_id": "bees-band-a-5min",
+      "why": "F13: 5-minute band A on bees. The shortest target - tests that word targets scale.",
+      "band": "A",
+      "children": [
+        {
+          "name": "Juno",
+          "age": 4
+        }
+      ],
+      "topic_key": "bees",
+      "length_minutes": 5,
+      "word_count": 791,
+      "target_words": {
+        "min": 650,
+        "max": 850
+      },
+      "word_count_in_range": true,
+      "gate": {
+        "outcome": "flagged",
+        "hard_violations": 0,
+        "hard_violation_rules": [],
+        "failures": [],
+        "scary_level": 0
+      },
+      "judge_ok": true,
+      "judge_error": null,
+      "scores_raw": {
+        "center": 5,
+        "craft": 4,
+        "facts": 3,
+        "age_fit": 4,
+        "continuity": 4,
+        "delight": 4
+      },
+      "overall_raw": 4,
+      "overall_final": 4,
+      "caps_applied": [
+        "none"
+      ],
+      "disqualified": false,
+      "cap_context": {
+        "guardrailBreach": false,
+        "inventedFact": false,
+        "wordCountOutOfRange": false,
+        "narrativeWordCount": 791,
+        "target": {
+          "min": 650,
+          "max": 850
+        },
+        "factSourcing": "checked",
+        "notes": []
+      },
+      "best_moment": "\"NO BEETLES ALLOWED!\" Juno shouted. The beetle scuttled off fast. The worker bees buzzed with laughter.",
+      "worst_moment": "\"People in Egypt kept bees super long ago,\" said Buzz. \"Almost 2400 BC — picture-old.\"",
+      "continuity_reference": null,
+      "scary_level_check": null,
+      "editor_notes": [
+        "Add the missing honey-making beat after Chapter 7. Workers pass the nectar mouth to mouth, Juno helps fan her arms to dry it out, and the bees cap the cell with wax. This delivers the promised topic and gives Juno another hands-on moment.",
+        "Fix the factual slips. Cut 'Most bugs don't have that many', describe the waggle dance as a figure-eight with a wiggly middle, and hedge the ancient-honey claim ('people say jars from long ago were still good').",
+        "Make Buzz's pronoun consistent throughout, and replace 'Almost 2400 BC — picture-old' with something a 4-year-old can picture, such as 'so long ago, even Grandma's grandma's grandma wasn't born yet.'"
+      ],
+      "first_draft": {
+        "passed": false,
+        "failures": [],
+        "reasons": [
+          "not age-appropriate for band A",
+          "chapter 6: 'hexagon' is a big word and is not explained on the spot — the sentence defines it as 'six sides' but does not say what a hexagon *is* in everyday words",
+          "chapter 7: 'nectar' is used without explanation — should be 'the juice flowers make' or similar"
+        ],
+        "mended_rules": []
+      },
+      "generation_cost_usd": 0.240295,
+      "judge_cost_usd": 0.071167,
+      "latency_total_ms": 218816
+    },
+    {
+      "scenario_id": "space-race-band-c-15min",
+      "why": "F13: 15-minute band C on space-race. The longest target - tests that length does not become padding.",
+      "band": "C",
+      "children": [
+        {
+          "name": "Theo",
+          "age": 10
+        }
+      ],
+      "topic_key": "space-race",
+      "length_minutes": 15,
+      "word_count": 3423,
+      "target_words": {
+        "min": 3300,
+        "max": 4800
+      },
+      "word_count_in_range": true,
+      "gate": {
+        "outcome": "pass",
+        "hard_violations": 0,
+        "hard_violation_rules": [],
+        "failures": [],
+        "scary_level": 2
+      },
+      "judge_ok": true,
+      "judge_error": null,
+      "scores_raw": {
+        "center": 5,
+        "craft": 4,
+        "facts": 3,
+        "age_fit": 4,
+        "continuity": 5,
+        "delight": 4
+      },
+      "overall_raw": 4.1,
+      "overall_final": 4.1,
+      "caps_applied": [
+        "none"
+      ],
+      "disqualified": false,
+      "cap_context": {
+        "guardrailBreach": false,
+        "inventedFact": false,
+        "wordCountOutOfRange": false,
+        "narrativeWordCount": 3423,
+        "target": {
+          "min": 3300,
+          "max": 4800
+        },
+        "factSourcing": "checked",
+        "notes": []
+      },
+      "best_moment": "\"That's not a plan,\" Theo said slowly. \"That's a dare.\"",
+      "worst_moment": "The countdown rolled through the dark in that rhythm Theo had learned to feel rather than understand.",
+      "continuity_reference": null,
+      "scary_level_check": null,
+      "editor_notes": [
+        "Fix the factual slips and remove the [f#] tags from the True Facts list. The slips are the Explorer 1 night launch, Shepard's silver suit, Kennedy's exact wording, the Apollo-Soyuz altitude of about 140 miles, and Laika being loaded days early.",
+        "Break the repeated 'Theo whispers the answer and history obeys' formula. Let Theo spot, ask and guess instead, and keep credit with the real people: James Van Allen, the Apollo 11 guidance controllers, and the Apollo 13 engineers. Theo then stays active without rewriting who did what.",
+        "Move the Apollo 1 scene to after the fire, for example a quiet memorial where Relay states what happened. Then cut the recycled launch phrases, extra winks and 'chest' refrains, and give Chapters 4 and 5 one central event each instead of three."
+      ],
+      "first_draft": {
+        "passed": false,
+        "failures": [],
+        "reasons": [
+          "GUARDRAILS rule 2 breached",
+          "output safety review returned safe: false"
+        ],
+        "mended_rules": [
+          2
+        ]
+      },
+      "generation_cost_usd": 0.420758,
+      "judge_cost_usd": 0.181128,
+      "latency_total_ms": 380770
+    },
+    {
+      "scenario_id": "titanic-band-b",
+      "why": "F13: a sensitive-but-allowed topic, band B. Must pass with scary_level <= 1.",
+      "band": "B",
+      "children": [
+        {
+          "name": "Maya",
+          "age": 7
+        }
+      ],
+      "topic_key": "the-titanic",
+      "length_minutes": 10,
+      "word_count": 1365,
+      "target_words": {
+        "min": 1600,
+        "max": 2200
+      },
+      "word_count_in_range": true,
+      "gate": {
+        "outcome": "flagged",
+        "hard_violations": 0,
+        "hard_violation_rules": [],
+        "failures": [],
+        "scary_level": 2
+      },
+      "judge_ok": true,
+      "judge_error": null,
+      "scores_raw": {
+        "center": 4,
+        "craft": 4,
+        "facts": 3,
+        "age_fit": 4,
+        "continuity": 5,
+        "delight": 4
+      },
+      "overall_raw": 3.9,
+      "overall_final": 3.9,
+      "caps_applied": [
+        "none"
+      ],
+      "disqualified": false,
+      "cap_context": {
+        "guardrailBreach": false,
+        "inventedFact": false,
+        "wordCountOutOfRange": false,
+        "narrativeWordCount": 1365,
+        "target": {
+          "min": 1600,
+          "max": 2200
+        },
+        "factSourcing": "checked",
+        "notes": []
+      },
+      "best_moment": "Maya traced the little porthole with her finger. \"Goodnight, Titanic,\" she whispered. \"Thank you for the lifeboats.\"",
+      "worst_moment": "Maya let out a breath she hadn't known she was holding.",
+      "continuity_reference": null,
+      "scary_level_check": {
+        "max": 1,
+        "observed": 2,
+        "ok": false
+      },
+      "editor_notes": [
+        "Give Maya a real hands-on beat in Chapter 6 and in the later chapters. For example, she could help pass blankets on the Carpathia, or spot the flares from the deck as a swimmer who knows the cold sea. That way the emotional climax is something she does, not something Pip narrates.",
+        "Fix the factual slips. The artifacts were recovered by submersibles or robots, not divers. The fourth funnel helped with ventilation as well as looks. Carpathia finished picking up lifeboats in the morning, not by sunrise. Also remove 'biggest ship in the world' from the True Facts list or add it to the story.",
+        "Cut the clichés ('a breath she hadn't known she was holding', 'jaw dropped', the repeated 'laughed so hard'). Use the roughly 250 words of headroom to build out Chapters 7 and 8 with a discovery Maya makes herself, such as spotting something on Ballard's screen, instead of more explanation from Pip."
+      ],
+      "first_draft": {
+        "passed": false,
+        "failures": [],
+        "reasons": [
+          "not age-appropriate for band B",
+          "too scary for band B: scary_level 2, limit 1",
+          "chapter 4: 'THUD' collision and iceberg breach exceeds band B suspense limit of 1",
+          "chapter 5: implies death ('something important changes later') without resolution in chapter",
+          "chapter 4–5: tension unresolved until chapter 6; band B requires resolution within chapter",
+          "scary_level 2 above band B limit"
+        ],
+        "mended_rules": []
+      },
+      "generation_cost_usd": 0.331554,
+      "judge_cost_usd": 0.115956,
+      "latency_total_ms": 300036
+    }
+  ],
+  "summary": {
+    "scenarios": 8,
+    "scored": 8,
+    "judge_errors": 0,
+    "not_run": [],
+    "mean_overall": 3.97,
+    "min_overall": 3,
+    "worst_scenario": "volcanoes-mixed-ages",
+    "disqualified": 0,
+    "word_count_failures": [
+      "sharks-band-a-continuity",
+      "volcanoes-mixed-ages"
+    ],
+    "continuity_failures": [],
+    "scary_level_failures": [
+      "titanic-band-b"
+    ],
+    "criterion_means": {
+      "center": 4.5,
+      "craft": 3.875,
+      "facts": 3.375,
+      "age_fit": 3.875,
+      "continuity": 4.75,
+      "delight": 3.75
+    },
+    "first_draft": {
+      "passed": 1,
+      "of": 8
+    },
+    "passed": false,
+    "failures": [
+      "mean overall 3.97 < 4",
+      "lowest scenario 3.00 (volcanoes-mixed-ages) < 3.5",
+      "word count out of range: sharks-band-a-continuity, volcanoes-mixed-ages",
+      "scary level above the band limit: titanic-band-b"
+    ]
+  },
+  "cost": {
+    "generation_usd": 2.356908,
+    "judge_usd": 2.466119,
+    "total_usd": 4.823027,
+    "log_rows": 62
+  },
+  "notes": [
+    "Judge payloads are checked blind before every call (lib/eval/blind.ts); the judge never saw a model id.",
+    "The weighted overall and the automatic caps are recomputed in our code, not taken from the judge (DECISIONS.md #11/#12)."
+  ]
+}

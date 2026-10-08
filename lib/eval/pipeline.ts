@@ -41,6 +41,22 @@ export interface PipelineStoryResult {
   latency: PipelineLatency
   /** Attempts including rewrites, so the gate's rewrite rate is reportable. */
   attempts: number
+  /**
+   * Did the writer's first draft go out untouched: no rewrite, no shorter retry, no mend,
+   * no cut? The owner's hill-climb metric (2026-10-08): toward 0 rewrites because the
+   * prompt gets it right up front. Null when the pipeline cannot tell (fixture stories).
+   */
+  firstDraft?: FirstDraft | null
+}
+
+export interface FirstDraft {
+  passed: boolean
+  /** The gate's checks that sent it back (`QualityFailure.check`), empty when it passed. */
+  failures: string[]
+  /** The rewrite reasons the writer was given, as the gate wrote them. */
+  reasons: string[]
+  /** Hard rules mended or cut in place (rungs 1-2). */
+  mended_rules: number[]
 }
 
 export interface GenerateInput {

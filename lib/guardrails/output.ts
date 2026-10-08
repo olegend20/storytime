@@ -5,7 +5,6 @@ import { storyText } from '@/lib/schemas/story'
 import { blocklist, maskAllowed, plainPhrasePattern } from './blocklist'
 import { matchPii } from './patterns'
 import { sanitizeStoryText } from './sanitize'
-import { requestCovers } from './names'
 
 /**
  * L4, first half - the free deterministic output checks. GUARDRAILS.md s4.2, run before
@@ -32,8 +31,8 @@ export interface OutputScanContext {
   /** Extra allowlisted phrases for this topic, e.g. "blood cells" for a biology story. */
   extraAllowed?: string[]
   /**
-   * Characters the parent asked for by name. Rule 7's one exception (issue #27): these may
-   * take part; every other franchise character is still a hard violation.
+   * Characters the parent asked for by name (issue #27). Rule 7 was retired on 2026-10-08,
+   * so the scan no longer consults this; it stays so callers need not change.
    */
   requestedCharacters?: readonly string[]
 }
@@ -69,14 +68,19 @@ function franchisePatterns(name: string): RegExp[] {
   ]
 }
 
+
 /**
- * Whether a blocklisted franchise name is one the parent asked for (`requestCovers`):
- * "Sonic" covers the list's "Sonic the Hedgehog", "Mario and Luigi" covers "Mario", and
- * "Spider-Man", "Spiderman" and "spider man" are one name. Elsa does not cover Olaf, "Ann"
- * does not cover "Anna", and "pup" covers nobody - whole words, the distinguishing one first.
+ * The franchise characters (from the blocklist's list) who take part in the text - acting,
+ * speaking, or alongside the children. Not a violation since rule 7 was retired; it decides
+ * whether a story carries the personal-use notice, requested or not.
  */
-function isRequested(listed: string, requested: readonly string[]): boolean {
-  return requested.some((r) => requestCovers(r, listed))
+export function charactersTakingPart(raw: string): string[] {
+  const text = sanitizeStoryText(raw)
+  const found: string[] = []
+  for (const name of blocklist.output.franchise_characters ?? []) {
+    if (franchisePatterns(name).some((re) => re.test(text))) found.push(name)
+  }
+  return found
 }
 
 /** Rule 6: a private individual is a name plus an identifying detail. */
@@ -95,6 +99,39 @@ const CAPITALIZED_NAME = /\b(?:Mr|Mrs|Miss|Ms|Dr)\.?\s+\p{Lu}\p{Ll}+|\b\p{Lu}\p{
  */
 const CLIFFHANGER_END = /(?:\.\.\.|…|!\?|\?!)[*_"'\s]*$/
 const SOUND_EFFECT_BEFORE_MARKER = /([\p{Lu}]{3,})[*_"'\s]*(?:\.\.\.|…|!\?|\?!)[*_"'\s]*$/u
+
+/**
+ * Rule 10, the two shapes the L4 reviewer missed inside whole stories on 2026-10-08 (it
+ * catches both in an excerpt): a child touching a wild animal, and a secret kept from a
+ * grown-up. Free, so it runs on every story; a hit is mended (rung 1), not rewritten.
+ */
+const WILD_ANIMAL =
+  /\b(?:(?:whale |nurse |great white |tiger |hammerhead |reef )?sharks?|whales?|dolphins?|orcas?|octopus(?:es)?|octopi|stingrays?|manta(?: rays?)?|jellyfish|eels?|seals?|sea lions?|walrus(?:es)?|sea turtles?|turtles?|crocodiles?|alligators?|snakes?|pythons?|cobras?|lizards?|komodo dragons?|bears?|polar bears?|wolves|wolf|foxes|fox|lions?|tigers?|leopards?|cheetahs?|jaguars?|elephants?|rhinos?|hippos?|gorillas?|chimpanzees?|monkeys?|bats?|eagles?|owls?|deer|moose|bison|buffalo|kangaroos?|koalas?|wild animals?)\b/i
+const TOUCH_VERB = /\b(?:touch(?:ed|es|ing)?|pat(?:s|ted|ting)?|strok(?:e|ed|es|ing)|pet(?:s|ted|ting)|hug(?:s|ged|ging)?|cuddl(?:e|ed|es|ing)|fed|feed(?:s|ing)?|r(?:ide|ides|iding|ode))\b(?!\s+(?:on|off|upon|down|back|by)\b)/gi
+const TOUCHED_PART = /^\s+(?:(?:the|a|an|its|his|her|their)\s+)?(?:[\w-]+\s+){0,2}?(?:skin|fins?|back|head|nose|fur|shell|tail|tentacles?|trunk|horns?|belly|scales?)\b/i
+const SECRET_FROM_GROWN_UPS =
+  /\b(?:(?:don'?t|do not|never|won'?t|not) tell (?:mom|mum|mommy|mummy|dad|daddy|grandma|grandpa|your (?:mom|mum|dad|parents)|the grown-?ups|any grown-?ups|a grown-?up|the teacher)|(?:keep|kept|keeping) (?:it|this|that) (?:a )?secret from|(?:a |our )?secret from (?:mom|mum|dad|the grown-?ups|your parents))\b/i
+
+function addRule10Hits(text: string, violations: OutputViolation[]): void {
+  TOUCH_VERB.lastIndex = 0
+  for (let m = TOUCH_VERB.exec(text); m; m = TOUCH_VERB.exec(text)) {
+    const after = text.slice(m.index + m[0].length, m.index + m[0].length + 40)
+    const sentenceEnd = after.search(/[.!?]/)
+    const object = sentenceEnd === -1 ? after : after.slice(0, sentenceEnd)
+    const animalObject = WILD_ANIMAL.exec(object)
+    // "touched the whale shark" - the animal is the object; "touch its skin" - a body part,
+    // with a wild animal named in the last few sentences.
+    const partObject = TOUCHED_PART.test(object) && WILD_ANIMAL.test(text.slice(Math.max(0, m.index - 300), m.index))
+    if ((animalObject && animalObject.index <= 25) || partObject) {
+      violations.push({ rule: 10, quote: quoteAround(text, m.index, m[0].length).slice(0, 400), severity: 'hard' })
+      break
+    }
+  }
+  const secret = SECRET_FROM_GROWN_UPS.exec(text)
+  if (secret) {
+    violations.push({ rule: 10, quote: quoteAround(text, secret.index, secret[0].length).slice(0, 400), severity: 'hard' })
+  }
+}
 
 const META_TOKENS = /\b(?:as an ai|as a language model|system prompt|my instructions were|ignore previous instructions)\b/i
 
@@ -156,26 +193,11 @@ export function scanStoryText(raw: string, context: OutputScanContext = {}): Out
   const failures: CheckFailure[] = []
 
   addPhraseHits(masked, text, violations)
+  addRule10Hits(text, violations)
 
-  // Rule 7 - a branded character taking part, unless the parent asked for that one.
-  const requested = context.requestedCharacters ?? []
-  for (const name of blocklist.output.franchise_characters ?? []) {
-    if (isRequested(name, requested)) continue
-    let matched = false
-    for (const re of franchisePatterns(name)) {
-      const m = re.exec(text)
-      if (m) {
-        violations.push({
-          rule: 7,
-          quote: quoteAround(text, m.index, m[0].length).slice(0, 400),
-          severity: 'hard',
-        })
-        matched = true
-        break
-      }
-    }
-    if (matched) break
-  }
+  // Rule 7 was retired on 2026-10-08 (owner decision): a character from a film, game or
+  // book taking part is no longer a violation. `charactersTakingPart` still finds them, so
+  // the story can carry the personal-use notice.
 
   // Rule 6 - a private individual: relationship word plus a name.
   const relation = PRIVATE_RELATION.exec(text)
@@ -314,7 +336,7 @@ export function checkTrueFacts(
 
 /** The rule numbers the deterministic layer can detect at all. Reported, not asserted. */
 export function deterministicallyCoveredRules(): number[] {
-  const rules = new Set<number>([6, 7, 14, 3])
+  const rules = new Set<number>([6, 14, 3, 10])
   for (const g of blocklist.output.hard_phrases) rules.add(g.rule)
   return [...rules].sort((a, b) => a - b)
 }

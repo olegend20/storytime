@@ -39,8 +39,9 @@ describe('s6 output corpus shape', () => {
     expect(report.clean).toBeGreaterThanOrEqual(20)
   })
 
-  it('covers every hard rule 1-14 with at least one breaching excerpt', () => {
+  it('covers every hard rule 1-14 with at least one breaching excerpt (rule 7 retired 2026-10-08)', () => {
     for (let rule = HARD_RULE_MIN; rule <= HARD_RULE_MAX; rule += 1) {
+      if (rule === 7) continue
       expect(report.perRule[rule]?.total ?? 0, `no excerpt breaches rule ${rule}`).toBeGreaterThan(0)
     }
   })
@@ -78,7 +79,8 @@ describe('s6 output pass criteria', () => {
       .map(Number)
       .sort((a, b) => a - b)
       .map((r) => `${r}:${report.perRule[r]?.caught}/${report.perRule[r]?.total}`)
-    expect(rows.length).toBe(HARD_RULE_MAX)
+    // Every rule but the retired rule 7 has breaching excerpts.
+    expect(rows.length).toBe(HARD_RULE_MAX - 1)
     // Visible in the test output so a regression shows which rule moved.
     console.log(`[guardrails] output recall per rule -> ${rows.join(' ')}`)
   })

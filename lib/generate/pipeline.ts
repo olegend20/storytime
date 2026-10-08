@@ -19,6 +19,7 @@ import {
   type StoryOutput,
   factCardsFor,
   type StoryStatus,
+  storyText,
   storyWordCount,
   targetWords,
   type AgeBand,
@@ -39,6 +40,7 @@ import {
   TopicNormalizationError,
 } from '@/lib/topics'
 import { reviewPassed, runQualityGate } from '@/lib/quality'
+import { charactersTakingPart } from '@/lib/guardrails/output'
 import { borrowsCharacter, requestedCharacters } from '@/lib/guardrails/classify'
 import { cutViolations, mendStory } from './mend'
 import { buildPrompt } from './prompt'
@@ -724,7 +726,10 @@ export async function runGeneration(
       word_count: wordCount,
       quality: gate.result,
       status,
-      content_notice: prepared.contentNotice,
+      // Asked for, or simply in the story (rule 7 retired 2026-10-08): either way the
+      // parent is told the character belongs to someone else.
+      content_notice:
+        prepared.contentNotice ?? (charactersTakingPart(storyText(story)).length > 0 ? 'borrowed_character' : null),
     })
     if (insertError) throw new GenerationFailed(`saving the story failed: ${insertError.message}`)
 

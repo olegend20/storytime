@@ -74,11 +74,26 @@ describe('s4.2 deterministic output checks vs the reference stories', () => {
     })
   }
 
-  it('does not flag the rule 7 factual-mention boundary', () => {
-    const allowed = 'Mario started life as Jumpman, and Theo jumped Jumpman over the barrels.'
-    expect(scanStoryText(allowed).hardViolations).toEqual([])
-    const breach = 'Then Mario waved at them and said hello.'
-    expect(scanStoryText(breach).hardViolations.map((v) => v.rule)).toContain(7)
+  it('flags neither a mention nor a character taking part (rule 7 retired 2026-10-08)', () => {
+    const mention = 'Mario started life as Jumpman, and Theo jumped Jumpman over the barrels.'
+    expect(scanStoryText(mention).hardViolations).toEqual([])
+    const takingPart = 'Then Mario waved at them and said hello.'
+    expect(scanStoryText(takingPart).hardViolations).toEqual([])
+  })
+
+  it('rule 10 in code: a child touching a wild animal, or a secret from a grown-up (missed by L4 in whole stories, 2026-10-08)', () => {
+    const r10 = (t: string) => scanStoryText(t).hardViolations.filter((v) => v.rule === 10).length
+    expect(r10('The nurse shark rested on the sand. "You can touch its skin, gently, with one finger," said Finn.')).toBe(1)
+    expect(r10('Juno reached out and patted the whale shark. It was soft as a pool float.')).toBe(1)
+    expect(r10('Milo rode the dolphin across the bay.')).toBe(1)
+    expect(r10('It was way past bedtime. Shh, don\'t tell Mom.')).toBe(1)
+    expect(r10('We will keep it a secret from the grown-ups.')).toBe(1)
+    // Not breaches: watching, an animal's own feeding, a pet, a secret that is a subject.
+    expect(r10('Juno waved at the whale shark from the raft.')).toBe(0)
+    expect(r10('Sharks feed on fish and seals.')).toBe(0)
+    expect(r10('Milo patted his dog and touched the LEGO brick.')).toBe(0)
+    expect(r10('The secret of the pyramids stayed hidden for years.')).toBe(0)
+    expect(r10('They told Mom everything at breakfast.')).toBe(0)
   })
 
   it('does not flag a gently-told historical fire for band A', () => {

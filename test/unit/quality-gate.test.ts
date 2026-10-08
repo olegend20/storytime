@@ -305,6 +305,39 @@ describe('F7 / GUARDRAILS §3.4: the review prompt treats the story as data', ()
     expect(outcome.result.review).toBeNull()
   })
 
+  it('catches the story naming our own machinery: the bible, the pack, a fact id in the text', async () => {
+    const leaks = [
+      'Theo argued with his cousin, though the bible notes no cousin exists.',
+      'Everything here comes from the fact pack.',
+      'The first World Cup was in 1930 [f12].',
+    ]
+    for (const leak of leaks) {
+      const leaky = goodStory()
+      leaky.chapters[0]!.text += ` ${leak}`
+      const outcome = await runQualityGate({
+        story: leaky,
+        request: request(),
+        factPack: goodFactPack(),
+        attempt: 1,
+        reviewOverride: PASSING,
+        sink: new MemoryLogSink(),
+      })
+      expect(outcome.result.failures.map((f) => f.check), leak).toContain('meta_content')
+    }
+    // "The Bible" as a subject is not meta.
+    const subject = goodStory()
+    subject.chapters[0]!.text += ' The monks copied the Bible by hand, letter by letter.'
+    const ok = await runQualityGate({
+      story: subject,
+      request: request(),
+      factPack: goodFactPack(),
+      attempt: 1,
+      reviewOverride: PASSING,
+      sink: new MemoryLogSink(),
+    })
+    expect(ok.result.failures.map((f) => f.check)).not.toContain('meta_content')
+  })
+
   it('is honest about its limit: a novel injection reaches the model layer', async () => {
     // The meta_content check is a phrase list, not a classifier. Text it does not recognise
     // passes the free layer and is resisted by the data delimiters plus the reviewer prompt -

@@ -171,7 +171,7 @@ describe('§7 bake-off harness: 1 scenario × 2 contestants × 1 sample in fixtu
     expect(result.models[BASELINE]!.input).toBeGreaterThan(0)
     expect(result.models[BASELINE]!.output).toBeGreaterThan(0)
     expect(result.pricing_updated_at).toMatch(/^\d{4}-\d{2}-\d{2}$/)
-    expect(result.judge_prompt.version).toBe('judge.v2')
+    expect(result.judge_prompt.version).toBe('judge.v3')
     expect(result.judge_prompt.sha256).toHaveLength(16)
   })
 
