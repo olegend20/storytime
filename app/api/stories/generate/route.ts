@@ -106,7 +106,18 @@ export async function POST(request: Request): Promise<Response> {
       return null
     }
     return runGeneration(prepared.prepared, channel, deps)
-  })().catch(() => {
+  })().catch((err: unknown) => {
+    // Anything that threw outside the pipeline's own handling (a database read in the
+    // preparation, say): the parent is told it failed and can try again - never left to
+    // read an ended stream as "still being made".
+    console.error('[generate] unexpected failure:', err)
+    channel.push({
+      type: 'error',
+      code: 'generation_failed',
+      message: parentMessage('generation_failed'),
+      quota_consumed: false,
+      resets_at: null,
+    })
     channel.close()
     return null
   })

@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from 'vitest'
  * guard that is never called cannot fail.
  */
 
-const calls = vi.hoisted(() => ({ prepare: [] as unknown[][], precheck: [] as unknown[][], precheckFails: false }))
+const calls = vi.hoisted(() => ({ prepare: [] as unknown[][], precheck: [] as unknown[][], precheckFails: false, prepareThrows: false }))
 
 vi.mock('next/server', () => ({ after: () => {} }))
 vi.mock('@/lib/supabase/server', () => ({
@@ -31,6 +31,7 @@ vi.mock('@/lib/generate', async (orig) => ({
   },
   prepareGeneration: async (...args: unknown[]) => {
     calls.prepare.push(args)
+    if (calls.prepareThrows) throw new Error('database read failed')
     return {
       ok: false,
       status: 422,
@@ -73,6 +74,19 @@ describe('the generate route wires the real guardrails and limits', () => {
       expect(await res.json()).toMatchObject({ code: 'quota_exceeded' })
     } finally {
       calls.precheckFails = false
+    }
+  })
+
+  it('an unexpected failure inside the stream is reported as an error, never as a story still coming', async () => {
+    calls.prepareThrows = true
+    try {
+      const res = await POST(new Request('http://localhost/api/stories/generate', { method: 'POST', body: '{}' }))
+      expect(res.status).toBe(200)
+      const text = await res.text()
+      expect(text).toContain('"type":"error"')
+      expect(text).toContain('"code":"generation_failed"')
+    } finally {
+      calls.prepareThrows = false
     }
   })
 

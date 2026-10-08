@@ -43,6 +43,8 @@ export class SseChannel {
       this.openResolve = resolve
       this.openReject = reject
     })
+    // A caller that never awaits `waitForOpen()` must not leave an unhandled rejection.
+    this.openPromise.catch(() => {})
   }
 
   /** True once at least one event has been queued: the response is committed to 200 + SSE. */
@@ -123,10 +125,18 @@ export class SseChannel {
     return new ReadableStream<Uint8Array>({
       async pull(controller) {
         pending ??= iterator.next()
+        let timer: ReturnType<typeof setTimeout> | undefined
         const next =
           heartbeatMs > 0
-            ? await Promise.race([pending, new Promise<typeof HEARTBEAT>((r) => setTimeout(() => r(HEARTBEAT), heartbeatMs))])
+            ? await Promise.race([
+                pending,
+                new Promise<typeof HEARTBEAT>((r) => {
+                  timer = setTimeout(() => r(HEARTBEAT), heartbeatMs)
+                }),
+              ])
             : await pending
+        // A chapter is thousands of events: a timer per pull must not outlive its pull.
+        if (timer !== undefined) clearTimeout(timer)
         if (next === HEARTBEAT) {
           controller.enqueue(encoder.encode(': keep-alive\n\n'))
           return

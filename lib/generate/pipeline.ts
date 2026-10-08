@@ -799,13 +799,9 @@ export async function runGeneration(
       quota_consumed: false,
       resets_at: null,
     }
-    if (channel.isOpen) {
-      // Post-stream: the contract says an `error` event on the already-committed 200.
-      channel.push({ type: 'error', ...body })
-    } else {
-      // Nothing sent yet: the route can still answer 502 with a JSON body.
-      channel.fail({ error: body, status: HTTP_STATUS_FOR_ERROR.generation_failed ?? 502 })
-    }
+    // The route opens the stream before the run starts (2026-10-08), so there is always a
+    // committed 200 to report on: an `error` event, which the page shows with a retry.
+    channel.push({ type: 'error', ...body })
     if (err instanceof ModelRefusalError || err instanceof GenerationFailed) {
       console.error(`[generate] ${err.message}`)
     } else {
