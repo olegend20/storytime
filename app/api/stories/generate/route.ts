@@ -3,12 +3,12 @@ import { supabaseServer } from '@/lib/supabase/server'
 import { parentMessage } from '@/lib/messages'
 import type { ErrorBody } from '@/lib/schemas'
 import {
+  precheckGeneration,
   prepareGeneration,
   productionDeps,
   runGeneration,
   SseChannel,
   SSE_HEADERS,
-  type PreStreamFailure,
 } from '@/lib/generate'
 
 /**
@@ -33,20 +33,13 @@ export const dynamic = 'force-dynamic'
 // The project runs Fluid compute (Pro ceiling 800 s); test/unit/deploy-config.test.ts
 // ties this number to the cap.
 export const maxDuration = 800
+/** A comment line this often while the story is silent (see SseChannel.toReadableStream). */
+const HEARTBEAT_MS = 15_000
 
 function json(body: ErrorBody, status: number): Response {
   return Response.json(body, { status })
 }
 
-function isPreStreamFailure(value: unknown): value is PreStreamFailure {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'error' in value &&
-    'status' in value &&
-    typeof (value as { status: unknown }).status === 'number'
-  )
-}
 
 export async function POST(request: Request): Promise<Response> {
   const startedAt = Date.now()
@@ -92,11 +85,31 @@ export async function POST(request: Request): Promise<Response> {
   // allow everything (lib/generate/deps.ts) - this line is what makes the guardrails real.
   // The platform kills this function at `maxDuration`; the pipeline plans inside it.
   const deps = { ...productionDeps(), deadlineMs: startedAt + maxDuration * 1000 }
-  const prepared = await prepareGeneration((family as { id: string }).id, body, deps)
-  if (!prepared.ok) return json(prepared.error, prepared.status)
+  const familyId = (family as { id: string }).id
+
+  // The cheap checks answer with a real HTTP status, as before: a malformed body, the kill
+  // switch, the quota and the budget never cost a model call, and the client shows those
+  // messages from the status. Everything that may take a while - the guardrails, the topic,
+  // a NEW topic's fact pack (100 s on 2026-10-08) - runs inside the stream, which is opened
+  // at once: a phone gives up on a request that has answered nothing for about a minute.
+  const early = await precheckGeneration(familyId, body, deps)
+  if (!early.ok) return json(early.error, early.status)
 
   const channel = new SseChannel()
-  const run = runGeneration(prepared.prepared, channel, deps).catch(() => null)
+  const run = (async () => {
+    const prepared = await prepareGeneration(familyId, body, deps)
+    if (!prepared.ok) {
+      // Inside the stream now: the same message, as the error event the client already
+      // handles before the first chapter.
+      channel.push({ type: 'error', ...prepared.error })
+      channel.close()
+      return null
+    }
+    return runGeneration(prepared.prepared, channel, deps)
+  })().catch(() => {
+    channel.close()
+    return null
+  })
 
   // The bible update is started after `done` and must outlive the streamed response.
   try {
@@ -109,20 +122,6 @@ export async function POST(request: Request): Promise<Response> {
     // still runs; it just has no lifetime guarantee here.
   }
 
-  try {
-    await channel.waitForOpen()
-  } catch (err) {
-    if (isPreStreamFailure(err)) return json(err.error, err.status)
-    return json(
-      {
-        code: 'generation_failed',
-        message: parentMessage('generation_failed'),
-        quota_consumed: false,
-        resets_at: null,
-      },
-      502,
-    )
-  }
-
-  return new Response(channel.toReadableStream(), { status: 200, headers: SSE_HEADERS })
+  // Answered now, not when the first event exists.
+  return new Response(channel.toReadableStream(HEARTBEAT_MS), { status: 200, headers: SSE_HEADERS })
 }

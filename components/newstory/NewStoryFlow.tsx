@@ -6,6 +6,7 @@ import { fetchChildren, fetchQuota, fetchSuggestedTopics } from '@/lib/client/ap
 import {
   initialStreamState,
   readGenerationEvents,
+  STILL_MAKING,
   startGeneration,
   streamProgress,
   streamReducer,
@@ -254,8 +255,20 @@ export function NewStoryFlow({
       void refreshQuota()
       return
     }
-    for await (const action of readGenerationEvents(started.stream, controller.signal)) {
-      dispatch(action)
+    // The server accepted the request the moment the stream opened, so a connection lost
+    // after this point is not "we couldn't reach StoryTime": the story is still being made
+    // on the server and lands in the library (2026-10-08, a phone that gave up mid-wait).
+    let finished = false
+    try {
+      for await (const action of readGenerationEvents(started.stream, controller.signal)) {
+        if (action.kind === 'event' && (action.event.type === 'done' || action.event.type === 'error')) finished = true
+        dispatch(action)
+      }
+    } catch {
+      /* the connection dropped; handled below */
+    }
+    if (!finished && !controller.signal.aborted) {
+      dispatch({ kind: 'fail', error: STILL_MAKING })
     }
     // A new story can leave a new fact pack ready: next time, ask for the ideas again.
     forgetSuggestedTopics()

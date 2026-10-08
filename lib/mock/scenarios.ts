@@ -21,6 +21,8 @@ export type MockScenario =
   | 'service_paused'
   | 'budget_exceeded'
   | 'midstream_failure'
+  /** The connection drops mid-story: no `done`, no `error` (2026-10-08, a phone giving up). */
+  | 'connection_dropped'
   | 'unknown_event'
   | 'slow'
   /** The writer "thinks" for a few seconds before the first chapter: the fact cards' moment. */
@@ -35,6 +37,7 @@ const SENTINELS: ReadonlyArray<[string, MockScenario]> = [
   ['!paused', 'service_paused'],
   ['!budget', 'budget_exceeded'],
   ['!midfail', 'midstream_failure'],
+  ['!dropped', 'connection_dropped'],
   ['!unknownevent', 'unknown_event'],
   ['!slow', 'slow'],
   ['!thinking', 'thinking'],
