@@ -820,6 +820,16 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     expect(events.at(-1)).toMatchObject({ type: 'error', code: 'generation_failed', quota_consumed: false })
   })
 
+  it('a write that fails before any event is reported as an error event, not a dropped stream', async () => {
+    // No fact cards (no pack) and no recorded write: the first thing the run can send is the
+    // failure. The route opens the stream before the run, so this must be an `error` event -
+    // an ended stream would read on the page as "your story is still being made".
+    const run: PreparedGeneration = { ...(await prepared('a topic with no recorded write')), factPack: null }
+    const { events, result } = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
+    expect(result.status).toBe('failed')
+    expect(events).toEqual([expect.objectContaining({ type: 'error', code: 'generation_failed', quota_consumed: false })])
+  })
+
   it('F7 VT: two consecutive failures flag the story - still saved, still shown', async () => {
     const run = await prepared()
     stubResponsesFor(run, { rewriteReasons: ['scary_level 2 above band A limit'] })

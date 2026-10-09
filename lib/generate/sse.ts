@@ -43,6 +43,8 @@ export class SseChannel {
       this.openResolve = resolve
       this.openReject = reject
     })
+    // A caller that never awaits `waitForOpen()` must not leave an unhandled rejection.
+    this.openPromise.catch(() => {})
   }
 
   /** True once at least one event has been queued: the response is committed to 200 + SSE. */
@@ -108,12 +110,38 @@ export class SseChannel {
     }
   }
 
-  toReadableStream(): ReadableStream<Uint8Array> {
+  /**
+   * The wire form. `heartbeatMs`: while no event is ready, an SSE comment line is sent at
+   * this interval. A phone, a carrier or a proxy drops a connection that has been silent for
+   * about a minute, and a story has silent minutes - a new topic's fact pack, a rewrite.
+   * The client's parser skips comment lines (lib/client/sse.ts).
+   */
+  toReadableStream(heartbeatMs = 0): ReadableStream<Uint8Array> {
     const encoder = new TextEncoder()
     const iterator = this.events()
+    // The `next()` still in flight from an earlier pull that a heartbeat won: never dropped.
+    let pending: Promise<IteratorResult<SseEvent>> | null = null
+    const HEARTBEAT = Symbol('heartbeat')
     return new ReadableStream<Uint8Array>({
       async pull(controller) {
-        const next = await iterator.next()
+        pending ??= iterator.next()
+        let timer: ReturnType<typeof setTimeout> | undefined
+        const next =
+          heartbeatMs > 0
+            ? await Promise.race([
+                pending,
+                new Promise<typeof HEARTBEAT>((r) => {
+                  timer = setTimeout(() => r(HEARTBEAT), heartbeatMs)
+                }),
+              ])
+            : await pending
+        // A chapter is thousands of events: a timer per pull must not outlive its pull.
+        if (timer !== undefined) clearTimeout(timer)
+        if (next === HEARTBEAT) {
+          controller.enqueue(encoder.encode(': keep-alive\n\n'))
+          return
+        }
+        pending = null
         if (next.done) {
           controller.close()
           return

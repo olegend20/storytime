@@ -27,7 +27,9 @@ export function GenerationError({
 }) {
   const reset = resetTimeLabel(error.resets_at)
   const showFreeNote = needsFreeRetryNote(error)
-  const canRetry = onRetry && error.code !== 'quota_exceeded'
+  // A story still being made must not be retried: that would make a second one.
+  const stillMaking = error.code === 'still_making'
+  const canRetry = onRetry && error.code !== 'quota_exceeded' && !stillMaking
 
   return (
     <div
@@ -37,6 +39,12 @@ export function GenerationError({
     >
       {/* Verbatim, from the server. */}
       <p className="mt-0 mb-0">{error.message}</p>
+
+      {stillMaking && (
+        <p className="mt-2 mb-0 text-sm">
+          <a href="/library">Open your library</a>
+        </p>
+      )}
 
       {reset && (
         <p className="mt-2 mb-0 text-sm" style={{ color: 'var(--fg-muted)' }}>
