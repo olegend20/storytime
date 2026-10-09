@@ -21,7 +21,7 @@ import {
   type PreparedGeneration,
 } from '@/lib/generate'
 import type { GateSummary } from './caps'
-import type { GenerateInput, PipelineStoryResult, StoryPipeline } from './pipeline'
+import type { FirstDraft, GenerateInput, PipelineStoryResult, StoryPipeline } from './pipeline'
 
 /**
  * F13/F14: the live pipeline behind `pnpm eval` and `pnpm bakeoff` - the function
@@ -158,9 +158,22 @@ async function generateOne(input: GenerateInput, db: SupabaseClient): Promise<Pi
         totalMs,
       },
       attempts: result.writeCalls,
+      firstDraft: firstDraftOf(result.quality, result.writeCalls),
     }
   } finally {
     await deleteEvalFamily(db, family)
+  }
+}
+
+export function firstDraftOf(quality: QualityResult | null, writeCalls: number): FirstDraft | null {
+  if (!quality) return null
+  const sentBack = quality.first_attempt ?? null
+  const mendedRules = quality.mended?.rules ?? []
+  return {
+    passed: writeCalls <= 1 && sentBack === null && mendedRules.length === 0 && quality.outcome !== 'discarded',
+    failures: (sentBack?.failures ?? []).map((f) => f.check),
+    reasons: sentBack?.reasons ?? [],
+    mended_rules: mendedRules,
   }
 }
 

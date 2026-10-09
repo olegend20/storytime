@@ -189,6 +189,25 @@ describe('L2 wiring through guardInput', () => {
     )
     const contradictory = await reviewOutput({ ...reviewInput, sink: logs })
     expect(contradictory.review.safe).toBe(false)
+
+    // Rule 7 was retired on 2026-10-08: a reviewer that still reports it is not obeyed.
+    const review = (violations: unknown[], safe: boolean, ending_safe = true) =>
+      JSON.stringify({ safe, violations, scary_level: 0, positive_portrayal: true, ending_safe })
+    const elsa = { rule: 7, quote: 'Elsa waved', severity: 'hard' }
+    write(review([elsa], false))
+    const onlyRule7 = await reviewOutput({ ...reviewInput, sink: logs })
+    expect(onlyRule7.review.violations).toEqual([])
+    expect(onlyRule7.review.safe).toBe(true)
+
+    write(review([elsa, { rule: 2, quote: 'covered in blood', severity: 'hard' }], false))
+    const withAnother = await reviewOutput({ ...reviewInput, sink: logs })
+    expect(withAnother.review.violations.map((v) => v.rule)).toEqual([2])
+    expect(withAnother.review.safe).toBe(false)
+
+    // Unsafe for a reason that was never rule 7 stays unsafe.
+    write(review([{ ...elsa, severity: 'soft' }], false, false))
+    const unsafeEnding = await reviewOutput({ ...reviewInput, sink: logs })
+    expect(unsafeEnding.review.safe).toBe(false)
   })
 
   it('fails closed when the classifier returns unparseable JSON', async () => {

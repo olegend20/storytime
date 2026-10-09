@@ -40,13 +40,17 @@ export interface BuiltPrompt {
  * needs a URL, and a URL in the prompt is an invitation to put one in the story - which the
  * gate then rejects (GUARDRAILS.md §4.2).
  */
-export function factPackForWriter(pack: FactPack | null): unknown {
+export function factPackForWriter(pack: FactPack | null, youngestAge?: number): unknown {
   if (!pack) return null
+  // A fact the youngest child is too young for, or one the pack marks not kid-safe, is not
+  // shown at all: the gate fails a story that cites it (fact_min_age, fact_not_kid_safe), the
+  // reviewer fails one that tells it, and a writer cannot use what it is not given.
+  const usable = pack.facts.filter((f) => f.kid_safe && (youngestAge === undefined || f.min_age <= youngestAge))
   return {
     topic_key: pack.topic_key,
     topic_label: pack.topic_label,
     summary: pack.summary,
-    facts: pack.facts.map((f) => ({
+    facts: usable.map((f) => ({
       id: f.id,
       text: f.text,
       confidence: f.confidence,
@@ -87,7 +91,10 @@ export function childProfileBlocks(request: GenerationRequest): string {
  * failed the gate by 22 words and paid for a rewrite.
  */
 export function lengthGuidance(target: { min: number; max: number }): string {
-  const aim = Math.round((target.min + 0.7 * (target.max - target.min)) / 50) * 50
+  // The top of the range, not the middle (2026-10-08): with the aim at 70% of the range the
+  // writer delivered 60-70% of it in 6 of 8 eval stories, most below the minimum. The gate's
+  // +15% tolerance above the maximum leaves room should a draft overshoot.
+  const aim = Math.round(target.max / 50) * 50
   const per = (chapters: number) => Math.round(aim / chapters / 10) * 10
   return (
     `about ${aim} narrative words. With 8 chapters that is about ${per(8)} words each; ` +
@@ -138,13 +145,24 @@ export function requestBlock(request: GenerationRequest): string {
   return dataBlock('request', lines.join('\n'))
 }
 
+/**
+ * Our note beside the pack (prompts/fact-pack-note): the pack is written for grown-ups, and
+ * first drafts copied its words into band-A stories unexplained. Outside the cached master
+ * block, which is at its size limit; it is our text, with only the age filled in.
+ */
+export function factPackNote(youngestAge: number): string {
+  return loadPrompt('fact-pack-note').body.trim().replaceAll('%AGE%', String(youngestAge))
+}
+
 export function buildPrompt(input: BuildPromptInput): BuiltPrompt {
   const master = loadPrompt('master')
 
+  const youngestAge = Math.min(...input.request.children.map((c) => c.age))
   const userContent = [
     dataBlock('story_bible', serializeBible(input.bible)),
-    dataBlock('fact_pack', JSON.stringify(factPackForWriter(input.factPack))),
+    dataBlock('fact_pack', JSON.stringify(factPackForWriter(input.factPack, youngestAge))),
     requestBlock(input.request),
+    ...(input.factPack ? [factPackNote(youngestAge)] : []),
     'Write the story now. Return the JSON object only.',
   ].join('\n\n')
 
