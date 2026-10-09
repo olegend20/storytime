@@ -94,6 +94,12 @@ describe('s4.2 deterministic output checks vs the reference stories', () => {
     expect(r10('Milo patted his dog and touched the LEGO brick.')).toBe(0)
     expect(r10('The secret of the pyramids stayed hidden for years.')).toBe(0)
     expect(r10('They told Mom everything at breakfast.')).toBe(0)
+    // From /code-review: toys, pets, a person called Pat, a boat's back.
+    expect(r10('Mia hugged her teddy bear and fell asleep.')).toBe(0)
+    expect(r10('She cuddled her toy whale.')).toBe(0)
+    expect(r10('Leo fed his pet turtle.')).toBe(0)
+    expect(r10('Pat smiled at the dolphins.')).toBe(0)
+    expect(r10('They watched the whale. Then Mia touched the back of the boat.')).toBe(0)
   })
 
   it('does not flag a gently-told historical fire for band A', () => {

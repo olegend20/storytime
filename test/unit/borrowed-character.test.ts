@@ -243,6 +243,8 @@ describe('L3: rule 7 is retired', () => {
   it('the scanner still finds the characters taking part, for the notice', () => {
     expect(charactersTakingPart(olaf)).toEqual(expect.arrayContaining(['Olaf']))
     expect(charactersTakingPart('Mario started life as Jumpman, back in 1981.')).toEqual([])
+    // A child of the family called Elsa is not a borrowed character.
+    expect(charactersTakingPart('Elsa waved at Milo from the hill.', ['Elsa', 'Milo'])).toEqual([])
   })
 
   it('every other hard rule still applies to a story with a character in it', () => {

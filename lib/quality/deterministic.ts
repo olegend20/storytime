@@ -103,7 +103,14 @@ function endsOnCliffhanger(text: string): boolean {
  * subjects for an art or music story, and a history-of-computing story may name a real
  * company. What is banned is the story talking about its own machinery.
  */
-const FACT_ID_TAG = /[[(]f\d{1,3}[\])]/i
+/**
+ * Our own machinery, by name (2026-10-08: a soccer story said "the bible notes no cousin
+ * exists"). Whole words only - "artifact packed", "family history bible" are fine - and
+ * "the Bible" as a subject is untouched.
+ */
+const MACHINERY = /\b(?:story bible|bible notes|fact[ _]pack|fact_ids)\b/i
+/** A fact id copied into the text: ours are lowercase ("[f12]"); "(F1)" is Formula One. */
+const FACT_ID_TAG = /[[(]f\d{1,3}[\])]/
 
 const META_TOKENS = [
   'as an ai',
@@ -125,13 +132,6 @@ const META_TOKENS = [
   'ai assistant',
   'ai model',
   'this story was generated',
-  // Our own machinery, by name (2026-10-08: a soccer story said "the bible notes no cousin
-  // exists"). "The bible" alone is a legitimate subject; these phrases are not.
-  'story bible',
-  'bible notes',
-  'fact pack',
-  'fact_pack',
-  'fact_ids',
   'storytime app',
 ] as const
 
@@ -297,6 +297,8 @@ export function runDeterministicChecks(input: GateInput): DeterministicResult {
       failures.push({ check: 'meta_content', detail: `meta_content:${token}` })
     }
   }
+  const machinery = MACHINERY.exec(fullText)
+  if (machinery) failures.push({ check: 'meta_content', detail: `meta_content:${machinery[0].toLowerCase()}` })
   // A fact id copied into the text ("[f12]", "(f3)") - ids belong in `fact_ids` only.
   const factTag = FACT_ID_TAG.exec(fullText)
   if (factTag) failures.push({ check: 'meta_content', detail: `meta_content:fact_id_tag:${factTag[0]}` })

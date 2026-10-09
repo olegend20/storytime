@@ -336,6 +336,13 @@ describe('F7 / GUARDRAILS §3.4: the review prompt treats the story as data', ()
       sink: new MemoryLogSink(),
     })
     expect(ok.result.failures.map((f) => f.check)).not.toContain('meta_content')
+    // From /code-review: inside other words, and Formula One.
+    for (const fine of ['The artifact packed in straw was very old.', 'Grandma kept a family history bible.', 'Formula One (F1) cars are fast.']) {
+      const s = goodStory()
+      s.chapters[0]!.text += ` ${fine}`
+      const r = await runQualityGate({ story: s, request: request(), factPack: goodFactPack(), attempt: 1, reviewOverride: PASSING, sink: new MemoryLogSink() })
+      expect(r.result.failures.map((f) => f.check), fine).not.toContain('meta_content')
+    }
   })
 
   it('is honest about its limit: a novel injection reaches the model layer', async () => {

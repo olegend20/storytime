@@ -729,7 +729,7 @@ export async function runGeneration(
       // Asked for, or simply in the story (rule 7 retired 2026-10-08): either way the
       // parent is told the character belongs to someone else.
       content_notice:
-        prepared.contentNotice ?? (charactersTakingPart(storyText(story)).length > 0 ? 'borrowed_character' : null),
+        prepared.contentNotice ?? (charactersTakingPart(storyText(story), prepared.children.map((c) => c.first_name)).length > 0 ? 'borrowed_character' : null),
     })
     if (insertError) throw new GenerationFailed(`saving the story failed: ${insertError.message}`)
 

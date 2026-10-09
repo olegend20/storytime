@@ -74,10 +74,13 @@ function franchisePatterns(name: string): RegExp[] {
  * speaking, or alongside the children. Not a violation since rule 7 was retired; it decides
  * whether a story carries the personal-use notice, requested or not.
  */
-export function charactersTakingPart(raw: string): string[] {
+export function charactersTakingPart(raw: string, childNames: readonly string[] = []): string[] {
   const text = sanitizeStoryText(raw)
+  // A child called Elsa or Ryder is the family's own child, not a borrowed character.
+  const own = new Set(childNames.map((n) => n.trim().toLowerCase()))
   const found: string[] = []
   for (const name of blocklist.output.franchise_characters ?? []) {
+    if (own.has(name.toLowerCase())) continue
     if (franchisePatterns(name).some((re) => re.test(text))) found.push(name)
   }
   return found
@@ -108,13 +111,18 @@ const SOUND_EFFECT_BEFORE_MARKER = /([\p{Lu}]{3,})[*_"'\s]*(?:\.\.\.|…|!\?|\?!
 const WILD_ANIMAL =
   /\b(?:(?:whale |nurse |great white |tiger |hammerhead |reef )?sharks?|whales?|dolphins?|orcas?|octopus(?:es)?|octopi|stingrays?|manta(?: rays?)?|jellyfish|eels?|seals?|sea lions?|walrus(?:es)?|sea turtles?|turtles?|crocodiles?|alligators?|snakes?|pythons?|cobras?|lizards?|komodo dragons?|bears?|polar bears?|wolves|wolf|foxes|fox|lions?|tigers?|leopards?|cheetahs?|jaguars?|elephants?|rhinos?|hippos?|gorillas?|chimpanzees?|monkeys?|bats?|eagles?|owls?|deer|moose|bison|buffalo|kangaroos?|koalas?|wild animals?)\b/i
 const TOUCH_VERB = /\b(?:touch(?:ed|es|ing)?|pat(?:s|ted|ting)?|strok(?:e|ed|es|ing)|pet(?:s|ted|ting)|hug(?:s|ged|ging)?|cuddl(?:e|ed|es|ing)|fed|feed(?:s|ing)?|r(?:ide|ides|iding|ode))\b(?!\s+(?:on|off|upon|down|back|by)\b)/gi
-const TOUCHED_PART = /^\s+(?:(?:the|a|an|its|his|her|their)\s+)?(?:[\w-]+\s+){0,2}?(?:skin|fins?|back|head|nose|fur|shell|tail|tentacles?|trunk|horns?|belly|scales?)\b/i
+// "touch its skin": the animal's own body, said with "its" - not "the back of the boat".
+const TOUCHED_PART = /^\s+its\s+(?:[\w-]+\s+){0,2}?(?:skin|fins?|back|head|nose|fur|shell|tail|tentacles?|trunk|horns?|belly|scales?)\b/i
+// A toy, a pet or a picture is not a wild animal: "hugged her teddy bear", "fed his pet turtle".
+const NOT_WILD = /\b(?:toy|teddy|stuffed|plush|cuddly|soft|pet|model|statue|picture|drawing|photo|robot|balloon|lego|puppet|cartoon|my|his|her|their|our|your)\b/i
 const SECRET_FROM_GROWN_UPS =
   /\b(?:(?:don'?t|do not|never|won'?t|not) tell (?:mom|mum|mommy|mummy|dad|daddy|grandma|grandpa|your (?:mom|mum|dad|parents)|the grown-?ups|any grown-?ups|a grown-?up|the teacher)|(?:keep|kept|keeping) (?:it|this|that) (?:a )?secret from|(?:a |our )?secret from (?:mom|mum|dad|the grown-?ups|your parents))\b/i
 
 function addRule10Hits(text: string, violations: OutputViolation[]): void {
   TOUCH_VERB.lastIndex = 0
   for (let m = TOUCH_VERB.exec(text); m; m = TOUCH_VERB.exec(text)) {
+    // "Pat smiled at the dolphins": a capitalised Pat or Pet is a name.
+    if (m[0] === 'Pat' || m[0] === 'Pet') continue
     const after = text.slice(m.index + m[0].length, m.index + m[0].length + 40)
     const sentenceEnd = after.search(/[.!?]/)
     const object = sentenceEnd === -1 ? after : after.slice(0, sentenceEnd)
@@ -122,7 +130,8 @@ function addRule10Hits(text: string, violations: OutputViolation[]): void {
     // "touched the whale shark" - the animal is the object; "touch its skin" - a body part,
     // with a wild animal named in the last few sentences.
     const partObject = TOUCHED_PART.test(object) && WILD_ANIMAL.test(text.slice(Math.max(0, m.index - 300), m.index))
-    if ((animalObject && animalObject.index <= 25) || partObject) {
+    const ownedOrToy = animalObject ? NOT_WILD.test(object.slice(0, animalObject.index)) : false
+    if ((animalObject && animalObject.index <= 25 && !ownedOrToy) || partObject) {
       violations.push({ rule: 10, quote: quoteAround(text, m.index, m[0].length).slice(0, 400), severity: 'hard' })
       break
     }
