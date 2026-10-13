@@ -899,7 +899,7 @@ in `test/int/eval-harness.test.ts`. The next live `pnpm eval` is the latency bas
 
 Leave a child's name blank and we choose one from a fixed list, save it, and say so; never a
 sibling's name, always editable. VT-A1-A5 in `test/int/children-api.test.ts`,
-`test/unit/child-names.test.ts` and `test/e2e/children.spec.ts`. Gates: lint ✅ · typecheck ✅ · unit+int **1281** ✅ ·
+`test/unit/child-names.test.ts` and `test/e2e/children.spec.ts`. Gates: lint ✅ · typecheck ✅ · unit+int **1282** ✅ ·
 guardrails 32 ✅ · e2e mock 194 ✅ · e2e real 6 ✅.
 
 ### 2026-10-13 — the same Claude models through Understudy (issue #41, DECISIONS #182)

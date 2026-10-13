@@ -1,3 +1,4 @@
+import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import namesConfig from '@/config/child-names.json'
 import { ChildFirstName, ChildInput } from '@/lib/schemas'
@@ -21,6 +22,17 @@ describe('VT-A3 every generated name passes the rules a typed name must', () => 
     const lower = GENERATED_CHILD_NAMES.map((n) => n.toLowerCase())
     expect(new Set(lower).size).toBe(lower.length)
     expect(lower.length).toBeGreaterThanOrEqual(24)
+  })
+
+  // The quality gate finds a child's name case-insensitively (lib/quality/deterministic.ts), so
+  // a name that is also an everyday word ("wren", "hazel") would let the story's own words
+  // stand in for the child. /usr/share/dict/words lists everyday words in lower case and
+  // proper names capitalised; skipped where the system has no word list.
+  const wordList = existsSync('/usr/share/dict/words')
+    ? new Set(readFileSync('/usr/share/dict/words', 'utf8').split('\n').filter((w) => w !== '' && w === w.toLowerCase()))
+    : null
+  it.skipIf(!wordList)('no name is an everyday English word', () => {
+    expect(GENERATED_CHILD_NAMES.filter((n) => wordList!.has(n.toLowerCase()))).toEqual([])
   })
 
   it('avoids the fixture children, whose names the quality-gate tests rely on', () => {
