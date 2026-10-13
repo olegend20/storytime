@@ -112,8 +112,9 @@ export default function PrivacyPage() {
         </p>
         <p className="text-[0.95rem] leading-relaxed">
           Our stories are written by AI models. When you ask for one, we send a short request to
-          the outside AI service that runs those models. We compare models on quality and cost,
-          so the model that writes a story can change over time. The request holds only what the
+          the outside AI services that run those models: one that compares models on quality and
+          cost, and the company whose model writes the story. So the model that writes a story
+          can change over time. The request holds only what the
           story needs to feel like it was written for your child:
         </p>
         <ul className="m-0 list-disc space-y-1.5 pl-5 text-[0.95rem] leading-relaxed">
@@ -128,8 +129,9 @@ export default function PrivacyPage() {
           ask for them. Your email address is never sent.
         </p>
         <p className="mb-0 text-[0.95rem] leading-relaxed">
-          The AI service keeps a copy of each request and the story it wrote. It does not use
-          them to train models for anyone else, and we can ask it to delete them. We never use
+          The service that compares models keeps a copy of each request and the story it wrote.
+          Its published terms say it does not use them to train models for anyone else, and we
+          can ask it to delete them. We never use
           your stories or your children&apos;s details to train any model ourselves.
         </p>
       </section>
@@ -158,8 +160,8 @@ export default function PrivacyPage() {
           costs to run.
         </p>
         <p className="mb-0 text-[0.95rem] leading-relaxed">
-          The AI service&apos;s copies of past requests are kept separately from your account,
-          so deleting your account does not remove them. We can ask the service to delete them.
+          The copies that service keeps of past requests are separate from your account, so
+          deleting your account does not remove them. We can ask the service to delete them.
         </p>
       </section>
 

@@ -79,7 +79,7 @@ test('the privacy page names what is stored and what does not exist', async ({ p
   // Issue #41: where a child's details go. Production reaches the models through an outside AI
   // service (today Understudy) that keeps a copy deleting the account does not remove. Neither
   // the service nor a model provider is named: either can change.
-  expect(body).toContain('outside ai service')
+  expect(body).toContain('outside ai services')
   expect(body).toContain('keeps a copy of each request')
   expect(body).toContain('deleting your account does not remove them')
   expect(body).toContain('your email address is never sent')
