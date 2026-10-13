@@ -1,0 +1,10 @@
+{
+  "$comment": "Issue #43. Names given to a child whose parent left the name blank. Short, gentle, easy to read aloud; letters only (CHILD_NAME_PATTERN); none is an everyday English word, a franchise character or a name used in fixtures (Milo, Juno, Theo), so the quality gate's name checks cannot be fooled by the story's own words. test/unit/child-names.test.ts checks every entry against the schema and the L1 blocklist.",
+  "names": [
+    "Wren", "Pip", "Juniper", "Rowan", "Hazel", "Indigo", "Ellis", "Otis",
+    "Isla", "Ezra", "Arlo", "Mabel", "Remy", "Tilly", "Elodie", "Finley",
+    "Marlo", "Nell", "Orla", "Quinn", "Romy", "Tamsin", "Willa", "Yara",
+    "Zadie", "Alba", "Cosmo", "Elio", "Faye", "Greer", "Hugo", "Ines",
+    "Jory", "Kai", "Lenny", "Mika", "Noor", "Ottilie", "Perrin", "Rafferty"
+  ]
+}
