@@ -876,6 +876,14 @@ Each has an e2e test on desktop and phone (the wake lock and offline tests stub 
 browser APIs). **Gates:** lint ✅ · typecheck ✅ · unit+int 1013 ✅ · e2e mock **132** ✅ ·
 e2e real 4 ✅.
 
+### 2026-10-13 — the same Claude models through Understudy (issue #41, DECISIONS #182)
+
+`callModel()` streams every live call, so the app can reach Claude through the Understudy
+gateway by setting `ANTHROPIC_BASE_URL` - same models, prompts, tokens and cost. VT-1-VT-5 in
+`test/unit/callmodel-transport.test.ts`. Local dev and evals only; production unchanged.
+Gates: lint ✅ · typecheck ✅ · unit+int **1235** ✅ · guardrails 32 ✅ · e2e mock 192 ✅ · e2e real 6 ✅;
+live L2 corpus through the gateway 8/8 ✅ (168 Haiku calls, ~$0.40).
+
 ### 2026-10-07 — every parent gets a book: rung 3 (issue #32, DECISIONS #179)
 
 An unusable first write is retried once, one length tier shorter, not streamed, and that

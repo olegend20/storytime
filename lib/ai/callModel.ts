@@ -53,8 +53,8 @@ export interface CallModelOptions<T = string> {
   /**
    * Per-call HTTP timeout in ms. The SDK default is 10 minutes, which a long server-tool loop
    * can exceed - the fact-pack builder runs web search and timed out three times in a row,
-   * burning 902s. Set generously for tool-loop calls. Above 300s the call streams
-   * (see UNDICI_HEADERS_TIMEOUT_MS), or Node's fetch cuts it off at 300s regardless.
+   * burning 902s. Set generously for tool-loop calls. Bounds the whole streamed call, not
+   * just the wait for headers (see DEFAULT_TIMEOUT_MS for the bound when unset).
    */
   timeoutMs?: number
   /** Log correlation. */
@@ -141,8 +141,11 @@ function anthropic(): Anthropic {
   return client
 }
 
-/** undici's default `headersTimeout`. Calls allowed longer than this must stream. */
-const UNDICI_HEADERS_TIMEOUT_MS = 300_000
+/**
+ * The whole-call deadline when `timeoutMs` is unset: the SDK's own default, which bounded a
+ * non-streaming call end to end before every call streamed.
+ */
+const DEFAULT_TIMEOUT_MS = 600_000
 
 function isLive(): boolean {
   return process.env.LIVE_API === '1' || process.env.LIVE_API === 'true'
@@ -316,26 +319,20 @@ export async function callModel<T = string>(
     try {
       const reqOpts = { signal: opts.signal, ...(opts.timeoutMs ? { timeout: opts.timeoutMs } : {}) }
       const params = request as unknown as Anthropic.MessageCreateParamsNonStreaming
-      // Node's fetch (undici) gives up on a response whose HEADERS take longer than 300s, and a
-      // non-streaming response sends none until it is complete - so any call over five minutes
-      // died at exactly 300.0s as "Request timed out.", whatever `timeoutMs` said. Streaming
-      // sends headers at once; finalMessage() is the same Message, usage included.
+      // Every call streams (issue #41). A non-streaming response sends nothing until it is
+      // complete, and two things cut that silence short: Node's fetch (undici) gives up on
+      // headers after 300s - every fact-pack build once died at exactly 300.0s - and the
+      // Understudy gateway closes a response with no first byte after ~125s. Streaming sends
+      // headers at once; finalMessage() is the same Message, usage included, so the request,
+      // the tokens and the cost are unchanged.
       //
       // But the SDK's `timeout` only bounds the wait for headers, so a stream has no total
       // limit: one fact-pack build ran 50 minutes before the connection dropped. `deadline`
-      // enforces `timeoutMs` over the whole call.
-      let response: Record<string, unknown>
-      if ((opts.timeoutMs ?? 0) > UNDICI_HEADERS_TIMEOUT_MS) {
-        deadline = AbortSignal.timeout(opts.timeoutMs!)
-        const signal = opts.signal ? AbortSignal.any([opts.signal, deadline]) : deadline
-        stream = anthropic().messages.stream(params, { ...reqOpts, signal })
-        response = (await stream.finalMessage()) as unknown as Record<string, unknown>
-      } else {
-        response = (await anthropic().messages.create(params, reqOpts)) as unknown as Record<
-          string,
-          unknown
-        >
-      }
+      // enforces `timeoutMs` over the whole call, or the SDK's own ten minutes when unset.
+      deadline = AbortSignal.timeout(opts.timeoutMs ?? DEFAULT_TIMEOUT_MS)
+      const signal = opts.signal ? AbortSignal.any([opts.signal, deadline]) : deadline
+      stream = anthropic().messages.stream(params, { ...reqOpts, signal })
+      const response = (await stream.finalMessage()) as unknown as Record<string, unknown>
 
       const latencyMs = Date.now() - started
       const usage = normalizeUsage(response.usage)
