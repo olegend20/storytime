@@ -147,6 +147,12 @@ function anthropic(): Anthropic {
  */
 const DEFAULT_TIMEOUT_MS = 600_000
 
+/**
+ * A call that asks for more than this is a long call: when it hits its own deadline it is not
+ * retried. Five minutes, undici's `headersTimeout`, the line that used to decide streaming.
+ */
+const LONG_CALL_MS = 300_000
+
 function isLive(): boolean {
   return process.env.LIVE_API === '1' || process.env.LIVE_API === 'true'
 }
@@ -380,13 +386,18 @@ export async function callModel<T = string>(
       })
     } catch (err) {
       if (err instanceof ModelRefusalError) throw err
-      // Hitting our own deadline is not retried: a second full-length attempt doubles the
-      // cost of a call that has already run long.
+      // Hitting our own deadline on a call that ASKED for more than five minutes is not
+      // retried: a second full-length attempt doubles the cost of a call that has already run
+      // long. Any other call that times out is retried, as it was before every call streamed
+      // (the SDK's timeout was retryable) - the fact-pack builders count on their one retry.
       const timedOut = deadline?.aborted === true && opts.signal?.aborted !== true
-      const { retryable, status } = timedOut ? { retryable: false, status: undefined } : isRetryable(err)
+      const budgetMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS
+      const { retryable, status } = timedOut
+        ? { retryable: (opts.timeoutMs ?? 0) <= LONG_CALL_MS, status: undefined }
+        : isRetryable(err)
       const latencyMs = Date.now() - started
       const message = timedOut
-        ? `deadline: exceeded timeoutMs=${opts.timeoutMs}`
+        ? `deadline: exceeded timeoutMs=${budgetMs}`
         : err instanceof Error
           ? err.message
           : String(err)

@@ -167,7 +167,7 @@ describe('callModel transport', () => {
     expect(sink.rows[0]?.cost_usd).toBe(result.costUsd)
   })
 
-  it('VT-4 timeoutMs bounds the whole call at any size: aborted, not retried, partial usage logged', async () => {
+  it('VT-4 timeoutMs bounds the whole call at any size; every attempt logs its partial usage', async () => {
     // The SDK's own `timeout` only covers the headers; one real build streamed for 50 minutes.
     for (const budget of [120_000, 600_000]) {
       const asked = fastDeadline()
@@ -175,28 +175,43 @@ describe('callModel transport', () => {
       calls.stream = 0
 
       const { error, sink } = (await run(budget, 1)) as { error: Error; sink: Sink }
-      expect(asked).toEqual([budget])
+      expect(asked.every((ms) => ms === budget)).toBe(true)
       expect(error.message).toMatch(new RegExp(`deadline: exceeded timeoutMs=${budget}`))
-      expect(calls.stream).toBe(1) // maxRetries: 1, and still only one attempt
-      expect(sink.rows).toHaveLength(1)
-      const row = sink.rows[0]!
-      expect(row.ok).toBe(false)
-      // Not $0: the tokens the stream had reported before it was cut off.
-      expect(row.input_tokens).toBe(200_000)
-      expect(row.output_tokens).toBe(700)
-      expect(row.cost_usd).toBeGreaterThan(0)
-      expect(row.error).toMatch(/^\[partial usage, lower bound\]/)
+      expect(sink.rows).toHaveLength(calls.stream)
+      for (const row of sink.rows) {
+        expect(row.ok).toBe(false)
+        // Not $0: the tokens the stream had reported before it was cut off.
+        expect(row.input_tokens).toBe(200_000)
+        expect(row.output_tokens).toBe(700)
+        expect(row.cost_usd).toBeGreaterThan(0)
+        expect(row.error).toMatch(/^\[partial usage, lower bound\]/)
+      }
       vi.restoreAllMocks()
     }
   })
 
-  it('VT-4 a call with no timeoutMs is still bounded, by the SDK default of ten minutes', async () => {
+  it('VT-4 a long call (over five minutes) that hits its deadline is not retried', async () => {
+    fastDeadline()
+    calls.hang = true
+    await run(600_000, 1)
+    expect(calls.stream).toBe(1) // maxRetries: 1, and still only one attempt
+  })
+
+  it('VT-4 a shorter call that times out keeps its retry, as it had before every call streamed', async () => {
+    // The fact-pack builders (lib/topics/build.ts) set 240-280s with maxRetries: 1.
+    fastDeadline()
+    calls.hang = true
+    await run(280_000, 1)
+    expect(calls.stream).toBe(2)
+  })
+
+  it('VT-4 a call with no timeoutMs is still bounded, by the SDK default of ten minutes, and retried', async () => {
     const asked = fastDeadline()
     calls.hang = true
-    const { error } = (await run(undefined, 0)) as { error: Error }
-    expect(asked).toEqual([600_000])
-    expect(error).toBeInstanceOf(Error)
-    expect(calls.stream).toBe(1)
+    const { error } = (await run(undefined, 1)) as { error: Error }
+    expect(asked).toEqual([600_000, 600_000])
+    expect(error.message).toMatch(/deadline: exceeded timeoutMs=600000/)
+    expect(calls.stream).toBe(2)
   })
 })
 

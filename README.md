@@ -60,7 +60,8 @@ ANTHROPIC_BASE_URL=https://api.understudylabs.com understudy run -- \
 ```
 
 Spend then appears in Understudy's billing (`understudy billing summary`) as well as in
-`/admin`. Local dev and evals only for now; `claude-fable-5-1` is not served there yet.
+`/admin`. Production runs this way too (DEPLOY.md). `claude-fable-5-1`, the bake-off's second
+judge, is not served there yet, so run the bake-off against Anthropic directly.
 
 **Rehearsed without spending:** `pnpm test:e2e:real` runs sign-in → add a child → the form →
 a refused topic → library, reader and delete against the real app with model calls disabled.
