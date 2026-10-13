@@ -16,6 +16,8 @@ export const metadata: Metadata = {
  *  - "one click to delete"   -> DELETE /api/account, verified by the F2 deletion VT.
  *  - "no third-party         -> there is no analytics script in `app/layout.tsx`.
  *     analytics"
+ *  - "through Understudy"    -> production sets ANTHROPIC_BASE_URL to the Understudy gateway
+ *                              with prompt capture on (issue #41, DECISIONS #182).
  *
  * If any of those change, this page is wrong and must change with it.
  *
@@ -34,7 +36,7 @@ export default function PrivacyPage() {
       <h1 className="mt-3 mb-1 text-3xl font-semibold tracking-tight">Privacy</h1>
       {/* --fg-muted, not opacity: 60% opacity failed the WCAG contrast check (axe, F10 VT). */}
       <p className="mt-0 mb-8 text-sm" style={{ color: 'var(--fg-muted)' }}>
-        Last updated 28 September 2026
+        Last updated 13 October 2026
       </p>
 
       <section className="mb-8">
@@ -103,10 +105,12 @@ export default function PrivacyPage() {
       <section className="mb-8">
         <h2 className="mb-2 text-lg font-semibold">Where the text goes</h2>
         <p className="mt-0 mb-0 text-[0.95rem] leading-relaxed">
-          To write a story we send Anthropic&apos;s Claude models the child&apos;s first name,
-          age, likes, note and reading level, along with the topic you typed. We do not send your
-          email address. We do not use your stories or your children&apos;s details to train any
-          model.
+          To write a story we send the child&apos;s first name, age, likes, note and reading
+          level, along with the topic you typed, to Understudy (understudylabs.com). Understudy is
+          the service we use to run the AI models that write the stories and to compare models on
+          quality and cost, so the model that writes a story can change over time. Understudy
+          keeps a copy of each request and the story that came back. We do not send your email
+          address. We do not use your stories or your children&apos;s details to train any model.
         </p>
       </section>
 
@@ -132,6 +136,10 @@ export default function PrivacyPage() {
           family reference stripped to null. They carry no name, no topic and no story text —
           just a model, a token count and a price — and we need them to know what the service
           costs to run.
+        </p>
+        <p className="mb-0 text-[0.95rem] leading-relaxed">
+          Deleting your account does not reach the copies Understudy keeps of the requests that
+          wrote your stories. Those are held by Understudy under its own terms.
         </p>
       </section>
 
