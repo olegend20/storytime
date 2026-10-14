@@ -57,6 +57,13 @@ export interface CallModelOptions<T = string> {
    * just the wait for headers (see DEFAULT_TIMEOUT_MS for the bound when unset).
    */
   timeoutMs?: number
+  /**
+   * The moment (epoch ms) the caller must have its answer by - a request's own deadline, less
+   * what it needs afterwards. Every attempt's deadline is capped at it, so no attempt runs past
+   * it, and no retry starts with less than `minRetryMs` left (issue #50).
+   */
+  deadlineAt?: number
+  minRetryMs?: number
   /** Log correlation. */
   familyId?: string | null
   storyId?: string | null
@@ -240,9 +247,22 @@ export function structuredOutputRejected(err: unknown): boolean {
   )
 }
 
+/**
+ * A stream that was cut off partway: undici's `TypeError('terminated')` (its cause a socket
+ * "other side closed"), or a reset socket. Not an `APIConnectionError`, so before issue #50 it
+ * was never retried - 2 of ~10 rewrites through the gateway died this way on 2026-10-14.
+ */
+export function isDroppedStream(err: unknown): boolean {
+  if (!(err instanceof Error) || err instanceof APIError) return false
+  if (err.name === 'TypeError' && err.message === 'terminated') return true
+  const code = (err as { cause?: { code?: unknown } }).cause?.code
+  return code === 'UND_ERR_SOCKET' || code === 'ECONNRESET'
+}
+
 /** Retry on transport failures and the transient HTTP statuses; never on a 4xx we caused. */
 function isRetryable(err: unknown): { retryable: boolean; status?: number } {
   if (err instanceof APIConnectionError) return { retryable: true }
+  if (isDroppedStream(err)) return { retryable: true }
   if (err instanceof APIError) {
     const status = typeof err.status === 'number' ? err.status : undefined
     if (status === undefined) return { retryable: true }
@@ -318,10 +338,15 @@ export async function callModel<T = string>(
   }
 
   // ---- Live path, with per-attempt logging. ----
+  // A dropped stream is retried once at most: each retry of a long call is a whole new call.
+  let drops = 0
+  const timeLeft = () => (opts.deadlineAt === undefined ? Number.POSITIVE_INFINITY : opts.deadlineAt - Date.now())
   for (let attempt = 1; attempt <= maxRetries + 1; attempt += 1) {
     const started = Date.now()
     let stream: ReturnType<Anthropic['messages']['stream']> | null = null
     let deadline: AbortSignal | null = null
+    // This attempt's budget: `timeoutMs`, capped at what is left before `deadlineAt`.
+    const attemptMs = Math.max(1, Math.min(opts.timeoutMs ?? DEFAULT_TIMEOUT_MS, timeLeft()))
     try {
       const reqOpts = { signal: opts.signal, ...(opts.timeoutMs ? { timeout: opts.timeoutMs } : {}) }
       const params = request as unknown as Anthropic.MessageCreateParamsNonStreaming
@@ -335,7 +360,7 @@ export async function callModel<T = string>(
       // But the SDK's `timeout` only bounds the wait for headers, so a stream has no total
       // limit: one fact-pack build ran 50 minutes before the connection dropped. `deadline`
       // enforces `timeoutMs` over the whole call, or the SDK's own ten minutes when unset.
-      deadline = AbortSignal.timeout(opts.timeoutMs ?? DEFAULT_TIMEOUT_MS)
+      deadline = AbortSignal.timeout(attemptMs)
       const signal = opts.signal ? AbortSignal.any([opts.signal, deadline]) : deadline
       stream = anthropic().messages.stream(params, { ...reqOpts, signal })
       const response = (await stream.finalMessage()) as unknown as Record<string, unknown>
@@ -391,10 +416,19 @@ export async function callModel<T = string>(
       // long. Any other call that times out is retried, as it was before every call streamed
       // (the SDK's timeout was retryable) - the fact-pack builders count on their one retry.
       const timedOut = deadline?.aborted === true && opts.signal?.aborted !== true
-      const budgetMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS
-      const { retryable, status } = timedOut
+      const budgetMs = attemptMs
+      const { retryable: retryableKind, status } = timedOut
         ? { retryable: (opts.timeoutMs ?? 0) <= LONG_CALL_MS, status: undefined }
         : isRetryable(err)
+      const dropped = !timedOut && isDroppedStream(err)
+      if (dropped) drops += 1
+      // A caller that gave up (the parent closed the page) is never retried: before issue #50
+      // its abort read as a status-less APIError, and so as a transport failure worth retrying.
+      const retryable =
+        retryableKind &&
+        opts.signal?.aborted !== true &&
+        !(dropped && drops > 1) &&
+        timeLeft() >= (opts.deadlineAt === undefined ? 0 : (opts.minRetryMs ?? 0))
       const latencyMs = Date.now() - started
       const message = timedOut
         ? `deadline: exceeded timeoutMs=${budgetMs}`

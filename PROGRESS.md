@@ -876,6 +876,12 @@ Each has an e2e test on desktop and phone (the wake lock and offline tests stub 
 browser APIs). **Gates:** lint ✅ · typecheck ✅ · unit+int 1013 ✅ · e2e mock **132** ✅ ·
 e2e real 4 ✅.
 
+### 2026-10-14 — a dropped stream is tried once more (issue #50, DECISIONS #186)
+
+`callModel()` retries a stream the gateway cuts off partway, once, and never past the request
+deadline; a caller abort is no longer retried. VT-R1-VT-R5 in
+`test/unit/callmodel-transport.test.ts`.
+
 ### 2026-10-13 — latency in the eval (issue #46, DECISIONS #184)
 
 `pnpm eval` now reports time to first chapter (the number to hill-climb), total time and

@@ -16,6 +16,8 @@ const calls = vi.hoisted(() => ({
   create: 0,
   stream: 0,
   hang: false,
+  /** Streams that start, then drop with this error, before the next one succeeds. */
+  drop: [] as Error[],
   params: [] as Record<string, unknown>[],
   ctor: [] as unknown[],
 }))
@@ -47,6 +49,14 @@ vi.mock('@anthropic-ai/sdk', async () => {
       stream: (params: Record<string, unknown>, opts: { signal?: AbortSignal }) => {
         calls.stream += 1
         calls.params.push(params)
+        const drop = calls.drop.shift()
+        if (drop) {
+          // message_start arrived (usage so far), then the connection was cut.
+          return {
+            currentMessage: { ...message, usage: { ...message.usage, output_tokens: 7 } },
+            finalMessage: () => Promise.reject(drop),
+          }
+        }
         if (!calls.hang) return { finalMessage: async () => message, currentMessage: message }
         // A stream that has started (message_start carried usage) and then never finishes.
         return {
@@ -62,7 +72,7 @@ vi.mock('@anthropic-ai/sdk', async () => {
   return { ...actual, default: StubAnthropic }
 })
 
-const { callModel } = await import('@/lib/ai/callModel')
+const { callModel, isDroppedStream } = await import('@/lib/ai/callModel')
 const { MemoryLogSink } = await import('@/lib/ai/types')
 const { computeCost } = await import('@/lib/ai/pricing')
 type Sink = InstanceType<typeof MemoryLogSink>
@@ -75,6 +85,7 @@ afterEach(() => {
   calls.create = 0
   calls.stream = 0
   calls.hang = false
+  calls.drop = []
   calls.params = []
   if (saved === undefined) delete process.env.LIVE_API
   else process.env.LIVE_API = saved
@@ -212,6 +223,123 @@ describe('callModel transport', () => {
     expect(asked).toEqual([600_000, 600_000])
     expect(error.message).toMatch(/deadline: exceeded timeoutMs=600000/)
     expect(calls.stream).toBe(2)
+  })
+})
+
+/** undici's error when the other side closes a stream mid-response. */
+function terminated(): Error {
+  return new TypeError('terminated', { cause: Object.assign(new Error('other side closed'), { code: 'UND_ERR_SOCKET' }) })
+}
+
+const rewrite = (opts: { maxRetries?: number; deadlineAt?: number; minRetryMs?: number; timeoutMs?: number; signal?: AbortSignal } = {}) => {
+  process.env.LIVE_API = '1'
+  const sink = new MemoryLogSink()
+  return callModel({
+    purpose: 'rewrite',
+    model: 'claude-sonnet-5',
+    messages: [{ role: 'user', content: 'rewrite the story' }],
+    timeoutMs: opts.timeoutMs ?? 600_000,
+    ...opts,
+    sink,
+  }).then(
+    (result) => ({ result, error: null as Error | null, sink }),
+    (error: Error) => ({ result: null, error, sink }),
+  )
+}
+
+describe('issue #50: a stream the gateway drops partway is tried once more', () => {
+  it('VT-R1 a dropped stream is retried and the second answer returned; both attempts are logged', async () => {
+    calls.drop = [terminated()]
+    const { result, sink } = await rewrite()
+    expect(calls.stream).toBe(2)
+    expect(result!.text).toBe('ok')
+    expect(sink.rows).toHaveLength(2)
+    expect(sink.rows[0]!.ok).toBe(false)
+    expect(sink.rows[0]!.error).toMatch(/^\[partial usage, lower bound\] terminated/)
+    expect(sink.rows[0]!.output_tokens).toBe(7)
+    expect(sink.rows[1]!.ok).toBe(true)
+    // A reset socket counts too.
+    calls.stream = 0
+    calls.drop = [Object.assign(new Error('read ECONNRESET'), { cause: { code: 'ECONNRESET' } })]
+    expect((await rewrite()).result!.text).toBe('ok')
+    expect(calls.stream).toBe(2)
+  })
+
+  it('VT-R2 at most one retry for a dropped stream, whatever maxRetries says', async () => {
+    calls.drop = [terminated(), terminated(), terminated()]
+    const { error, sink } = await rewrite({ maxRetries: 5 })
+    expect(calls.stream).toBe(2)
+    expect(error!.message).toMatch(/rewrite call to claude-sonnet-5 failed after 2 attempt\(s\): terminated/)
+    expect(sink.rows.every((r) => !r.ok)).toBe(true)
+    // And maxRetries: 0 still means no retry at all.
+    calls.stream = 0
+    calls.drop = [terminated()]
+    await rewrite({ maxRetries: 0 })
+    expect(calls.stream).toBe(1)
+  })
+
+  it('VT-R3 no retry without minRetryMs left, and no attempt runs past deadlineAt', async () => {
+    calls.drop = [terminated()]
+    const { error } = await rewrite({ deadlineAt: Date.now() + 60_000, minRetryMs: 105_000 })
+    expect(calls.stream).toBe(1)
+    expect(error!.message).toMatch(/after 1 attempt\(s\): terminated/)
+
+    // Plenty of time: retried, and each attempt's own deadline is capped at what is left.
+    calls.stream = 0
+    calls.drop = [terminated()]
+    const asked: number[] = []
+    const real = AbortSignal.timeout.bind(AbortSignal)
+    vi.spyOn(AbortSignal, 'timeout').mockImplementation((ms: number) => {
+      asked.push(ms)
+      return real(ms)
+    })
+    const { result } = await rewrite({ deadlineAt: Date.now() + 400_000, minRetryMs: 105_000 })
+    expect(result!.text).toBe('ok')
+    expect(calls.stream).toBe(2)
+    expect(asked).toHaveLength(2)
+    for (const ms of asked) {
+      expect(ms).toBeLessThanOrEqual(400_000)
+      expect(ms).toBeGreaterThan(390_000)
+    }
+  })
+
+  it('VT-R4 our own deadline, a caller abort, a 4xx and a refusal are unchanged', async () => {
+    // Our deadline on a long call: still not retried.
+    fastDeadline()
+    calls.hang = true
+    await rewrite({ maxRetries: 2 })
+    expect(calls.stream).toBe(1)
+    vi.restoreAllMocks()
+    calls.hang = false
+
+    // A caller that gives up (a parent closing the page) is not retried.
+    calls.stream = 0
+    calls.hang = true
+    const caller = new AbortController()
+    setTimeout(() => caller.abort(), 50)
+    expect((await rewrite({ signal: caller.signal })).error).not.toBeNull()
+    expect(calls.stream).toBe(1)
+    calls.hang = false
+
+    const { BadRequestError } = await vi.importActual<typeof import('@anthropic-ai/sdk')>('@anthropic-ai/sdk')
+
+    // A 400 we caused is not a drop either.
+    calls.stream = 0
+    calls.drop = [new BadRequestError(400, { type: 'error' }, 'bad request', new Headers())]
+    expect((await rewrite()).error).not.toBeNull()
+    expect(calls.stream).toBe(1)
+
+    // Neither is a plain TypeError of our own making.
+    expect(isDroppedStream(new TypeError('cannot read properties of undefined'))).toBe(false)
+    expect(isDroppedStream(terminated())).toBe(true)
+  })
+
+  it('VT-R5 the pipeline\'s rewrite passes the request deadline, with rung 3\'s floor', () => {
+    const source = readFileSync(join(process.cwd(), 'lib/generate/pipeline.ts'), 'utf8')
+    const rewriteCall = source.slice(source.indexOf("purpose: 'rewrite',\n          role: 'writer',\n          ...(deps.writingModel ? { model: deps.writingModel } : {}),\n          system: rewritePrompt.system"))
+    expect(rewriteCall.slice(0, 1200)).toMatch(
+      /deadlineAt: deps\.deadlineMs - AFTER_WRITE_MS, minRetryMs: RETRY_MIN_MS - AFTER_WRITE_MS/,
+    )
   })
 })
 
