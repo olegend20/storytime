@@ -49,6 +49,20 @@ and a few cents. Only when the model says it does not know the topic does it res
 (~1–2 minutes, ~$0.45). Real spend is on the Anthropic console; `/admin` shows what the app
 recorded.
 
+**Through Understudy (same models).** The model client reads `ANTHROPIC_BASE_URL`, so the
+same Claude models can be reached through the Understudy gateway with no code change (issue
+#41). `understudy run` injects the Understudy key into the one child process only, and a key
+set in the shell wins over `.env.local`:
+
+```bash
+ANTHROPIC_BASE_URL=https://api.understudylabs.com understudy run -- \
+  sh -c 'ANTHROPIC_API_KEY="$UNDERSTUDY_API_KEY" LIVE_API=1 pnpm dev'
+```
+
+Spend then appears in Understudy's billing (`understudy billing summary`) as well as in
+`/admin`. Production runs this way too (DEPLOY.md). `claude-fable-5-1`, the bake-off's second
+judge, is not served there yet, so run the bake-off against Anthropic directly.
+
 **Rehearsed without spending:** `pnpm test:e2e:real` runs sign-in → add a child → the form →
 a refused topic → library, reader and delete against the real app with model calls disabled.
 

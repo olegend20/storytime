@@ -76,6 +76,14 @@ test('the privacy page names what is stored and what does not exist', async ({ p
   expect(body).toContain('birthday')
   // And the refusal promise a parent most needs to know about.
   expect(body).toContain('does not use one of your three stories')
+  // Issue #41: where a child's details go. Production reaches the models through an outside AI
+  // service (today Understudy) that keeps a copy deleting the account does not remove. Neither
+  // the service nor a model provider is named: either can change.
+  expect(body).toContain('outside ai services')
+  expect(body).toContain('keeps a copy of each request')
+  expect(body).toContain('deleting your account does not remove them')
+  expect(body).toContain('your email address is never sent')
+  expect(body).not.toMatch(/anthropic|claude|understudy/)
 })
 
 test('a story page shows first names only — never a surname field anywhere', async ({ page }) => {
