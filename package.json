@@ -35,15 +35,15 @@
     "factpacks": "tsx scripts/build-fact-packs.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.128.0",
+    "@anthropic-ai/sdk": "^0.133.0",
     "@supabase/ssr": "^0.12.7",
-    "@supabase/supabase-js": "^2.60.0",
+    "@supabase/supabase-js": "^2.117.3",
     "jszip": "^3.10.2",
-    "next": "^16.3.6",
-    "nodemailer": "^10.0.12",
+    "next": "^16.4.0",
+    "nodemailer": "^10.1.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "zod": "^4.6.5"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
