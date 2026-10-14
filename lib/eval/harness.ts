@@ -691,11 +691,16 @@ function compareLatency(current: EvalResult, previous: EvalResult): string[] {
   const prior = new Map(previous.scenarios.map((s) => [s.scenario_id, s]))
   for (const s of current.scenarios) {
     const cur = s.latency_to_first_chapter_ms
-    const prev = prior.get(s.scenario_id)?.latency_to_first_chapter_ms ?? null
+    const before = prior.get(s.scenario_id)
+    const prev = before?.latency_to_first_chapter_ms ?? null
     if (cur === null || prev === null || prev === 0) continue
     const ratio = (cur - prev) / prev
-    const marker =
-      ratio >= LATENCY_FLAG_RATIO ? ' <- latency regression' : ratio <= -LATENCY_FLAG_RATIO ? ' <- latency improvement' : ''
+    // Streamed in one run and not the other: the two numbers are counted differently, so a
+    // jump between them is not a change in speed and is not flagged as one.
+    const switched = before?.first_chapter_streamed !== undefined && before.first_chapter_streamed !== s.first_chapter_streamed
+    const marker = switched
+      ? ' (no stream in one run, not compared)'
+      : ratio >= LATENCY_FLAG_RATIO ? ' <- latency regression' : ratio <= -LATENCY_FLAG_RATIO ? ' <- latency improvement' : ''
     lines.push(`  ${s.scenario_id}: first chapter ${change(cur, prev)}${marker}`)
   }
   return lines

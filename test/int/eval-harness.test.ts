@@ -601,6 +601,14 @@ describe('issue #46: latency, so it can be hill-climbed (time to first chapter)'
     expect(out).toMatch(/lego-band-a-pair: first chapter .*\+100%\) <- latency regression/)
     expect(out).toMatch(/bees-band-a-5min: first chapter .*-50%\) <- latency improvement/)
     expect(out).not.toMatch(/titanic-band-b: first chapter .*<- latency/)
+
+    // A story that streamed in one run and not the other is not compared as a speed change.
+    const unstreamed = previousScenarios.map((s) =>
+      s.scenario_id === 'lego-band-a-pair' ? { ...s, first_chapter_streamed: false } : s,
+    )
+    const out2 = compareEvalRuns(current, { ...previous, scenarios: unstreamed })
+    expect(out2).toMatch(/lego-band-a-pair: first chapter .*\(no stream in one run, not compared\)/)
+    expect(out2).not.toMatch(/lego-band-a-pair: first chapter .*<- latency/)
   })
 
   it('VT-L1b: a story made with no streamed chapter counts its first chapter at the total, and is named', async () => {
