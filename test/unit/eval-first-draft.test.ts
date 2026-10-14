@@ -38,7 +38,7 @@ describe('first draft', () => {
 
   it('the summary counts untouched first drafts over the stories that could tell', () => {
     const record = (first_draft: EvalScenarioRecord['first_draft']): EvalScenarioRecord =>
-      ({ scenario_id: 'x', overall_final: 4, caps_applied: [], word_count_in_range: true, disqualified: false, judge_ok: true, first_draft }) as unknown as EvalScenarioRecord
+      ({ scenario_id: 'x', overall_final: 4, caps_applied: [], word_count_in_range: true, disqualified: false, judge_ok: true, first_draft, latency_to_first_chapter_ms: null, first_chapter_streamed: false, latency_total_ms: null, latency_by_step: {} }) as unknown as EvalScenarioRecord
     const summary = summarize([
       record({ passed: true, failures: [], reasons: [], mended_rules: [] }),
       record({ passed: false, failures: ['fact_min_age'], reasons: [], mended_rules: [] }),
