@@ -882,6 +882,11 @@ If the connection drops while the story is still being thought up, before any ch
 the page, the writing starts again once instead of failing. VT-W1 in
 `test/unit/callmodel-drop-real-sdk.test.ts` (real SDK), VT-W2-VT-W5 in `test/int/pipeline.test.ts`.
 
+### 2026-10-14 — the eval estimate counts rewrites (DECISIONS #196)
+
+`pnpm eval --dry-run` now prints $12.83 for the 32-story eval (calibration reused) against a
+measured $14.15; it printed $7.88. VT-E1-VT-E2 in `test/unit/eval-estimate.test.ts`.
+
 ### 2026-10-14 — the golden set grows to 32, train/test halves (issue #48, DECISIONS #185)
 
 `pnpm eval` now runs 32 scenarios (F13's eight plus 24), each in a fixed train or test half, so
