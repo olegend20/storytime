@@ -50,7 +50,8 @@ export class ModelCallError extends Error {
       status?: number
       stopReason?: string | null
       /**
-       * The connection was cut partway through a stream (undici `terminated`, a reset socket).
+       * The connection was cut partway through a stream (undici `terminated`, a reset socket) or
+       * failed outright (the SDK's `Connection error.`).
        * `streamModel` never retries itself; the caller decides whether it safely can (#52).
        */
       dropped?: boolean

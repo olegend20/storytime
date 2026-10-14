@@ -13,13 +13,17 @@ import { MemoryLogSink, ModelCallError } from '@/lib/ai/types'
 
 let server: Server
 let connections = 0
-let mode: 'drop' | 'error500' = 'drop'
+let mode: 'drop' | 'error500' | 'refuse' = 'drop'
 const env = { ...process.env }
 
 beforeAll(async () => {
   server = createServer((req, res) => {
     connections += 1
     req.resume()
+    if (mode === 'refuse') {
+      req.socket.destroy()
+      return
+    }
     if (mode === 'error500') {
       res.writeHead(500, { 'content-type': 'application/json' })
       res.end(JSON.stringify({ type: 'error', error: { type: 'api_error', message: 'boom' } }))
@@ -71,7 +75,7 @@ describe('issue #50: a real dropped stream, through the real SDK', () => {
     ])
   })
 
-  it('VT-W1 (#52): streamModel reports a real drop as dropped, and a 500 as not', async () => {
+  it('VT-W1 (#52): streamModel reports a real drop or a lost connection as dropped, and a 500 as not', async () => {
     const write = () =>
       streamModel({ purpose: 'write', model: 'claude-sonnet-5', messages: [{ role: 'user', content: 'write' }], sink: new MemoryLogSink() }).then(
         () => null,
@@ -83,6 +87,14 @@ describe('issue #50: a real dropped stream, through the real SDK', () => {
     expect(dropped).toBeInstanceOf(ModelCallError)
     expect((dropped as ModelCallError).detail).toMatchObject({ dropped: true, retryable: false })
     // streamModel itself never retries: the pipeline decides.
+    expect(connections).toBe(1)
+
+    mode = 'refuse'
+    connections = 0
+    const refused = await write()
+    expect(refused).toBeInstanceOf(ModelCallError)
+    expect((refused as ModelCallError).message).toMatch(/Connection error/)
+    expect((refused as ModelCallError).detail).toMatchObject({ dropped: true, retryable: false })
     expect(connections).toBe(1)
 
     mode = 'error500'

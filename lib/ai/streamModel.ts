@@ -1,4 +1,4 @@
-import Anthropic, { APIError } from '@anthropic-ai/sdk'
+import Anthropic, { APIConnectionError, APIError } from '@anthropic-ai/sdk'
 import type { CallPurpose } from '@/lib/schemas/common'
 import { capabilities, computeCost, modelForRole } from './pricing'
 import { MissingFixtureError, fixtureKey, readFixture, writeFixture } from './fixtures'
@@ -254,7 +254,9 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
         model,
         attempts: 1,
         retryable: false,
-        dropped: isDroppedStream(err),
+        // The SDK's 'Connection error.' (APIConnectionError, a subclass of APIError) is the same
+        // failure seen before the first byte: two first writes in the v5 eval died one each way.
+        dropped: isDroppedStream(err) || err instanceof APIConnectionError,
         ...(err instanceof APIError && typeof err.status === 'number' ? { status: err.status } : {}),
       },
     )
