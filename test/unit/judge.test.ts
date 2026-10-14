@@ -495,10 +495,10 @@ describe('summary statistics', () => {
 })
 
 describe('eval scenarios', () => {
-  it('covers the eight F13 scenarios and the four §6 difficulty scenarios, with unique ids', () => {
+  it('covers the F13 scenarios (eight, grown to 32 in issue #48) and the four §6 difficulty scenarios, with unique ids', () => {
     const ids = SCENARIOS.map((s) => s.id)
     expect(new Set(ids).size).toBe(ids.length)
-    expect(SCENARIOS.filter((s) => s.suites.includes('eval')).length).toBe(8)
+    expect(SCENARIOS.filter((s) => s.suites.includes('eval')).length).toBe(32)
     expect(SCENARIOS.filter((s) => s.suites.includes('bakeoff')).length).toBe(12)
   })
 

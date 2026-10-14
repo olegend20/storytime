@@ -148,14 +148,20 @@ export function syntheticStory(input: {
 
   // A contestant-specific beat in a seeded subset of chapters, so two contestants never
   // produce a byte-identical story (which would make a pairwise comparison vacuous).
+  // A series story opens on its recurring element, as the writer is asked to (F13's
+  // continuity AC). The reference stories only carry their own series' elements, so a
+  // scenario from another series (Maya's, issue #48) is given its own here - the scenario's
+  // own continuity string, since a name's first word can be "The".
+  const recurring = input.scenario.checks.continuity_reference?.[0]
   const marked: JudgeableStory = {
     ...renamed,
     title: renamed.title,
-    chapters: renamed.chapters.map((c, i) =>
-      (seed + i) % 3 === 0
-        ? { ...c, text: `${c.text}\n\n${VARIANT_SENTENCES[(seed + i) % VARIANT_SENTENCES.length]!}` }
-        : { ...c },
-    ),
+    chapters: renamed.chapters.map((c, i) => {
+      let text = c.text
+      if (i === 0 && recurring && !text.includes(recurring)) text = `${recurring} was waiting, just like last time.\n\n${text}`
+      if ((seed + i) % 3 === 0) text = `${text}\n\n${VARIANT_SENTENCES[(seed + i) % VARIANT_SENTENCES.length]!}`
+      return { ...c, text }
+    }),
   }
 
   return fitToRange(marked, target)

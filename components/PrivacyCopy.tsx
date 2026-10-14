@@ -36,7 +36,7 @@ export const PRIVACY_PROMISES: ReadonlyArray<{ title: string; body: string }> = 
     title: 'Delete in one tap',
     body:
       'Any story can be deleted from the story itself. Deleting your account removes your ' +
-      'children’s details and every story with it.',
+      'children’s details and every story we store with it.',
   },
   {
     title: 'No tracking of your children',

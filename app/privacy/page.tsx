@@ -16,6 +16,9 @@ export const metadata: Metadata = {
  *  - "one click to delete"   -> DELETE /api/account, verified by the F2 deletion VT.
  *  - "no third-party         -> there is no analytics script in `app/layout.tsx`.
  *     analytics"
+ *  - "outside AI service    -> production sets ANTHROPIC_BASE_URL to the Understudy gateway
+ *     keeps a copy"            with prompt capture on (issue #41, DECISIONS #182). The page
+ *                              names no service or model provider: either can change.
  *
  * If any of those change, this page is wrong and must change with it.
  *
@@ -34,7 +37,7 @@ export default function PrivacyPage() {
       <h1 className="mt-3 mb-1 text-3xl font-semibold tracking-tight">Privacy</h1>
       {/* --fg-muted, not opacity: 60% opacity failed the WCAG contrast check (axe, F10 VT). */}
       <p className="mt-0 mb-8 text-sm" style={{ color: 'var(--fg-muted)' }}>
-        Last updated 28 September 2026
+        Last updated 13 October 2026
       </p>
 
       <section className="mb-8">
@@ -101,12 +104,35 @@ export default function PrivacyPage() {
       </section>
 
       <section className="mb-8">
-        <h2 className="mb-2 text-lg font-semibold">Where the text goes</h2>
-        <p className="mt-0 mb-0 text-[0.95rem] leading-relaxed">
-          To write a story we send Anthropic&apos;s Claude models the child&apos;s first name,
-          age, likes, note and reading level, along with the topic you typed. We do not send your
-          email address. We do not use your stories or your children&apos;s details to train any
-          model.
+        <h2 className="mb-2 text-lg font-semibold">Your children and AI</h2>
+        <p className="mt-0 text-[0.95rem] leading-relaxed">
+          We know many parents think carefully about AI, and especially about sharing anything
+          about their children with it. We do too. So here is plainly how a story is made, and
+          what leaves LastTen.org when it is.
+        </p>
+        <p className="text-[0.95rem] leading-relaxed">
+          Our stories are written by AI models. When you ask for one, we send a short request to
+          the outside AI services that run those models: one that compares models on quality and
+          cost, and the company whose model writes the story. So the model that writes a story
+          can change over time. The request holds only what the
+          story needs to feel like it was written for your child:
+        </p>
+        <ul className="m-0 list-disc space-y-1.5 pl-5 text-[0.95rem] leading-relaxed">
+          <li>the first name you gave each child, so they can be the hero;</li>
+          <li>their age, so the words and the adventure suit them;</li>
+          <li>their likes, any note you added, and their reading level;</li>
+          <li>the topic you typed.</li>
+        </ul>
+        <p className="text-[0.95rem] leading-relaxed">
+          That is all. We collect as little about your children as we can, to protect who they
+          are: there is no surname, birthday, school, photo or address to send, because we never
+          ask for them. Your email address is never sent.
+        </p>
+        <p className="mb-0 text-[0.95rem] leading-relaxed">
+          The service that compares models keeps a copy of each request and the story it wrote.
+          Its published terms say it does not use them to train models for anyone else, and we
+          can ask it to delete them. We never use
+          your stories or your children&apos;s details to train any model ourselves.
         </p>
       </section>
 
@@ -132,6 +158,10 @@ export default function PrivacyPage() {
           family reference stripped to null. They carry no name, no topic and no story text —
           just a model, a token count and a price — and we need them to know what the service
           costs to run.
+        </p>
+        <p className="mb-0 text-[0.95rem] leading-relaxed">
+          The copies that service keeps of past requests are separate from your account, so
+          deleting your account does not remove them. We can ask the service to delete them.
         </p>
       </section>
 

@@ -876,7 +876,7 @@ Each has an e2e test on desktop and phone (the wake lock and offline tests stub 
 browser APIs). **Gates:** lint ✅ · typecheck ✅ · unit+int 1013 ✅ · e2e mock **132** ✅ ·
 e2e real 4 ✅.
 
-### 2026-10-08 — prompt first, guardrails as the backstop (DECISIONS #182–#189)
+### 2026-10-08 — prompt first, guardrails as the backstop (DECISIONS #187–#194)
 
 Owner: retire hard rule 7 (characters from films and games are fine; the books are for
 personal use), tighten rule 10 (wild animals are watched, never touched), and "hill climb
@@ -901,6 +901,35 @@ found to miss in whole stories (both prompt versions, replayed live). The eval n
 The re-run's eighth scenario (titanic) did not run: the API credit ran out. Rewrites that
 remain are mostly the quality reviewer (Haiku 4.5) still failing words the story explained
 or that are not big words, and pack words (extinct, nectar, seismograph) in band A.
+
+### 2026-10-14 — the golden set grows to 32, train/test halves (issue #48, DECISIONS #185)
+
+`pnpm eval` now runs 32 scenarios (F13's eight plus 24), each in a fixed train or test half, so
+hill-climbing can keep a change only when both halves improve and can see a +/-0.2 quality or
+20% latency move above noise. VT-S1-VT-S5 in `test/unit/eval-scenarios.test.ts`. Dry-run
+estimate $7.88 a run. Two live baselines (owner-approved, ~$33) measure the per-story noise.
+### 2026-10-14 — a dropped stream is tried once more (issue #50, DECISIONS #186)
+
+`callModel()` retries a stream the gateway cuts off partway, once, and never past the request
+deadline; a caller abort is no longer retried. VT-R1-VT-R5 in
+`test/unit/callmodel-transport.test.ts`.
+
+### 2026-10-13 — latency in the eval (issue #46, DECISIONS #184)
+
+`pnpm eval` now reports time to first chapter (the number to hill-climb), total time and
+where the time went by step, with median/p95 and a comparison against the last run that
+flags any story 20% slower or faster. Report-only: latency never fails the eval. VT-L1-VT-L7
+in `test/int/eval-harness.test.ts`. The next live `pnpm eval` is the latency baseline.
+
+### 2026-10-13 — the same Claude models through Understudy (issue #41, DECISIONS #182)
+
+`callModel()` streams every live call, so the app can reach Claude through the Understudy
+gateway by setting `ANTHROPIC_BASE_URL` - same models, prompts, tokens and cost. VT-1-VT-5 in
+`test/unit/callmodel-transport.test.ts`. Production cuts over by environment (DEPLOY.md), owner's decision; the owner set
+`ANTHROPIC_BASE_URL` and an Understudy key (`storytime-production`) in Vercel production on 2026-10-13.
+Gates: lint ✅ · typecheck ✅ · unit+int **1237** ✅ · guardrails 32 ✅ · e2e mock 192 ✅ · e2e real 6 ✅;
+live L2 corpus through the gateway 8/8 ✅ (168 Haiku calls, ~$0.40).
+
 
 ### 2026-10-07 — every parent gets a book: rung 3 (issue #32, DECISIONS #179)
 

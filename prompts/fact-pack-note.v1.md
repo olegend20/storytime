@@ -3,7 +3,7 @@ id: fact-pack-note
 version: 1
 purpose: write
 role: writer
-plan_ref: IMPLEMENTATION_PLAN.md F6; DECISIONS #186
+plan_ref: IMPLEMENTATION_PLAN.md F6; DECISIONS #192
 changes: v1 (2026-10-08, iteration 3 of the owner's zero-rewrites hill-climb) - in the master v5 eval the band-A first drafts were sent back for words copied straight from the fact pack (extinct, fossil, predators, seismograph, fertile), although master §3 names those very kinds of word. The note sits beside the pack, where the words come from. It also says the bible, the pack and fact ids never appear in the text: a v5 soccer story was disqualified for "the bible notes no cousin exists" and [fN] tags in its True Facts.
 note: Sent in the user message after the request, on every write, with %AGE% replaced by the youngest child's age (not a {{placeholder}}: those are rendered from config at load). Not in the cached master block, which is at its size limit. It belongs to the writing prompt - changing it means re-running the F13 eval (CLAUDE.md rule 5).
 ---

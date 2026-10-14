@@ -57,7 +57,9 @@ async function generateOne(input: GenerateInput, db: SupabaseClient): Promise<Pi
   const { scenario } = input
   const sink = new MeteredLogSink(input.sink ?? getDefaultLogSink())
   const family = await createEvalFamily(db, scenario.id)
-  const started = Date.now()
+  // Set below, where a parent's request would start: the eval-only setup (a throwaway user,
+  // its children and bible) is not part of anyone's wait (issue #46).
+  let started = Date.now()
 
   try {
     const childIds = await insertChildren(db, family.familyId, scenario.children)
@@ -67,6 +69,10 @@ async function generateOne(input: GenerateInput, db: SupabaseClient): Promise<Pi
     let bible = await loadBible(series.id, { db, children, childIds })
     if (scenario.bible) bible = await writeBible(bible, scenario.bible, db)
 
+    // The parent's clock: the input guard, the pack lookup, the streamed write, the gate, any
+    // rewrite, the save and the bible update. Normalization is skipped here (see above), so
+    // a real request waits one short Haiku call longer.
+    started = Date.now()
     const guard = await new GuardrailsInputGuard().check({
       topicInput: scenario.topic_input,
       children,

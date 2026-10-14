@@ -622,6 +622,11 @@ export async function runGeneration(
           // Over 300s so callModel streams it: the SDK refuses a non-streaming request this
           // large, and the deadline still bounds the whole call.
           timeoutMs: 600_000,
+          // Issue #50: a stream the gateway drops is tried once more, but only with rung 3's
+          // RETRY_MIN_MS left before the request deadline, and never past the gate and save.
+          ...(deps.deadlineMs !== undefined
+            ? { deadlineAt: deps.deadlineMs - AFTER_WRITE_MS, minRetryMs: RETRY_MIN_MS - AFTER_WRITE_MS }
+            : {}),
           thinking: 'adaptive',
           ...(withFormat ? { outputConfig: { format: STORY_OUTPUT_FORMAT } } : {}),
           familyId: prepared.familyId,

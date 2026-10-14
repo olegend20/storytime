@@ -22,20 +22,23 @@ const behaviour = vi.hoisted(() => ({
 
 vi.mock('@anthropic-ai/sdk', async () => {
   const actual = await vi.importActual<typeof import('@anthropic-ai/sdk')>('@anthropic-ai/sdk')
+  const respond = async () => {
+    if (behaviour.mode === 'fail') {
+      // What a dropped connection / fixture timeout looks like to the wrapper.
+      throw new actual.APIConnectionError({ message: 'simulated fixture timeout' })
+    }
+    return {
+      id: 'msg_stub',
+      content: [{ type: 'text', text: 'Once upon a time.' }],
+      stop_reason: 'end_turn',
+      usage: behaviour.usage,
+    }
+  }
   class StubAnthropic {
     messages = {
-      create: async () => {
-        if (behaviour.mode === 'fail') {
-          // What a dropped connection / fixture timeout looks like to the wrapper.
-          throw new actual.APIConnectionError({ message: 'simulated fixture timeout' })
-        }
-        return {
-          id: 'msg_stub',
-          content: [{ type: 'text', text: 'Once upon a time.' }],
-          stop_reason: 'end_turn',
-          usage: behaviour.usage,
-        }
-      },
+      create: respond,
+      // callModel streams every call (issue #41); the stream ends in the same Message.
+      stream: () => ({ finalMessage: respond, currentMessage: undefined }),
     }
   }
   return { ...actual, default: StubAnthropic }

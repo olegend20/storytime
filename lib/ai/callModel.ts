@@ -53,10 +53,17 @@ export interface CallModelOptions<T = string> {
   /**
    * Per-call HTTP timeout in ms. The SDK default is 10 minutes, which a long server-tool loop
    * can exceed - the fact-pack builder runs web search and timed out three times in a row,
-   * burning 902s. Set generously for tool-loop calls. Above 300s the call streams
-   * (see UNDICI_HEADERS_TIMEOUT_MS), or Node's fetch cuts it off at 300s regardless.
+   * burning 902s. Set generously for tool-loop calls. Bounds the whole streamed call, not
+   * just the wait for headers (see DEFAULT_TIMEOUT_MS for the bound when unset).
    */
   timeoutMs?: number
+  /**
+   * The moment (epoch ms) the caller must have its answer by - a request's own deadline, less
+   * what it needs afterwards. Every attempt's deadline is capped at it, so no attempt runs past
+   * it, and no retry starts with less than `minRetryMs` left (issue #50).
+   */
+  deadlineAt?: number
+  minRetryMs?: number
   /** Log correlation. */
   familyId?: string | null
   storyId?: string | null
@@ -141,8 +148,17 @@ function anthropic(): Anthropic {
   return client
 }
 
-/** undici's default `headersTimeout`. Calls allowed longer than this must stream. */
-const UNDICI_HEADERS_TIMEOUT_MS = 300_000
+/**
+ * The whole-call deadline when `timeoutMs` is unset: the SDK's own default, which bounded a
+ * non-streaming call end to end before every call streamed.
+ */
+const DEFAULT_TIMEOUT_MS = 600_000
+
+/**
+ * A call that asks for more than this is a long call: when it hits its own deadline it is not
+ * retried. Five minutes, undici's `headersTimeout`, the line that used to decide streaming.
+ */
+const LONG_CALL_MS = 300_000
 
 function isLive(): boolean {
   return process.env.LIVE_API === '1' || process.env.LIVE_API === 'true'
@@ -231,9 +247,30 @@ export function structuredOutputRejected(err: unknown): boolean {
   )
 }
 
+/**
+ * A stream that was cut off partway: undici's `TypeError('terminated')` (its cause a socket
+ * "other side closed"), or a reset socket. The SDK's MessageStream rewraps any non-SDK error
+ * as a plain `AnthropicError` with the original as `cause` (SDK 0.128 MessageStream.js), so
+ * the socket code is two levels down - the cause chain is walked, not just the top error.
+ * Not an `APIConnectionError`, so before issue #50 it was never retried: 2 of ~10 rewrites
+ * through the gateway died this way on 2026-10-14.
+ */
+export function isDroppedStream(err: unknown): boolean {
+  if (err instanceof APIError) return false
+  let e: unknown = err
+  for (let depth = 0; depth < 4 && typeof e === 'object' && e !== null; depth += 1) {
+    if (e instanceof Error && e.name === 'TypeError' && e.message === 'terminated') return true
+    const code = (e as { code?: unknown }).code
+    if (code === 'UND_ERR_SOCKET' || code === 'ECONNRESET') return true
+    e = (e as { cause?: unknown }).cause
+  }
+  return false
+}
+
 /** Retry on transport failures and the transient HTTP statuses; never on a 4xx we caused. */
 function isRetryable(err: unknown): { retryable: boolean; status?: number } {
   if (err instanceof APIConnectionError) return { retryable: true }
+  if (isDroppedStream(err)) return { retryable: true }
   if (err instanceof APIError) {
     const status = typeof err.status === 'number' ? err.status : undefined
     if (status === undefined) return { retryable: true }
@@ -309,33 +346,32 @@ export async function callModel<T = string>(
   }
 
   // ---- Live path, with per-attempt logging. ----
+  // A dropped stream is retried once at most: each retry of a long call is a whole new call.
+  let drops = 0
+  const timeLeft = () => (opts.deadlineAt === undefined ? Number.POSITIVE_INFINITY : opts.deadlineAt - Date.now())
   for (let attempt = 1; attempt <= maxRetries + 1; attempt += 1) {
     const started = Date.now()
     let stream: ReturnType<Anthropic['messages']['stream']> | null = null
     let deadline: AbortSignal | null = null
+    // This attempt's budget: `timeoutMs`, capped at what is left before `deadlineAt`.
+    const attemptMs = Math.max(1, Math.min(opts.timeoutMs ?? DEFAULT_TIMEOUT_MS, timeLeft()))
     try {
       const reqOpts = { signal: opts.signal, ...(opts.timeoutMs ? { timeout: opts.timeoutMs } : {}) }
       const params = request as unknown as Anthropic.MessageCreateParamsNonStreaming
-      // Node's fetch (undici) gives up on a response whose HEADERS take longer than 300s, and a
-      // non-streaming response sends none until it is complete - so any call over five minutes
-      // died at exactly 300.0s as "Request timed out.", whatever `timeoutMs` said. Streaming
-      // sends headers at once; finalMessage() is the same Message, usage included.
+      // Every call streams (issue #41). A non-streaming response sends nothing until it is
+      // complete, and two things cut that silence short: Node's fetch (undici) gives up on
+      // headers after 300s - every fact-pack build once died at exactly 300.0s - and the
+      // Understudy gateway closes a response with no first byte after ~125s. Streaming sends
+      // headers at once; finalMessage() is the same Message, usage included, so the request,
+      // the tokens and the cost are unchanged.
       //
       // But the SDK's `timeout` only bounds the wait for headers, so a stream has no total
       // limit: one fact-pack build ran 50 minutes before the connection dropped. `deadline`
-      // enforces `timeoutMs` over the whole call.
-      let response: Record<string, unknown>
-      if ((opts.timeoutMs ?? 0) > UNDICI_HEADERS_TIMEOUT_MS) {
-        deadline = AbortSignal.timeout(opts.timeoutMs!)
-        const signal = opts.signal ? AbortSignal.any([opts.signal, deadline]) : deadline
-        stream = anthropic().messages.stream(params, { ...reqOpts, signal })
-        response = (await stream.finalMessage()) as unknown as Record<string, unknown>
-      } else {
-        response = (await anthropic().messages.create(params, reqOpts)) as unknown as Record<
-          string,
-          unknown
-        >
-      }
+      // enforces `timeoutMs` over the whole call, or the SDK's own ten minutes when unset.
+      deadline = AbortSignal.timeout(attemptMs)
+      const signal = opts.signal ? AbortSignal.any([opts.signal, deadline]) : deadline
+      stream = anthropic().messages.stream(params, { ...reqOpts, signal })
+      const response = (await stream.finalMessage()) as unknown as Record<string, unknown>
 
       const latencyMs = Date.now() - started
       const usage = normalizeUsage(response.usage)
@@ -383,13 +419,27 @@ export async function callModel<T = string>(
       })
     } catch (err) {
       if (err instanceof ModelRefusalError) throw err
-      // Hitting our own deadline is not retried: a second full-length attempt doubles the
-      // cost of a call that has already run long.
+      // Hitting our own deadline on a call that ASKED for more than five minutes is not
+      // retried: a second full-length attempt doubles the cost of a call that has already run
+      // long. Any other call that times out is retried, as it was before every call streamed
+      // (the SDK's timeout was retryable) - the fact-pack builders count on their one retry.
       const timedOut = deadline?.aborted === true && opts.signal?.aborted !== true
-      const { retryable, status } = timedOut ? { retryable: false, status: undefined } : isRetryable(err)
+      const budgetMs = attemptMs
+      const { retryable: retryableKind, status } = timedOut
+        ? { retryable: (opts.timeoutMs ?? 0) <= LONG_CALL_MS, status: undefined }
+        : isRetryable(err)
+      const dropped = !timedOut && isDroppedStream(err)
+      if (dropped) drops += 1
+      // A caller that gave up (the parent closed the page) is never retried: before issue #50
+      // its abort read as a status-less APIError, and so as a transport failure worth retrying.
+      const retryable =
+        retryableKind &&
+        opts.signal?.aborted !== true &&
+        !(dropped && drops > 1) &&
+        timeLeft() >= (opts.deadlineAt === undefined ? 0 : (opts.minRetryMs ?? 0))
       const latencyMs = Date.now() - started
       const message = timedOut
-        ? `deadline: exceeded timeoutMs=${opts.timeoutMs}`
+        ? `deadline: exceeded timeoutMs=${budgetMs}`
         : err instanceof Error
           ? err.message
           : String(err)
