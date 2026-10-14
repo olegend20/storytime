@@ -876,6 +876,13 @@ Each has an e2e test on desktop and phone (the wake lock and offline tests stub 
 browser APIs). **Gates:** lint ✅ · typecheck ✅ · unit+int 1013 ✅ · e2e mock **132** ✅ ·
 e2e real 4 ✅.
 
+### 2026-10-13 — latency in the eval (issue #46, DECISIONS #184)
+
+`pnpm eval` now reports time to first chapter (the number to hill-climb), total time and
+where the time went by step, with median/p95 and a comparison against the last run that
+flags any story 20% slower or faster. Report-only: latency never fails the eval. VT-L1-VT-L7
+in `test/int/eval-harness.test.ts`. The next live `pnpm eval` is the latency baseline.
+
 ### 2026-10-13 — the same Claude models through Understudy (issue #41, DECISIONS #182)
 
 `callModel()` streams every live call, so the app can reach Claude through the Understudy

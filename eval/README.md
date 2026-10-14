@@ -42,6 +42,15 @@ measures nothing.
 
 Calibration results land in `eval/results/calibration-<date>.json` on every run.
 
+## Latency (issue #46)
+
+Every `pnpm eval` reports, per story, the **time to first chapter** - how long a parent waits
+before the story starts appearing, and the number to hill-climb - the total time to a saved
+story, and where the time went by step (calls, ms and output tokens per purpose; the writer's
+thinking is in its output tokens). The summary has median and p95, and the comparison against
+the last run marks any story whose first chapter moved by 20% or more. Latency is reported,
+never a pass criterion: one sample per scenario through a remote API is too noisy to gate on.
+
 ## What is in here
 
 | Path | What |
