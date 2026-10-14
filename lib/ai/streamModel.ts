@@ -2,7 +2,7 @@ import Anthropic, { APIError } from '@anthropic-ai/sdk'
 import type { CallPurpose } from '@/lib/schemas/common'
 import { capabilities, computeCost, modelForRole } from './pricing'
 import { MissingFixtureError, fixtureKey, readFixture, writeFixture } from './fixtures'
-import { getDefaultLogSink, type CacheableBlock, type CallModelResult } from './callModel'
+import { getDefaultLogSink, isDroppedStream, type CacheableBlock, type CallModelResult } from './callModel'
 import { ModelCallError, ModelRefusalError, type GenerationLogSink } from './types'
 
 /**
@@ -254,6 +254,7 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
         model,
         attempts: 1,
         retryable: false,
+        dropped: isDroppedStream(err),
         ...(err instanceof APIError && typeof err.status === 'number' ? { status: err.status } : {}),
       },
     )

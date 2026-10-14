@@ -876,6 +876,12 @@ Each has an e2e test on desktop and phone (the wake lock and offline tests stub 
 browser APIs). **Gates:** lint ✅ · typecheck ✅ · unit+int 1013 ✅ · e2e mock **132** ✅ ·
 e2e real 4 ✅.
 
+### 2026-10-14 — a first write cut off before any chapter is written again (issue #52, DECISIONS #195)
+
+If the connection drops while the story is still being thought up, before any chapter is on
+the page, the writing starts again once instead of failing. VT-W1 in
+`test/unit/callmodel-drop-real-sdk.test.ts` (real SDK), VT-W2-VT-W5 in `test/int/pipeline.test.ts`.
+
 ### 2026-10-14 — the golden set grows to 32, train/test halves (issue #48, DECISIONS #185)
 
 `pnpm eval` now runs 32 scenarios (F13's eight plus 24), each in a fixed train or test half, so

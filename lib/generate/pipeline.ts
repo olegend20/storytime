@@ -370,6 +370,9 @@ export async function runGeneration(
   const sink = deps.sink
   const pack = prepared.factPack?.content ?? null
   let writeCalls = 0
+  // Whether any chapter has reached the parent: until one has, a dropped first write can be
+  // written again without contradicting the page (issue #52).
+  let chapterSent = false
 
   const emitMetaAndChapters = (): StoryStreamParser =>
     new StoryStreamParser({
@@ -385,8 +388,10 @@ export async function runGeneration(
           topic_label: prepared.topicLabel,
           content_notice: prepared.contentNotice,
         }),
-      onChapterStart: (index, heading) =>
-        channel.push({ type: 'chapter_start', index, heading }),
+      onChapterStart: (index, heading) => {
+        chapterSent = true
+        channel.push({ type: 'chapter_start', index, heading })
+      },
       onChapterDelta: (index, text) => channel.push({ type: 'chapter_delta', index, text }),
       onChapterEnd: (index, shoutLine) =>
         channel.push({ type: 'chapter_end', index, shout_line: shoutLine }),
@@ -398,7 +403,7 @@ export async function runGeneration(
     if (cards) channel.push(cards)
 
     // ---- attempt 1: the streamed write ----
-    const parser = emitMetaAndChapters()
+    let parser = emitMetaAndChapters()
     const bibleAtStart = (await loadBible(prepared.seriesId, { db })).content
     // The request the saved story was written to: `prepared.request`, unless rung 3 below
     // had to retry it one length tier shorter.
@@ -425,12 +430,26 @@ export async function runGeneration(
         onText: (delta) => parser.feed(delta),
       })
     let structured = true
-    const streamed = await write(true).catch((err: unknown) => {
-      // A rejected request fails before any text is streamed, so nothing reached the parent.
-      if (!structuredOutputRejected(err)) throw err
-      console.warn(`[generate] structured outputs rejected, writing without: ${(err as Error).message}`)
-      structured = false
-      return write(false)
+    const firstWrite = () =>
+      write(structured).catch((err: unknown) => {
+        // A rejected request fails before any text is streamed, so nothing reached the parent.
+        if (!structured || !structuredOutputRejected(err)) throw err
+        console.warn(`[generate] structured outputs rejected, writing without: ${(err as Error).message}`)
+        structured = false
+        return write(false)
+      })
+    const streamed = await firstWrite().catch((err: unknown) => {
+      // Issue #52: the gateway can cut a stream partway, even seconds in. If no chapter has
+      // reached the parent yet, nothing on the page would contradict a second write - so it
+      // is written again, streamed, once. The title may arrive twice; the page keeps the last.
+      // Never when a chapter is showing, and never without time to write, gate and save it.
+      const dropped = err instanceof ModelCallError && err.detail.dropped === true
+      const left = deps.deadlineMs === undefined ? Number.POSITIVE_INFINITY : deps.deadlineMs - Date.now()
+      if (!dropped || chapterSent || left < RETRY_MIN_MS) throw err
+      console.warn(`[generate] the first write was cut off before any chapter was sent - writing it again (${(err as Error).message})`)
+      parser = emitMetaAndChapters()
+      writeCalls += 1
+      return write(structured)
     })
     parser.end()
 
