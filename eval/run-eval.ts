@@ -1,12 +1,12 @@
 #!/usr/bin/env tsx
 import { MeteredLogSink } from '@/lib/ai'
 import { estimateEvalCost, formatEstimate } from '@/lib/eval/estimate'
-import { compareEvalRuns, formatEval, runEval, type EvalResult } from '@/lib/eval/harness'
+import { compareEvalRuns, formatEval, runEval, sameScenarios, type EvalResult } from '@/lib/eval/harness'
 import { evalScenarios, selectScenarios } from '@/lib/eval/scenarios'
 import { runCalibration, formatCalibration, type CalibrationResult } from '@/lib/eval/calibration'
 import {
   nextResultPath,
-  previousResultPath,
+  resultPaths,
   readResultFile,
   writeResultFile,
 } from '@/lib/eval/results'
@@ -26,7 +26,7 @@ import { readyFactPackTopics } from '@/lib/topics/factpack'
  *   --dry-run            print the plan and the estimate, make no calls
  *   --calibration-only   run only the §5 calibration set and write its result file
  *   --fixture            use the fixture pipeline instead of F6 (harness development)
- *   --scenarios=a,b      subset by id (also read from EVAL_SCENARIOS)
+ *   --scenarios=a,b      subset by id, or split:train / split:test (also read from EVAL_SCENARIOS)
  *   --budget=N           approve up to $N for this run (also EVAL_BUDGET_APPROVED_USD)
  *   --calibration=PATH   reuse a calibration result that passed today with the same judge
  *                        prompt (≈ $1.70 saved); otherwise calibration runs first
@@ -141,12 +141,22 @@ async function main(): Promise<void> {
     console.log('')
   }
 
-  const previousPath = previousResultPath('eval-')
-  const previous = previousPath ? readResultFile<EvalResult>(previousPath) : null
+  // The newest earlier run of the SAME stories: a split:test run compared with a split:train
+  // run, or 32 stories with 8, would print deltas between different sets (issue #48 review).
+  const earlier = resultPaths('eval-')
+    .reverse()
+    .map((p) => ({ path: p, run: readResultFile<EvalResult>(p) }))
+    .find(({ run }) => sameScenarios(result, run))
+  const previous = earlier?.run ?? null
 
   const path = writeResultFile(nextResultPath('eval-', 'json'), result)
   console.log(formatEval(result))
   console.log('')
+  console.log(
+    earlier
+      ? `Comparing with ${earlier.path}, the newest earlier run of these same ${result.scenarios.length} stories.`
+      : `No earlier run of these same ${result.scenarios.length} stories (a split or subset compares only with itself).`,
+  )
   console.log(compareEvalRuns(result, previous))
   console.log('')
   console.log(`Wrote ${path}`)

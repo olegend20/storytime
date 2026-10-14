@@ -84,7 +84,7 @@ LIVE_API=1 RECORD_FIXTURES=1 pnpm test
 ```
 
 ```bash
-pnpm eval      # F13 golden set: 8 scenarios, judged. LIVE — costs money.
+pnpm eval      # F13 golden set: 32 scenarios in train/test halves, judged. LIVE — costs money.
 pnpm bakeoff   # F14 model bake-off. LIVE — costs real money; estimate first.
 ```
 

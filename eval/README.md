@@ -4,7 +4,7 @@ Two commands, both of which spend real money, both of which refuse to start abov
 approved ceiling.
 
 ```
-pnpm eval      # F13: 8 fixed scenarios, quality gate, blind judge, results + comparison
+pnpm eval      # F13: 32 fixed scenarios (train/test halves), quality gate, blind judge, results + comparison
 pnpm bakeoff   # F14: JUDGE_AGENT.md §6 in full - 12 scenarios × 4 contestants × 3 samples
 ```
 
@@ -23,7 +23,7 @@ At the prices recorded on 2026-09-27:
 
 | Run | Estimate |
 |---|---|
-| `pnpm eval` (8 scenarios, calibration included) | **$3.44** |
+| `pnpm eval` (32 scenarios, calibration included; issue #48) | **$7.88** estimated, ~$17 measured-style (the estimate has run ~2.2x low) |
 | `pnpm bakeoff` (12 × 4 × 3, both pairwise passes, second judge) | **$54.74** |
 | judge calibration alone (`--calibration-only`) | **$1.27** |
 
@@ -41,6 +41,19 @@ reference stories.** A judge calibrated against our own output, grading our own 
 measures nothing.
 
 Calibration results land in `eval/results/calibration-<date>.json` on every run.
+
+## The golden set and its train/test halves (issue #48)
+
+32 scenarios: F13's eight, then 24 appended to fill every band x length cell (at least 3
+each, band D included) and to aim at failures the judge has caught - sibling insults, touching
+wild animals, copyable unsafe acts, care topics at different ages, continuity. Sized so a
+change of about +/-0.2 in quality or 20% in latency shows above run-to-run noise (per-story
+swing SD ~0.38 between the 2026-10-06 and 2026-10-14 runs).
+
+Each scenario has a fixed half in `EVAL_SPLIT` (`lib/eval/scenarios.ts`), 16 and 16,
+stratified by cell. When hill-climbing, keep a change only if **both** halves improve; one
+that helps only the half it was tuned on is overfitting. Run one half with
+`pnpm eval --scenarios=split:train` (or `split:test`).
 
 ## Latency (issue #46)
 
@@ -84,7 +97,7 @@ reported early.
 |---|---|
 | `test/unit/judge.test.ts` | output parser, blindness, prompt injection, the caps context, malformed-response handling |
 | `test/unit/eval-calibration.test.ts` | the four sabotages, and the calibration checker's verdict on a well-behaved and on a flattering judge |
-| `test/int/eval-harness.test.ts` | the eight scenarios end to end, the F13 acceptance checks, the results file and the previous-run comparison |
+| `test/int/eval-harness.test.ts` | every eval scenario end to end, the F13 acceptance checks, the results file and the previous-run comparison |
 | `test/int/bakeoff.test.ts` | the §6 protocol on a 1 × 2 × 1 config, every report section, cost reconciliation against `generation_logs` |
 | `test/int/judge-live.test.ts` | **skipped unless `LIVE_API=1`** — the §5 calibration set and the injection test against the real judge |
 

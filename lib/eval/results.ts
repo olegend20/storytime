@@ -55,14 +55,31 @@ export function previousResultPath(
   prefix: string,
   opts: { dir?: string; exclude?: string } = {},
 ): string | null {
+  const candidates = resultPaths(prefix, opts)
+  return candidates.length === 0 ? null : candidates[candidates.length - 1]!
+}
+
+/**
+ * Every result file for a prefix, oldest first. Ordered by date, then by the same-day suffix:
+ * a plain filename sort put `eval-2026-10-14.json` AFTER `eval-2026-10-14-2.json` ('-' sorts
+ * before '.'), so the first run of a day was taken as the newest (issue #48 review).
+ */
+export function resultPaths(prefix: string, opts: { dir?: string; exclude?: string } = {}): string[] {
   const dir = opts.dir ?? RESULTS_DIR
-  if (!existsSync(dir)) return null
-  const candidates = readdirSync(dir)
+  if (!existsSync(dir)) return []
+  const key = (f: string): [string, number] => {
+    const m = /^(.*?\d{4}-\d{2}-\d{2})(?:-(\d+))?\.json$/.exec(f)
+    return m ? [m[1]!, m[2] ? Number(m[2]) : 1] : [f, 1]
+  }
+  return readdirSync(dir)
     .filter((f) => f.startsWith(prefix) && f.endsWith('.json'))
+    .sort((a, b) => {
+      const [da, na] = key(a)
+      const [db, nb] = key(b)
+      return da < db ? -1 : da > db ? 1 : na - nb
+    })
     .map((f) => join(dir, f))
     .filter((p) => p !== opts.exclude)
-    .sort()
-  return candidates.length === 0 ? null : candidates[candidates.length - 1]!
 }
 
 export function readResultFile<T>(path: string): T {

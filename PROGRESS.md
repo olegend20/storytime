@@ -876,6 +876,12 @@ Each has an e2e test on desktop and phone (the wake lock and offline tests stub 
 browser APIs). **Gates:** lint ✅ · typecheck ✅ · unit+int 1013 ✅ · e2e mock **132** ✅ ·
 e2e real 4 ✅.
 
+### 2026-10-14 — the golden set grows to 32, train/test halves (issue #48, DECISIONS #185)
+
+`pnpm eval` now runs 32 scenarios (F13's eight plus 24), each in a fixed train or test half, so
+hill-climbing can keep a change only when both halves improve and can see a +/-0.2 quality or
+20% latency move above noise. VT-S1-VT-S5 in `test/unit/eval-scenarios.test.ts`. Dry-run
+estimate $7.88 a run. Two live baselines (owner-approved, ~$33) measure the per-story noise.
 ### 2026-10-14 — a dropped stream is tried once more (issue #50, DECISIONS #186)
 
 `callModel()` retries a stream the gateway cuts off partway, once, and never past the request

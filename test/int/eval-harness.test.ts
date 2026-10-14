@@ -29,6 +29,7 @@ import {
 } from '@/lib/eval/pipeline'
 import { syntheticProvider } from '@/lib/eval/synthetic'
 import { evalScenarios } from '@/lib/eval/scenarios'
+import { p95 } from '@/lib/eval/stats'
 import { pairwiseResponse, scoreResponse, withScriptedJudge } from '../helpers/judge-fixtures'
 import type { JudgeScoreWithExcerpts } from '@/lib/eval/judge'
 import type { CalibrationResult } from '@/lib/eval/calibration'
@@ -37,7 +38,7 @@ import type { CalibrationResult } from '@/lib/eval/calibration'
  * F13 - the eval harness end to end in fixture mode.
  *
  * "The harness itself is the test" (F13 VT), so this exercises the whole of it: the
- * calibration gate, the eight scenarios, the F13 acceptance checks (word count, continuity
+ * calibration gate, every eval scenario, the F13 acceptance checks (word count, continuity
  * reference in chapter 1, scary level), the pass criteria, the results file and the
  * comparison against the previous run.
  *
@@ -112,13 +113,13 @@ async function runOnce(
 }
 
 describe('F13 eval harness', () => {
-  it('runs all eight scenarios, gated on calibration', async () => {
+  it('runs every eval scenario, gated on calibration', async () => {
     const { result } = await runOnce()
 
     expect(result.kind).toBe('eval')
     expect(result.pipeline).toBe('fixture')
     expect(result.synthetic).toBe(true)
-    expect(result.scenarios).toHaveLength(8)
+    expect(result.scenarios).toHaveLength(evalScenarios().length)
     expect(result.scenarios.map((s) => s.scenario_id)).toEqual(evalScenarios().map((s) => s.id))
     expect('skipped' in result.calibration).toBe(false)
     if ('skipped' in result.calibration) throw new Error('unreachable')
@@ -152,7 +153,7 @@ describe('F13 eval harness', () => {
       },
       script({}),
     )
-    expect(result.scenarios).toHaveLength(8)
+    expect(result.scenarios).toHaveLength(evalScenarios().length)
     const failed = result.scenarios.find((r) => r.scenario_id === 'video-games-band-c-solo')!
     expect(failed.judge_ok).toBe(false)
     expect(failed.judge_error).toMatch(/no story: story output unusable/)
@@ -163,7 +164,7 @@ describe('F13 eval harness', () => {
     expect(result.cost.generation_usd).toBeGreaterThanOrEqual(0.28)
     expect(result.summary.disqualified).toBe(1)
     expect(result.summary.passed).toBe(false)
-    expect(result.scenarios.filter((r) => r.judge_ok)).toHaveLength(7)
+    expect(result.scenarios.filter((r) => r.judge_ok)).toHaveLength(evalScenarios().length - 1)
     // A story that was never made made no judge call: it is not also a judge error.
     expect(result.summary.judge_errors).toBe(0)
   })
@@ -190,7 +191,7 @@ describe('F13 eval harness', () => {
     expect(result.summary.word_count_failures).not.toContain('titanic-band-b')
     expect(result.summary.disqualified).toBe(0)
     // The six that ran are the mean; the run still fails, because two books were not delivered.
-    expect(result.summary.scored).toBe(6)
+    expect(result.summary.scored).toBe(evalScenarios().length - 2)
     expect(result.summary.mean_overall).toBe(5)
     expect(result.summary.passed).toBe(false)
     expect(result.summary.failures.join(' ')).toMatch(/not run \(the API, not the writer\): bees-band-a-5min, titanic-band-b/)
@@ -224,7 +225,7 @@ describe('F13 eval harness', () => {
     expect(handed!.passed).toBe(true)
     expect(handed!.judge_prompt.sha256).toBe(first.calibration.judge_prompt.sha256)
 
-    // The second run spends nothing on calibration: only the eight SCORE calls are made.
+    // The second run spends nothing on calibration: only one SCORE call per scenario is made.
     // (withScriptedJudge re-runs the function once per missing fixture, so the sink is made
     // inside it and the last run's rows are the ones counted.)
     let sink = new MemoryLogSink()
@@ -240,7 +241,7 @@ describe('F13 eval harness', () => {
     expect(second.calibration.notes).toContain('reused from an earlier run today')
     // (the synthetic provider logs the pretend generation calls too; the judge's are the point)
     expect(sink.rows.filter((r) => r.purpose === 'judge_pairwise')).toHaveLength(0)
-    expect(sink.rows.filter((r) => r.purpose === 'judge_score')).toHaveLength(8)
+    expect(sink.rows.filter((r) => r.purpose === 'judge_score')).toHaveLength(evalScenarios().length)
     // Paid for by the first run: this run's cost record carries none of it.
     expect(second.calibration.cost_usd).toBe(0)
     expect(second.calibration.judge_calls).toBe(0)
@@ -317,10 +318,12 @@ describe('F13 eval harness', () => {
   it('checks that continuity scenarios reference a prior recurring element in chapter 1 (F13 AC)', async () => {
     const { result } = await runOnce()
     const continuity = result.scenarios.filter((s) => s.continuity_reference !== null)
-    expect(continuity.map((s) => s.scenario_id)).toEqual([
-      'sharks-band-a-continuity',
-      'soccer-band-c-continuity',
-    ])
+    expect(continuity.map((s) => s.scenario_id)).toEqual(
+      evalScenarios().filter((s) => s.checks.continuity_reference).map((s) => s.id),
+    )
+    expect(continuity.map((s) => s.scenario_id)).toEqual(
+      expect.arrayContaining(['sharks-band-a-continuity', 'soccer-band-c-continuity']),
+    )
     for (const s of continuity) {
       expect(s.continuity_reference!.required.length).toBeGreaterThan(0)
       expect(s.continuity_reference!.found.length, s.scenario_id).toBeGreaterThan(0)
@@ -551,18 +554,20 @@ describe('issue #46: latency, so it can be hill-climbed (time to first chapter)'
       expect(s.latency_by_step.write!.output_tokens).toBeGreaterThan(0)
       expect(s.latency_by_step.quality).toEqual({ calls: 1, ms: 900, output_tokens: 200 })
     }
-    expect(result.summary.latency!.by_step.quality).toEqual({ calls: 8, ms: 7_200, output_tokens: 1_600 })
+    const n = evalScenarios().length
+    expect(result.summary.latency!.by_step.quality).toEqual({ calls: n, ms: 900 * n, output_tokens: 200 * n })
   })
 
   it('VT-L3: the summary has median and p95 for first chapter and total, over stories that were made', async () => {
     const { result } = await runOnce()
     const lat = result.summary.latency!
     const firsts = result.scenarios.map((s) => s.latency_to_first_chapter_ms!).sort((a, b) => a - b)
-    expect(lat.first_chapter.n).toBe(8)
-    expect(lat.first_chapter.median_ms).toBe(Math.round((firsts[3]! + firsts[4]!) / 2))
+    expect(lat.first_chapter.n).toBe(evalScenarios().length)
+    const mid = firsts.length / 2
+    expect(lat.first_chapter.median_ms).toBe(Math.round((firsts[mid - 1]! + firsts[mid]!) / 2))
     expect(lat.first_chapter.p95_ms).toBeGreaterThanOrEqual(lat.first_chapter.median_ms!)
-    expect(lat.first_chapter.p95_ms).toBeLessThanOrEqual(firsts[7]!)
-    expect(lat.total.n).toBe(8)
+    expect(lat.first_chapter.p95_ms).toBeLessThanOrEqual(firsts[firsts.length - 1]!)
+    expect(lat.total.n).toBe(evalScenarios().length)
     expect(lat.total.median_ms).toBeGreaterThan(lat.first_chapter.median_ms!)
   })
 
@@ -622,9 +627,10 @@ describe('issue #46: latency, so it can be hill-climbed (time to first chapter)'
     const titanic = result.scenarios.find((r) => r.scenario_id === 'titanic-band-b')!
     expect(titanic.first_chapter_streamed).toBe(false)
     expect(titanic.latency_to_first_chapter_ms).toBe(400_000)
-    expect(result.summary.latency!.first_chapter.n).toBe(8)
+    expect(result.summary.latency!.first_chapter.n).toBe(evalScenarios().length)
     // The slowest wait now pulls p95 up, rather than vanishing from it.
-    expect(result.summary.latency!.first_chapter.p95_ms).toBeGreaterThan(100_000)
+    const others = result.scenarios.filter((r) => r.first_chapter_streamed).map((r) => r.latency_to_first_chapter_ms!)
+    expect(result.summary.latency!.first_chapter.p95_ms).toBeGreaterThan(p95(others))
     expect(result.summary.latency!.no_streamed_chapter).toEqual(['titanic-band-b'])
     expect(formatEval(result)).toMatch(/no chapter streamed, first chapter counted at the total: titanic-band-b/)
     expect(compareEvalRuns(result, result)).toMatch(/! no chapter streamed .*titanic-band-b/)
