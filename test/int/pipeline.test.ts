@@ -5,7 +5,10 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
  * send `partial` to the parser and then fail the way streamModel reports a real drop
  * (VT-W1 proves that shape against the real SDK); an empty queue is the normal fixture replay.
  */
-const drops = vi.hoisted(() => ({ queue: [] as { partial: string; dropped?: boolean }[] }))
+const drops = vi.hoisted(() => ({
+  queue: [] as { partial: string; dropped?: boolean; hang?: boolean }[],
+  signals: [] as (AbortSignal | undefined)[],
+}))
 vi.mock('@/lib/ai', async (orig) => {
   const actual = await orig<typeof import('@/lib/ai')>()
   return {
@@ -13,7 +16,18 @@ vi.mock('@/lib/ai', async (orig) => {
     streamModel: async (opts: Parameters<typeof actual.streamModel>[0]) => {
       const next = drops.queue.shift()
       if (!next) return actual.streamModel(opts)
+      drops.signals.push(opts.signal)
       opts.onText?.(next.partial)
+      // A write that thinks until it is stopped: it ends only when its signal aborts.
+      if (next.hang) {
+        return new Promise<never>((_, reject) =>
+          opts.signal?.addEventListener('abort', () =>
+            reject(new actual.ModelCallError(`${opts.purpose} stream to stub failed: aborted`, {
+              purpose: opts.purpose, model: 'stub', attempts: 1, retryable: false, dropped: false,
+            })),
+          ),
+        )
+      }
       throw new actual.ModelCallError(`${opts.purpose} stream to stub failed: terminated`, {
         purpose: opts.purpose,
         model: 'stub',
@@ -61,7 +75,7 @@ import {
 } from '../helpers/fixtures'
 import { buildPrompt } from '@/lib/generate/prompt'
 import { buildQualityReviewMessage, measuredForReview } from '@/lib/quality/review'
-import { RETRY_MIN_MS, WRITER_MAX_TOKENS } from '@/lib/generate/pipeline'
+import { AFTER_WRITE_MS, RETRY_MIN_MS, WRITER_MAX_TOKENS } from '@/lib/generate/pipeline'
 import { MEND_MAX_TOKENS, cutViolations, mendUserMessage, passagesFor } from '@/lib/generate/mend'
 import { STORY_OUTPUT_FORMAT } from '@/lib/generate/output-schema'
 import { buildBibleUpdateMessage } from '@/lib/bible'
@@ -822,6 +836,8 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     const WITH_CHAPTER = META_ONLY + '{"heading":"Chapter 1: Static","text":"Once upon a'
     afterEach(() => {
       drops.queue.length = 0
+      drops.signals.length = 0
+      vi.restoreAllMocks()
     })
 
     it('VT-W2: dropped before any chapter reached the parent, it is written again, streamed, once', async () => {
@@ -887,6 +903,32 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       const notDrop = await collect(other, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
       expect(notDrop.result.status).toBe('failed')
       expect(notDrop.result.writeCalls).toBe(1)
+    })
+
+    it('VT-W6: the second write is cut off in time for the gate and the save, and the parent gets an error', async () => {
+      const run = await prepared()
+      stubResponsesFor(run)
+      // Stand in for the timer so the test need not wait minutes: record the bound, abort by hand.
+      const stop = new AbortController()
+      const bounds: number[] = []
+      vi.spyOn(AbortSignal, 'timeout').mockImplementation((ms: number) => {
+        bounds.push(ms)
+        return stop.signal
+      })
+      drops.queue.push({ partial: META_ONLY }, { partial: '', hang: true })
+      const deadlineMs = Date.now() + 400_000
+      const pending = collect(run, {
+        db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW, deadlineMs,
+      })
+      await vi.waitFor(() => expect(drops.signals).toHaveLength(2))
+      expect(drops.signals[0]).toBeUndefined()
+      expect(drops.signals[1]).toBe(stop.signal)
+      expect(bounds.some((ms) => ms <= 400_000 - AFTER_WRITE_MS && ms > 400_000 - AFTER_WRITE_MS - 10_000)).toBe(true)
+      stop.abort()
+      const { events, result } = await pending
+      expect(result.status).toBe('failed')
+      expect(result.writeCalls).toBe(2)
+      expect(events.at(-1)).toMatchObject({ type: 'error', code: 'generation_failed', quota_consumed: false })
     })
   })
 

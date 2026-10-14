@@ -414,7 +414,7 @@ export async function runGeneration(
       factPack: pack,
     })
     writeCalls += 1
-    const write = (structured: boolean) =>
+    const write = (structured: boolean, signal?: AbortSignal) =>
       streamModel({
         purpose: 'write',
         role: 'writer',
@@ -428,6 +428,7 @@ export async function runGeneration(
         storyId: prepared.storyId,
         ...(sink ? { sink } : {}),
         onText: (delta) => parser.feed(delta),
+        ...(signal ? { signal } : {}),
       })
     let structured = true
     const firstWrite = () =>
@@ -449,7 +450,9 @@ export async function runGeneration(
       console.warn(`[generate] the first write was cut off before any chapter was sent - writing it again (${(err as Error).message})`)
       parser = emitMetaAndChapters()
       writeCalls += 1
-      return write(structured)
+      // A full-length write can think for minutes, so it is cut off in time for the gate and
+      // the save: past the deadline the platform kills the request and the parent gets nothing.
+      return write(structured, deps.deadlineMs === undefined ? undefined : AbortSignal.timeout(left - AFTER_WRITE_MS))
     })
     parser.end()
 
