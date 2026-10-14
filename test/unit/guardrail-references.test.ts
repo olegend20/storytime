@@ -109,6 +109,15 @@ describe('s4.2 deterministic output checks vs the reference stories', () => {
     expect(r10('A whale sang far away. Dad patted her on the back.')).toBe(0)
     expect(r10('Juno touched the baby sea turtle.')).toBe(1)
     expect(r10("Theo patted the shark's nose.")).toBe(1)
+    // "pet" as a noun never reaches the check: TOUCH_VERB only matches pets/petted/petting.
+    expect(r10("Maya's pet turtle blinked.")).toBe(0)
+    expect(r10('She had a pet snake called Noodle.')).toBe(0)
+    expect(r10('The kids patted pet turtles.')).toBe(0)
+    expect(r10('He petted the seal.')).toBe(1)
+    // Known false positives, accepted (reviewer agent, PR #40): the check does not see who does
+    // the touching. Each starts the mend ladder at rung 1; erring this way is the safe side.
+    expect(r10("The dolphin touched its nose to Mia's hand.")).toBe(1)
+    expect(r10('The keeper fed the seals.')).toBe(1)
   })
 
   it('does not flag a gently-told historical fire for band A', () => {

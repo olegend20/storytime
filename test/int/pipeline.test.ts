@@ -490,7 +490,7 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     }
     stubResponsesFor(run, { story })
 
-    const { result } = await collect(run, {
+    const { events, result } = await collect(run, {
       db: family.db,
       sink: new MemoryLogSink(),
       quota: new RecordingQuota(),
@@ -503,6 +503,10 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       .eq('id', run.storyId)
       .single()
     expect((row as { content_notice: string | null }).content_notice).toBe('borrowed_character')
+    // The reader sees it on first view too: a second meta, before done (reviewer agent, PR #40).
+    const metas = events.filter((e) => e.type === 'meta')
+    expect(metas.map((m) => (m as { content_notice: string | null }).content_notice)).toEqual([null, 'borrowed_character'])
+    expect(events.findIndex((e) => e === metas[1])).toBeLessThan(events.findIndex((e) => e.type === 'done'))
     if (result.bibleUpdate) await result.bibleUpdate
   })
 
