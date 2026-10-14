@@ -1,4 +1,4 @@
-import { MemoryLogSink, ModelCallError, modelForRole, type GenerationLogSink } from '@/lib/ai'
+import { MemoryLogSink, ModelCallError, modelForRole, type GenerationLogRow, type GenerationLogSink } from '@/lib/ai'
 import {
   EVAL_PASS_CRITERIA,
   JUDGE_CRITERIA,
@@ -14,7 +14,7 @@ import { loadJudgePrompt, scoreStory } from './judge'
 import { loadPipeline, type StoryPipeline, type StoryProvider } from './pipeline'
 import { narrativeWordCount } from './render'
 import { evalScenarios, scenarioBand, selectScenarios, type EvalScenario } from './scenarios'
-import { fmt, mean, min } from './stats'
+import { fmt, mean, median, min, p95 } from './stats'
 import type { CapContext, JudgeContext } from './types'
 
 /**
@@ -65,8 +65,45 @@ export interface EvalScenarioRecord {
   editor_notes: string[]
   generation_cost_usd: number
   judge_cost_usd: number
-  latency_total_ms: number
+  /**
+   * Issue #46: how long a parent waits before the story starts appearing - the number latency
+   * is hill-climbed on. Null when no story was made, or the pipeline could not see it.
+   */
+  latency_to_first_chapter_ms: number | null
+  /** Request to saved story, including the gate, any rewrite and the bible update. Null when no story was made. */
+  latency_total_ms: number | null
+  /** Where the time went, by call purpose. Kept for a failed story too: it shows where it died. */
+  latency_by_step: Record<string, StepLatency>
 }
+
+/** One call purpose's share of a story's time. */
+export interface StepLatency {
+  calls: number
+  ms: number
+  /** Thinking included: the writer's thinking is most of the wait before chapter 1. */
+  output_tokens: number
+}
+
+export interface LatencyStats {
+  /** Scenarios that produced the number. A story that was never made has no latency. */
+  n: number
+  median_ms: number | null
+  p95_ms: number | null
+}
+
+/**
+ * Issue #46. Reported, never a pass criterion (owner's decision): one sample per scenario
+ * through a remote API is too noisy to gate on. A run with no story still has no latency.
+ */
+export interface EvalLatencySummary {
+  first_chapter: LatencyStats
+  total: LatencyStats
+  /** Summed over every scenario, so the step that dominates is visible at a glance. */
+  by_step: Record<string, StepLatency>
+}
+
+/** A scenario this much slower (or faster) to its first chapter than last run is flagged. */
+export const LATENCY_FLAG_RATIO = 0.2
 
 export interface EvalSummary {
   scenarios: number
@@ -84,6 +121,8 @@ export interface EvalSummary {
   criterion_means: Record<string, number>
   passed: boolean
   failures: string[]
+  /** Optional only because results written before issue #46 have none. */
+  latency?: EvalLatencySummary
 }
 
 export interface EvalResult {
@@ -175,6 +214,7 @@ function failedRecord(
   reason: string,
   generationCostUsd: number,
   infrastructure: boolean,
+  steps: Record<string, StepLatency>,
 ): EvalScenarioRecord {
   return {
     scenario_id: scenario.id,
@@ -202,8 +242,23 @@ function failedRecord(
     editor_notes: [],
     generation_cost_usd: generationCostUsd,
     judge_cost_usd: 0,
-    latency_total_ms: 0,
+    latency_to_first_chapter_ms: null,
+    latency_total_ms: null,
+    latency_by_step: steps,
   }
+}
+
+/** The generation calls in `rows`, grouped by purpose. Judging is the eval's, not the story's. */
+export function stepLatency(rows: readonly GenerationLogRow[]): Record<string, StepLatency> {
+  const steps: Record<string, StepLatency> = {}
+  for (const r of rows) {
+    if (JUDGE_PURPOSES.has(r.purpose)) continue
+    const step = (steps[r.purpose] ??= { calls: 0, ms: 0, output_tokens: 0 })
+    step.calls += 1
+    step.ms += r.latency_ms
+    step.output_tokens += r.output_tokens
+  }
+  return steps
 }
 
 function judgeContextFor(scenario: EvalScenario): JudgeContext {
@@ -311,10 +366,14 @@ export async function runEval(config: EvalConfig = {}): Promise<EvalResult> {
               .filter((r) => !JUDGE_PURPOSES.has(r.purpose))
               .reduce((n, r) => n + r.cost_usd, 0)
           : 0
-      records.push(failedRecord(scenario, context, band, reason, round6(spent), infrastructure))
+      records.push(
+        failedRecord(scenario, context, band, reason, round6(spent), infrastructure, stepLatency(rowsSince(sink, rowsBefore))),
+      )
       continue
     }
 
+    // Taken before scoring, so the judge's calls are not in the story's steps.
+    const steps = stepLatency(rowsSince(sink, rowsBefore))
     progress(`score ${scenario.id}`)
     const scored = await scoreStory({
       context,
@@ -380,7 +439,9 @@ export async function runEval(config: EvalConfig = {}): Promise<EvalResult> {
       editor_notes: scored.ok ? scored.final.editor_notes : [],
       generation_cost_usd: generated.costUsd,
       judge_cost_usd: scored.costUsd,
+      latency_to_first_chapter_ms: generated.latency.toFirstChapterMs,
       latency_total_ms: generated.latency.totalMs,
+      latency_by_step: steps,
     })
   }
 
@@ -442,6 +503,33 @@ export async function runEval(config: EvalConfig = {}): Promise<EvalResult> {
       log_rows: rows.filter((r) => !JUDGE_PURPOSES.has(r.purpose)).length,
     },
     notes,
+  }
+}
+
+function rowsSince(sink: GenerationLogSink, from: number): GenerationLogRow[] {
+  return 'rows' in sink ? (sink as MemoryLogSink).rows.slice(from) : []
+}
+
+function latencyStats(values: (number | null)[]): LatencyStats {
+  const known = values.filter((v): v is number => v !== null)
+  if (known.length === 0) return { n: 0, median_ms: null, p95_ms: null }
+  return { n: known.length, median_ms: Math.round(median(known)), p95_ms: Math.round(p95(known)) }
+}
+
+export function summarizeLatency(records: EvalScenarioRecord[]): EvalLatencySummary {
+  const byStep: Record<string, StepLatency> = {}
+  for (const r of records) {
+    for (const [purpose, step] of Object.entries(r.latency_by_step)) {
+      const sum = (byStep[purpose] ??= { calls: 0, ms: 0, output_tokens: 0 })
+      sum.calls += step.calls
+      sum.ms += step.ms
+      sum.output_tokens += step.output_tokens
+    }
+  }
+  return {
+    first_chapter: latencyStats(records.map((r) => r.latency_to_first_chapter_ms)),
+    total: latencyStats(records.map((r) => r.latency_total_ms)),
+    by_step: byStep,
   }
 }
 
@@ -511,6 +599,8 @@ export function summarize(records: EvalScenarioRecord[]): EvalSummary {
     criterion_means: criterionMeans,
     passed: failures.length === 0,
     failures,
+    // Never in `failures`: latency is reported, not gated (issue #46).
+    latency: summarizeLatency(records),
   }
 }
 
@@ -559,7 +649,44 @@ export function compareEvalRuns(current: EvalResult, previous: EvalResult | null
   const gone = previous.scenarios.filter((p) => !current.scenarios.some((s) => s.scenario_id === p.scenario_id))
   for (const p of gone) lines.push(`  ${p.scenario_id}: not run this time (was ${fmt(p.overall_final ?? Number.NaN)})`)
 
+  lines.push(...compareLatency(current, previous))
   return lines.join('\n')
+}
+
+/** Issue #46: the latency half of the comparison. Flags, never fails. */
+function compareLatency(current: EvalResult, previous: EvalResult): string[] {
+  const lines = ['', '  Latency (time to first chapter is the number to climb)']
+  const before = previous.summary.latency
+  const now = current.summary.latency
+  if (!before || !now) {
+    lines.push('  no latency baseline: the previous run predates latency reporting (issue #46)')
+    return lines
+  }
+  const change = (cur: number | null, prev: number | null): string => {
+    if (cur === null) return '-'
+    if (prev === null || prev === 0) return `${secs(cur)} (no baseline)`
+    const d = cur - prev
+    const pct = Math.round((d / prev) * 100)
+    return `${secs(cur)} (${d > 0 ? '+' : ''}${secs(d)}, ${pct > 0 ? '+' : ''}${pct}%)`
+  }
+  lines.push(`  first chapter, median: ${change(now.first_chapter.median_ms, before.first_chapter.median_ms)}`)
+  lines.push(`  total, median: ${change(now.total.median_ms, before.total.median_ms)}`)
+
+  const prior = new Map(previous.scenarios.map((s) => [s.scenario_id, s]))
+  for (const s of current.scenarios) {
+    const cur = s.latency_to_first_chapter_ms
+    const prev = prior.get(s.scenario_id)?.latency_to_first_chapter_ms ?? null
+    if (cur === null || prev === null || prev === 0) continue
+    const ratio = (cur - prev) / prev
+    const marker =
+      ratio >= LATENCY_FLAG_RATIO ? ' <- latency regression' : ratio <= -LATENCY_FLAG_RATIO ? ' <- latency improvement' : ''
+    lines.push(`  ${s.scenario_id}: first chapter ${change(cur, prev)}${marker}`)
+  }
+  return lines
+}
+
+function secs(ms: number | null): string {
+  return ms === null ? '-' : `${(ms / 1000).toFixed(1)}s`
 }
 
 /** Console summary for `pnpm eval`. */
@@ -575,15 +702,36 @@ export function formatEval(result: EvalResult): string {
       `lowest ${fmt(result.summary.min_overall)} (need >= ${EVAL_PASS_CRITERIA.per_scenario_min})`,
   )
   lines.push('')
-  lines.push('  scenario                        band  words  target       overall  caps')
+  lines.push('  scenario                        band  words  target       overall  1st ch   total    caps')
   for (const s of result.scenarios) {
     lines.push(
       `  ${s.scenario_id.padEnd(30)}  ${s.band.padEnd(4)}  ${String(s.word_count).padEnd(5)}  ` +
         `${`${s.target_words.min}-${s.target_words.max}`.padEnd(11)}  ` +
-        `${(s.overall_final === null ? 'ERR' : fmt(s.overall_final)).padEnd(7)}  ${s.caps_applied.join(',') || 'none'}`,
+        `${(s.overall_final === null ? 'ERR' : fmt(s.overall_final)).padEnd(7)}  ` +
+        `${secs(s.latency_to_first_chapter_ms).padEnd(7)}  ${secs(s.latency_total_ms).padEnd(7)}  ` +
+        `${s.caps_applied.join(',') || 'none'}`,
     )
   }
   lines.push('')
+  const latency = result.summary.latency
+  if (latency) {
+    lines.push(
+      `  latency (reported, not a pass criterion): first chapter median ${secs(latency.first_chapter.median_ms)}, ` +
+        `p95 ${secs(latency.first_chapter.p95_ms)}; total median ${secs(latency.total.median_ms)}, ` +
+        `p95 ${secs(latency.total.p95_ms)} (${latency.total.n} stories)`,
+    )
+    const steps = Object.entries(latency.by_step).sort(([, a], [, b]) => b.ms - a.ms)
+    const all = steps.reduce((n, [, st]) => n + st.ms, 0)
+    if (all > 0) {
+      lines.push(
+        '  where the time went: ' +
+          steps
+            .map(([purpose, st]) => `${purpose} ${Math.round((st.ms / all) * 100)}% (${st.calls} calls, ${st.output_tokens} out tok)`)
+            .join(', '),
+      )
+    }
+    lines.push('')
+  }
   if (result.summary.failures.length > 0) {
     lines.push('  Failures:')
     for (const f of result.summary.failures) lines.push(`    - ${f}`)

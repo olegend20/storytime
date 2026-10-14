@@ -11,6 +11,7 @@ import {
   type EvalResult,
   calibrationReusable,
   isInfrastructureFailure,
+  summarizeLatency,
 } from '@/lib/eval/harness'
 import {
   nextResultPath,
@@ -511,5 +512,120 @@ describe('the F6 seam', () => {
       storyFixturePath(input, '/nonexistent-eval-fixtures'),
     )
     expect(storyFixturePath(input, '/d')).toBe('/d/lego-band-a-pair.claude-sonnet-5.2.json')
+  })
+})
+
+describe('issue #46: latency, so it can be hill-climbed (time to first chapter)', () => {
+  it('VT-L1: every story records time to first chapter and total; a story never made records null, not 0', async () => {
+    const base = syntheticProvider()
+    const provider: StoryProvider = async (input) => {
+      if (input.scenario.id === 'soccer-band-c-continuity') {
+        await input.sink?.write({
+          purpose: 'write', model: input.writingModel, story_id: null, family_id: null, fact_pack_id: null,
+          input_tokens: 1, output_tokens: 6, cache_read_tokens: 0, cache_write_tokens: 0,
+          cost_usd: 0.1, latency_ms: 114_465, ok: false, error: 'terminated',
+        })
+        throw new Error('produced no story: status failed: rewrite call failed: terminated')
+      }
+      return base(input)
+    }
+    const result = await withScriptedJudge(() => runEval({ provider, sink: new MemoryLogSink() }), script({}))
+
+    for (const s of result.scenarios.filter((r) => r.scenario_id !== 'soccer-band-c-continuity')) {
+      expect(s.latency_to_first_chapter_ms, s.scenario_id).toBeGreaterThan(0)
+      expect(s.latency_total_ms, s.scenario_id).toBeGreaterThanOrEqual(s.latency_to_first_chapter_ms!)
+    }
+    const failed = result.scenarios.find((r) => r.scenario_id === 'soccer-band-c-continuity')!
+    expect(failed.latency_to_first_chapter_ms).toBeNull()
+    expect(failed.latency_total_ms).toBeNull()
+    // Where it died is still shown.
+    expect(failed.latency_by_step).toEqual({ write: { calls: 1, ms: 114_465, output_tokens: 6 } })
+  })
+
+  it('VT-L2: each story breaks its time down by step, and the judge is not one of them', async () => {
+    const { result } = await runOnce()
+    for (const s of result.scenarios) {
+      expect(Object.keys(s.latency_by_step).sort(), s.scenario_id).toEqual(['normalize', 'quality', 'write'])
+      expect(s.latency_by_step.write!.calls).toBe(1)
+      expect(s.latency_by_step.write!.ms).toBe(s.latency_total_ms)
+      expect(s.latency_by_step.write!.output_tokens).toBeGreaterThan(0)
+      expect(s.latency_by_step.quality).toEqual({ calls: 1, ms: 900, output_tokens: 200 })
+    }
+    expect(result.summary.latency!.by_step.quality).toEqual({ calls: 8, ms: 7_200, output_tokens: 1_600 })
+  })
+
+  it('VT-L3: the summary has median and p95 for first chapter and total, over stories that were made', async () => {
+    const { result } = await runOnce()
+    const lat = result.summary.latency!
+    const firsts = result.scenarios.map((s) => s.latency_to_first_chapter_ms!).sort((a, b) => a - b)
+    expect(lat.first_chapter.n).toBe(8)
+    expect(lat.first_chapter.median_ms).toBe(Math.round((firsts[3]! + firsts[4]!) / 2))
+    expect(lat.first_chapter.p95_ms).toBeGreaterThanOrEqual(lat.first_chapter.median_ms!)
+    expect(lat.first_chapter.p95_ms).toBeLessThanOrEqual(firsts[7]!)
+    expect(lat.total.n).toBe(8)
+    expect(lat.total.median_ms).toBeGreaterThan(lat.first_chapter.median_ms!)
+  })
+
+  it('VT-L4: the console table shows first chapter and total for each story', async () => {
+    const { result } = await runOnce()
+    const out = formatEval(result)
+    expect(out).toMatch(/overall\s+1st ch\s+total/)
+    const lego = result.scenarios.find((s) => s.scenario_id === 'lego-band-a-pair')!
+    expect(out).toContain(`${(lego.latency_to_first_chapter_ms! / 1000).toFixed(1)}s`)
+    expect(out).toMatch(/latency \(reported, not a pass criterion\): first chapter median \d+\.\ds/)
+    expect(out).toMatch(/where the time went: write \d+%/)
+  })
+
+  it('VT-L5: the comparison moves the medians and flags a story 20% slower or faster to its first chapter', async () => {
+    const { result: current } = await runOnce()
+    const scale = (id: string, by: number) => (s: EvalResult['scenarios'][number]) =>
+      s.scenario_id === id ? { ...s, latency_to_first_chapter_ms: Math.round(s.latency_to_first_chapter_ms! * by) } : s
+    // Last run: lego was much faster (so it regressed now), bees much slower (so it improved),
+    // and the rest within 10% (no flag either way).
+    const previousScenarios = current.scenarios
+      .map(scale('lego-band-a-pair', 0.5))
+      .map(scale('bees-band-a-5min', 2))
+      .map((s) =>
+        s.scenario_id === 'lego-band-a-pair' || s.scenario_id === 'bees-band-a-5min'
+          ? s
+          : { ...s, latency_to_first_chapter_ms: Math.round(s.latency_to_first_chapter_ms! * 1.1) },
+      )
+    const previous: EvalResult = {
+      ...current,
+      date: '2026-10-01',
+      scenarios: previousScenarios,
+      summary: { ...current.summary, latency: summarizeLatency(previousScenarios) },
+    }
+    const out = compareEvalRuns(current, previous)
+    expect(out).toMatch(/first chapter, median: \d+\.\ds \([+-]\d+\.\ds, [+-]?\d+%\)/)
+    expect(out).toMatch(/lego-band-a-pair: first chapter .*\+100%\) <- latency regression/)
+    expect(out).toMatch(/bees-band-a-5min: first chapter .*-50%\) <- latency improvement/)
+    expect(out).not.toMatch(/titanic-band-b: first chapter .*<- latency/)
+  })
+
+  it('VT-L6: latency never fails the eval', async () => {
+    const slow: StoryProvider = async (input) => {
+      const story = await syntheticProvider()(input)
+      return story && { ...story, latency: { toFirstChapterMs: 3_600_000, totalMs: 7_200_000 } }
+    }
+    const result = await withScriptedJudge(() => runEval({ provider: slow, sink: new MemoryLogSink() }), script({}))
+    expect(result.summary.latency!.first_chapter.median_ms).toBe(3_600_000)
+    expect(result.summary.failures).toEqual([])
+    expect(result.summary.passed).toBe(true)
+  })
+
+  it('VT-L7: a results file from before latency reporting still compares cleanly', async () => {
+    const { result } = await runOnce()
+    const { latency: _dropped, ...oldSummary } = result.summary
+    const old = {
+      ...result,
+      date: '2026-10-06',
+      summary: oldSummary,
+      scenarios: result.scenarios.map(({ latency_to_first_chapter_ms: _f, latency_by_step: _s, ...rest }) => ({ ...rest, latency_total_ms: 0 })),
+    } as unknown as EvalResult
+    const out = compareEvalRuns(result, old)
+    expect(out).toContain('Comparison against 2026-10-06')
+    expect(out).toMatch(/no latency baseline/)
+    expect(out).not.toMatch(/NaN|undefined/)
   })
 })
