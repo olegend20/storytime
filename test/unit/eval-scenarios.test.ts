@@ -1,4 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { basename, join } from 'node:path'
+import { compareEvalRuns, mentions, sameScenarios, type EvalResult } from '@/lib/eval/harness'
+import { previousResultPath, resultPaths } from '@/lib/eval/results'
+import { syntheticStory } from '@/lib/eval/synthetic'
 import { ChildAge, ChildFirstName, ChildLike, StoryBible, Tone } from '@/lib/schemas'
 import {
   EVAL_SPLIT,
@@ -88,5 +94,55 @@ describe('issue #48: a 32-story golden set with a fixed train/test split', () =>
       }
       if (s.bible) expect(StoryBible.safeParse(s.bible).success, `${s.id} bible`).toBe(true)
     }
+  })
+})
+
+describe('issue #48 review: continuity matching, run ordering and like-with-like comparison', () => {
+  it('VT-S6: a continuity string matches whole words, and a short name only as a name', () => {
+    expect(mentions('The T. rex had a terrible bite.', 'Bit')).toBe(false)
+    expect(mentions('Just a bit further, said the rabbit.', 'Bit')).toBe(false)
+    expect(mentions('Bit beeped twice. BZZZT!', 'Bit')).toBe(true)
+    expect(mentions('What a coincidence!', 'coin')).toBe(false)
+    expect(mentions('One golden coin glowed.', 'coin')).toBe(true)
+    // Longer needles stay case-insensitive, as they always were.
+    expect(mentions('"Play well," said Juno.', 'Play well')).toBe(true)
+    expect(mentions('The red Lego brick clicked.', 'red LEGO brick')).toBe(true)
+  })
+
+  it('VT-S7: a series story in the synthetic pipeline opens on its own recurring element', () => {
+    const maya = evalScenarios().find((s) => s.id === 'space-race-band-b-15min-continuity')!
+    const story = syntheticStory({ scenario: maya, writingModel: 'claude-sonnet-5', sample: 1 })
+    expect(story.chapters[0]!.text).toContain('Barnacle')
+  })
+
+  it('VT-S8: same-day result files order by their suffix, so the newest run is last', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'storytime-results-order-'))
+    for (const f of ['eval-2026-10-14.json', 'eval-2026-10-14-3.json', 'eval-2026-10-13.json', 'eval-2026-10-14-2.json']) {
+      writeFileSync(join(dir, f), '{}')
+    }
+    expect(resultPaths('eval-', { dir }).map((p) => basename(p))).toEqual([
+      'eval-2026-10-13.json',
+      'eval-2026-10-14.json',
+      'eval-2026-10-14-2.json',
+      'eval-2026-10-14-3.json',
+    ])
+    expect(basename(previousResultPath('eval-', { dir })!)).toBe('eval-2026-10-14-3.json')
+  })
+
+  it('VT-S9: runs over different stories are recognised, and their comparison says so', () => {
+    const run = (ids: string[]) =>
+      ({
+        date: '2026-10-14',
+        judge_prompt: { version: 'judge.v2', sha256: 'x' },
+        pipeline: 'live',
+        scenarios: ids.map((id) => ({ scenario_id: id, overall_final: 4 })),
+        summary: { mean_overall: 4, min_overall: 4, disqualified: 0 },
+      }) as unknown as EvalResult
+    const train = run(selectScenarios(evalScenarios(), 'split:train').map((s) => s.id))
+    const test = run(selectScenarios(evalScenarios(), 'split:test').map((s) => s.id))
+    expect(sameScenarios(train, train)).toBe(true)
+    expect(sameScenarios(train, test)).toBe(false)
+    expect(compareEvalRuns(test, train)).toMatch(/different stories \(16 now, 16 then\)/)
+    expect(compareEvalRuns(train, train)).not.toMatch(/different stories/)
   })
 })

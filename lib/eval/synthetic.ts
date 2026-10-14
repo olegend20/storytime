@@ -150,8 +150,9 @@ export function syntheticStory(input: {
   // produce a byte-identical story (which would make a pairwise comparison vacuous).
   // A series story opens on its recurring element, as the writer is asked to (F13's
   // continuity AC). The reference stories only carry their own series' elements, so a
-  // scenario from another series (Maya's, issue #48) is given its own here.
-  const recurring = input.scenario.bible?.recurring[0]?.name.split(' ')[0]
+  // scenario from another series (Maya's, issue #48) is given its own here - the scenario's
+  // own continuity string, since a name's first word can be "The".
+  const recurring = input.scenario.checks.continuity_reference?.[0]
   const marked: JudgeableStory = {
     ...renamed,
     title: renamed.title,

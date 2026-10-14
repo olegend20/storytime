@@ -398,9 +398,7 @@ export async function runEval(config: EvalConfig = {}): Promise<EvalResult> {
     const words = narrativeWordCount(generated.story)
     const chapterOne = generated.story.chapters[0]?.text ?? ''
     const required = scenario.checks.continuity_reference ?? null
-    const found = required
-      ? required.filter((needle) => chapterOne.toLowerCase().includes(needle.toLowerCase()))
-      : []
+    const found = required ? required.filter((needle) => mentions(chapterOne, needle)) : []
     const scaryMax = scenario.checks.max_scary_level ?? MAX_SCARY_LEVEL[band]
     const observedScary = generated.gate?.scary_level ?? null
 
@@ -546,6 +544,24 @@ export function summarizeLatency(records: EvalScenarioRecord[]): EvalLatencySumm
   }
 }
 
+/**
+ * Whole words only: a substring match let 'Bit' pass on "bite" and "rabbit", and 'coin' on
+ * "coincidence", so a dinosaur story could not fail its continuity check (issue #48 review).
+ * A short capitalised name ('Bit') is also matched case-sensitively, or "a bit" would still
+ * pass; longer needles stay case-insensitive, as they always were ("Play well", "play well").
+ */
+export function mentions(text: string, needle: string): boolean {
+  const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const flags = /^[A-Z][a-z]{0,3}$/.test(needle) ? '' : 'i'
+  return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, `u${flags}`).test(text)
+}
+
+/** True when two runs scored exactly the same stories, so their deltas mean something. */
+export function sameScenarios(a: EvalResult, b: EvalResult): boolean {
+  const ids = (r: EvalResult) => r.scenarios.map((s) => s.scenario_id).sort().join(',')
+  return ids(a) === ids(b)
+}
+
 function round6(n: number): number {
   return Math.round(n * 1e6) / 1e6
 }
@@ -626,6 +642,12 @@ export function compareEvalRuns(current: EvalResult, previous: EvalResult | null
   }
 
   lines.push(`Comparison against ${previous.date} (${previous.scenarios.length} scenarios)`)
+  if (!sameScenarios(current, previous)) {
+    lines.push(
+      `  ! different stories (${current.scenarios.length} now, ${previous.scenarios.length} then): the mean and ` +
+        `lowest deltas compare different sets, so they are not a before/after. Compare like with like.`,
+    )
+  }
   if (previous.judge_prompt.sha256 !== current.judge_prompt.sha256) {
     lines.push(
       `  ! judge prompt changed (${previous.judge_prompt.sha256} -> ${current.judge_prompt.sha256}). ` +

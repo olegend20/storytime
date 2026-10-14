@@ -1,12 +1,12 @@
 #!/usr/bin/env tsx
 import { MeteredLogSink } from '@/lib/ai'
 import { estimateEvalCost, formatEstimate } from '@/lib/eval/estimate'
-import { compareEvalRuns, formatEval, runEval, type EvalResult } from '@/lib/eval/harness'
+import { compareEvalRuns, formatEval, runEval, sameScenarios, type EvalResult } from '@/lib/eval/harness'
 import { evalScenarios, selectScenarios } from '@/lib/eval/scenarios'
 import { runCalibration, formatCalibration, type CalibrationResult } from '@/lib/eval/calibration'
 import {
   nextResultPath,
-  previousResultPath,
+  resultPaths,
   readResultFile,
   writeResultFile,
 } from '@/lib/eval/results'
@@ -141,8 +141,13 @@ async function main(): Promise<void> {
     console.log('')
   }
 
-  const previousPath = previousResultPath('eval-')
-  const previous = previousPath ? readResultFile<EvalResult>(previousPath) : null
+  // The newest earlier run of the SAME stories: a split:test run compared with a split:train
+  // run, or 32 stories with 8, would print deltas between different sets (issue #48 review).
+  const previous =
+    resultPaths('eval-')
+      .reverse()
+      .map((p) => readResultFile<EvalResult>(p))
+      .find((r) => sameScenarios(result, r)) ?? null
 
   const path = writeResultFile(nextResultPath('eval-', 'json'), result)
   console.log(formatEval(result))
