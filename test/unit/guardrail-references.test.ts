@@ -100,6 +100,15 @@ describe('s4.2 deterministic output checks vs the reference stories', () => {
     expect(r10('Leo fed his pet turtle.')).toBe(0)
     expect(r10('Pat smiled at the dolphins.')).toBe(0)
     expect(r10('They watched the whale. Then Mia touched the back of the boat.')).toBe(0)
+    // From the reviewer agent: the animal must be what is touched, not just nearby.
+    expect(r10('They rode a boat to see the dolphins.')).toBe(0)
+    expect(r10('They rode the boat out to see the whales.')).toBe(0)
+    expect(r10('They rode the ferry to watch the dolphins.')).toBe(0)
+    expect(r10('Mia hugged Mom while the dolphins leapt.')).toBe(0)
+    expect(r10('Mia hugged Dad as the dolphins leapt.')).toBe(0)
+    expect(r10('A whale sang far away. Dad patted her on the back.')).toBe(0)
+    expect(r10('Juno touched the baby sea turtle.')).toBe(1)
+    expect(r10("Theo patted the shark's nose.")).toBe(1)
   })
 
   it('does not flag a gently-told historical fire for band A', () => {

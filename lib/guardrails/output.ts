@@ -115,6 +115,16 @@ const TOUCH_VERB = /\b(?:touch(?:ed|es|ing)?|pat(?:s|ted|ting)?|strok(?:e|ed|es|
 const TOUCHED_PART = /^\s+its\s+(?:[\w-]+\s+){0,2}?(?:skin|fins?|back|head|nose|fur|shell|tail|tentacles?|trunk|horns?|belly|scales?)\b/i
 // A toy, a pet or a picture is not a wild animal: "hugged her teddy bear", "fed his pet turtle".
 const NOT_WILD = /\b(?:toy|teddy|stuffed|plush|cuddly|soft|pet|model|statue|picture|drawing|photo|robot|balloon|lego|puppet|cartoon|my|his|her|their|our|your)\b/i
+// The animal is what the verb acts on: right after it, with at most an article and two
+// describing words between ("patted the baby whale shark"). A preposition, a conjunction or a
+// person in between means the animal is elsewhere in the scene: "rode a boat to see the
+// dolphins", "hugged Mom while the dolphins leapt" (reviewer agent, PR #40).
+const ANIMAL_AS_OBJECT = new RegExp(
+  String.raw`^\s+(?:(?:the|a|an|that|this|one|another|each|some)\s+)?` +
+    String.raw`(?:(?!(?:to|at|from|with|in|on|near|past|by|and|or|but|while|as|for|into|onto|toward|towards|through|across|over|under|beside|alongside|around|after|before|her|him|his|me|us|them|mom|mum|dad|mommy|mummy|daddy|grandma|grandpa)\b)[\w'-]+\s+){0,2}?` +
+    `(?:${WILD_ANIMAL.source})`,
+  'i',
+)
 const SECRET_FROM_GROWN_UPS =
   /\b(?:(?:don'?t|do not|never|won'?t|not) tell (?:mom|mum|mommy|mummy|dad|daddy|grandma|grandpa|your (?:mom|mum|dad|parents)|the grown-?ups|any grown-?ups|a grown-?up|the teacher)|(?:keep|kept|keeping) (?:it|this|that) (?:a )?secret from|(?:a |our )?secret from (?:mom|mum|dad|the grown-?ups|your parents))\b/i
 
@@ -126,12 +136,12 @@ function addRule10Hits(text: string, violations: OutputViolation[]): void {
     const after = text.slice(m.index + m[0].length, m.index + m[0].length + 40)
     const sentenceEnd = after.search(/[.!?]/)
     const object = sentenceEnd === -1 ? after : after.slice(0, sentenceEnd)
-    const animalObject = WILD_ANIMAL.exec(object)
+    const animalObject = ANIMAL_AS_OBJECT.exec(object)
     // "touched the whale shark" - the animal is the object; "touch its skin" - a body part,
     // with a wild animal named in the last few sentences.
     const partObject = TOUCHED_PART.test(object) && WILD_ANIMAL.test(text.slice(Math.max(0, m.index - 300), m.index))
-    const ownedOrToy = animalObject ? NOT_WILD.test(object.slice(0, animalObject.index)) : false
-    if ((animalObject && animalObject.index <= 25 && !ownedOrToy) || partObject) {
+    const ownedOrToy = animalObject ? NOT_WILD.test(animalObject[0]) : false
+    if ((animalObject && !ownedOrToy) || partObject) {
       violations.push({ rule: 10, quote: quoteAround(text, m.index, m[0].length).slice(0, 400), severity: 'hard' })
       break
     }
