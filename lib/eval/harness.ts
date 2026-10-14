@@ -549,11 +549,13 @@ export function summarizeLatency(records: EvalScenarioRecord[]): EvalLatencySumm
  * "coincidence", so a dinosaur story could not fail its continuity check (issue #48 review).
  * A short capitalised name ('Bit') is also matched case-sensitively, or "a bit" would still
  * pass; longer needles stay case-insensitive, as they always were ("Play well", "play well").
+ * A plural still counts - "golden coins" for 'coin', "red bricks" for 'red brick' - as it did
+ * under the substring match (reviewer on #49).
  */
 export function mentions(text: string, needle: string): boolean {
   const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   const flags = /^[A-Z][a-z]{0,3}$/.test(needle) ? '' : 'i'
-  return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, `u${flags}`).test(text)
+  return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?:s|es)?(?![\\p{L}\\p{N}])`, `u${flags}`).test(text)
 }
 
 /** True when two runs scored exactly the same stories, so their deltas mean something. */

@@ -143,15 +143,20 @@ async function main(): Promise<void> {
 
   // The newest earlier run of the SAME stories: a split:test run compared with a split:train
   // run, or 32 stories with 8, would print deltas between different sets (issue #48 review).
-  const previous =
-    resultPaths('eval-')
-      .reverse()
-      .map((p) => readResultFile<EvalResult>(p))
-      .find((r) => sameScenarios(result, r)) ?? null
+  const earlier = resultPaths('eval-')
+    .reverse()
+    .map((p) => ({ path: p, run: readResultFile<EvalResult>(p) }))
+    .find(({ run }) => sameScenarios(result, run))
+  const previous = earlier?.run ?? null
 
   const path = writeResultFile(nextResultPath('eval-', 'json'), result)
   console.log(formatEval(result))
   console.log('')
+  console.log(
+    earlier
+      ? `Comparing with ${earlier.path}, the newest earlier run of these same ${result.scenarios.length} stories.`
+      : `No earlier run of these same ${result.scenarios.length} stories (a split or subset compares only with itself).`,
+  )
   console.log(compareEvalRuns(result, previous))
   console.log('')
   console.log(`Wrote ${path}`)

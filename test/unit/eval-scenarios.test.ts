@@ -107,6 +107,10 @@ describe('issue #48 review: continuity matching, run ordering and like-with-like
     // Longer needles stay case-insensitive, as they always were.
     expect(mentions('"Play well," said Juno.', 'Play well')).toBe(true)
     expect(mentions('The red Lego brick clicked.', 'red LEGO brick')).toBe(true)
+    // Plurals still count, as they did under the substring match.
+    expect(mentions('His golden coins jingled.', 'coin')).toBe(true)
+    expect(mentions('Two red bricks clicked together.', 'red brick')).toBe(true)
+    expect(mentions('The rabbits hopped away.', 'Bit')).toBe(false)
   })
 
   it('VT-S7: a series story in the synthetic pipeline opens on its own recurring element', () => {
