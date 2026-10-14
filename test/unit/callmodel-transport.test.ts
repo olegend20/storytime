@@ -51,10 +51,16 @@ vi.mock('@anthropic-ai/sdk', async () => {
         calls.params.push(params)
         const drop = calls.drop.shift()
         if (drop) {
-          // message_start arrived (usage so far), then the connection was cut.
+          // message_start arrived (usage so far), then the connection was cut. Rejected the
+          // way the real MessageStream does it: an SDK error passes through, anything else is
+          // rewrapped as a plain AnthropicError with the original as its cause.
+          const surfaced =
+            drop instanceof actual.AnthropicError
+              ? drop
+              : Object.assign(new actual.AnthropicError(drop.message), { cause: drop })
           return {
             currentMessage: { ...message, usage: { ...message.usage, output_tokens: 7 } },
-            finalMessage: () => Promise.reject(drop),
+            finalMessage: () => Promise.reject(surfaced),
           }
         }
         if (!calls.hang) return { finalMessage: async () => message, currentMessage: message }
@@ -260,7 +266,7 @@ describe('issue #50: a stream the gateway drops partway is tried once more', () 
     expect(sink.rows[1]!.ok).toBe(true)
     // A reset socket counts too.
     calls.stream = 0
-    calls.drop = [Object.assign(new Error('read ECONNRESET'), { cause: { code: 'ECONNRESET' } })]
+    calls.drop = [Object.assign(new Error('read ECONNRESET'), { code: 'ECONNRESET' })]
     expect((await rewrite()).result!.text).toBe('ok')
     expect(calls.stream).toBe(2)
   })
@@ -329,8 +335,13 @@ describe('issue #50: a stream the gateway drops partway is tried once more', () 
     expect((await rewrite()).error).not.toBeNull()
     expect(calls.stream).toBe(1)
 
-    // Neither is a plain TypeError of our own making.
-    expect(isDroppedStream(new TypeError('cannot read properties of undefined'))).toBe(false)
+    // Neither is a plain TypeError of our own making, wrapped or not.
+    const { AnthropicError } = await vi.importActual<typeof import('@anthropic-ai/sdk')>('@anthropic-ai/sdk')
+    const ours = new TypeError('cannot read properties of undefined')
+    expect(isDroppedStream(ours)).toBe(false)
+    expect(isDroppedStream(Object.assign(new AnthropicError(ours.message), { cause: ours }))).toBe(false)
+    // The drop as the SDK really surfaces it, and bare.
+    expect(isDroppedStream(Object.assign(new AnthropicError('terminated'), { cause: terminated() }))).toBe(true)
     expect(isDroppedStream(terminated())).toBe(true)
   })
 

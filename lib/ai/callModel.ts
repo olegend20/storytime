@@ -249,14 +249,22 @@ export function structuredOutputRejected(err: unknown): boolean {
 
 /**
  * A stream that was cut off partway: undici's `TypeError('terminated')` (its cause a socket
- * "other side closed"), or a reset socket. Not an `APIConnectionError`, so before issue #50 it
- * was never retried - 2 of ~10 rewrites through the gateway died this way on 2026-10-14.
+ * "other side closed"), or a reset socket. The SDK's MessageStream rewraps any non-SDK error
+ * as a plain `AnthropicError` with the original as `cause` (SDK 0.128 MessageStream.js), so
+ * the socket code is two levels down - the cause chain is walked, not just the top error.
+ * Not an `APIConnectionError`, so before issue #50 it was never retried: 2 of ~10 rewrites
+ * through the gateway died this way on 2026-10-14.
  */
 export function isDroppedStream(err: unknown): boolean {
-  if (!(err instanceof Error) || err instanceof APIError) return false
-  if (err.name === 'TypeError' && err.message === 'terminated') return true
-  const code = (err as { cause?: { code?: unknown } }).cause?.code
-  return code === 'UND_ERR_SOCKET' || code === 'ECONNRESET'
+  if (err instanceof APIError) return false
+  let e: unknown = err
+  for (let depth = 0; depth < 4 && typeof e === 'object' && e !== null; depth += 1) {
+    if (e instanceof Error && e.name === 'TypeError' && e.message === 'terminated') return true
+    const code = (e as { code?: unknown }).code
+    if (code === 'UND_ERR_SOCKET' || code === 'ECONNRESET') return true
+    e = (e as { cause?: unknown }).cause
+  }
+  return false
 }
 
 /** Retry on transport failures and the transient HTTP statuses; never on a 4xx we caused. */
