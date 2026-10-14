@@ -70,6 +70,12 @@ export interface EvalScenarioRecord {
    * is hill-climbed on. Null when no story was made, or the pipeline could not see it.
    */
   latency_to_first_chapter_ms: number | null
+  /**
+   * False when the story was made but no chapter streamed (attempt 1 died or was unusable and
+   * the rewrite arrived only in `done`): the parent saw nothing until the end, so the first
+   * chapter is counted at the total. Leaving it out would hide exactly the longest waits.
+   */
+  first_chapter_streamed: boolean
   /** Request to saved story, including the gate, any rewrite and the bible update. Null when no story was made. */
   latency_total_ms: number | null
   /** Where the time went, by call purpose. Kept for a failed story too: it shows where it died. */
@@ -100,6 +106,8 @@ export interface EvalLatencySummary {
   total: LatencyStats
   /** Summed over every scenario, so the step that dominates is visible at a glance. */
   by_step: Record<string, StepLatency>
+  /** Stories made with no chapter streamed; their first chapter is counted at the total. */
+  no_streamed_chapter: string[]
 }
 
 /** A scenario this much slower (or faster) to its first chapter than last run is flagged. */
@@ -243,6 +251,7 @@ function failedRecord(
     generation_cost_usd: generationCostUsd,
     judge_cost_usd: 0,
     latency_to_first_chapter_ms: null,
+    first_chapter_streamed: false,
     latency_total_ms: null,
     latency_by_step: steps,
   }
@@ -439,7 +448,8 @@ export async function runEval(config: EvalConfig = {}): Promise<EvalResult> {
       editor_notes: scored.ok ? scored.final.editor_notes : [],
       generation_cost_usd: generated.costUsd,
       judge_cost_usd: scored.costUsd,
-      latency_to_first_chapter_ms: generated.latency.toFirstChapterMs,
+      latency_to_first_chapter_ms: generated.latency.toFirstChapterMs ?? generated.latency.totalMs,
+      first_chapter_streamed: generated.latency.toFirstChapterMs !== null,
       latency_total_ms: generated.latency.totalMs,
       latency_by_step: steps,
     })
@@ -530,6 +540,9 @@ export function summarizeLatency(records: EvalScenarioRecord[]): EvalLatencySumm
     first_chapter: latencyStats(records.map((r) => r.latency_to_first_chapter_ms)),
     total: latencyStats(records.map((r) => r.latency_total_ms)),
     by_step: byStep,
+    no_streamed_chapter: records
+      .filter((r) => r.latency_total_ms !== null && !r.first_chapter_streamed)
+      .map((r) => r.scenario_id),
   }
 }
 
@@ -671,6 +684,9 @@ function compareLatency(current: EvalResult, previous: EvalResult): string[] {
   }
   lines.push(`  first chapter, median: ${change(now.first_chapter.median_ms, before.first_chapter.median_ms)}`)
   lines.push(`  total, median: ${change(now.total.median_ms, before.total.median_ms)}`)
+  if (now.no_streamed_chapter.length > 0) {
+    lines.push(`  ! no chapter streamed (first chapter counted at the total): ${now.no_streamed_chapter.join(', ')}`)
+  }
 
   const prior = new Map(previous.scenarios.map((s) => [s.scenario_id, s]))
   for (const s of current.scenarios) {
@@ -720,6 +736,9 @@ export function formatEval(result: EvalResult): string {
         `p95 ${secs(latency.first_chapter.p95_ms)}; total median ${secs(latency.total.median_ms)}, ` +
         `p95 ${secs(latency.total.p95_ms)} (${latency.total.n} stories)`,
     )
+    if (latency.no_streamed_chapter.length > 0) {
+      lines.push(`  no chapter streamed, first chapter counted at the total: ${latency.no_streamed_chapter.join(', ')}`)
+    }
     const steps = Object.entries(latency.by_step).sort(([, a], [, b]) => b.ms - a.ms)
     const all = steps.reduce((n, [, st]) => n + st.ms, 0)
     if (all > 0) {

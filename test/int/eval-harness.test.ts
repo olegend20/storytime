@@ -603,6 +603,25 @@ describe('issue #46: latency, so it can be hill-climbed (time to first chapter)'
     expect(out).not.toMatch(/titanic-band-b: first chapter .*<- latency/)
   })
 
+  it('VT-L1b: a story made with no streamed chapter counts its first chapter at the total, and is named', async () => {
+    const base = syntheticProvider()
+    const provider: StoryProvider = async (input) => {
+      const story = await base(input)
+      if (!story || input.scenario.id !== 'titanic-band-b') return story
+      return { ...story, latency: { toFirstChapterMs: null, totalMs: 400_000 } }
+    }
+    const result = await withScriptedJudge(() => runEval({ provider, sink: new MemoryLogSink() }), script({}))
+    const titanic = result.scenarios.find((r) => r.scenario_id === 'titanic-band-b')!
+    expect(titanic.first_chapter_streamed).toBe(false)
+    expect(titanic.latency_to_first_chapter_ms).toBe(400_000)
+    expect(result.summary.latency!.first_chapter.n).toBe(8)
+    // The slowest wait now pulls p95 up, rather than vanishing from it.
+    expect(result.summary.latency!.first_chapter.p95_ms).toBeGreaterThan(100_000)
+    expect(result.summary.latency!.no_streamed_chapter).toEqual(['titanic-band-b'])
+    expect(formatEval(result)).toMatch(/no chapter streamed, first chapter counted at the total: titanic-band-b/)
+    expect(compareEvalRuns(result, result)).toMatch(/! no chapter streamed .*titanic-band-b/)
+  })
+
   it('VT-L6: latency never fails the eval', async () => {
     const slow: StoryProvider = async (input) => {
       const story = await syntheticProvider()(input)
@@ -621,7 +640,7 @@ describe('issue #46: latency, so it can be hill-climbed (time to first chapter)'
       ...result,
       date: '2026-10-06',
       summary: oldSummary,
-      scenarios: result.scenarios.map(({ latency_to_first_chapter_ms: _f, latency_by_step: _s, ...rest }) => ({ ...rest, latency_total_ms: 0 })),
+      scenarios: result.scenarios.map(({ latency_to_first_chapter_ms: _f, first_chapter_streamed: _c, latency_by_step: _s, ...rest }) => ({ ...rest, latency_total_ms: 0 })),
     } as unknown as EvalResult
     const out = compareEvalRuns(result, old)
     expect(out).toContain('Comparison against 2026-10-06')
