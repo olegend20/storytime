@@ -26,7 +26,7 @@ import { readyFactPackTopics } from '@/lib/topics/factpack'
  *   --dry-run            print the plan and the estimate, make no calls
  *   --calibration-only   run only the §5 calibration set and write its result file
  *   --fixture            use the fixture pipeline instead of F6 (harness development)
- *   --scenarios=a,b      subset by id (also read from EVAL_SCENARIOS)
+ *   --scenarios=a,b      subset by id, or split:train / split:test (also read from EVAL_SCENARIOS)
  *   --budget=N           approve up to $N for this run (also EVAL_BUDGET_APPROVED_USD)
  *   --calibration=PATH   reuse a calibration result that passed today with the same judge
  *                        prompt (≈ $1.70 saved); otherwise calibration runs first

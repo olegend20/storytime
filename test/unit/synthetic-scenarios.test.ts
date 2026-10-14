@@ -18,7 +18,8 @@ import { narrativeWordCount } from '@/lib/eval/render'
  *
  * A story generator whose output cannot satisfy the schema quietly weakens every test that
  * uses it: a scenario could fail the real gate for a reason the fixture invented. These run
- * over all 12 bake-off scenarios so the next short target cannot reintroduce it.
+ * over every scenario - the 12 bake-off ones and the 32 eval ones (issue #48), 36 in all - so the
+ * next short target cannot reintroduce it.
  */
 describe('synthetic scenarios are schema-shaped', () => {
   const stories = SCENARIOS.map((scenario) => ({
@@ -26,8 +27,8 @@ describe('synthetic scenarios are schema-shaped', () => {
     story: syntheticStory({ scenario, writingModel: 'claude-sonnet-5', sample: 1 }),
   }))
 
-  it('covers all 12 bake-off scenarios', () => {
-    expect(stories).toHaveLength(12)
+  it('covers every scenario: 12 bake-off and 32 eval, 36 distinct', () => {
+    expect(stories).toHaveLength(36)
   })
 
   it('every scenario produces 6-10 chapters', () => {
