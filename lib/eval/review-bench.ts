@@ -1,4 +1,4 @@
-import { computeCost, modelForRole, pricing, type GenerationLogSink } from '@/lib/ai'
+import { capabilities, computeCost, modelForRole, pricing, type GenerationLogSink } from '@/lib/ai'
 import { loadPrompt } from '@/lib/prompts'
 import { measuredForReview, reviewPassed, reviewVerdictFailures, runQualityReview } from '@/lib/quality/review'
 import type { FactPack, GenerationRequest, StoryOutput } from '@/lib/schemas'
@@ -57,6 +57,12 @@ export interface BenchReview {
   cost_usd: number
 }
 
+export interface ReviewerSettings {
+  model?: string
+  effort?: 'low' | 'medium' | 'high'
+  thinking?: 'adaptive' | 'off'
+}
+
 export interface BenchSummary {
   calls: number
   format_failures: number
@@ -72,6 +78,8 @@ export interface BenchRun {
   ran_at: string
   set: string
   prompt: { id: string; version: number; dir: string }
+  /** The reviewer model and its settings; the configured helper when absent. */
+  reviewer?: ReviewerSettings
   samples: number
   labelled: boolean
   summary: BenchSummary
@@ -100,14 +108,25 @@ export function estimateBuildCost(drafts: number, writer: string = modelForRole(
   }
 }
 
-export function estimateRunCost(items: number, samples: number, reviewer: string = modelForRole('helper')): CostEstimate {
+/** A reviewer that thinks writes its thinking as output: budgeted generously, as it is cheap. */
+const THINKING_OUTPUT_TOKENS = 3_000
+/** Haiku 5.5's tokenizer counts the same text as ~30% more tokens than Haiku 4.5's. */
+const NEW_TOKENIZER = 1.3
+
+export function estimateRunCost(items: number, samples: number, reviewer: string = modelForRole('helper'), settings: ReviewerSettings = {}): CostEstimate {
   const calls = items * samples
-  const each = computeCost({ model: reviewer, input: REVIEW_TOKENS.input, output: REVIEW_TOKENS.output })
+  const caps = capabilities(reviewer)
+  const scale = caps.tokenizer === 'v4_7' ? NEW_TOKENIZER : 1
+  const thinks = caps.thinking === 'adaptive_default_on' && settings.thinking !== 'off'
+  const output = Math.round(REVIEW_TOKENS.output * scale) + (thinks ? THINKING_OUTPUT_TOKENS : 0)
+  const each = computeCost({ model: reviewer, input: Math.round(REVIEW_TOKENS.input * scale), output })
   return {
     lines: [{ what: `review ${items} drafts × ${samples} samples`, model: reviewer, calls, usd: each * calls }],
     total_usd: each * calls,
     pricing_updated_at: pricing.updated_at,
-    assumptions: [`${REVIEW_TOKENS.input.toLocaleString()} input and ${REVIEW_TOKENS.output} output tokens per review.`],
+    assumptions: [
+      `${Math.round(REVIEW_TOKENS.input * scale).toLocaleString()} input and ${output.toLocaleString()} output tokens per review${thinks ? ' (thinking included)' : ''}.`,
+    ],
   }
 }
 
@@ -149,7 +168,14 @@ export function summarizeBench(reviews: readonly BenchReview[], labels: readonly
 /** Run a candidate reviewer prompt over the set. Bounded concurrency; each call is one Haiku review. */
 export async function runBench(
   set: BenchSet,
-  opts: { promptDir?: string; samples: number; concurrency?: number; sink?: GenerationLogSink; onProgress?: (done: number, of: number) => void },
+  opts: {
+    promptDir?: string
+    reviewer?: ReviewerSettings
+    samples: number
+    concurrency?: number
+    sink?: GenerationLogSink
+    onProgress?: (done: number, of: number) => void
+  },
 ): Promise<{ prompt: { id: string; version: number }; reviews: BenchReview[] }> {
   const prompt = opts.promptDir ? loadPrompt('quality-review', opts.promptDir) : loadPrompt('quality-review')
   const jobs = set.items.flatMap((item) => Array.from({ length: opts.samples }, (_, i) => ({ item, sample: i + 1 })))
@@ -161,6 +187,7 @@ export async function runBench(
       const band = item.request.age_band
       const run = await runQualityReview(item.story, item.request, item.fact_pack, {
         systemPrompt: prompt.body,
+        ...(opts.reviewer ?? {}),
         measured: measuredForReview(item.story, band),
         ...(opts.sink ? { sink: opts.sink } : {}),
       })
@@ -186,7 +213,9 @@ export function formatBench(run: BenchRun): string {
   const s = run.summary
   const pct = (n: number, of: number) => (of === 0 ? '-' : `${n}/${of} (${Math.round((100 * n) / of)}%)`)
   return [
-    `review bench: ${run.prompt.id} v${run.prompt.version} (${run.prompt.dir}), ${run.samples} sample(s), set ${run.set}`,
+    `review bench: ${run.prompt.id} v${run.prompt.version} (${run.prompt.dir}) on ${run.reviewer?.model ?? 'the helper'}` +
+      `${run.reviewer?.effort ? `, effort ${run.reviewer.effort}` : ''}${run.reviewer?.thinking === 'off' ? ', thinking off' : ''}` +
+      `, ${run.samples} sample(s), set ${run.set}`,
     `  format failures: ${pct(s.format_failures, s.calls)}`,
     `  wrong fails:     ${run.labelled ? pct(s.wrong_fails.count, s.wrong_fails.of) : 'no labels'}`,
     `  catches:         ${run.labelled ? pct(s.catches.count, s.catches.of) : 'no labels'}`,

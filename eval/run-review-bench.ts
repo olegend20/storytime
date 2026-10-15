@@ -14,6 +14,7 @@ import {
   type BenchLabel,
   type BenchRun,
   type BenchSet,
+  type ReviewerSettings,
 } from '@/lib/eval/review-bench'
 import { nextResultPath, readResultFile, RESULTS_DIR, writeResultFile } from '@/lib/eval/results'
 import { evalScenarios, getScenario, scenarioSplit, selectScenarios } from '@/lib/eval/scenarios'
@@ -29,6 +30,9 @@ import { installCliCostLogging } from '@/lib/costs/cli'
  *   --candidate=DIR       a directory holding `quality-review.v<N>.md` to score instead of
  *                         the shipped prompt
  *   --labels=PATH         hand labels, `[{ id, should_pass, notes }]`
+ *   --model=ID            the reviewer model (default: the configured helper)
+ *   --effort=low|medium|high, --thinking=off   reviewer settings, for models that take them
+ *   --label=NAME          a short name for the candidate, used in the result file name
  *   --samples=N           reviews per draft (default 3)
  *   --split=train|test    only the golden set's train or test half: tune on train, score
  *                         the winner on test once
@@ -98,7 +102,11 @@ async function score(setPath: string, sink: MeteredLogSink): Promise<void> {
     ? { ...full, items: full.items.filter((i) => scenarioSplit(getScenario(i.scenario_id)) === split) }
     : full
   const samples = Number(value('samples') ?? '3')
-  const estimate = estimateRunCost(set.items.length, samples)
+  const model = value('model')
+  const effort = value('effort') as ReviewerSettings['effort']
+  const thinking = value('thinking') as ReviewerSettings['thinking']
+  const reviewer: ReviewerSettings = { ...(model ? { model } : {}), ...(effort ? { effort } : {}), ...(thinking ? { thinking } : {}) }
+  const estimate = estimateRunCost(set.items.length, samples, model ?? modelForRole('helper'), reviewer)
   console.log(formatEstimate(`review-bench (${set.items.length} drafts × ${samples})`, estimate))
   if (flag('dry-run') || !withinCeiling(estimate.total_usd)) return
 
@@ -106,6 +114,7 @@ async function score(setPath: string, sink: MeteredLogSink): Promise<void> {
   const labels = labelsPath ? readResultFile<BenchLabel[]>(labelsPath) : null
   const promptDir = value('candidate')
   const { prompt, reviews } = await runBench(set, {
+    reviewer,
     ...(promptDir ? { promptDir } : {}),
     samples,
     sink,
@@ -118,12 +127,15 @@ async function score(setPath: string, sink: MeteredLogSink): Promise<void> {
     ran_at: new Date().toISOString(),
     set: split ? `${setPath} (split:${split})` : setPath,
     prompt: { ...prompt, dir: promptDir ?? 'prompts' },
+    reviewer: { model: model ?? modelForRole('helper'), ...(effort ? { effort } : {}), ...(thinking ? { thinking } : {}) },
     samples,
     labelled: labels !== null,
     summary: summarizeBench(reviews, labels),
     reviews,
   }
-  const path = writeResultFile(nextResultPath(`run-${prompt.id}-v${prompt.version}-`, 'json', { dir: BENCH_DIR }), run)
+  // Named by what was scored, so runs on the same day cannot be mixed up.
+  const tag = [value('label'), model, effort, thinking === 'off' ? 'nothink' : undefined, split].filter(Boolean).join('-')
+  const path = writeResultFile(nextResultPath(`run-${prompt.id}-v${prompt.version}-${tag ? `${tag}-` : ''}`, 'json', { dir: BENCH_DIR }), run)
   console.log(`\n${formatBench(run)}\n\nWrote ${path}`)
 }
 

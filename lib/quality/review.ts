@@ -1,4 +1,4 @@
-import { callModel, parseJsonLoose, type GenerationLogSink } from '@/lib/ai'
+import { callModel, capabilities, parseJsonLoose, type GenerationLogSink } from '@/lib/ai'
 import { loadPrompt } from '@/lib/prompts'
 import { dataBlock } from '@/lib/datablock'
 import { sentenceStats } from '@/lib/bands'
@@ -109,17 +109,28 @@ export interface QualityReviewRun {
 
 /**
  * The call behind `reviewStoryQuality`. `systemPrompt` replaces the shipped
- * `quality-review` prompt: only the review bench sets it, to score a candidate version.
+ * `quality-review` prompt, and `model`/`effort`/`thinking` the configured helper: only the
+ * review bench sets them, to score a candidate.
  */
 export async function runQualityReview(
   story: StoryOutput,
   request: GenerationRequest,
   pack: FactPack | null,
-  opts: QualityReviewOptions & { systemPrompt?: string } = {},
+  opts: QualityReviewOptions & {
+    systemPrompt?: string
+    model?: string
+    effort?: 'low' | 'medium' | 'high'
+    thinking?: 'adaptive' | 'off'
+  } = {},
 ): Promise<QualityReviewRun> {
+  // A model that thinks by default spends its thinking inside max_tokens: 2,000 would cut it off.
+  const thinks = opts.model !== undefined && capabilities(opts.model).thinking === 'adaptive_default_on' && opts.thinking !== 'off'
   const result = await callModel({
     purpose: 'quality',
     role: 'helper',
+    ...(opts.model ? { model: opts.model } : {}),
+    ...(opts.effort ? { effort: opts.effort } : {}),
+    ...(opts.thinking ? { thinking: opts.thinking } : {}),
     system: [{ text: opts.systemPrompt ?? loadPrompt('quality-review').body }],
     messages: [
       {
@@ -127,7 +138,7 @@ export async function runQualityReview(
         content: buildQualityReviewMessage(story, request, pack, opts.measured ?? null),
       },
     ],
-    maxTokens: 2_000,
+    maxTokens: thinks ? 16_000 : 2_000,
     schema: QualityReview,
     familyId: opts.familyId ?? null,
     storyId: opts.storyId ?? null,
