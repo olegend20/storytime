@@ -221,7 +221,7 @@ function extractText(content: unknown): string {
     .join('')
 }
 
-function normalizeUsage(usage: unknown): CallModelResult['usage'] {
+export function normalizeUsage(usage: unknown): CallModelResult['usage'] {
   const u = (usage ?? {}) as Record<string, unknown>
   const serverToolUse = (u.server_tool_use ?? {}) as Record<string, unknown>
   const num = (v: unknown): number => (typeof v === 'number' ? v : 0)
