@@ -1,0 +1,194 @@
+[
+ {
+  "id": "bees-band-a-5min",
+  "should_pass": true,
+  "scary_level": 0,
+  "notes": "Big words all explained on the spot: amber, drones, nectar, hexagons, waggle dance. 'One jar' vs pack 'one pound' and 'painted' jars are harmless simplifications. Juno picks the flower-finder job, spots the queen and tests the hexagon fit, so she is active."
+ },
+ {
+  "id": "bicycles-band-b-5min-tricks",
+  "should_pass": false,
+  "scary_level": 1,
+  "notes": "Omar is not active: Ting starts every jump ('Ting the bell jingled', 'The bell rang again') and gives every fact, and Omar only rides each bike and reacts ('Whoa', 'No way', 'Nailed it'). Nothing he does changes what happens. Words (patent, derailleurs, bloomers) are all explained, and the facts match the pack."
+ },
+ {
+  "id": "bicycles-band-c-5min",
+  "should_pass": true,
+  "scary_level": 1,
+  "notes": "Tom catches the falling penny-farthing rider and his suggestions set up each next stop. Laufmaschine, velocipede, patented, pneumatic and derailleurs are all explained. Dunlop 'vet', 'Belfast' and 'son's tricycle' are not in the pack but are minor colour, not substantial claims. 'cassette' is a simile, fine for band C."
+ },
+ {
+  "id": "climb-walls-band-a-15min-wild",
+  "should_pass": false,
+  "scary_level": 1,
+  "notes": "Sam is not active: Tiko picks every stop ('Somewhere SILKY', 'Ready for something HUGE?') and explains everything. Sam's tries all fail with no effect (hand on window, railing climb), and otherwise he waves and says 'Whoa'. Microscope and scientists are explained, the facts are fine, and the goat-cliff wobble is answered at once."
+ },
+ {
+  "id": "climb-walls-mixed-3-11",
+  "should_pass": true,
+  "scary_level": 1,
+  "notes": "Borderline on participation, but Rosa starts the adventure ('Isla, look!'), Isla works out the hoof grip and the 'two tools' idea herself, and she calms Rosa about the spider. 'special gloves' stretches f14's handheld paddle, but a hand-worn gecko grip for glass is close enough. Hooves are explained."
+ },
+ {
+  "id": "dinosaurs-band-a-15min-continuity",
+  "should_pass": false,
+  "scary_level": 1,
+  "notes": "Facts: the trip is set '230 million years' back, then Pip says 'About 66 million years after this... most dinosaurs went away'. The pack (f2) says extinction was 66 million years AGO. Also 'a flying reptile, a cousin of lizards' for pterosaurs is not in the pack (f16 says related to dinosaurs). The legend dog is hedged correctly, and words are explained."
+ },
+ {
+  "id": "dinosaurs-band-c-15min-continuity",
+  "should_pass": true,
+  "scary_level": 2,
+  "notes": "The asteroid level builds lasting tension but resolves calmly, and a level 2 is allowed in C. Theo finds the trace fossil and frees the bone with Mary. The legend dog is hedged. Thagomizer joke origin and 'good mother lizard' are minor true additions. A defect outside the five judgements: chapter 7 is a truncated duplicate ('\"Nests,') of chapter 8."
+ },
+ {
+  "id": "honey-band-a-15min-twins",
+  "should_pass": true,
+  "scary_level": 0,
+  "notes": "Proboscis, nectar, honey stomach, honeycomb, pollen and scout bee are each explained, within the budget of 6. 'more than a thousand eggs. Every single day' slightly firms up the pack's 'sometimes over a thousand' but does not contradict it. Finn sips and passes the nectar, and Nell counts the six sides."
+ },
+ {
+  "id": "lego-band-a-pair",
+  "should_pass": true,
+  "scary_level": 0,
+  "notes": "Big words all explained: carpenter, coincidence ('two things that match by accident'), Latin ('a very old language'), patent ('special papers'), minifigures. Legend facts hedged: Latin 'probably just a fun coincidence', tires 'some people say'. Milo pulls the lever, proposes the tubes."
+ },
+ {
+  "id": "lego-band-c-rivals",
+  "should_pass": false,
+  "scary_level": 2,
+  "notes": "Facts: ch5 'Everyone got out safely \u2014 nobody was hurt' (casualties not in pack f8); ch2 'Ole Kirk never spoke Latin and never claimed the name came from it' (not in pack); ch8 Knudstorp 'the person now in charge' (pack: became CEO in 2004 only). Fire + near-bankruptcy = level 2, within C limit."
+ },
+ {
+  "id": "magnets-band-b-5min",
+  "should_pass": true,
+  "scary_level": 0,
+  "notes": "Poles, magnetic field, lodestones (described then named), compass, electromagnet all explained; 'toggle switch' is near-everyday. Floating lodestone and 'Always has. Always will.' are elaboration/flourish, not new claims. Ada runs the experiments herself."
+ },
+ {
+  "id": "pompeii-band-b-care",
+  "should_pass": false,
+  "scary_level": 1,
+  "notes": "Kids not active: Nora only asks questions and reacts ('Is that a volcano?', 'Is that... writing?'); the tessera leads and explains every stop and nothing Nora does changes events. Vocab ok (mosaic, tessera, fresco, graffiti, archaeologists all explained); eruption kept gentle."
+ },
+ {
+  "id": "pompeii-band-c-15min",
+  "should_pass": false,
+  "scary_level": 2,
+  "notes": "Facts not in pack: ch4 'A strong earthquake shook this town some years back'; ch5 survivors 'carried out by boats just like the ones you're watching' (pack f7 says only that Pliny the Elder sailed to help and died); ch3 crowd 'More than the town itself held'. Vocab and agency fine."
+ },
+ {
+  "id": "rainbows-band-a-5min",
+  "should_pass": true,
+  "scary_level": 0,
+  "notes": "Prism described then named; scientists are names. Al-Farisi's 'glass balls' elaborates f16 (studied rainbows in raindrops) rather than adding a new claim. Ivy turns around and finds the rainbow herself (ch4) and dips her brush in the drop."
+ },
+ {
+  "id": "rainbows-band-b-5min-teasing",
+  "should_pass": true,
+  "scary_level": 0,
+  "notes": "Refraction, prism, moonbow explained on the spot. Legend pot of gold hedged ('just a fun old tale, not a true fact'); flood story kept gentle as a promise. Dev's water pistol opens the door and makes the moonbow; plenty of jokes."
+ },
+ {
+  "id": "sharks-band-a-continuity",
+  "should_pass": false,
+  "scary_level": 1,
+  "notes": "Kids not active: Splash leads every stop and explains everything; Milo and Juno ask questions ('Can sharks walk?'), wiggle ears and play-walk, but nothing they do changes events. Whale-shark 'monster' wobble resolved at once (level 1). Plankton explained; megalodon 'bigger than a bus' fits 'giant'."
+ },
+ {
+  "id": "sharks-band-b-siblings",
+  "should_pass": false,
+  "scary_level": 1,
+  "notes": "Kids not active: Pip guides and explains every stop; Jack and Ellie ask ('Is that going to get us?', 'Could it feel ME?'), react and joke. Their moves (Ellie spots a second egg, names 'Toothy', a race) change nothing. Words (cartilage, extinct, fossils) explained; facts match f1-f21. Megalodon shadow and hammerhead are brief wobbles, answered at once = 1."
+ },
+ {
+  "id": "sleep-band-a-5min-dark",
+  "should_pass": false,
+  "scary_level": 1,
+  "notes": "Kids not active: Leo rides the train while Oliver Owl explains every stop; he giggles, flops his arms, counts and says 'Just like my train set!', and nothing he does changes anything. Tunnel 'tummy did a little flutter' is calmed at once = 1. 'cycle' explained; 'only two hours' and 'one whole day out of three' are fair versions of f15 and f18."
+ },
+ {
+  "id": "sleep-band-c-5min-bedtime",
+  "should_pass": false,
+  "scary_level": 1,
+  "notes": "Kids not active: the Nightwatchman explains every stop; Arjun asks questions, tries flicking his eyes ('Nothing happened') and clicks off his flashlight ('Nothing happened'). Facts: claims not in the pack: 'staring at a bright screen before bed can trick the factory into thinking it's still daytime', melatonin made 'once it gets dark', Nobel genes 'hiding inside tiny flies'."
+ },
+ {
+  "id": "sleep-band-d-5min",
+  "should_pass": false,
+  "scary_level": 1,
+  "notes": "Facts: superlatives the pack hedges: bats 'Sleepiest mammal on record' vs f16 'among the sleepiest mammals known'; giraffe 'Shortest sleeper of any big animal' vs f15 'among the shortest sleepers'. Aserinsky 'watching his own sleeping son' is not in the pack (f1: 'a sleeping boy'). Noah is active (slider, badge, vial, declines record); terms explained."
+ },
+ {
+  "id": "soccer-band-c-5min",
+  "should_pass": false,
+  "scary_level": 2,
+  "notes": "Facts: Morley's 1863 rules given a goalkeeper hand exception ('A single player, inside his own goal, may use his hands'), not in pack (and untrue); FIFA founded by 'seven men' vs f10 'seven European countries'; Pele 'on three different teams' vs f17 three winning squads (all Brazil); '4-2' and 'Thirteen teams' not in pack. Kids not active: Lena watches; her one save changes nothing."
+ },
+ {
+  "id": "soccer-band-c-continuity",
+  "should_pass": false,
+  "scary_level": 2,
+  "notes": "Facts: claims not in the pack: no-hands rule 'is still exactly the same today' (goalkeepers can use hands), FIFA 'Now it's over two hundred', 'Lily kept playing anyway'. Theo is active (settles Cambridge rule, proposes no-hands to Morley). Women's ban told plainly = 2. 'bladder' explained."
+ },
+ {
+  "id": "soccer-band-d",
+  "should_pass": false,
+  "scary_level": 1,
+  "notes": "Facts: chapter 7 is not in the pack: Title IX 1972, '1996, Atlanta Olympics', '40,000 people', Mia Hamm header; also cuju 'stuffed with feathers... net', '4,000 people', England joined FIFA 'a year later', 'Thirteen teams... four Europeans'. Atlanta final set 'in California' contradicts itself. Kids not active: Mia watches except the herald tally in ch.2."
+ },
+ {
+  "id": "space-race-band-b-15min-continuity",
+  "should_pass": false,
+  "scary_level": 1,
+  "notes": "Kids not active: Barnacle narrates every event; Maya watches, asks 'Is she scared?', counts down, draws and pretends to swim, and none of it changes what happens. Facts: Tereshkova 'Forty-eight times around' and 'More loops than anyone before her' are not in f10. Laika, Leonov and Apollo 13 are brief wobbles = 1; 'cosmonaut' is clear from the scene."
+ },
+ {
+  "id": "space-race-band-c-15min",
+  "should_pass": false,
+  "scary_level": 1,
+  "notes": "facts: claims not in pack, stated as fact and repeated in True Facts: Tereshkova 'circled the Earth 48 times' (f10 gives no orbit count), 'She used to work in a factory', 'picked her out of dozens of trained candidates'. Korolev 'never got to see a single public photo of himself' is also invented. Everything else passes: Theo tunes the dial, spots the Explorer spike, times Gagarin's flight and frames Earthrise. Apollo 13 and Leonov wobbles are answered at once."
+ },
+ {
+  "id": "space-race-band-d",
+  "should_pass": false,
+  "scary_level": 1,
+  "notes": "facts: substantial claims not in pack: Leonov's 'suit had actually puffed up so much ... he barely fit back through the hatch'; Tereshkova 'worked in a factory'; Kennedy spoke 'in front of Congress'; Explorer's Geiger counter 'clicked itself silent'. Borderline: Eli mostly interprets what Relay plays rather than changing events, but he does spot the heartbeat and the maxed-out detector."
+ },
+ {
+  "id": "titanic-band-b",
+  "should_pass": false,
+  "scary_level": 1,
+  "notes": "kids_are_active false: Maya watches, counts, draws and asks questions in every chapter. Compass narrates every event, and nothing Maya does changes what happens (her watertight-box drawing only restates what the sailor said). Checked: keel, unsinkable, iceberg, wireless and lifeboats are each explained. The band legend is hedged ('Some folks say... nobody's completely sure')."
+ },
+ {
+  "id": "titanic-band-c",
+  "should_pass": false,
+  "scary_level": 2,
+  "notes": "facts: many substantial claims not in pack: Carpathia 'Fifty-eight miles... about four hours'; 'Twenty' lifeboats; 'Four, and still float... opened at least five'; Smith's 'last voyage before retiring'; 'twenty thousand people' at the launch; 'seven other musicians'. kids_are_active false: Hana watches and asks while history plays out around her. 'More than 1,500 people had died' goes against the care note."
+ },
+ {
+  "id": "video-games-band-b-15min",
+  "should_pass": true,
+  "scary_level": 0,
+  "notes": "Oscilloscope, physicist, console, cartridge and landfill are each explained. The Pong legend is hedged ('might be a bit of a tall tale'). The E.T. dig matches f11. Ben steers past the sun, places the Tetris block and clears Space Invaders."
+ },
+ {
+  "id": "video-games-band-c-solo",
+  "should_pass": true,
+  "scary_level": 0,
+  "notes": "Prototype, PDP-1, cartridge, crash, landfill and LAN party are explained. Legends are hedged. Theo's gravity idea changes Spacewar. 'Two home consoles... same year' is a kid's miscount, not a substantial claim."
+ },
+ {
+  "id": "volcanoes-band-b-15min",
+  "should_pass": false,
+  "scary_level": 1,
+  "notes": "facts: wrong comparisons: Mauna Loa 'over 4,000 meters... taller than thirteen Empire State Buildings' (about 10). Krakatoa's 3,000 miles 'like someone in Hawaii hearing a bang from New York' (about 5,000 mi). kids_are_active false: Zara watches ('We're just watching'), notices shapes and takes notes, and Ember drives every scene. Word count is within the band's limit of 10, each explained."
+ },
+ {
+  "id": "volcanoes-mixed-ages",
+  "should_pass": false,
+  "scary_level": 1,
+  "notes": "facts: Olympus Mons 'Stack Mount Everest on Mount Everest on Mount Everest. Still not as tall.' contradicts f21 'nearly three times taller than Mount Everest'. 'Mars has no plates sliding around... So one volcano just kept growing' is not in pack. kids_are_active false: after Milo taps the brick, the kids only comment while Pip bounces them everywhere."
+ }
+]

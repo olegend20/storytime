@@ -16,7 +16,7 @@ import {
   type BenchSet,
 } from '@/lib/eval/review-bench'
 import { nextResultPath, readResultFile, RESULTS_DIR, writeResultFile } from '@/lib/eval/results'
-import { evalScenarios, selectScenarios } from '@/lib/eval/scenarios'
+import { evalScenarios, getScenario, scenarioSplit, selectScenarios } from '@/lib/eval/scenarios'
 import { installCliCostLogging } from '@/lib/costs/cli'
 
 /**
@@ -30,6 +30,8 @@ import { installCliCostLogging } from '@/lib/costs/cli'
  *                         the shipped prompt
  *   --labels=PATH         hand labels, `[{ id, should_pass, notes }]`
  *   --samples=N           reviews per draft (default 3)
+ *   --split=train|test    only the golden set's train or test half: tune on train, score
+ *                         the winner on test once
  *   --scenarios=a,b       subset (also split:train / split:test), for --build
  *   --dry-run             print the estimate, make no calls
  *   --budget=N            approve up to $N (default ceiling $10)
@@ -89,7 +91,12 @@ async function build(sink: MeteredLogSink): Promise<void> {
 }
 
 async function score(setPath: string, sink: MeteredLogSink): Promise<void> {
-  const set = readResultFile<BenchSet>(setPath)
+  const full = readResultFile<BenchSet>(setPath)
+  // Tune on split:train; score the winner on split:test once (the golden set's halves, #48).
+  const split = value('split')
+  const set: BenchSet = split
+    ? { ...full, items: full.items.filter((i) => scenarioSplit(getScenario(i.scenario_id)) === split) }
+    : full
   const samples = Number(value('samples') ?? '3')
   const estimate = estimateRunCost(set.items.length, samples)
   console.log(formatEstimate(`review-bench (${set.items.length} drafts × ${samples})`, estimate))
@@ -109,7 +116,7 @@ async function score(setPath: string, sink: MeteredLogSink): Promise<void> {
   const run: BenchRun = {
     kind: 'review-bench-run',
     ran_at: new Date().toISOString(),
-    set: setPath,
+    set: split ? `${setPath} (split:${split})` : setPath,
     prompt: { ...prompt, dir: promptDir ?? 'prompts' },
     samples,
     labelled: labels !== null,

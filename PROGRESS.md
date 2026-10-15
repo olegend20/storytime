@@ -914,6 +914,15 @@ estimate $7.88 a run. Two live baselines (owner-approved, ~$33) measure the per-
 deadline; a caller abort is no longer retried. VT-R1-VT-R5 in
 `test/unit/callmodel-transport.test.ts`.
 
+### 2026-10-15 — the quality reviewer gets its own bench (issue #58, DECISIONS #197–#199)
+
+`pnpm review-bench`: 32 first drafts frozen at the gate ($5.68), hand-labelled, scored per
+reviewer prompt for ~$0.40 a half (train to tune, test to check). Ships `quality-review.v4`
+(reasons ≤150 characters; an omitted pack fact is not a failure): train wrong fails 10 -> 6
+of 15, test catches 21 -> 27 of 30. The eval keeps each first draft; a review that fails
+validation says why. Finding: the reviewer is near chance against the labels, and most
+drafts really fail, mostly on children who only watch (#199). Spend $9.07 of ~$10 approved.
+
 ### 2026-10-13 — latency in the eval (issue #46, DECISIONS #184)
 
 `pnpm eval` now reports time to first chapter (the number to hill-climb), total time and

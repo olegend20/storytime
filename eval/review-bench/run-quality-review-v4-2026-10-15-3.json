@@ -1,0 +1,679 @@
+{
+  "kind": "review-bench-run",
+  "ran_at": "2026-10-15T05:34:10.710Z",
+  "set": "eval/review-bench/set-2026-10-15.json (split:train)",
+  "prompt": {
+    "id": "quality-review",
+    "version": 4,
+    "dir": "eval/review-bench/candidates/c-explained-patterns"
+  },
+  "samples": 3,
+  "labelled": false,
+  "summary": {
+    "calls": 48,
+    "format_failures": 1,
+    "wrong_fails": {
+      "count": 0,
+      "of": 0
+    },
+    "catches": {
+      "count": 0,
+      "of": 0
+    },
+    "flips": {
+      "count": 10,
+      "of": 16
+    },
+    "longest_reason": 273,
+    "cost_usd": 0.4072159999999999
+  },
+  "reviews": [
+    {
+      "item_id": "bees-band-a-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 1: 'Amber is old, hard, see-through stuff' — explain what amber IS, not just what it's like",
+        "Chapter 2: 'drones' explained as helpers but not what drones actually do",
+        "Chapter 4: 'nectar' explained but 'teamwork' used without explanation for age 4",
+        "Chapter 5: Karl von Frisch named but not identified (e.g., 'a scientist')",
+        "Chapter 6: 'hexagons' explained after use, not before; Juno's pretend-stick test doesn't match real honeycomb building"
+      ],
+      "cost_usd": 0.007228
+    },
+    {
+      "item_id": "bees-band-a-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 1: 'Amber is old, hard, see-through stuff' — explanation uses 'see-through' which a 4-year-old may not understand; rephrase as 'you can see through it' or 'clear like glass'",
+        "Chapter 2: 'drones' explained as 'they help make new bees' — too vague for 4-year-old; say what they do in simpler words",
+        "Chapter 4: 'nectar' explained as 'sweet juice flowers make just for bees' — good, but add that bees drink it, to clarify the connection to honey",
+        "Chapter 5: Story says 'A scientist named Karl von Frisch figured out bees dance' — pack says he 'discovered' the waggle dance; consistent enough, no issue",
+        "Chapter 7: 'shiver their wings' — explain briefly what shivering does (makes heat/warmth) so 4-year-old understands why"
+      ],
+      "cost_usd": 0.007653
+    },
+    {
+      "item_id": "bees-band-a-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 1: 'Amber is old, hard, see-through stuff' — explanation is correct but 'amber' reappears in True Facts without re-explanation",
+        "Chapter 4: 'drones' used without explanation — should say what they are",
+        "Chapter 5: Karl von Frisch named but not explained as a scientist — needs 'a scientist named'",
+        "Chapter 6: hexagons explained as 'six-sided shapes' but story says 'six' without counting them out for a 4-year-old",
+        "Chapter 8: 'one out of every three' is abstract for age 4 — needs a concrete example Juno can picture"
+      ],
+      "cost_usd": 0.007298
+    },
+    {
+      "item_id": "bicycles-band-b-5min-tricks",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Chapter 7: Ting states Wright brothers 'built the first airplane that really flew' in 1903, but pack says 'first successful airplane' — needs hedge like 'one of the first' or 'the first to really fly'",
+        "Chapter 6: 'Susan B. Anthony said bicycles gave women more freedom' — pack quotes her as saying 'has done more to emancipate women than anything else in the world,' a stronger claim; story's paraphrase is gentler but shifts her voice"
+      ],
+      "cost_usd": 0.007678
+    },
+    {
+      "item_id": "bicycles-band-b-5min-tricks",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Chapter 7: Ting says Wright brothers 'built the first airplane that really flew' in 1903, but pack says 'first successful airplane' — needs hedge like 'one of the first' or 'first to really fly'",
+        "Chapter 6: Susan B. Anthony quote paraphrased as fact without attribution or 'people say' — pack marks it medium confidence"
+      ],
+      "cost_usd": 0.007533
+    },
+    {
+      "item_id": "bicycles-band-b-5min-tricks",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "Chapter 7: 'derailleurs' is not explained — story says 'little gadgets that shift the chain' but doesn't say what shifting does or why it helps",
+        "Chapter 6: Susan B. Anthony quote paraphrased but not attributed as such — 'gave women more freedom' softens the actual historical statement"
+      ],
+      "cost_usd": 0.007468
+    },
+    {
+      "item_id": "climb-walls-band-a-15min-wild",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 8: 'scientists' and 'studying how things work' — explain what scientists do",
+        "Chapter 6: 'pattern' on tree frog toes described as 'kind of like a soccer ball' but soccer is not explained for a 5-year-old",
+        "Chapter 1: 'microscope' explained as 'special looking tool' but 'special' is vague — say what it does"
+      ],
+      "cost_usd": 0.008664
+    },
+    {
+      "item_id": "climb-walls-band-a-15min-wild",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 8: 'scientists' and 'studying how things work' — explain what scientists do",
+        "Chapter 1: 'microscope' is explained as 'a special looking tool' but not in everyday words for age 5"
+      ],
+      "cost_usd": 0.008444
+    },
+    {
+      "item_id": "climb-walls-band-a-15min-wild",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 8: 'scientists' and 'studying how things work' — explain what scientists do",
+        "Chapter 6: 'pattern' and 'soccer ball' comparison unclear for age 5",
+        "Chapter 2: fly description 'ooze out a little drop of sticky goo' is explained but 'pads' is not defined simply enough",
+        "Story claims 2014 fact but pack confidence is 'medium' — verify reliability for bedtime story"
+      ],
+      "cost_usd": 0.008719
+    },
+    {
+      "item_id": "lego-band-a-pair",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "Chapter 2: 'coincidence' is not explained until after Juno asks about it",
+        "Chapter 5: 'patent' is not explained",
+        "Chapter 7: 'minifigures' is explained only after the term appears",
+        "Juno is mostly a reactor; Milo makes the key discoveries (the glowing brick idea, the tube idea, the click discovery)"
+      ],
+      "cost_usd": 0.007765
+    },
+    {
+      "item_id": "lego-band-a-pair",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.00728
+    },
+    {
+      "item_id": "lego-band-a-pair",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.00728
+    },
+    {
+      "item_id": "pompeii-band-c-15min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.010952
+    },
+    {
+      "item_id": "pompeii-band-c-15min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.010952
+    },
+    {
+      "item_id": "pompeii-band-c-15min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Chapter 5: 'Pliny the Elder' death not mentioned; pack says he 'died during the rescue attempt' but story leaves this unclear",
+        "Chapter 5: states Pliny the Elder 'sail[ed] his ships straight toward it, to pull people out' without clarifying he died in the attempt"
+      ],
+      "cost_usd": 0.011342
+    },
+    {
+      "item_id": "rainbows-band-b-5min-teasing",
+      "sample": 1,
+      "valid": false,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B",
+        "too scary for band B: scary_level 3, limit 1",
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack",
+        "tone does not match the requested tones"
+      ],
+      "reasons": [
+        "quality review output did not validate; treating as a failure (reasons.2: Too big: expected string to have <=300 characters)"
+      ],
+      "raw_text": "```json\n{\n  \"reasons\": [\n    \"Chapter 3: 'Isaac Newton' and '1660s' are names and dates, not big words, but 'prism' needs checking—it is explained ('a tiny glass kite') before use\",\n    \"Chapter 7: 'Bifrost' is a proper name (Norse mythology), not a big word; 'flood' is everyday; the biblical reference at 'after a big flood ends' matches fact f18 and is framed gently as a symbol, not scary\",\n    \"All big words checked: 'water pistol' (context clear), 'WHOOSH' (sound word), 'refraction' (explained 'light slows down in water and turns, like a bike turning on wet grass'), 'prism' (explained 'like a tiny glass kite'), 'double rainbow' (explained 'light bounces twice'), 'moonbow' (explained 'same trick, but moonlight instead of sunlight')—all explained on the spot\"\n  ],\n  \"age_appropriate\": true,\n  \"scary_level\": 0,\n  \"kids_are_active_participants\": true,\n  \"facts_consistent_with_pack\": true,\n  \"tone_matches_request\": true\n}\n```",
+      "cost_usd": 0.008076
+    },
+    {
+      "item_id": "rainbows-band-b-5min-teasing",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [
+        "Chapter 3: 'Isaac Newton' and '1660s' are names and dates, not big words, but 'prism' needs earlier introduction before the glass triangle appears",
+        "Chapter 6: 'moonbow' is explained right after use, but 'double rainbow' appears without explanation before Lumi names it"
+      ],
+      "cost_usd": 0.007341
+    },
+    {
+      "item_id": "rainbows-band-b-5min-teasing",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Chapter 3: 'Isaac Newton' and '1660s' are unexplained — identify him as a scientist and the time period as long ago",
+        "Chapter 6: 'moonbow' is used but not explained until after — move explanation before or into the same sentence",
+        "Chapter 7: Biblical flood fact presented as settled truth; pack says confidence 'medium' — add hedge like 'In one old story' or 'Some people say'"
+      ],
+      "cost_usd": 0.007486
+    },
+    {
+      "item_id": "sharks-band-b-siblings",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "Chapter 3: 'extinct' is not explained until later; define it immediately when first used",
+        "Chapter 3: 'fossils' is not explained on the spot; add a brief definition in that sentence",
+        "Chapter 5: 'epaulette shark' named but not defined; say what kind of shark it is when introduced"
+      ],
+      "cost_usd": 0.008062
+    },
+    {
+      "item_id": "sharks-band-b-siblings",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.007647
+    },
+    {
+      "item_id": "sharks-band-b-siblings",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "Chapter 3: 'extinct' is not explained—'it isn't swimming anywhere today' comes after, not in the same sentence",
+        "Chapter 3: 'fossils' is not explained on the spot—definition comes two sentences later",
+        "Chapter 5: 'epaulette shark' named but not explained what kind of shark it is until Chapter 6"
+      ],
+      "cost_usd": 0.008092
+    },
+    {
+      "item_id": "sleep-band-a-5min-dark",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.006237
+    },
+    {
+      "item_id": "sleep-band-a-5min-dark",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 6: 'suprachiasmatic nucleus' unexplained; use 'tiny clock' only",
+        "Chapter 5: 'growing helper' is vague; say 'growth hormone' or explain what helper does",
+        "Fact f5 in pack says 'suprachiasmatic nucleus'; story must not name it"
+      ],
+      "cost_usd": 0.006662
+    },
+    {
+      "item_id": "sleep-band-a-5min-dark",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.006237
+    },
+    {
+      "item_id": "sleep-band-c-5min-bedtime",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C"
+      ],
+      "reasons": [
+        "Chapter 1: 'Nathaniel Kleitman' introduced without description; pack names him co-discoverer",
+        "Chapter 2: 'Nobel Prize' explained as award but not what field; context is biology not obvious",
+        "Chapter 5: 'slip fielder' cricket term may not land for non-cricket readers; unexplained jargon"
+      ],
+      "cost_usd": 0.007912
+    },
+    {
+      "item_id": "sleep-band-c-5min-bedtime",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [
+        "Chapter 1: 'Nathaniel Kleitman' named but not identified as Aserinsky's teacher until dialogue",
+        "Chapter 2: 'suprachiasmatic nucleus' not mentioned; story calls it 'master clock' only, which is accurate but pack uses formal term",
+        "Chapter 5: pack fact f3 about REM muscle paralysis explained in Chapter 6, not Chapter 5 where dolphins/giraffes/bats appear",
+        "Chapter 6: 'growth hormone' used but not explained as what it does until after — should precede or clarify on first use"
+      ],
+      "cost_usd": 0.008192
+    },
+    {
+      "item_id": "sleep-band-c-5min-bedtime",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.007467
+    },
+    {
+      "item_id": "sleep-band-d-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.008231
+    },
+    {
+      "item_id": "sleep-band-d-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.008231
+    },
+    {
+      "item_id": "sleep-band-d-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.008231
+    },
+    {
+      "item_id": "space-race-band-b-15min-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Chapter 9: Apollo 1 fire not mentioned despite 'sensitive_notes' flag in pack (f12)",
+        "Chapter 3: 'Explorer 1' launched January 31, 1958, but NASA created October 1, 1958 — timeline reversed in story"
+      ],
+      "cost_usd": 0.009181
+    },
+    {
+      "item_id": "space-race-band-b-15min-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [
+        "Chapter 9: Apollo 13 oxygen tank problem not explained as resolved in the moment—'something did go wrong' but the fix happens off-page with engineers, leaving tension unresolved before bed",
+        "Chapter 1: 'orbit' explained twice identically ('big circle around Earth, like a ball on a very long string' then 'circling is called an orbit')—repetition weakens clarity"
+      ],
+      "cost_usd": 0.009311
+    },
+    {
+      "item_id": "space-race-band-b-15min-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "Chapter 9: states Explorer 1 launched January 31, 1958; pack says January 31, 1958 — consistent",
+        "Chapter 3: 'Explorer 1' launched before NASA started (Jan 1958 vs Oct 1958); pack confirms Explorer 1 came first",
+        "Chapter 9: Apollo 13 oxygen tank problem mentioned but not explained as a big word or concept; Maya does not engage with it",
+        "Chapter 9: Maya's role becomes passive—she watches three rockets, does not decide or act to change outcomes"
+      ],
+      "cost_usd": 0.009501
+    },
+    {
+      "item_id": "space-race-band-d",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Chapter 8: Apollo 1 fire (f12) not mentioned despite being in fact pack with kid_safe:false; sensitive note says mention gently with focus on safety lessons"
+      ],
+      "cost_usd": 0.009298
+    },
+    {
+      "item_id": "space-race-band-d",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Chapter 8: Apollo 1 fire mentioned in fact pack (f12) but entirely absent from story despite being a significant Space Race event"
+      ],
+      "cost_usd": 0.009253
+    },
+    {
+      "item_id": "space-race-band-d",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Chapter 8: Apollo 1 fire mentioned in fact pack (f12, min_age 7) but story omits it entirely—fact pack notes it should be mentioned gently"
+      ],
+      "cost_usd": 0.009303
+    },
+    {
+      "item_id": "titanic-band-c",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [
+        "Chapter 5: 'Iceberg, right ahead!' is a sudden loud noise that triggers stomach-drop fear; resolved immediately but peaks at suspense level 2, which is at the band's limit and may feel intense for bedtime",
+        "Chapter 6: 'More than 1,500 people had died that night' states death toll plainly without hedge; pack notes f7 is kid_safe:false for ages under 6, and this direct statement may trouble a 10-year-old at bedtime despite being age-appropriate for the band"
+      ],
+      "cost_usd": 0.009647
+    },
+    {
+      "item_id": "titanic-band-c",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "Chapter 5: 'Hana's stomach dropped the way it does at the top of a rollercoaster' — she is a passive observer during the collision; the compass explains what happened underwater",
+        "Chapter 6: Hana watches people board lifeboats and talks to passengers, but makes no choices or takes no action that changes what happens",
+        "Chapter 7: Hana watches the wireless operators and observes the Carpathia's arrival; she does not participate in rescue or decision-making",
+        "Chapter 8: Hana watches the submersible find the wreck through a window; the oceanographer Robert Ballard does the exploration"
+      ],
+      "cost_usd": 0.009767
+    },
+    {
+      "item_id": "titanic-band-c",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C"
+      ],
+      "reasons": [
+        "Chapter 5: 'Hana's stomach dropped the way it does at the top of a rollercoaster' — simile assumes child has ridden a rollercoaster",
+        "Chapter 7: states 'more than 1,500 people had died' — pack fact f7 is marked kid_safe:false for ages under 6; story names specific death toll without hedge"
+      ],
+      "cost_usd": 0.009472
+    },
+    {
+      "item_id": "video-games-band-b-15min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "Chapter 1: 'oscilloscope' not explained — 'Scientists used it to look at wiggly lines made of electricity' describes its use but not what it is",
+        "Chapter 1: 'physicist' not explained in everyday words",
+        "Chapter 3: 'console' explained after use — appears in 'Magnavox Odyssey' sentence before definition follows",
+        "Chapter 6: 'landfill' not explained — 'giant dump for trash' uses 'dump' which is itself vague for age 8",
+        "Chapter 9: 'developer' not explained",
+        "Sonic chapter: 'Sega' introduced without saying what it is"
+      ],
+      "cost_usd": 0.010086
+    },
+    {
+      "item_id": "video-games-band-b-15min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.009261
+    },
+    {
+      "item_id": "video-games-band-b-15min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "Chapter 3: 'oscilloscope' explained as 'a machine that feels the ground wobble' — should say it shows wiggly lines of electricity",
+        "Chapter 7: 'console' explained only in Chapter 5; Ben's first encounter in Chapter 3 uses the word without explanation",
+        "Chapter 9: Sonic the Hedgehog released 1991, but pack lists it as f15 with no date conflict — verified accurate"
+      ],
+      "cost_usd": 0.009806
+    },
+    {
+      "item_id": "video-games-band-c-solo",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C"
+      ],
+      "reasons": [
+        "Level 5: 'crash' is a big word, explained correctly as 'the market shrank fast' but the explanation comes after the dash, not before or in the same sentence",
+        "Level 5: 'landfill' is explained but uses 'official dump' which is itself vague for a 10-year-old",
+        "Level 6: NES is not explained — story says 'a whole new console' but does not name or define what NES stands for or means"
+      ],
+      "cost_usd": 0.009826
+    },
+    {
+      "item_id": "video-games-band-c-solo",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.009236
+    },
+    {
+      "item_id": "video-games-band-c-solo",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [
+        "Chapter 5: 'crash' used without explanation before 'which just means'—verify the explanation comes on time",
+        "Chapter 7: Doom described as 'shooter' without kid-safe framing; pack notes focus on multiplayer, not violence"
+      ],
+      "cost_usd": 0.009556
+    },
+    {
+      "item_id": "volcanoes-mixed-ages",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 2: 'magma' and 'lava' are big words not explained on the spot",
+        "Chapter 2: 'erupts' is a big word not explained on the spot",
+        "Chapter 3: 'plates' is a big word not explained on the spot",
+        "Chapter 3: 'Ring of Fire' is a big word not explained on the spot",
+        "Chapter 4: 'hotspot' is a big word not explained on the spot",
+        "Chapter 6: 'Olympus Mons' is a big word not explained on the spot",
+        "Chapter 7: 'supervolcano' is a big word not explained on the spot",
+        "Chapter 7: 'Scientists' and monitoring concept may be hard for 4-year-old",
+        "Band A allows max 6 big words explained on the spot; this story uses at least 8 unexplained"
+      ],
+      "cost_usd": 0.008209
+    },
+    {
+      "item_id": "volcanoes-mixed-ages",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "Chapter 2: 'magma' and 'lava' are not explained — only named as secret names, not defined",
+        "Chapter 3: 'plates' used without explanation of what they are",
+        "Chapter 3: 'Ring of Fire' stated as fact with no explanation of what it is or why it matters",
+        "Chapter 6: 'Mount Everest' named without saying what it is",
+        "Chapter 7: 'supervolcano' used without explanation",
+        "Chapter 7: 'Scientists watch it closely' but Juno has no active role in the adventure"
+      ],
+      "cost_usd": 0.007829
+    },
+    {
+      "item_id": "volcanoes-mixed-ages",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 2: 'magma' and 'lava' are explained but 'erupt' is not — used in 'when a volcano erupts' with no definition",
+        "Chapter 3: 'plates' introduced as 'giant puzzle pieces' but Juno (age 4) may not grasp abstract comparison without concrete example",
+        "Chapter 7: 'supervolcano' used without explanation of what makes it 'super' or different from regular volcanoes",
+        "Chapter 7: 'seismograph' concept described as 'listening machines that feel tiny shakes' — 'seismograph' word itself never used, but the band A limit is 6 big words explained; counting magma, lava, erupt, plates, supervolcano, plus this unnamed device = 6 concepts at limit",
+        "Band A suspense ceiling is 1; Chapter 7 'Is it going to erupt? Right now?' creates brief tension but Pip's immediate reassurance resolves it, meeting the limit correctly"
+      ],
+      "cost_usd": 0.008314
+    }
+  ]
+}

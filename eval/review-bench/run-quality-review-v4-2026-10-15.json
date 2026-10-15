@@ -1,0 +1,592 @@
+{
+  "kind": "review-bench-run",
+  "ran_at": "2026-10-15T05:33:59.397Z",
+  "set": "eval/review-bench/set-2026-10-15.json (split:train)",
+  "prompt": {
+    "id": "quality-review",
+    "version": 4,
+    "dir": "eval/review-bench/candidates/a-short-facts"
+  },
+  "samples": 3,
+  "labelled": false,
+  "summary": {
+    "calls": 48,
+    "format_failures": 1,
+    "wrong_fails": {
+      "count": 0,
+      "of": 0
+    },
+    "catches": {
+      "count": 0,
+      "of": 0
+    },
+    "flips": {
+      "count": 3,
+      "of": 16
+    },
+    "longest_reason": 193,
+    "cost_usd": 0.385258
+  },
+  "reviews": [
+    {
+      "item_id": "bees-band-a-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.006197
+    },
+    {
+      "item_id": "bees-band-a-5min",
+      "sample": 2,
+      "valid": false,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A",
+        "too scary for band A: scary_level 3, limit 1",
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack",
+        "tone does not match the requested tones"
+      ],
+      "reasons": [
+        "quality review output did not validate; treating as a failure (not JSON)"
+      ],
+      "raw_text": "```json\n{\n  \"age_appropriate\": false,\n  \"scary_level\": 0,\n  \"kids_are_active_participants\": true,\n  \"facts_consistent_with_pack\": true,\n  \"tone_matches_request\": true,\n  \"reasons\": [\n    \"Chapter 1: 'Amber is old, hard, see-through stuff' — explanation uses 'see-through' which a 4-year-old knows, but the definition itself is vague; consider 'Amber is hard yellow stuff that sparkles'\",\n    \"Chapter 4: 'nectar' explained as 'sweet juice flowers make just for bees' — acceptable, but 'sipping something called' adds awkwardness\",\n    \"Chapter 6: 'hexagons' explained as 'six-sided shapes' — acceptable for band A if definition is concrete; the story does explain it\"\n  ]\n}\n```\n\nWait, let me reconsider. The rubric says a big word is explained on the spot when \"the same sentence or the next says what it is in everyday words.\" Let me check each:\n\n- **Amber** (Ch 1): \"Amber is old, hard, see-through stuff. It comes from sticky tree juice that turned hard like glass.\" ✓ Explained.\n- **Drones** (Ch 2): \"A few are boys, called drones — they help make new bees, but they don't make honey.\" ✓ Explained.\n- **Nectar** (Ch 4): \"sipping something called nectar — sweet juice flowers make just for bees.\" ✓ Explained.\n- **Hexagons** (Ch 6): \"Those are hexagons,\" said Clover. \"Six-sided shapes.\" ✓ Explained.\n\nAll big words are explained on the spot. Sentence structure is simple and clear. No suspense issue (scary_level 0). Juno is an active participant: she finds the queen, becomes a flower-finder, tries the waggle dance, builds hexagons with sticks. Facts match the pack. Tone is silly (waggle dance, \"MY BED\" flower) and calm (bedtime framing, gentle ending).\n\n```json\n{\n  \"age_appropriate\": true,\n  \"scary_level\": 0,\n  \"kids_are_active_participants\": true,\n  \"facts_consistent_with_pack\": true,\n  \"tone_matches_request\": true,\n  \"reasons\": []\n}\n```",
+      "cost_usd": 0.008752
+    },
+    {
+      "item_id": "bees-band-a-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 1: 'Amber is old, hard, see-through stuff' — explain what amber IS, not just what it's like",
+        "Chapter 2: 'drones' is not explained",
+        "Chapter 4: 'nectar' is not explained in everyday words",
+        "Chapter 6: 'hexagons' is explained after the question, not before use"
+      ],
+      "cost_usd": 0.006672
+    },
+    {
+      "item_id": "bicycles-band-b-5min-tricks",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.006797
+    },
+    {
+      "item_id": "bicycles-band-b-5min-tricks",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.006797
+    },
+    {
+      "item_id": "bicycles-band-b-5min-tricks",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.006797
+    },
+    {
+      "item_id": "climb-walls-band-a-15min-wild",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.007873
+    },
+    {
+      "item_id": "climb-walls-band-a-15min-wild",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.007873
+    },
+    {
+      "item_id": "climb-walls-band-a-15min-wild",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.007873
+    },
+    {
+      "item_id": "lego-band-a-pair",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 1: 'coincidence' not explained; Juno asks what it means but definition ('two things that match by accident') comes after and is too abstract for age 4",
+        "Chapter 5: 'patent' used but not explained—'special papers saying it was his new idea' is stage-setting, not a definition of what a patent is or does"
+      ],
+      "cost_usd": 0.007449
+    },
+    {
+      "item_id": "lego-band-a-pair",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.007009
+    },
+    {
+      "item_id": "lego-band-a-pair",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 5: 'patent' is not explained",
+        "Chapter 7: 'minifigures' is not explained"
+      ],
+      "cost_usd": 0.007189
+    },
+    {
+      "item_id": "pompeii-band-c-15min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Chapter 5: Pliny the Elder's death not mentioned; pack f7 says he 'died during the rescue attempt' but story implies he survived",
+        "Chapter 5: 'Many people in Pompeii did not survive' hedges actual death toll; pack f5 states 'around 2,000 residents died'"
+      ],
+      "cost_usd": 0.011091
+    },
+    {
+      "item_id": "pompeii-band-c-15min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C"
+      ],
+      "reasons": [
+        "chapter 5: Pliny the Elder's death not mentioned; pack says he died but story omits this, leaving narrative incomplete for the band",
+        "chapter 5: around 2,000 deaths in Pompeii stated as 'many people did not survive' without scale; pack confidence is medium on casualty numbers"
+      ],
+      "cost_usd": 0.011071
+    },
+    {
+      "item_id": "pompeii-band-c-15min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 5: Pliny the Elder's death not explained; pack marks f7 as not kid-safe for age 11",
+        "chapter 5: 'many people in Pompeii did not survive' — pack specifies ~2,000 deaths; story hedges without numbers or context appropriate to band C",
+        "chapter 1: story's name origin 'pompe = five villages' presented as definite fact; pack marks f22 as 'medium' confidence 'legend'"
+      ],
+      "cost_usd": 0.011271
+    },
+    {
+      "item_id": "rainbows-band-b-5min-teasing",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.006675
+    },
+    {
+      "item_id": "rainbows-band-b-5min-teasing",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.006675
+    },
+    {
+      "item_id": "rainbows-band-b-5min-teasing",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.006675
+    },
+    {
+      "item_id": "sharks-band-b-siblings",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.007376
+    },
+    {
+      "item_id": "sharks-band-b-siblings",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.007376
+    },
+    {
+      "item_id": "sharks-band-b-siblings",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.007376
+    },
+    {
+      "item_id": "sleep-band-a-5min-dark",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.005966
+    },
+    {
+      "item_id": "sleep-band-a-5min-dark",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.005966
+    },
+    {
+      "item_id": "sleep-band-a-5min-dark",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.005966
+    },
+    {
+      "item_id": "sleep-band-c-5min-bedtime",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.007196
+    },
+    {
+      "item_id": "sleep-band-c-5min-bedtime",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.007196
+    },
+    {
+      "item_id": "sleep-band-c-5min-bedtime",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.007196
+    },
+    {
+      "item_id": "sleep-band-d-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.00796
+    },
+    {
+      "item_id": "sleep-band-d-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.00796
+    },
+    {
+      "item_id": "sleep-band-d-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.00796
+    },
+    {
+      "item_id": "space-race-band-b-15min-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Chapter 3: 'Explorer 1' launched Jan 31, 1958; story says 'January 31, 1958' but then says NASA started 'October 1, 1958' — NASA was founded first",
+        "Chapter 9: Apollo 13 oxygen tank problem not explained — 'had a problem' is vague for age 7",
+        "Story omits Apollo 1 fire (f12) but pack marks it 'kid_safe: false, min_age: 7' — inclusion/omission is writer's choice, but sensitive note applies if mentioned"
+      ],
+      "cost_usd": 0.00926
+    },
+    {
+      "item_id": "space-race-band-b-15min-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Chapter 3: 'Explorer 1' launched January 31, 1958, but NASA started October 1, 1958 — story reverses the order",
+        "Chapter 9: Story omits Apollo 1 fire (f12), which is in pack at kid_safe:false but marked for sensitive mention at age 7+"
+      ],
+      "cost_usd": 0.00897
+    },
+    {
+      "item_id": "space-race-band-b-15min-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Chapter 3: 'Explorer 1' launched January 31, 1958 per pack; story says 1958 without date",
+        "Chapter 9: Apollo 13 oxygen tank problem not in pack; pack says 'oxygen tank explosion'",
+        "Chapter 1: 'orbit' unexplained on first use before Barnacle defines it"
+      ],
+      "cost_usd": 0.009
+    },
+    {
+      "item_id": "space-race-band-d",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band D",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Chapter 5: Leonov spacewalk duration stated as 'about ten minutes'; pack says 'about ten minutes' but context suggests longer—verify against historical record",
+        "Apollo 1 fire (f12) omitted entirely despite being major Space Race event; pack marks it for age 7+ with safety focus"
+      ],
+      "cost_usd": 0.009182
+    },
+    {
+      "item_id": "space-race-band-d",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band D",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 5: Vostok 6 is described as carrying Leonov; pack confirms Leonov flew Voskhod 2 on March 18, 1965",
+        "fact pack f12 (Apollo 1 fire, three deaths) is sensitive and marked min_age 7; story omits it entirely despite covering 1961–1975 and band D audience"
+      ],
+      "cost_usd": 0.009277
+    },
+    {
+      "item_id": "space-race-band-d",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band D",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 5: Leonov's spacewalk described as scary ('first real wobble') but pack lists f12 Apollo 1 fire (three deaths) as sensitive fact; story omits it entirely",
+        "chapter 6: story calls Korolev's secrecy 'a state secret' but pack says identity was 'kept a state secret'; minor but story's phrasing unclear on whether Korolev himself knew he was secret",
+        "Vostok capsule name: chapter 4 says 'Vostok 1' for Gagarin but no article; chapter 5 says 'Vostok 6' for Tereshkova — inconsistent capitalization/formatting with pack's 'Vostok' usage"
+      ],
+      "cost_usd": 0.009687
+    },
+    {
+      "item_id": "titanic-band-c",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C"
+      ],
+      "reasons": [
+        "Chapter 5–7: death toll (1,500+ people) stated plainly without hedge; pack flags f7 as not kid-safe under age 6"
+      ],
+      "cost_usd": 0.008941
+    },
+    {
+      "item_id": "titanic-band-c",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C"
+      ],
+      "reasons": [
+        "Chapter 5–7: death toll ('More than 1,500 people had died') stated plainly without hedge; pack marks f7 kid_safe:false for age 6+, inappropriate for age 10 in context of active sinking sequence"
+      ],
+      "cost_usd": 0.009041
+    },
+    {
+      "item_id": "titanic-band-c",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C"
+      ],
+      "reasons": [
+        "Chapter 5–7: death toll (1,500+) stated plainly without hedge; pack marks f7 'kid_safe: false, min_age 6' and this is a 10-year-old reading at bedtime"
+      ],
+      "cost_usd": 0.009026
+    },
+    {
+      "item_id": "video-games-band-b-15min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "Chapter 6: 'landfill' is not explained (Band B budget: max 10 big words, each explained on the spot)",
+        "Chapter 7: 'bundled' is not explained",
+        "Chapter 8: 'CDs' explained only in adult terms; 'What is a CD?' needs everyday analogy for 8-year-old"
+      ],
+      "cost_usd": 0.00944
+    },
+    {
+      "item_id": "video-games-band-b-15min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.00899
+    },
+    {
+      "item_id": "video-games-band-b-15min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "chapter 6: 'landfill' not explained",
+        "chapter 8: 'CDs' not explained",
+        "chapter 9: 'developer' not explained"
+      ],
+      "cost_usd": 0.00923
+    },
+    {
+      "item_id": "video-games-band-c-solo",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.008965
+    },
+    {
+      "item_id": "video-games-band-c-solo",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.008965
+    },
+    {
+      "item_id": "video-games-band-c-solo",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.008965
+    },
+    {
+      "item_id": "volcanoes-mixed-ages",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 2: 'erupts' is not explained",
+        "Chapter 7: 'supervolcano' is not explained",
+        "Chapter 2: 'magma' and 'lava' are explained but exceed band A budget of 6 big words"
+      ],
+      "cost_usd": 0.007173
+    },
+    {
+      "item_id": "volcanoes-mixed-ages",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 2: 'magma' and 'lava' not explained in everyday words for 4-year-old",
+        "Chapter 3: 'plates' used without explanation of what they are",
+        "Chapter 7: 'supervolcano' not explained; 'seismograph' used as 'listening machines' but term itself unexplained",
+        "Exceeds band A budget: 6 big words (magma, lava, plates, hotspot, supervolcano, seismograph)"
+      ],
+      "cost_usd": 0.007458
+    },
+    {
+      "item_id": "volcanoes-mixed-ages",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 2: 'magma' and 'lava' are big words; only 'magma' is explained",
+        "Chapter 2: 'erupts' is not explained on the spot",
+        "Chapter 3: 'plates' used as a noun without explanation; children are 4, 7, 10",
+        "Chapter 7: 'supervolcano' is not explained",
+        "Chapter 7: 'seismograph' is not explained; story says 'listening machines' instead"
+      ],
+      "cost_usd": 0.007458
+    }
+  ]
+}
