@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { GenerationLogSink } from '@/lib/ai'
+import type { GenerationRequest, StoryOutput } from '@/lib/schemas'
 import type { FactPackLike, GateSummary } from './caps'
 import type { EvalScenario } from './scenarios'
 import type { JudgeableStory } from './types'
@@ -57,6 +58,12 @@ export interface FirstDraft {
   reasons: string[]
   /** Hard rules mended or cut in place (rungs 1-2). */
   mended_rules: number[]
+  /**
+   * The draft itself and the request it was written to, so the quality reviewer can be
+   * replayed on it (issue #58, `pnpm review-bench`). Absent in records from before #58.
+   */
+  story?: StoryOutput
+  request?: GenerationRequest
 }
 
 export interface GenerateInput {

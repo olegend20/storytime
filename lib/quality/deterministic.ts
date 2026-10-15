@@ -97,13 +97,6 @@ function endsOnCliffhanger(text: string): boolean {
 }
 
 /**
- * GUARDRAILS.md §4.1 rule 12: no mention of AI, prompts, models or the app inside a story.
- *
- * Phrases only, never bare brand words: "Claude Monet" and "Claude Debussy" are legitimate
- * subjects for an art or music story, and a history-of-computing story may name a real
- * company. What is banned is the story talking about its own machinery.
- */
-/**
  * Our own machinery, by name (2026-10-08: a soccer story said "the bible notes no cousin
  * exists"). Whole words only - "artifact packed", "family history bible" are fine - and
  * "the Bible" as a subject is untouched.
@@ -112,6 +105,13 @@ const MACHINERY = /\b(?:story bible|bible notes|fact[ _]pack|fact_ids)\b/i
 /** A fact id copied into the text: ours are lowercase ("[f12]"); "(F1)" is Formula One. */
 const FACT_ID_TAG = /[[(]f\d{1,3}[\])]/
 
+/**
+ * GUARDRAILS.md §4.1 rule 12: no mention of AI, prompts, models or the app inside a story.
+ *
+ * Phrases only, never bare brand words: "Claude Monet" and "Claude Debussy" are legitimate
+ * subjects for an art or music story, and a history-of-computing story may name a real
+ * company. What is banned is the story talking about its own machinery.
+ */
 const META_TOKENS = [
   'as an ai',
   'as a language model',

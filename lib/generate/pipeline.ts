@@ -357,6 +357,12 @@ export interface RunGenerationResult {
   bibleUpdate: Promise<unknown> | null
   /** Why `status` is `failed`: the underlying error's message. Never shown to a parent. */
   error?: string
+  /**
+   * The draft the gate reviewed first, and the request it was written to: what the eval
+   * keeps so the quality reviewer can be replayed on it (issue #58). Absent when no draft
+   * reached the gate.
+   */
+  firstGated?: { story: StoryOutput; request: GenerationRequest }
 }
 
 /**
@@ -509,6 +515,7 @@ export async function runGeneration(
       return { story: facts.value, notes: [...draft.notes, ...facts.notes] }
     }
     let { story, notes: normalized } = tidy(parsed)
+    const firstGated = { story, request }
 
     // ---- the gate ----
     let gate = await runQualityGate({
@@ -736,6 +743,7 @@ export async function runGeneration(
         wordCount: gate.result.word_count,
         writeCalls,
         bibleUpdate: null,
+        firstGated,
       }
     }
 
@@ -818,6 +826,7 @@ export async function runGeneration(
       wordCount,
       writeCalls,
       bibleUpdate,
+      firstGated,
     }
   } catch (err) {
     const message = parentMessage('generation_failed')

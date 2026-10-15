@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { firstDraftOf } from '@/lib/eval/live-pipeline'
 import { summarize, type EvalScenarioRecord } from '@/lib/eval/harness'
-import type { QualityResult } from '@/lib/schemas'
+import type { GenerationRequest, QualityResult, StoryOutput } from '@/lib/schemas'
 
 /**
  * The owner's hill-climb metric (2026-10-08): "we continue to hill climb towards 0 rewrites
@@ -30,6 +30,13 @@ describe('first draft', () => {
     const mended = quality({ mended: { edits: 1, cut: 0, rules: [10] } } as Partial<QualityResult>)
     expect(firstDraftOf(mended, 1)).toMatchObject({ passed: false, mended_rules: [10] })
     expect(firstDraftOf(quality({ outcome: 'discarded' } as Partial<QualityResult>), 1)?.passed).toBe(false)
+  })
+
+  it('VT-Q1 (#58): keeps the draft the gate reviewed first, and its request, for replaying the reviewer', () => {
+    const story = { title: 'The Lost Signal', subtitle: null, chapters: [], true_facts: [] } as unknown as StoryOutput
+    const request = { age_band: 'A', tones: ['calm'] } as unknown as GenerationRequest
+    expect(firstDraftOf(quality(), 1, { story, request })).toMatchObject({ passed: true, story, request })
+    expect(firstDraftOf(quality(), 1)).not.toHaveProperty('story')
   })
 
   it('is unknown without a gate result', () => {

@@ -118,6 +118,9 @@ describe('s4.2 deterministic output checks vs the reference stories', () => {
     // the touching. Each starts the mend ladder at rung 1; erring this way is the safe side.
     expect(r10("The dolphin touched its nose to Mia's hand.")).toBe(1)
     expect(r10('The keeper fed the seals.')).toBe(1)
+    // A harmless surprise reads as a secret from a grown-up. Exempting surprise/birthday words
+    // would narrow the check, which is the owner's call (reviewer agent, PR #40).
+    expect(r10("Don't tell Mom - it's her birthday cake!")).toBe(1)
   })
 
   it('does not flag a gently-told historical fire for band A', () => {

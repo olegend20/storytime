@@ -1,4 +1,4 @@
-import { callModel, type GenerationLogSink } from '@/lib/ai'
+import { callModel, parseJsonLoose, type GenerationLogSink } from '@/lib/ai'
 import { loadPrompt } from '@/lib/prompts'
 import { dataBlock } from '@/lib/datablock'
 import { sentenceStats } from '@/lib/bands'
@@ -121,10 +121,22 @@ export async function reviewStoryQuality(
       kids_are_active_participants: false,
       facts_consistent_with_pack: false,
       tone_matches_request: false,
-      reasons: ['quality review output did not validate; treating as a failure'],
+      reasons: [`quality review output did not validate; treating as a failure${invalidBecause(result.text)}`.slice(0, 300)],
     }
   }
   return result.data
+}
+
+/**
+ * Why a review's JSON failed: the zod issue paths and messages, never the text itself (it
+ * quotes the story). Issue #58: four reviews failed this way in one eval, with no trace of why.
+ */
+export function invalidBecause(text: string): string {
+  const json = parseJsonLoose(text)
+  if (json === undefined) return ' (not JSON)'
+  const parsed = QualityReview.safeParse(json)
+  if (parsed.success) return ''
+  return ` (${parsed.error.issues.map((i) => `${i.path.join('.') || 'root'}: ${i.message}`).join('; ')})`
 }
 
 /**

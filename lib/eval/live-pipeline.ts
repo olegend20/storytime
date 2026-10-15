@@ -11,7 +11,7 @@ import {
 } from '@/lib/bible'
 import { findFactPack, getOrBuildFactPack } from '@/lib/topics'
 import { borrowsCharacter, requestedCharacters } from '@/lib/guardrails/classify'
-import { targetWords, type GenerationRequest, type QualityResult } from '@/lib/schemas'
+import { targetWords, type GenerationRequest, type QualityResult, type StoryOutput } from '@/lib/schemas'
 import {
   GuardrailsInputGuard,
   GuardrailsSafetyReviewer,
@@ -164,14 +164,18 @@ async function generateOne(input: GenerateInput, db: SupabaseClient): Promise<Pi
         totalMs,
       },
       attempts: result.writeCalls,
-      firstDraft: firstDraftOf(result.quality, result.writeCalls),
+      firstDraft: firstDraftOf(result.quality, result.writeCalls, result.firstGated),
     }
   } finally {
     await deleteEvalFamily(db, family)
   }
 }
 
-export function firstDraftOf(quality: QualityResult | null, writeCalls: number): FirstDraft | null {
+export function firstDraftOf(
+  quality: QualityResult | null,
+  writeCalls: number,
+  gated?: { story: StoryOutput; request: GenerationRequest },
+): FirstDraft | null {
   if (!quality) return null
   const sentBack = quality.first_attempt ?? null
   const mendedRules = quality.mended?.rules ?? []
@@ -180,6 +184,7 @@ export function firstDraftOf(quality: QualityResult | null, writeCalls: number):
     failures: (sentBack?.failures ?? []).map((f) => f.check),
     reasons: sentBack?.reasons ?? [],
     mended_rules: mendedRules,
+    ...(gated ? { story: gated.story, request: gated.request } : {}),
   }
 }
 
