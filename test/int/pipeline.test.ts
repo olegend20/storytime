@@ -510,6 +510,32 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     if (result.bibleUpdate) await result.bibleUpdate
   })
 
+  it('#58: firstDraftOnly stops at the gate - the draft comes back, nothing is reviewed, saved or counted', async () => {
+    const run = await prepared()
+    const { story } = stubResponsesFor(run)
+    const sink = new MemoryLogSink()
+    const quota = new RecordingQuota()
+    const { events, result } = await collect(run, { db: family.db, sink, quota, now: () => FIXED_NOW, firstDraftOnly: true })
+
+    expect(result.firstGated?.story.title).toBe(story.title)
+    expect(result.firstGated?.request).toEqual(run.request)
+    expect(result.quality).toBeNull()
+    expect(sink.rows.map((r) => r.purpose)).toEqual(['write'])
+    expect(events.some((e) => e.type === 'done')).toBe(false)
+    expect(quota.calls).toEqual([])
+    const { data: saved } = await family.db.from('stories').select('id').eq('id', run.storyId)
+    expect(saved).toEqual([])
+  })
+
+  it('#58: a normal run reports the draft the gate reviewed first', async () => {
+    const run = await prepared()
+    const { story } = stubResponsesFor(run)
+    const { result } = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
+    expect(result.status).toBe('ready')
+    expect(result.firstGated?.story.title).toBe(story.title)
+    if (result.bibleUpdate) await result.bibleUpdate
+  })
+
   it('F7 VT: a hard safety violation triggers exactly one rewrite carrying the reasons', async () => {
     const run = await prepared()
     // The reasons the gate will produce from the stubbed safety verdict below. They go into

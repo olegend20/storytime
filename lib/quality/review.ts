@@ -94,11 +94,33 @@ export async function reviewStoryQuality(
   pack: FactPack | null,
   opts: QualityReviewOptions = {},
 ): Promise<QualityReview> {
-  const prompt = loadPrompt('quality-review')
+  return (await runQualityReview(story, request, pack, opts)).review
+}
+
+/** One quality review with what the review bench (issue #58) measures beside the verdict. */
+export interface QualityReviewRun {
+  review: QualityReview
+  /** The model's answer as returned. Never logged: it quotes the story. */
+  text: string
+  /** False when the answer did not validate and the fail-closed review was used. */
+  valid: boolean
+  costUsd: number
+}
+
+/**
+ * The call behind `reviewStoryQuality`. `systemPrompt` replaces the shipped
+ * `quality-review` prompt: only the review bench sets it, to score a candidate version.
+ */
+export async function runQualityReview(
+  story: StoryOutput,
+  request: GenerationRequest,
+  pack: FactPack | null,
+  opts: QualityReviewOptions & { systemPrompt?: string } = {},
+): Promise<QualityReviewRun> {
   const result = await callModel({
     purpose: 'quality',
     role: 'helper',
-    system: [{ text: prompt.body }],
+    system: [{ text: opts.systemPrompt ?? loadPrompt('quality-review').body }],
     messages: [
       {
         role: 'user',
@@ -115,7 +137,7 @@ export async function reviewStoryQuality(
 
   if (!result.data) {
     // Fail closed on output (GUARDRAILS.md §1.3): an unreadable review is not a pass.
-    return {
+    const review: QualityReview = {
       age_appropriate: false,
       scary_level: 3,
       kids_are_active_participants: false,
@@ -123,8 +145,9 @@ export async function reviewStoryQuality(
       tone_matches_request: false,
       reasons: [`quality review output did not validate; treating as a failure${invalidBecause(result.text)}`.slice(0, 300)],
     }
+    return { review, text: result.text, valid: false, costUsd: result.costUsd }
   }
-  return result.data
+  return { review: result.data, text: result.text, valid: true, costUsd: result.costUsd }
 }
 
 /**

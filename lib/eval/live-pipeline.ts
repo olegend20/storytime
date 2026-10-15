@@ -11,7 +11,7 @@ import {
 } from '@/lib/bible'
 import { findFactPack, getOrBuildFactPack } from '@/lib/topics'
 import { borrowsCharacter, requestedCharacters } from '@/lib/guardrails/classify'
-import { targetWords, type GenerationRequest, type QualityResult, type StoryOutput } from '@/lib/schemas'
+import { targetWords, type FactPack, type GenerationRequest, type QualityResult, type StoryOutput } from '@/lib/schemas'
 import {
   GuardrailsInputGuard,
   GuardrailsSafetyReviewer,
@@ -19,6 +19,7 @@ import {
   SseChannel,
   UnmeteredQuotaService,
   type PreparedGeneration,
+  type RunGenerationResult,
 } from '@/lib/generate'
 import type { GateSummary } from './caps'
 import type { FirstDraft, GenerateInput, PipelineStoryResult, StoryPipeline } from './pipeline'
@@ -49,11 +50,46 @@ export function createEvalPipeline(db: SupabaseClient = supabaseService()): Stor
   return {
     kind: 'live',
     describe: 'F6 runGeneration (write, F7 gate + L4 review, rewrite, save, bible update)',
-    generate: (input) => generateOne(input, db),
+    generate: async (input) => {
+      const result = await generateOne(input, db)
+      // Null only in first-draft mode, which this pipeline never asks for.
+      if (!result) throw new Error(`eval scenario ${input.scenario.id} returned no result`)
+      return result
+    },
   }
 }
 
-async function generateOne(input: GenerateInput, db: SupabaseClient): Promise<PipelineStoryResult> {
+/** One first draft, as the gate would first see it: the review bench's fixed set (issue #58). */
+export interface BenchDraft {
+  story: StoryOutput
+  request: GenerationRequest
+  factPack: FactPack
+  writeCalls: number
+  costUsd: number
+}
+
+/**
+ * Write the first draft of a scenario through the production pipeline and stop at the gate
+ * (`firstDraftOnly`): the same setup, prompt, write and parse as `pnpm eval`, without the
+ * reviews, rewrite, save or bible update.
+ */
+export async function writeFirstDraft(input: GenerateInput, db: SupabaseClient = supabaseService()): Promise<BenchDraft> {
+  let draft: BenchDraft | null = null
+  await generateOne(input, db, (result, pack, costUsd) => {
+    if (!result.firstGated) {
+      throw new Error(`no first draft for ${input.scenario.id}: status ${result.status}${result.error ? `: ${result.error}` : ''}`)
+    }
+    draft = { ...result.firstGated, factPack: pack, writeCalls: result.writeCalls, costUsd }
+  })
+  if (!draft) throw new Error(`no first draft for ${input.scenario.id}`)
+  return draft
+}
+
+async function generateOne(
+  input: GenerateInput,
+  db: SupabaseClient,
+  firstDraftOnly?: (result: RunGenerationResult, pack: FactPack, costUsd: number) => void,
+): Promise<PipelineStoryResult | null> {
   const { scenario } = input
   const sink = new MeteredLogSink(input.sink ?? getDefaultLogSink())
   const family = await createEvalFamily(db, scenario.id)
@@ -139,8 +175,13 @@ async function generateOne(input: GenerateInput, db: SupabaseClient): Promise<Pi
       quota: new UnmeteredQuotaService(),
       safetyReviewer: new GuardrailsSafetyReviewer(),
       writingModel: input.writingModel,
+      ...(firstDraftOnly ? { firstDraftOnly: true } : {}),
     })
     await drained
+    if (firstDraftOnly) {
+      firstDraftOnly(result, pack.content, sink.totalCostUsd)
+      return null
+    }
     // Part of the story's cost (§5: "normalize + write + quality + bible"), and it must finish
     // before the family is deleted underneath it.
     if (result.bibleUpdate) await result.bibleUpdate.catch(() => {})

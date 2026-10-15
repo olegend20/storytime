@@ -516,6 +516,9 @@ export async function runGeneration(
     }
     let { story, notes: normalized } = tidy(parsed)
     const firstGated = { story, request }
+    if (deps.firstDraftOnly) {
+      return { storyId: prepared.storyId, status: 'discarded', story, quality: null, wordCount: storyWordCount(story), writeCalls, bibleUpdate: null, firstGated }
+    }
 
     // ---- the gate ----
     let gate = await runQualityGate({

@@ -27,6 +27,7 @@
     "seed": "tsx scripts/seed.ts",
     "eval": "tsx eval/run-eval.ts",
     "bakeoff": "tsx eval/run-bakeoff.ts",
+    "review-bench": "tsx eval/run-review-bench.ts",
     "fixtures:record": "LIVE_API=1 RECORD_FIXTURES=1 vitest run",
     "test:blocked": "vitest run test/blocked",
     "test:schema": "RUN_SCHEMA_TESTS=1 vitest run test/int/schema.test.ts",

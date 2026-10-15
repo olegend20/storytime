@@ -1,0 +1,136 @@
+#!/usr/bin/env tsx
+import { randomUUID } from 'node:crypto'
+import { join } from 'node:path'
+import { MeteredLogSink, modelForRole } from '@/lib/ai'
+import { formatEstimate } from '@/lib/eval/estimate'
+import { writeFirstDraft } from '@/lib/eval/live-pipeline'
+import {
+  estimateBuildCost,
+  estimateRunCost,
+  formatBench,
+  runBench,
+  summarizeBench,
+  type BenchItem,
+  type BenchLabel,
+  type BenchRun,
+  type BenchSet,
+} from '@/lib/eval/review-bench'
+import { nextResultPath, readResultFile, RESULTS_DIR, writeResultFile } from '@/lib/eval/results'
+import { evalScenarios, selectScenarios } from '@/lib/eval/scenarios'
+import { installCliCostLogging } from '@/lib/costs/cli'
+
+/**
+ * `pnpm review-bench` - issue #58. Costs real money, so like `pnpm eval` it prints an
+ * estimate first and refuses a live run above the approved ceiling.
+ *
+ *   --build               write the frozen set: every golden-set scenario's first draft,
+ *                         stopped at the gate (~$0.16 a draft)
+ *   --set=PATH            score a reviewer prompt on that set (~$0.009 a review)
+ *   --candidate=DIR       a directory holding `quality-review.v<N>.md` to score instead of
+ *                         the shipped prompt
+ *   --labels=PATH         hand labels, `[{ id, should_pass, notes }]`
+ *   --samples=N           reviews per draft (default 3)
+ *   --scenarios=a,b       subset (also split:train / split:test), for --build
+ *   --dry-run             print the estimate, make no calls
+ *   --budget=N            approve up to $N (default ceiling $10)
+ */
+
+const DEFAULT_CEILING_USD = 10
+const BENCH_DIR = join(RESULTS_DIR, '..', 'review-bench')
+
+function flag(name: string): boolean {
+  return process.argv.includes(`--${name}`)
+}
+function value(name: string): string | undefined {
+  const hit = process.argv.find((a) => a.startsWith(`--${name}=`))
+  return hit?.slice(name.length + 3)
+}
+
+function withinCeiling(total: number): boolean {
+  const approved = Number(value('budget') ?? '0')
+  const ceiling = approved > 0 ? approved : DEFAULT_CEILING_USD
+  if (total <= ceiling) return true
+  console.error(
+    `Refusing to start: the estimate is $${total.toFixed(2)} and the approved ceiling is $${ceiling.toFixed(2)}. ` +
+      'Re-run with --budget=<approved amount> once the owner has approved it.',
+  )
+  process.exitCode = 1
+  return false
+}
+
+async function build(sink: MeteredLogSink): Promise<void> {
+  const scenarios = selectScenarios(evalScenarios(), value('scenarios'))
+  const writer = modelForRole('writer')
+  const estimate = estimateBuildCost(scenarios.length, writer)
+  console.log(formatEstimate(`review-bench --build (${scenarios.length} drafts)`, estimate))
+  if (flag('dry-run') || !withinCeiling(estimate.total_usd)) return
+
+  const items: BenchItem[] = []
+  let cost = 0
+  let next = 0
+  const worker = async (): Promise<void> => {
+    while (next < scenarios.length) {
+      const scenario = scenarios[next++]!
+      try {
+        const draft = await writeFirstDraft({ scenario, writingModel: writer, sample: 1, sink, storyId: randomUUID() })
+        items.push({ id: scenario.id, scenario_id: scenario.id, story: draft.story, request: draft.request, fact_pack: draft.factPack })
+        cost += draft.costUsd
+        console.log(`  … ${scenario.id}: ${draft.writeCalls} write(s), $${draft.costUsd.toFixed(3)}`)
+      } catch (err) {
+        console.warn(`  … ${scenario.id}: no draft (${err instanceof Error ? err.message : String(err)})`)
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: 4 }, worker))
+  items.sort((a, b) => a.id.localeCompare(b.id))
+  const set: BenchSet = { kind: 'review-bench-set', created_at: new Date().toISOString(), writer_model: writer, build_cost_usd: cost, items }
+  const path = writeResultFile(nextResultPath('set-', 'json', { dir: BENCH_DIR }), set)
+  console.log(`\n${items.length}/${scenarios.length} drafts, $${cost.toFixed(2)}. Wrote ${path}`)
+}
+
+async function score(setPath: string, sink: MeteredLogSink): Promise<void> {
+  const set = readResultFile<BenchSet>(setPath)
+  const samples = Number(value('samples') ?? '3')
+  const estimate = estimateRunCost(set.items.length, samples)
+  console.log(formatEstimate(`review-bench (${set.items.length} drafts × ${samples})`, estimate))
+  if (flag('dry-run') || !withinCeiling(estimate.total_usd)) return
+
+  const labelsPath = value('labels')
+  const labels = labelsPath ? readResultFile<BenchLabel[]>(labelsPath) : null
+  const promptDir = value('candidate')
+  const { prompt, reviews } = await runBench(set, {
+    ...(promptDir ? { promptDir } : {}),
+    samples,
+    sink,
+    onProgress: (done, of) => {
+      if (done % 10 === 0 || done === of) console.log(`  … ${done}/${of}`)
+    },
+  })
+  const run: BenchRun = {
+    kind: 'review-bench-run',
+    ran_at: new Date().toISOString(),
+    set: setPath,
+    prompt: { ...prompt, dir: promptDir ?? 'prompts' },
+    samples,
+    labelled: labels !== null,
+    summary: summarizeBench(reviews, labels),
+    reviews,
+  }
+  const path = writeResultFile(nextResultPath(`run-${prompt.id}-v${prompt.version}-`, 'json', { dir: BENCH_DIR }), run)
+  console.log(`\n${formatBench(run)}\n\nWrote ${path}`)
+}
+
+async function main(): Promise<void> {
+  const costLogging = installCliCostLogging()
+  if (!costLogging.persisting) console.warn(`[costs] ${costLogging.reason}`)
+  const sink = new MeteredLogSink()
+  const setPath = value('set')
+  if (flag('build')) await build(sink)
+  else if (setPath) await score(setPath, sink)
+  else {
+    console.error('Give --build, or --set=PATH to score a reviewer prompt.')
+    process.exitCode = 1
+  }
+}
+
+void main()

@@ -135,6 +135,12 @@ export interface GenerationDeps {
    * real pipeline). Unset in production, where `config/models.json`'s `writer` role decides.
    */
   writingModel?: string
+  /**
+   * Stop when the first draft reaches the gate, and return it in `firstGated`: no review, no
+   * rewrite, no save, no `done`. Only the review bench sets it, to build its fixed set of
+   * first drafts at the cost of the writes alone (issue #58). Unset in production.
+   */
+  firstDraftOnly?: boolean
 }
 
 export function resolveQuota(deps: GenerationDeps): QuotaService {
