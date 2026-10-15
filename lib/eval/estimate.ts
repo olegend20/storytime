@@ -51,8 +51,9 @@ export const STORY_CALL_TOKENS = {
   /**
    * A rewrite is the same call with the gate's notes added: its input matches a first write
    * (2,912 in + 7,319 cache read, against 2,754 + 6,437; it does not carry the draft), but it
-   * writes more - 18,629 output tokens against 15,035, means over 74 rewrites and 98 writes on
-   * 2026-10-14 (`generation_logs`; reviewer agent on PR #57).
+   * writes more - 18,629 output tokens against 15,035. Means over every successful `write` (98)
+   * and `rewrite` (74) row in `generation_logs` on 2026-10-14 UTC: the three 32-story evals
+   * plus that day's smaller runs, so not a per-story rate (reviewer agent on PR #57).
    */
   rewrite: { extraOutput: 3_600 },
   /** L2 input classifier and L4 safety review, both Haiku, both on every story. */
