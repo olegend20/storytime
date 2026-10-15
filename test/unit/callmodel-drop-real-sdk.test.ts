@@ -83,7 +83,16 @@ describe('issue #50: a real dropped stream, through the real SDK', () => {
       )
     mode = 'drop'
     connections = 0
-    const dropped = await write()
+    const dropSink = new MemoryLogSink()
+    const dropped = await streamModel({ purpose: 'write', model: 'claude-sonnet-5', messages: [{ role: 'user', content: 'write' }], sink: dropSink }).then(
+      () => null,
+      (e: unknown) => e,
+    )
+    // The cut attempt is logged with the usage seen before the cut, not $0 (reviewer agent, #56).
+    expect(dropSink.rows).toHaveLength(1)
+    expect(dropSink.rows[0]).toMatchObject({ ok: false, input_tokens: 100, output_tokens: 7 })
+    expect(dropSink.rows[0]!.cost_usd).toBeGreaterThan(0)
+    expect(dropSink.rows[0]!.error).toMatch(/^\[partial usage, lower bound\] /)
     expect(dropped).toBeInstanceOf(ModelCallError)
     expect((dropped as ModelCallError).detail).toMatchObject({ dropped: true, retryable: false })
     // streamModel itself never retries: the pipeline decides.

@@ -2,7 +2,7 @@ import Anthropic, { APIConnectionError, APIError } from '@anthropic-ai/sdk'
 import type { CallPurpose } from '@/lib/schemas/common'
 import { capabilities, computeCost, modelForRole } from './pricing'
 import { MissingFixtureError, fixtureKey, readFixture, writeFixture } from './fixtures'
-import { getDefaultLogSink, isDroppedStream, type CacheableBlock, type CallModelResult } from './callModel'
+import { getDefaultLogSink, isDroppedStream, normalizeUsage, type CacheableBlock, type CallModelResult } from './callModel'
 import { ModelCallError, ModelRefusalError, type GenerationLogSink } from './types'
 
 /**
@@ -145,8 +145,9 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
 
   // ---- Live stream. ----
   const started = Date.now()
+  let stream: ReturnType<ReturnType<typeof anthropic>['messages']['stream']> | null = null
   try {
-    const stream = anthropic().messages.stream(
+    stream = anthropic().messages.stream(
       {
         model,
         max_tokens: maxTokens,
@@ -232,20 +233,28 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
   } catch (err) {
     if (err instanceof ModelRefusalError) throw err
     const latencyMs = Date.now() - started
+    // A stream cut partway has already used tokens - the thinking before the cut is billed.
+    // Log what it reported so far, a LOWER BOUND, as callModel does (#50), not $0: since #52
+    // retries the write, the cut attempt belongs to a story that is saved.
+    const partial = stream?.currentMessage?.usage
+    const used = partial ? normalizeUsage(partial) : null
+    const message = err instanceof Error ? err.message : String(err)
     await sink.write({
       family_id: opts.familyId ?? null,
       story_id: opts.storyId ?? null,
       fact_pack_id: null,
       purpose: opts.purpose,
       model,
-      input_tokens: 0,
-      cache_read_tokens: 0,
-      cache_write_tokens: 0,
-      output_tokens: 0,
-      cost_usd: 0,
+      input_tokens: used?.input_tokens ?? 0,
+      cache_read_tokens: used?.cache_read_tokens ?? 0,
+      cache_write_tokens: used?.cache_write_tokens ?? 0,
+      output_tokens: used?.output_tokens ?? 0,
+      cost_usd: used
+        ? computeCost({ model, input: used.input_tokens, cacheRead: used.cache_read_tokens, cacheWrite: used.cache_write_tokens, output: used.output_tokens })
+        : 0,
       latency_ms: latencyMs,
       ok: false,
-      error: err instanceof Error ? err.message.slice(0, 500) : String(err),
+      error: `${used ? '[partial usage, lower bound] ' : ''}${message}`.slice(0, 500),
     })
     throw new ModelCallError(
       `${opts.purpose} stream to ${model} failed: ${err instanceof Error ? err.message : String(err)}`,

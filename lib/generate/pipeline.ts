@@ -471,7 +471,8 @@ export async function runGeneration(
     // Issue #32, rung 3: an unusable first write (cut off, structurally short, unrepairable)
     // is retried once, one length tier shorter - a shorter story fits every cap and fails
     // far less. Not streamed: the client already holds attempt 1's chapters, so the retry
-    // arrives in `done`, as a rewrite does. It is the second and last writing call.
+    // arrives in `done`, as a rewrite does. It is the second and last full writing call (a first
+    // write cut off by a dropped stream and written again, #52, does not count toward this).
     let retriedShorter: { from: LengthMinutes; to: LengthMinutes; why: string } | null = null
     if (!parsed.ok) {
       const why = unusable(parsed, streamed.stopReason, streamed.usage.output_tokens)
@@ -617,7 +618,8 @@ export async function runGeneration(
       }
     }
 
-    // ---- at most one rewrite (F6 AC: two writing-model calls maximum) ----
+    // ---- at most one rewrite (F6 AC: two full writing calls; a dropped first write retried
+    // under #52 can make it three calls, the cut one billed only for what it streamed) ----
     if (gate.needsRewrite) {
       const rewriteRequest: GenerationRequest = {
         ...request,
