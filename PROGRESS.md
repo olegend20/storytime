@@ -884,8 +884,8 @@ the page, the writing starts again once instead of failing. VT-W1 in
 
 ### 2026-10-14 — the eval estimate counts rewrites (DECISIONS #196)
 
-`pnpm eval --dry-run` now prints $12.83 for the 32-story eval (calibration reused) against a
-measured $14.15; it printed $7.88. VT-E1-VT-E2 in `test/unit/eval-estimate.test.ts`.
+`pnpm eval --dry-run` now prints $13.64 for the 32-story eval (calibration reused) against a
+measured $14.15; it printed $7.88. A rewrite is priced with its measured extra 3,600 output tokens. VT-E1-VT-E2 in `test/unit/eval-estimate.test.ts`.
 
 ### 2026-10-14 — the golden set grows to 32, train/test halves (issue #48, DECISIONS #185)
 

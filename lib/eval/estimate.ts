@@ -48,6 +48,13 @@ export const STORY_CALL_TOKENS = {
    * $0.05-0.07 quoted to the owner - was 3-4x low. The owner keeps thinking on for quality.
    */
   write: { cacheRead: 7_000, input: 2_800, thinking: 11_000 },
+  /**
+   * A rewrite is the same call with the gate's notes added: its input matches a first write
+   * (2,912 in + 7,319 cache read, against 2,754 + 6,437; it does not carry the draft), but it
+   * writes more - 18,629 output tokens against 15,035, means over 74 rewrites and 98 writes on
+   * 2026-10-14 (`generation_logs`; reviewer agent on PR #57).
+   */
+  rewrite: { extraOutput: 3_600 },
   /** L2 input classifier and L4 safety review, both Haiku, both on every story. */
   classify: { input: 1_800, output: 100 },
   safety: { input: 5_100, output: 80 },
@@ -128,8 +135,8 @@ function sum(lines: CostLine[]): number {
   return Math.round(lines.reduce((n, l) => n + l.usd, 0) * 1e6) / 1e6
 }
 
-function writeCallCost(writer: string, words: number): number {
-  const outputTokens = Math.ceil(words * TOKENS_PER_WORD) + 500 + STORY_CALL_TOKENS.write.thinking
+function writeCallCost(writer: string, words: number, extraOutput = 0): number {
+  const outputTokens = Math.ceil(words * TOKENS_PER_WORD) + 500 + STORY_CALL_TOKENS.write.thinking + extraOutput
   return computeCost({
     model: writer,
     input: STORY_CALL_TOKENS.write.input,
@@ -143,7 +150,7 @@ function expectedRewriteCost(writer: string, words: number): number {
   const helper = modelForRole('helper')
   return (
     EXPECTED_REWRITE_RATE *
-    (writeCallCost(writer, words) +
+    (writeCallCost(writer, words, STORY_CALL_TOKENS.rewrite.extraOutput) +
       computeCost({ model: helper, input: STORY_CALL_TOKENS.quality.input, output: STORY_CALL_TOKENS.quality.output }) +
       computeCost({ model: helper, input: STORY_CALL_TOKENS.safety.input, output: STORY_CALL_TOKENS.safety.output }))
   )
@@ -253,7 +260,8 @@ export function estimateEvalCost(
   lines.push({
     what: `rewrites: ~${Math.round(EXPECTED_REWRITE_RATE * 100)}% of stories (write + quality + safety again)`,
     calls: Math.round(scenarios.length * EXPECTED_REWRITE_RATE) * 3,
-    model: writer,
+    // One writing call and two helper reviews per rewrite.
+    model: `${writer} + ${modelForRole('helper')}`,
     usd: scenarios.reduce((n, s) => n + expectedRewriteCost(writer, targetWordsMid(s)), 0),
   })
   lines.push({
@@ -336,7 +344,7 @@ export function estimateBakeoffCost(
     lines.push({
       what: `rewrites on ${contestant}: ~${Math.round(EXPECTED_REWRITE_RATE * 100)}% of stories`,
       calls: Math.round(scenarios.length * samples * EXPECTED_REWRITE_RATE) * 3,
-      model: contestant,
+      model: `${contestant} + ${modelForRole('helper')}`,
       usd: scenarios.reduce((n, s) => n + samples * expectedRewriteCost(contestant, targetWordsMid(s)), 0),
     })
   }

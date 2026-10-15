@@ -23,8 +23,8 @@ At the prices recorded on 2026-09-27:
 
 | Run | Estimate |
 |---|---|
-| `pnpm eval` (32 scenarios, calibration included; issue #48) | **$13.92** ($12.83 reusing a calibration; measured $14.15 on 2026-10-14) |
-| `pnpm bakeoff` (12 × 4 × 3, both pairwise passes, second judge) | **$120.80** |
+| `pnpm eval` (32 scenarios, calibration included; issue #48) | **$14.73** ($13.64 reusing a calibration; measured $14.15 on 2026-10-14) |
+| `pnpm bakeoff` (12 × 4 × 3, both pairwise passes, second judge) | **$128.51** |
 | judge calibration alone (`--calibration-only`) | **$1.09** (measured $1.58) |
 
 Since 2026-10-14 (DECISIONS #196) the estimate counts rewrites at the measured rate (70% of
