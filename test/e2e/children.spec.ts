@@ -79,6 +79,33 @@ test.describe('F3 children profiles', () => {
     }
   })
 
+  test('VT-A5 (#43) a child with no name gets one we choose, shown and used everywhere', async ({ page }) => {
+    test.skip(!(await localAuthStackReachable()), SKIP_REASON)
+    const email = uniqueEmail('children-gen-name')
+    try {
+      await signInWithMagicLink(page, email)
+      await page.goto('/children')
+      await expect(page.getByText('Leave it blank and we', { exact: false })).toBeVisible()
+
+      await page.getByLabel('Age').fill('6')
+      await page.getByRole('button', { name: 'Add child' }).click()
+      const notice = page.getByRole('status')
+      await expect(notice).toContainText('in the stories. Change it any time.')
+      const name = (await notice.innerText()).match(/We'll call them (\S+) in the stories/)?.[1]
+      expect(name, 'the notice names the chosen name').toBeTruthy()
+
+      // Saved, not invented per page: the list, a reload and the new-story picker agree.
+      await expect(page.getByTestId('child-row')).toHaveCount(1)
+      await expect(page.getByTestId('child-row').nth(0)).toContainText(name!)
+      await page.reload()
+      await expect(page.getByTestId('child-row').nth(0)).toContainText(name!)
+      await page.goto('/dashboard')
+      await expect(page.getByText(name!, { exact: false }).first()).toBeVisible()
+    } finally {
+      await deleteTestUser(email)
+    }
+  })
+
   test('the form refuses an invalid child before it reaches the server', async ({ page }) => {
     test.skip(!(await localAuthStackReachable()), SKIP_REASON)
     const email = uniqueEmail('children-validation')
