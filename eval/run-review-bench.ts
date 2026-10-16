@@ -42,7 +42,7 @@ import { installCliCostLogging } from '@/lib/costs/cli'
  *   --budget=N            approve up to $N (default ceiling $10)
  *
  * Scoring the WRITER (DECISIONS #202): build a set with the candidate writer prompt (the
- * newest `prompts/master.v<N>.md`; `PROMPT_MASTER_VERSION=<N>` pins another), label it, then
+ * newest `prompts/master.v<N>.md`; `PROMPT_PIN_MASTER=<N>` pins another), label it, then
  * score it with the shipped reviewer, no labels needed. The run prints how many first drafts
  * the reviewer passes, which judgement fails the rest, and the free deterministic checks:
  *

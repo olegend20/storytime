@@ -67,8 +67,9 @@ labels are needed. Master v5's baseline, on `set-2026-10-15.json`, re-read from 
 | reviewer G (strict) | 26 / 160 (16%) | 86 | 88 | 22 |
 | deterministic checks | 24 / 32 drafts | | | word count 3, banned word 2, 4 others |
 
-To score a candidate writer prompt, put it in `prompts/master.v<N>.md`, build a train set
-(~$2.70), then score it with the shipped reviewer (~$0.15 at list):
+To score a candidate writer prompt, put it in `prompts/master.v<N>.md` (the newest version
+is the one used; `PROMPT_PIN_MASTER=<N>` pins another), build a train set (~$2.70), then
+score it with the shipped reviewer (~$0.15 at list):
 
 ```
 pnpm review-bench --build --scenarios=split:train --label=master-v6
