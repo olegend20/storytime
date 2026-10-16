@@ -19,6 +19,7 @@ import {
   type StoryOutput,
   factCardsFor,
   type StoryStatus,
+  storyText,
   storyWordCount,
   targetWords,
   type AgeBand,
@@ -39,6 +40,7 @@ import {
   TopicNormalizationError,
 } from '@/lib/topics'
 import { reviewPassed, runQualityGate } from '@/lib/quality'
+import { charactersTakingPart } from '@/lib/guardrails/output'
 import { borrowsCharacter, requestedCharacters } from '@/lib/guardrails/classify'
 import { cutViolations, mendStory } from './mend'
 import { buildPrompt } from './prompt'
@@ -764,6 +766,11 @@ export async function runGeneration(
     // ---- save ----
     const wordCount = storyWordCount(story)
     const status: StoryStatus = gate.status === 'ready' ? 'ready' : 'flagged'
+    // Asked for, or simply in the story (rule 7 retired 2026-10-08): either way the
+    // parent is told the character belongs to someone else.
+    const contentNotice =
+      prepared.contentNotice ?? (charactersTakingPart(storyText(story), prepared.children.map((c) => c.first_name)).length > 0 ? 'borrowed_character' : null)
+
     const { error: insertError } = await db.from('stories').insert({
       id: prepared.storyId,
       family_id: prepared.familyId,
@@ -780,13 +787,29 @@ export async function runGeneration(
       word_count: wordCount,
       quality: gate.result,
       status,
-      content_notice: prepared.contentNotice,
+      content_notice: contentNotice,
     })
     if (insertError) throw new GenerationFailed(`saving the story failed: ${insertError.message}`)
 
     // F8 AC: quota is consumed ONLY after a successful stories insert. This line and the
     // `preflight` in prepareGeneration are the whole enforcement - lane 3 cannot check it.
     const quotaAfter = await resolveQuota(deps).consumeQuota(prepared.familyId)
+
+    // A character nobody asked for is only known now. A second `meta` replaces the first in
+    // the reader, so the notice shows before the parent reaches the end, not after a reload.
+    if (contentNotice !== prepared.contentNotice) {
+      channel.push({
+        type: 'meta',
+        story_id: prepared.storyId,
+        series_id: prepared.seriesId,
+        title: story.title,
+        subtitle: story.subtitle,
+        age_band: prepared.band,
+        target_words: prepared.request.target_words,
+        topic_label: prepared.topicLabel,
+        content_notice: contentNotice,
+      })
+    }
 
     channel.push({
       type: 'done',

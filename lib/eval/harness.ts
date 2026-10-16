@@ -11,7 +11,7 @@ import {
 import { JUDGE_PURPOSES } from './bakeoff'
 import { runCalibration, type CalibrationResult } from './calibration'
 import { loadJudgePrompt, scoreStory } from './judge'
-import { loadPipeline, type StoryPipeline, type StoryProvider } from './pipeline'
+import { type FirstDraft, loadPipeline, type StoryPipeline, type StoryProvider } from './pipeline'
 import { narrativeWordCount } from './render'
 import { evalScenarios, scenarioBand, selectScenarios, type EvalScenario } from './scenarios'
 import { fmt, mean, median, min, p95 } from './stats'
@@ -63,6 +63,8 @@ export interface EvalScenarioRecord {
   /** F13 AC: the titanic scenario must pass with scary_level <= 1 for band B. */
   scary_level_check: { max: number; observed: number | null; ok: boolean | null } | null
   editor_notes: string[]
+  /** Owner's hill-climb metric: the first draft went out untouched. Absent in older results. */
+  first_draft?: FirstDraft | null
   generation_cost_usd: number
   judge_cost_usd: number
   /**
@@ -127,6 +129,11 @@ export interface EvalSummary {
   continuity_failures: string[]
   scary_level_failures: string[]
   criterion_means: Record<string, number>
+  /**
+   * First drafts that went out untouched, of the stories whose pipeline could tell.
+   * Reported, not a pass criterion: the owner's hill-climb metric (2026-10-08).
+   */
+  first_draft?: { passed: number; of: number }
   passed: boolean
   failures: string[]
   /** Optional only because results written before issue #46 have none. */
@@ -444,6 +451,7 @@ export async function runEval(config: EvalConfig = {}): Promise<EvalResult> {
               ok: observedScary === null ? null : observedScary <= scaryMax,
             },
       editor_notes: scored.ok ? scored.final.editor_notes : [],
+      first_draft: generated.firstDraft ?? null,
       generation_cost_usd: generated.costUsd,
       judge_cost_usd: scored.costUsd,
       latency_to_first_chapter_ms: generated.latency.toFirstChapterMs ?? generated.latency.totalMs,
@@ -628,6 +636,10 @@ export function summarize(records: EvalScenarioRecord[]): EvalSummary {
     continuity_failures: continuityFailures,
     scary_level_failures: scaryFailures,
     criterion_means: criterionMeans,
+    first_draft: {
+      passed: records.filter((r) => r.first_draft?.passed === true).length,
+      of: records.filter((r) => r.first_draft != null).length,
+    },
     passed: failures.length === 0,
     failures,
     // Never in `failures`: latency is reported, not gated (issue #46).
@@ -671,6 +683,8 @@ export function compareEvalRuns(current: EvalResult, previous: EvalResult | null
   lines.push(
     `  disqualified: ${current.summary.disqualified} (was ${previous.summary.disqualified})`,
   )
+  const drafts = (s: EvalSummary): string => (s.first_draft ? `${s.first_draft.passed}/${s.first_draft.of}` : 'not recorded')
+  lines.push(`  first drafts untouched: ${drafts(current.summary)} (was ${drafts(previous.summary)})`)
 
   const before = new Map(previous.scenarios.map((s) => [s.scenario_id, s]))
   for (const s of current.scenarios) {
@@ -746,6 +760,9 @@ export function formatEval(result: EvalResult): string {
     `  mean overall ${fmt(result.summary.mean_overall)} (need >= ${EVAL_PASS_CRITERIA.mean_overall_min}), ` +
       `lowest ${fmt(result.summary.min_overall)} (need >= ${EVAL_PASS_CRITERIA.per_scenario_min})`,
   )
+  if (result.summary.first_draft && result.summary.first_draft.of > 0) {
+    lines.push(`  first drafts untouched: ${result.summary.first_draft.passed}/${result.summary.first_draft.of}`)
+  }
   lines.push('')
   lines.push('  scenario                        band  words  target       overall  1st ch   total    caps')
   for (const s of result.scenarios) {
@@ -756,6 +773,11 @@ export function formatEval(result: EvalResult): string {
         `${secs(s.latency_to_first_chapter_ms).padEnd(7)}  ${secs(s.latency_total_ms).padEnd(7)}  ` +
         `${s.caps_applied.join(',') || 'none'}`,
     )
+    const fd = s.first_draft
+    if (fd && !fd.passed) {
+      const why = [...fd.failures, ...fd.mended_rules.map((r) => `mended rule ${r}`), ...fd.reasons.slice(0, 1)].join(', ')
+      lines.push(`    first draft sent back: ${(why || 'retried').slice(0, 160)}`)
+    }
   }
   lines.push('')
   const latency = result.summary.latency

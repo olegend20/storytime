@@ -57,6 +57,9 @@ export function reviewUserMessage(input: ReviewInput): string {
   ].join('\n\n')
 }
 
+/** Hard rule 7 (branded characters), retired by the owner on 2026-10-08. */
+export const RETIRED_RULE = 7
+
 /** s1.3: "If the output check is uncertain, the story is not shown." */
 function failClosed(): OutputSafetyReview {
   return {
@@ -83,7 +86,16 @@ export async function reviewOutput(input: ReviewInput): Promise<ReviewResult> {
   })
 
   const degraded = result.data === null
-  const review = degraded ? failClosed() : (result.data as OutputSafetyReview)
+  const raw = degraded ? failClosed() : (result.data as OutputSafetyReview)
+  // Rule 7 was retired on 2026-10-08. A reviewer that still reports it (an old habit, a
+  // cached instruction) is not obeyed: the violation is dropped, and a review whose only
+  // complaint it was is safe again.
+  const kept = raw.violations.filter((v) => v.rule !== RETIRED_RULE)
+  const droppedHard = raw.violations.some((v) => v.rule === RETIRED_RULE && v.severity === 'hard')
+  const review =
+    kept.length === raw.violations.length
+      ? raw
+      : { ...raw, violations: kept, safe: raw.safe || (droppedHard && !kept.some((v) => v.severity === 'hard')) }
 
   // A model that lists a hard violation but sets safe:true has contradicted itself.
   const hasHard = review.violations.some((v) => v.severity === 'hard')
