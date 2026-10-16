@@ -24,11 +24,20 @@ export const TOKENS_PER_WORD = 1.35
 /** Rough characters per token for prompt text. */
 export const CHARS_PER_TOKEN = 3.8
 
-/** §5's per-story call table, in tokens. */
+/**
+ * §5's per-story call table, in tokens.
+ *
+ * RE-MEASURED 2026-10-14 from `generation_logs` of a 32-story `pnpm eval` (per-call means,
+ * Sonnet 5 writer, Haiku 4.5 helpers): write 2,751 in + 6,964 cache read / 15,438 out;
+ * quality 7,217 / 135; safety review 5,071 / 81; bible update 5,303 / 563; input classifier
+ * 1,771 / 94. The writer line was close; the helpers' inputs had drifted. The real misses
+ * were rewrites (not counted at all) and the judge's output - see `EXPECTED_REWRITE_RATE`
+ * and `JUDGE_OUTPUT_TOKENS`. Re-measure when the writer prompt or the gate changes.
+ */
 export const STORY_CALL_TOKENS = {
   normalize: { input: 300, output: 50 },
-  quality: { input: 6_000, output: 200 },
-  bible_update: { input: 7_000, output: 600 },
+  quality: { input: 7_200, output: 150 },
+  bible_update: { input: 5_300, output: 600 },
   /**
    * The writing call: master prompt cached, request block uncached. `thinking` is what the
    * writer generates BEFORE the story, billed as output like the story itself.
@@ -38,10 +47,18 @@ export const STORY_CALL_TOKENS = {
    * Until then this table counted only the story's tokens, and every per-story figure - the
    * $0.05-0.07 quoted to the owner - was 3-4x low. The owner keeps thinking on for quality.
    */
-  write: { cacheRead: 4_000, input: 1_500, thinking: 11_000 },
+  write: { cacheRead: 7_000, input: 2_800, thinking: 11_000 },
+  /**
+   * A rewrite is the same call with the gate's notes added: its input matches a first write
+   * (2,912 in + 7,319 cache read, against 2,754 + 6,437; it does not carry the draft), but it
+   * writes more - 18,629 output tokens against 15,035. Means over every successful `write` (98)
+   * and `rewrite` (74) row in `generation_logs` on 2026-10-14 UTC: the three 32-story evals
+   * plus that day's smaller runs, so not a per-story rate (reviewer agent on PR #57).
+   */
+  rewrite: { extraOutput: 3_600 },
   /** L2 input classifier and L4 safety review, both Haiku, both on every story. */
-  classify: { input: 1_300, output: 130 },
-  safety: { input: 3_000, output: 60 },
+  classify: { input: 1_800, output: 100 },
+  safety: { input: 5_100, output: 80 },
   /**
    * One per NEW topic, on the fact-pack model, plus web searches.
    *
@@ -68,6 +85,15 @@ export const STORY_CALL_TOKENS = {
    */
   factpack: { input: 4_000, output: 3_000, webSearches: 0 },
 } as const
+
+/**
+ * Share of stories whose first draft the gate sends back for a full rewrite: one more writing
+ * call, plus the quality and safety reviews again. MEASURED 2026-10-14: 22 of 32 stories in
+ * one 32-story eval, 22 of 27 in the other (rewrites cost $4.06 of $10.45 generation). Until
+ * then the estimate left rewrites out, and was 1.6-2.2x low. This is the number the writer
+ * prompt is hill-climbing down; re-measure it after each prompt change.
+ */
+export const EXPECTED_REWRITE_RATE = 0.7
 
 export interface CostLine {
   what: string
@@ -97,27 +123,47 @@ function scoreInputTokens(words: number): number {
   return judgePromptTokens() + 700 + Math.ceil(words * TOKENS_PER_WORD)
 }
 
-/** Judge output: six scores with evidence, three editor notes, two excerpts, plus thinking. */
-const JUDGE_OUTPUT_TOKENS = 1_200
-const PAIRWISE_OUTPUT_TOKENS = 900
+/**
+ * Judge output: six scores with evidence, three editor notes, two excerpts, plus thinking.
+ * MEASURED 2026-10-14: 3,945 output tokens per SCORE call on average (33 calls, Opus 5.5,
+ * judge.v2) - the 1,200 assumed before left out most of the thinking, and judging came in at
+ * 2.1x its estimate. Pairwise is not yet measured; scaled by the same ratio.
+ */
+export const JUDGE_OUTPUT_TOKENS = 4_000
+export const PAIRWISE_OUTPUT_TOKENS = 3_000
 
 function sum(lines: CostLine[]): number {
   return Math.round(lines.reduce((n, l) => n + l.usd, 0) * 1e6) / 1e6
 }
 
+function writeCallCost(writer: string, words: number, extraOutput = 0): number {
+  const outputTokens = Math.ceil(words * TOKENS_PER_WORD) + 500 + STORY_CALL_TOKENS.write.thinking + extraOutput
+  return computeCost({
+    model: writer,
+    input: STORY_CALL_TOKENS.write.input,
+    cacheRead: STORY_CALL_TOKENS.write.cacheRead,
+    output: outputTokens,
+  })
+}
+
+/** Expected cost of rewrites for one story: the rate times a second write and a second review. */
+function expectedRewriteCost(writer: string, words: number): number {
+  const helper = modelForRole('helper')
+  return (
+    EXPECTED_REWRITE_RATE *
+    (writeCallCost(writer, words, STORY_CALL_TOKENS.rewrite.extraOutput) +
+      computeCost({ model: helper, input: STORY_CALL_TOKENS.quality.input, output: STORY_CALL_TOKENS.quality.output }) +
+      computeCost({ model: helper, input: STORY_CALL_TOKENS.safety.input, output: STORY_CALL_TOKENS.safety.output }))
+  )
+}
+
 function storyGenerationCost(writer: string, words: number): number {
   const helper = modelForRole('helper')
-  const outputTokens = Math.ceil(words * TOKENS_PER_WORD) + 500 + STORY_CALL_TOKENS.write.thinking
   return (
     computeCost({ model: helper, input: STORY_CALL_TOKENS.classify.input, output: STORY_CALL_TOKENS.classify.output }) +
     computeCost({ model: helper, input: STORY_CALL_TOKENS.safety.input, output: STORY_CALL_TOKENS.safety.output }) +
     computeCost({ model: helper, input: STORY_CALL_TOKENS.normalize.input, output: STORY_CALL_TOKENS.normalize.output }) +
-    computeCost({
-      model: writer,
-      input: STORY_CALL_TOKENS.write.input,
-      cacheRead: STORY_CALL_TOKENS.write.cacheRead,
-      output: outputTokens,
-    }) +
+    writeCallCost(writer, words) +
     computeCost({ model: helper, input: STORY_CALL_TOKENS.quality.input, output: STORY_CALL_TOKENS.quality.output }) +
     computeCost({ model: helper, input: STORY_CALL_TOKENS.bible_update.input, output: STORY_CALL_TOKENS.bible_update.output })
   )
@@ -213,6 +259,13 @@ export function estimateEvalCost(
     usd: scenarios.reduce((n, s) => n + storyGenerationCost(writer, targetWordsMid(s)), 0),
   })
   lines.push({
+    what: `rewrites: ~${Math.round(EXPECTED_REWRITE_RATE * 100)}% of stories (write + quality + safety again)`,
+    calls: Math.round(scenarios.length * EXPECTED_REWRITE_RATE) * 3,
+    // One writing call and two helper reviews per rewrite.
+    model: `${writer} + ${modelForRole('helper')}`,
+    usd: scenarios.reduce((n, s) => n + expectedRewriteCost(writer, targetWordsMid(s)), 0),
+  })
+  lines.push({
     what: `SCORE ${scenarios.length} stories`,
     calls: scenarios.length,
     model: judge,
@@ -228,6 +281,7 @@ export function estimateEvalCost(
       ? `Fact packs already \`ready\` are shared and cost nothing (${opts.builtTopics.size} found).`
       : 'Every topic needs a new fact pack (no library lookup was passed).',
     'Story length assumed at the middle of each scenario\'s target range.',
+    `Rewrite rate ${EXPECTED_REWRITE_RATE}, measured 2026-10-14; a better first draft makes the real figure lower.`,
   ]
   if (opts.includeCalibration !== false) {
     const cal = estimateCalibrationCost(judge)
@@ -287,6 +341,12 @@ export function estimateBakeoffCost(
       calls: scenarios.length * samples * 4,
       model: contestant,
       usd,
+    })
+    lines.push({
+      what: `rewrites on ${contestant}: ~${Math.round(EXPECTED_REWRITE_RATE * 100)}% of stories`,
+      calls: Math.round(scenarios.length * samples * EXPECTED_REWRITE_RATE) * 3,
+      model: `${contestant} + ${modelForRole('helper')}`,
+      usd: scenarios.reduce((n, s) => n + samples * expectedRewriteCost(contestant, targetWordsMid(s)), 0),
     })
   }
 
@@ -350,7 +410,7 @@ export function estimateBakeoffCost(
       : 'Every topic needs a new fact pack (no library lookup was passed).',
     'Story length assumed at the middle of each scenario\'s target range.',
     'No prompt-cache discount assumed on the judge system block; the real figure will be lower.',
-    `Rewrites are not included: a gate failure adds one more writing call. A 10% rewrite rate adds roughly 10% to the generation lines.`,
+    `Rewrite rate ${EXPECTED_REWRITE_RATE} for every contestant, measured 2026-10-14 on the configured writer; another model's rate may differ.`,
   ]
   if (opts.includeCalibration !== false) {
     const cal = estimateCalibrationCost(judge)

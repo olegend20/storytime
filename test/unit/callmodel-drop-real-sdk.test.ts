@@ -1,7 +1,8 @@
 import { createServer, type Server } from 'node:http'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { callModel } from '@/lib/ai/callModel'
-import { MemoryLogSink } from '@/lib/ai/types'
+import { streamModel } from '@/lib/ai/streamModel'
+import { MemoryLogSink, ModelCallError } from '@/lib/ai/types'
 
 /**
  * Issue #50, VT-R6: the real SDK against a local server that starts a stream and then cuts the
@@ -12,12 +13,22 @@ import { MemoryLogSink } from '@/lib/ai/types'
 
 let server: Server
 let connections = 0
+let mode: 'drop' | 'error500' | 'refuse' = 'drop'
 const env = { ...process.env }
 
 beforeAll(async () => {
   server = createServer((req, res) => {
     connections += 1
     req.resume()
+    if (mode === 'refuse') {
+      req.socket.destroy()
+      return
+    }
+    if (mode === 'error500') {
+      res.writeHead(500, { 'content-type': 'application/json' })
+      res.end(JSON.stringify({ type: 'error', error: { type: 'api_error', message: 'boom' } }))
+      return
+    }
     res.writeHead(200, { 'content-type': 'text/event-stream' })
     const start = {
       type: 'message_start',
@@ -62,5 +73,43 @@ describe('issue #50: a real dropped stream, through the real SDK', () => {
       '[partial usage, lower bound] terminated',
       '[partial usage, lower bound] terminated',
     ])
+  })
+
+  it('VT-W1 (#52): streamModel reports a real drop or a lost connection as dropped, and a 500 as not', async () => {
+    const write = () =>
+      streamModel({ purpose: 'write', model: 'claude-sonnet-5', messages: [{ role: 'user', content: 'write' }], sink: new MemoryLogSink() }).then(
+        () => null,
+        (e: unknown) => e,
+      )
+    mode = 'drop'
+    connections = 0
+    const dropSink = new MemoryLogSink()
+    const dropped = await streamModel({ purpose: 'write', model: 'claude-sonnet-5', messages: [{ role: 'user', content: 'write' }], sink: dropSink }).then(
+      () => null,
+      (e: unknown) => e,
+    )
+    // The cut attempt is logged with the usage seen before the cut, not $0 (reviewer agent, #56).
+    expect(dropSink.rows).toHaveLength(1)
+    expect(dropSink.rows[0]).toMatchObject({ ok: false, input_tokens: 100, output_tokens: 7 })
+    expect(dropSink.rows[0]!.cost_usd).toBeGreaterThan(0)
+    expect(dropSink.rows[0]!.error).toMatch(/^\[partial usage, lower bound\] /)
+    expect(dropped).toBeInstanceOf(ModelCallError)
+    expect((dropped as ModelCallError).detail).toMatchObject({ dropped: true, retryable: false })
+    // streamModel itself never retries: the pipeline decides.
+    expect(connections).toBe(1)
+
+    mode = 'refuse'
+    connections = 0
+    const refused = await write()
+    expect(refused).toBeInstanceOf(ModelCallError)
+    expect((refused as ModelCallError).message).toMatch(/Connection error/)
+    expect((refused as ModelCallError).detail).toMatchObject({ dropped: true, retryable: false })
+    expect(connections).toBe(1)
+
+    mode = 'error500'
+    const failed = await write()
+    expect(failed).toBeInstanceOf(ModelCallError)
+    expect((failed as ModelCallError).detail).toMatchObject({ dropped: false, status: 500 })
+    mode = 'drop'
   })
 })
