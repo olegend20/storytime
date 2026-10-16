@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { estimateBuildCost, estimateRunCost, summarizeBench, type BenchReview } from '@/lib/eval/review-bench'
+import { estimateBuildCost, estimateRunCost, failedChecks, summarizeBench, type BenchItem, type BenchReview } from '@/lib/eval/review-bench'
+import { goodFactPack, goodStory, request } from '../helpers/story'
 
 /** Issue #58: the quality-reviewer bench. */
 
@@ -58,5 +59,32 @@ describe('review bench', () => {
     const s = summarizeBench([review('a', 1, true), review('a', 2, true)], null)
     expect(s.wrong_fails).toEqual({ count: 0, of: 0 })
     expect(s.flips).toEqual({ count: 0, of: 1 })
+  })
+
+  it('VT-Q5 (#202): scores the writer - reviewer passes, failures by judgement, and the deterministic checks', () => {
+    const passing = { age_appropriate: true, scary_level: 0, kids_are_active_participants: true, facts_consistent_with_pack: true, tone_matches_request: true, reasons: [] }
+    expect(failedChecks(passing, 'A')).toEqual([])
+    expect(failedChecks({ ...passing, scary_level: 3, kids_are_active_participants: false }, 'A')).toEqual(['scary_level', 'kids_are_active_participants'])
+
+    const item = (id: string, wordsPerChapter?: number): BenchItem => ({
+      id,
+      scenario_id: id,
+      story: goodStory(wordsPerChapter ? { wordsPerChapter } : {}),
+      request: request(),
+      fact_pack: goodFactPack(),
+    })
+    const s = summarizeBench(
+      [
+        review('ok', 1, true),
+        review('ok', 2, false, { failed_checks: ['kids_are_active_participants'] }),
+        review('short', 1, false, { failed_checks: ['kids_are_active_participants', 'facts_consistent_with_pack'] }),
+      ],
+      null,
+      [item('ok'), item('short', 60)],
+    )
+    expect(s.passes).toEqual({ count: 1, of: 3 })
+    expect(s.by_check).toEqual({ kids_are_active_participants: 2, facts_consistent_with_pack: 1 })
+    expect(s.deterministic).toMatchObject({ passed: 1, of: 2 })
+    expect(s.deterministic?.by_check.word_count_in_range).toBe(1)
   })
 })

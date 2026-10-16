@@ -311,11 +311,15 @@ export function onlyHardRuleBreaches(result: QualityResult, band: AgeBand): bool
   )
 }
 
-/** Below this much time before the request deadline, the ladder cuts instead of mending. */
-export const MEND_MIN_MS = 40_000
+/**
+ * Below this much time before the request deadline, the ladder cuts instead of mending: the
+ * mend, the gate again and possibly a cut's gate. A gate is one thinking quality review run
+ * beside the safety review - median ~10 s, p95 ~30 s on the review bench (DECISIONS #201).
+ */
+export const MEND_MIN_MS = 70_000
 
-/** Time the gate, the mend and the save need after a write. */
-export const AFTER_WRITE_MS = 45_000
+/** Time the gate, the mend and the save need after a write: up to three gates (#201). */
+export const AFTER_WRITE_MS = 90_000
 /**
  * Below this, rung 3 does not start: a 5- or 10-minute story takes 60-90 s to write, plus
  * AFTER_WRITE_MS. A truncated first write usually spent most of the request already.

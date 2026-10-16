@@ -38,6 +38,7 @@ vi.mock('@anthropic-ai/sdk', async () => {
 const { callModel } = await import('@/lib/ai/callModel')
 const { MemoryLogSink } = await import('@/lib/ai/types')
 const { runQualityReview } = await import('@/lib/quality/review')
+const { modelForRole } = await import('@/lib/ai/pricing')
 
 const saved = process.env.LIVE_API
 afterEach(() => {
@@ -68,18 +69,34 @@ describe('Claude Haiku 5.5 request shape', () => {
     expect(captured.params[0]).not.toHaveProperty('thinking')
   })
 
-  it('a quality review on Haiku 5.5 leaves room for its thinking; the shipped helper keeps 2,000', async () => {
+  it('a quality review on Haiku 5.5 leaves room for its thinking; with thinking off, or on Haiku 4.5, 2,000', async () => {
     process.env.LIVE_API = '1'
     const story = { title: 't', subtitle: null, chapters: [{ heading: 'h', text: 'Once.' }], true_facts: [] } as never
     const request = { age_band: 'A', children: [{ name: 'Mia', age: 4 }], tones: ['calm'], length_minutes: 5, topic_label: 'bees' } as never
     const fast = await runQualityReview(story, request, null, { model: 'claude-haiku-5-5', sink: new MemoryLogSink() })
     await runQualityReview(story, request, null, { model: 'claude-haiku-5-5', thinking: 'off', sink: new MemoryLogSink() })
-    await runQualityReview(story, request, null, { sink: new MemoryLogSink() })
+    await runQualityReview(story, request, null, { model: 'claude-haiku-4-5-20251001', sink: new MemoryLogSink() })
     expect(fast.valid).toBe(true)
     expect(captured.params.map((p) => [p.model, p.max_tokens])).toEqual([
       ['claude-haiku-5-5', 16_000],
       ['claude-haiku-5-5', 2_000],
       ['claude-haiku-4-5-20251001', 2_000],
     ])
+  })
+
+  it('#201: the shipped quality review runs on its own role - Haiku 5.5, thinking on at the default effort', async () => {
+    process.env.LIVE_API = '1'
+    const story = { title: 't', subtitle: null, chapters: [{ heading: 'h', text: 'Once.' }], true_facts: [] } as never
+    const request = { age_band: 'A', children: [{ name: 'Mia', age: 4 }], tones: ['calm'], length_minutes: 5, topic_label: 'bees' } as never
+    expect(modelForRole('quality_reviewer')).toBe('claude-haiku-5-5')
+    await runQualityReview(story, request, null, { sink: new MemoryLogSink() })
+    expect(captured.params[0]).toMatchObject({ model: 'claude-haiku-5-5', max_tokens: 16_000 })
+    // Adaptive thinking is on by default on Haiku 5.5: no thinking param, no effort override,
+    // and never a temperature (400 on this model).
+    expect(captured.params[0]).not.toHaveProperty('thinking')
+    expect(captured.params[0]).not.toHaveProperty('temperature')
+    expect((captured.params[0] as { output_config?: { effort?: string } }).output_config?.effort).toBeUndefined()
+    // The safety review and the other helper steps stay on the helper until each has its own eval.
+    expect(modelForRole('helper')).toBe('claude-haiku-4-5-20251001')
   })
 })

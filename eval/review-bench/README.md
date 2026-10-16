@@ -51,3 +51,29 @@ Accuracy is reviews that agree with the hand label, over all reviews. With 16 dr
 differences under about 10 points are noise (v3 at medium scored 83% with 3 reviews per draft
 and 64% with 5). Candidates F (participation and unsupported-claim procedures) and G (F with
 the fact check narrowed to substantial facts) are in `candidates/`.
+
+## Shipped, and what the bench is for next (2026-10-15)
+
+The owner moved the quality review to Haiku 5.5 with thinking and prompt v4 (DECISIONS #201).
+`--model` now defaults to the `quality_reviewer` role.
+
+The bench also scores the **writer** (DECISIONS #202). Every run prints how many first drafts
+the reviewer passes, which judgement failed the rest, and the gate's deterministic checks. No
+labels are needed. Master v5's baseline, on `set-2026-10-15.json`, re-read from the runs above:
+
+| | reviews passing | children only watch | facts | other |
+|---|---|---|---|---|
+| reviewer v4 (shipped) | 84 / 160 (52%) | 37 | 30 | 22 |
+| reviewer G (strict) | 26 / 160 (16%) | 86 | 88 | 22 |
+| deterministic checks | 24 / 32 drafts | | | word count 3, banned word 2, 4 others |
+
+To score a candidate writer prompt, put it in `prompts/master.v<N>.md`, build a train set
+(~$2.70), then score it with the shipped reviewer (~$0.15 at list):
+
+```
+pnpm review-bench --build --scenarios=split:train --label=master-v6
+pnpm review-bench --set=eval/review-bench/set-master-v6-<date>.json --samples=3
+```
+
+The strict reviewer G is switched on only once first drafts pass it as often as they pass v4
+today.

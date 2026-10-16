@@ -122,23 +122,28 @@ export async function runQualityGate(opts: GateOptions): Promise<GateOutcome> {
   const parsable = !deterministic.failures.some((f) => f.check === 'schema_valid')
   if (deterministic.passed || (opts.reviewDespiteFailures && parsable)) {
     const story = opts.story as StoryOutput
-    review =
+    // The two reviews are independent, so they run together: the quality reviewer thinks
+    // (~10 s, DECISIONS #201) and the gate can run three times inside AFTER_WRITE_MS.
+    const [qualityReview, safetyReview] = await Promise.all([
       opts.reviewOverride ??
-      (await reviewStoryQuality(story, request, opts.factPack, {
-        measured: measuredForReview(story, band),
+        reviewStoryQuality(story, request, opts.factPack, {
+          measured: measuredForReview(story, band),
+          ...(opts.sink ? { sink: opts.sink } : {}),
+          familyId: opts.familyId ?? null,
+          storyId: opts.storyId ?? null,
+          ...(opts.signal ? { signal: opts.signal } : {}),
+        }),
+      opts.safetyReviewer?.review(story, request, {
         ...(opts.sink ? { sink: opts.sink } : {}),
-        familyId: opts.familyId ?? null,
         storyId: opts.storyId ?? null,
-        ...(opts.signal ? { signal: opts.signal } : {}),
-      }))
+        familyId: opts.familyId ?? null,
+      }) ?? null,
+    ])
+    review = qualityReview
     modelFailures = reviewPassed(review, band) ? [] : reviewFailures(review, band)
 
-    if (opts.safetyReviewer) {
-      safety = await opts.safetyReviewer.review(story, request, {
-        ...(opts.sink ? { sink: opts.sink } : {}),
-        storyId: opts.storyId ?? null,
-        familyId: opts.familyId ?? null,
-      })
+    if (safetyReview) {
+      safety = safetyReview
       const s = safetyFailures(safety, band)
       modelFailures = [...modelFailures, ...s.failures]
       hard = s.hard

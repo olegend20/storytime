@@ -24,8 +24,12 @@ export const EXPECTED_CALLS = {
   normalize: { role: 'helper', input: 300, cacheRead: 0, output: 50 },
   /** The call that matters: cached master prompt + bible + fact pack, one story out. */
   write: { role: 'writer', input: 1_500, cacheRead: 4_000, output: 5_000 },
-  /** Haiku: the F7 quality gate reads the whole story back. */
-  quality: { role: 'helper', input: 6_000, cacheRead: 0, output: 200 },
+  /**
+   * The F7 quality review reads the whole story back. On its own role since 2026-10-15
+   * (DECISIONS #201): Haiku 5.5 thinks before it answers, so most of its output is thinking.
+   * Measured on the review bench that day: 10,390 input and 2,625 output tokens a review.
+   */
+  quality: { role: 'quality_reviewer', input: 10_400, cacheRead: 0, output: 2_600 },
   /** Haiku: background Story Bible update. */
   bible_update: { role: 'helper', input: 7_000, cacheRead: 0, output: 600 },
 } as const
@@ -69,7 +73,7 @@ export function expectedStoryCost(
     ExpectedCallName,
     (typeof EXPECTED_CALLS)[ExpectedCallName],
   ][]) {
-    const model = call.role === 'writer' ? writerModel : helperModel
+    const model = call.role === 'writer' ? writerModel : call.role === 'helper' ? helperModel : modelForRole(call.role)
     breakdown[name] = computeCost({
       model,
       input: call.input,

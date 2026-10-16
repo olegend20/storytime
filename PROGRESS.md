@@ -925,6 +925,18 @@ estimate $7.88 a run. Two live baselines (owner-approved, ~$33) measure the per-
 deadline; a caller abort is no longer retried. VT-R1-VT-R5 in
 `test/unit/callmodel-transport.test.ts`.
 
+### 2026-10-15 — the quality reviewer moves to Claude Haiku 5.5 (issue #58, DECISIONS #200–#202)
+
+Owner approved: the F7 quality review runs on Haiku 5.5 with thinking (`quality_reviewer` role,
+prompt v4); the safety review and other helper steps stay on Haiku 4.5. On the bench: 0 format
+failures in 1,232 reviews, 64-83% agreement with the labels on train against 31-56%, 68% on test.
+A review takes ~10 s (p95 ~30 s) instead of 2.5 s, after the chapters have streamed, so the gate
+now runs both reviews together and the time kept after a write is 90 s. Each story's expected
+cost falls $0.0047 at list price. The bench now scores the writer too (first drafts the reviewer
+passes, failures by judgement, deterministic checks): master v5's baseline is 52% of reviews
+passing v4, 16% passing the strict G, failing mostly on children who only watch and on facts.
+That is the writer hill-climb that comes next.
+
 ### 2026-10-15 — the quality reviewer gets its own bench (issue #58, DECISIONS #197–#199)
 
 `pnpm review-bench`: 32 first drafts frozen at the gate ($5.68), hand-labelled, scored per

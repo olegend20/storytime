@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { MeteredLogSink, modelForRole } from '@/lib/ai'
 import { formatEstimate } from '@/lib/eval/estimate'
 import { writeFirstDraft } from '@/lib/eval/live-pipeline'
+import { loadPrompt } from '@/lib/prompts'
 import {
   estimateBuildCost,
   estimateRunCost,
@@ -30,7 +31,7 @@ import { installCliCostLogging } from '@/lib/costs/cli'
  *   --candidate=DIR       a directory holding `quality-review.v<N>.md` to score instead of
  *                         the shipped prompt
  *   --labels=PATH         hand labels, `[{ id, should_pass, notes }]`
- *   --model=ID            the reviewer model (default: the configured helper)
+ *   --model=ID            the reviewer model (default: the configured quality_reviewer)
  *   --effort=low|medium|high, --thinking=off   reviewer settings, for models that take them
  *   --label=NAME          a short name for the candidate, used in the result file name
  *   --samples=N           reviews per draft (default 3)
@@ -39,6 +40,14 @@ import { installCliCostLogging } from '@/lib/costs/cli'
  *   --scenarios=a,b       subset (also split:train / split:test), for --build
  *   --dry-run             print the estimate, make no calls
  *   --budget=N            approve up to $N (default ceiling $10)
+ *
+ * Scoring the WRITER (DECISIONS #202): build a set with the candidate writer prompt (the
+ * newest `prompts/master.v<N>.md`; `PROMPT_MASTER_VERSION=<N>` pins another), label it, then
+ * score it with the shipped reviewer, no labels needed. The run prints how many first drafts
+ * the reviewer passes, which judgement fails the rest, and the free deterministic checks:
+ *
+ *   pnpm review-bench --build --scenarios=split:train --label=master-v6
+ *   pnpm review-bench --set=eval/review-bench/set-master-v6-<date>.json --samples=3
  */
 
 const DEFAULT_CEILING_USD = 10
@@ -89,8 +98,17 @@ async function build(sink: MeteredLogSink): Promise<void> {
   }
   await Promise.all(Array.from({ length: 4 }, worker))
   items.sort((a, b) => a.id.localeCompare(b.id))
-  const set: BenchSet = { kind: 'review-bench-set', created_at: new Date().toISOString(), writer_model: writer, build_cost_usd: cost, items }
-  const path = writeResultFile(nextResultPath('set-', 'json', { dir: BENCH_DIR }), set)
+  const master = loadPrompt('master')
+  const set: BenchSet = {
+    kind: 'review-bench-set',
+    created_at: new Date().toISOString(),
+    writer_model: writer,
+    writer_prompt: { id: master.id, version: master.version },
+    build_cost_usd: cost,
+    items,
+  }
+  const tag = value('label')
+  const path = writeResultFile(nextResultPath(`set-${tag ? `${tag}-` : ''}`, 'json', { dir: BENCH_DIR }), set)
   console.log(`\n${items.length}/${scenarios.length} drafts, $${cost.toFixed(2)}. Wrote ${path}`)
 }
 
@@ -106,7 +124,7 @@ async function score(setPath: string, sink: MeteredLogSink): Promise<void> {
   const effort = value('effort') as ReviewerSettings['effort']
   const thinking = value('thinking') as ReviewerSettings['thinking']
   const reviewer: ReviewerSettings = { ...(model ? { model } : {}), ...(effort ? { effort } : {}), ...(thinking ? { thinking } : {}) }
-  const estimate = estimateRunCost(set.items.length, samples, model ?? modelForRole('helper'), reviewer)
+  const estimate = estimateRunCost(set.items.length, samples, model ?? modelForRole('quality_reviewer'), reviewer)
   console.log(formatEstimate(`review-bench (${set.items.length} drafts × ${samples})`, estimate))
   if (flag('dry-run') || !withinCeiling(estimate.total_usd)) return
 
@@ -127,10 +145,10 @@ async function score(setPath: string, sink: MeteredLogSink): Promise<void> {
     ran_at: new Date().toISOString(),
     set: split ? `${setPath} (split:${split})` : setPath,
     prompt: { ...prompt, dir: promptDir ?? 'prompts' },
-    reviewer: { model: model ?? modelForRole('helper'), ...(effort ? { effort } : {}), ...(thinking ? { thinking } : {}) },
+    reviewer: { model: model ?? modelForRole('quality_reviewer'), ...(effort ? { effort } : {}), ...(thinking ? { thinking } : {}) },
     samples,
     labelled: labels !== null,
-    summary: summarizeBench(reviews, labels),
+    summary: summarizeBench(reviews, labels, set.items),
     reviews,
   }
   // Named by what was scored, so runs on the same day cannot be mixed up.

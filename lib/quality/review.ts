@@ -1,4 +1,4 @@
-import { callModel, capabilities, parseJsonLoose, type GenerationLogSink } from '@/lib/ai'
+import { callModel, capabilities, modelForRole, parseJsonLoose, type GenerationLogSink } from '@/lib/ai'
 import { loadPrompt } from '@/lib/prompts'
 import { dataBlock } from '@/lib/datablock'
 import { sentenceStats } from '@/lib/bands'
@@ -13,7 +13,7 @@ import {
 } from '@/lib/schemas'
 
 /**
- * The single model review in the F7 gate: one Haiku call, and only when the deterministic
+ * The single model review in the F7 gate: one call to the `quality_reviewer` model, and only when the deterministic
  * checks already passed.
  *
  * The story, the fact pack and the request all go inside data blocks, and the prompt states
@@ -107,10 +107,13 @@ export interface QualityReviewRun {
   costUsd: number
 }
 
+/** max_tokens for a reviewer that thinks: its thinking is spent inside it (~2,600 measured). */
+export const QUALITY_REVIEW_THINKING_MAX_TOKENS = 16_000
+
 /**
  * The call behind `reviewStoryQuality`. `systemPrompt` replaces the shipped
- * `quality-review` prompt, and `model`/`effort`/`thinking` the configured helper: only the
- * review bench sets them, to score a candidate.
+ * `quality-review` prompt, and `model`/`effort`/`thinking` the configured `quality_reviewer`:
+ * only the review bench sets them, to score a candidate.
  */
 export async function runQualityReview(
   story: StoryOutput,
@@ -123,12 +126,13 @@ export async function runQualityReview(
     thinking?: 'adaptive' | 'off'
   } = {},
 ): Promise<QualityReviewRun> {
-  // A model that thinks by default spends its thinking inside max_tokens: 2,000 would cut it off.
-  const thinks = opts.model !== undefined && capabilities(opts.model).thinking === 'adaptive_default_on' && opts.thinking !== 'off'
+  // The quality review has its own role (DECISIONS #201). A model that thinks by default
+  // spends its thinking inside max_tokens: 2,000 would cut it off.
+  const model = opts.model ?? modelForRole('quality_reviewer')
+  const thinks = capabilities(model).thinking === 'adaptive_default_on' && opts.thinking !== 'off'
   const result = await callModel({
     purpose: 'quality',
-    role: 'helper',
-    ...(opts.model ? { model: opts.model } : {}),
+    model,
     ...(opts.effort ? { effort: opts.effort } : {}),
     ...(opts.thinking ? { thinking: opts.thinking } : {}),
     system: [{ text: opts.systemPrompt ?? loadPrompt('quality-review').body }],
@@ -138,7 +142,7 @@ export async function runQualityReview(
         content: buildQualityReviewMessage(story, request, pack, opts.measured ?? null),
       },
     ],
-    maxTokens: thinks ? 16_000 : 2_000,
+    maxTokens: thinks ? QUALITY_REVIEW_THINKING_MAX_TOKENS : 2_000,
     schema: QualityReview,
     familyId: opts.familyId ?? null,
     storyId: opts.storyId ?? null,
