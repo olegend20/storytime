@@ -1,4 +1,43 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+
+/**
+ * Issue #52: a first write the gateway cuts off. Each queued entry makes one streamed write
+ * send `partial` to the parser and then fail the way streamModel reports a real drop
+ * (VT-W1 proves that shape against the real SDK); an empty queue is the normal fixture replay.
+ */
+const drops = vi.hoisted(() => ({
+  queue: [] as { partial: string; dropped?: boolean; hang?: boolean }[],
+  signals: [] as (AbortSignal | undefined)[],
+}))
+vi.mock('@/lib/ai', async (orig) => {
+  const actual = await orig<typeof import('@/lib/ai')>()
+  return {
+    ...actual,
+    streamModel: async (opts: Parameters<typeof actual.streamModel>[0]) => {
+      const next = drops.queue.shift()
+      if (!next) return actual.streamModel(opts)
+      drops.signals.push(opts.signal)
+      opts.onText?.(next.partial)
+      // A write that thinks until it is stopped: it ends only when its signal aborts.
+      if (next.hang) {
+        return new Promise<never>((_, reject) =>
+          opts.signal?.addEventListener('abort', () =>
+            reject(new actual.ModelCallError(`${opts.purpose} stream to stub failed: aborted`, {
+              purpose: opts.purpose, model: 'stub', attempts: 1, retryable: false, dropped: false,
+            })),
+          ),
+        )
+      }
+      throw new actual.ModelCallError(`${opts.purpose} stream to stub failed: terminated`, {
+        purpose: opts.purpose,
+        model: 'stub',
+        attempts: 1,
+        retryable: false,
+        dropped: next.dropped ?? true,
+      })
+    },
+  }
+})
 import { randomUUID } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
@@ -36,7 +75,7 @@ import {
 } from '../helpers/fixtures'
 import { buildPrompt } from '@/lib/generate/prompt'
 import { buildQualityReviewMessage, measuredForReview } from '@/lib/quality/review'
-import { RETRY_MIN_MS, WRITER_MAX_TOKENS } from '@/lib/generate/pipeline'
+import { AFTER_WRITE_MS, RETRY_MIN_MS, WRITER_MAX_TOKENS } from '@/lib/generate/pipeline'
 import { MEND_MAX_TOKENS, cutViolations, mendUserMessage, passagesFor } from '@/lib/generate/mend'
 import { STORY_OUTPUT_FORMAT } from '@/lib/generate/output-schema'
 import { buildBibleUpdateMessage } from '@/lib/bible'
@@ -790,6 +829,107 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     expect(sink.rows.filter((r) => r.purpose === 'rewrite')).toHaveLength(0)
     // The parent is told, rather than left with a stream that just stops.
     expect(events.at(-1)).toMatchObject({ type: 'error', code: 'generation_failed', quota_consumed: false })
+  })
+
+  describe('issue #52: a first write cut off partway', () => {
+    const META_ONLY = '{"title":"The Lost Signal","subtitle":null,"chapters":['
+    const WITH_CHAPTER = META_ONLY + '{"heading":"Chapter 1: Static","text":"Once upon a'
+    afterEach(() => {
+      drops.queue.length = 0
+      drops.signals.length = 0
+      vi.restoreAllMocks()
+    })
+
+    it('VT-W2: dropped before any chapter reached the parent, it is written again, streamed, once', async () => {
+      const run = await prepared()
+      const { story } = stubResponsesFor(run)
+      drops.queue.push({ partial: META_ONLY })
+      const sink = new MemoryLogSink()
+      const quota = new RecordingQuota()
+      const { events, result } = await collect(run, { db: family.db, sink, quota, now: () => FIXED_NOW })
+
+      expect(result.status).toBe('ready')
+      expect(result.writeCalls).toBe(2)
+      expect(result.story?.title).toBe(story.title)
+      // The parent saw the fact cards, a title, then the real story's title and its chapters.
+      const metas = events.filter((e) => e.type === 'meta') as Extract<SseEvent, { type: 'meta' }>[]
+      expect(metas.map((m) => m.title)).toEqual(['The Lost Signal', story.title])
+      const starts = events.filter((e) => e.type === 'chapter_start')
+      expect(starts).toHaveLength(story.chapters.length)
+      expect(events.at(-1)?.type).toBe('done')
+      expect(quota.calls).toEqual(['consumeQuota'])
+      if (result.bibleUpdate) await result.bibleUpdate
+    })
+
+    it('VT-W3: dropped after a chapter was sent, it is not written again - a clean error', async () => {
+      const run = await prepared()
+      stubResponsesFor(run)
+      drops.queue.push({ partial: WITH_CHAPTER })
+      const quota = new RecordingQuota()
+      const { events, result } = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota, now: () => FIXED_NOW })
+      expect(result.status).toBe('failed')
+      expect(result.writeCalls).toBe(1)
+      expect(drops.queue).toHaveLength(0)
+      expect(events.some((e) => e.type === 'chapter_start')).toBe(true)
+      expect(events.at(-1)).toMatchObject({ type: 'error', code: 'generation_failed', quota_consumed: false })
+      expect(quota.calls).toEqual([])
+    })
+
+    it('VT-W4: with less than RETRY_MIN_MS before the deadline, no second write starts', async () => {
+      const run = await prepared()
+      stubResponsesFor(run)
+      drops.queue.push({ partial: META_ONLY })
+      const { events, result } = await collect(run, {
+        db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW,
+        deadlineMs: Date.now() + RETRY_MIN_MS - 1_000,
+      })
+      expect(result.status).toBe('failed')
+      expect(result.writeCalls).toBe(1)
+      expect(events.at(-1)).toMatchObject({ type: 'error', code: 'generation_failed' })
+    })
+
+    it('VT-W5: a second drop is not retried again, and a failure that is not a drop is never retried', async () => {
+      const run = await prepared()
+      stubResponsesFor(run)
+      drops.queue.push({ partial: META_ONLY }, { partial: '' })
+      const twice = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
+      expect(twice.result.status).toBe('failed')
+      expect(twice.result.writeCalls).toBe(2)
+      expect(drops.queue).toHaveLength(0)
+
+      const other = await prepared()
+      stubResponsesFor(other)
+      drops.queue.push({ partial: '', dropped: false })
+      const notDrop = await collect(other, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
+      expect(notDrop.result.status).toBe('failed')
+      expect(notDrop.result.writeCalls).toBe(1)
+    })
+
+    it('VT-W6: the second write is cut off in time for the gate and the save, and the parent gets an error', async () => {
+      const run = await prepared()
+      stubResponsesFor(run)
+      // Stand in for the timer so the test need not wait minutes: record the bound, abort by hand.
+      const stop = new AbortController()
+      const bounds: number[] = []
+      vi.spyOn(AbortSignal, 'timeout').mockImplementation((ms: number) => {
+        bounds.push(ms)
+        return stop.signal
+      })
+      drops.queue.push({ partial: META_ONLY }, { partial: '', hang: true })
+      const deadlineMs = Date.now() + 400_000
+      const pending = collect(run, {
+        db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW, deadlineMs,
+      })
+      await vi.waitFor(() => expect(drops.signals).toHaveLength(2))
+      expect(drops.signals[0]).toBeUndefined()
+      expect(drops.signals[1]).toBe(stop.signal)
+      expect(bounds.some((ms) => ms <= 400_000 - AFTER_WRITE_MS && ms > 400_000 - AFTER_WRITE_MS - 10_000)).toBe(true)
+      stop.abort()
+      const { events, result } = await pending
+      expect(result.status).toBe('failed')
+      expect(result.writeCalls).toBe(2)
+      expect(events.at(-1)).toMatchObject({ type: 'error', code: 'generation_failed', quota_consumed: false })
+    })
   })
 
   it('a write that fails before any event is reported as an error event, not a dropped stream', async () => {
