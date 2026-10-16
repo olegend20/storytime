@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { estimateBakeoffCost, estimateEvalCost } from '@/lib/eval/estimate'
+import { EXPECTED_REWRITE_RATE, estimateBakeoffCost, estimateEvalCost } from '@/lib/eval/estimate'
 import { bakeoffScenarios, evalScenarios } from '@/lib/eval/scenarios'
 
 /**
@@ -27,5 +27,26 @@ describe('F13/F14 estimates skip fact packs that are already built', () => {
     const warm = estimateBakeoffCost({ builtTopics: topics })
     expect(packLine(warm).calls).toBe(0)
     expect(packLine(warm).usd).toBe(0)
+  })
+})
+
+describe('the eval estimate is reconciled with what a run actually cost', () => {
+  it('VT-E1: the 32-story eval is within 15% of the measured 2026-10-14 run ($14.15, calibration reused)', () => {
+    const topics = new Set(evalScenarios().map((s) => s.topic_key))
+    const estimate = estimateEvalCost({ builtTopics: topics, includeCalibration: false })
+    // Measured from generation_logs: $10.45 generation (of which $4.06 rewrites) + $3.70 judging.
+    // If a price, a prompt or the rewrite rate moves, re-measure and update both together.
+    expect(estimate.total_usd).toBeGreaterThan(14.15 * 0.85)
+    expect(estimate.total_usd).toBeLessThan(14.15 * 1.15)
+  })
+
+  it('VT-E2: rewrites are a line of their own, at the measured rate', () => {
+    const estimate = estimateEvalCost({ includeCalibration: false })
+    const rewrites = estimate.lines.find((l) => l.what.startsWith('rewrites'))
+    expect(rewrites?.usd).toBeGreaterThan(0)
+    expect(EXPECTED_REWRITE_RATE).toBe(0.7)
+    expect(estimate.assumptions.join(' ')).toMatch(/Rewrite rate 0\.7/)
+    const bakeoff = estimateBakeoffCost()
+    expect(bakeoff.lines.some((l) => l.what.startsWith('rewrites on'))).toBe(true)
   })
 })

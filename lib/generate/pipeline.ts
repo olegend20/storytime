@@ -372,6 +372,9 @@ export async function runGeneration(
   const sink = deps.sink
   const pack = prepared.factPack?.content ?? null
   let writeCalls = 0
+  // Whether any chapter has reached the parent: until one has, a dropped first write can be
+  // written again without contradicting the page (issue #52).
+  let chapterSent = false
 
   const emitMetaAndChapters = (): StoryStreamParser =>
     new StoryStreamParser({
@@ -387,8 +390,10 @@ export async function runGeneration(
           topic_label: prepared.topicLabel,
           content_notice: prepared.contentNotice,
         }),
-      onChapterStart: (index, heading) =>
-        channel.push({ type: 'chapter_start', index, heading }),
+      onChapterStart: (index, heading) => {
+        chapterSent = true
+        channel.push({ type: 'chapter_start', index, heading })
+      },
       onChapterDelta: (index, text) => channel.push({ type: 'chapter_delta', index, text }),
       onChapterEnd: (index, shoutLine) =>
         channel.push({ type: 'chapter_end', index, shout_line: shoutLine }),
@@ -400,7 +405,7 @@ export async function runGeneration(
     if (cards) channel.push(cards)
 
     // ---- attempt 1: the streamed write ----
-    const parser = emitMetaAndChapters()
+    let parser = emitMetaAndChapters()
     const bibleAtStart = (await loadBible(prepared.seriesId, { db })).content
     // The request the saved story was written to: `prepared.request`, unless rung 3 below
     // had to retry it one length tier shorter.
@@ -411,7 +416,7 @@ export async function runGeneration(
       factPack: pack,
     })
     writeCalls += 1
-    const write = (structured: boolean) =>
+    const write = (structured: boolean, signal?: AbortSignal) =>
       streamModel({
         purpose: 'write',
         role: 'writer',
@@ -425,14 +430,31 @@ export async function runGeneration(
         storyId: prepared.storyId,
         ...(sink ? { sink } : {}),
         onText: (delta) => parser.feed(delta),
+        ...(signal ? { signal } : {}),
       })
     let structured = true
-    const streamed = await write(true).catch((err: unknown) => {
-      // A rejected request fails before any text is streamed, so nothing reached the parent.
-      if (!structuredOutputRejected(err)) throw err
-      console.warn(`[generate] structured outputs rejected, writing without: ${(err as Error).message}`)
-      structured = false
-      return write(false)
+    const firstWrite = () =>
+      write(structured).catch((err: unknown) => {
+        // A rejected request fails before any text is streamed, so nothing reached the parent.
+        if (!structured || !structuredOutputRejected(err)) throw err
+        console.warn(`[generate] structured outputs rejected, writing without: ${(err as Error).message}`)
+        structured = false
+        return write(false)
+      })
+    const streamed = await firstWrite().catch((err: unknown) => {
+      // Issue #52: the gateway can cut a stream partway, even seconds in. If no chapter has
+      // reached the parent yet, nothing on the page would contradict a second write - so it
+      // is written again, streamed, once. The title may arrive twice; the page keeps the last.
+      // Never when a chapter is showing, and never without time to write, gate and save it.
+      const dropped = err instanceof ModelCallError && err.detail.dropped === true
+      const left = deps.deadlineMs === undefined ? Number.POSITIVE_INFINITY : deps.deadlineMs - Date.now()
+      if (!dropped || chapterSent || left < RETRY_MIN_MS) throw err
+      console.warn(`[generate] the first write was cut off before any chapter was sent - writing it again (${(err as Error).message})`)
+      parser = emitMetaAndChapters()
+      writeCalls += 1
+      // A full-length write can think for minutes, so it is cut off in time for the gate and
+      // the save: past the deadline the platform kills the request and the parent gets nothing.
+      return write(structured, deps.deadlineMs === undefined ? undefined : AbortSignal.timeout(left - AFTER_WRITE_MS))
     })
     parser.end()
 
@@ -451,7 +473,8 @@ export async function runGeneration(
     // Issue #32, rung 3: an unusable first write (cut off, structurally short, unrepairable)
     // is retried once, one length tier shorter - a shorter story fits every cap and fails
     // far less. Not streamed: the client already holds attempt 1's chapters, so the retry
-    // arrives in `done`, as a rewrite does. It is the second and last writing call.
+    // arrives in `done`, as a rewrite does. It is the second and last full writing call (a first
+    // write cut off by a dropped stream and written again, #52, does not count toward this).
     let retriedShorter: { from: LengthMinutes; to: LengthMinutes; why: string } | null = null
     if (!parsed.ok) {
       const why = unusable(parsed, streamed.stopReason, streamed.usage.output_tokens)
@@ -597,7 +620,8 @@ export async function runGeneration(
       }
     }
 
-    // ---- at most one rewrite (F6 AC: two writing-model calls maximum) ----
+    // ---- at most one rewrite (F6 AC: two full writing calls; a dropped first write retried
+    // under #52 can make it three calls, the cut one billed only for what it streamed) ----
     if (gate.needsRewrite) {
       const rewriteRequest: GenerationRequest = {
         ...request,
