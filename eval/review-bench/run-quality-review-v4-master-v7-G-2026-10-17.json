@@ -1,0 +1,715 @@
+{
+  "kind": "review-bench-run",
+  "ran_at": "2026-10-17T01:17:21.086Z",
+  "set": "eval/review-bench/set-master-v7-2026-10-17.json",
+  "prompt": {
+    "id": "quality-review",
+    "version": 4,
+    "dir": "eval/review-bench/candidates/g-procedures-substantial"
+  },
+  "reviewer": {
+    "model": "claude-haiku-5-5"
+  },
+  "samples": 3,
+  "labelled": false,
+  "summary": {
+    "calls": 48,
+    "format_failures": 0,
+    "wrong_fails": {
+      "count": 0,
+      "of": 0
+    },
+    "catches": {
+      "count": 0,
+      "of": 0
+    },
+    "flips": {
+      "count": 7,
+      "of": 16
+    },
+    "longest_reason": 146,
+    "cost_usd": 0.10597699999999999,
+    "passes": {
+      "count": 24,
+      "of": 48
+    },
+    "by_check": {
+      "facts_consistent_with_pack": 8,
+      "age_appropriate": 13,
+      "kids_are_active_participants": 11,
+      "scary_level": 2
+    },
+    "deterministic": {
+      "passed": 11,
+      "of": 16,
+      "by_check": {
+        "banned_word": 3,
+        "word_count_in_range": 2
+      }
+    }
+  },
+  "reviews": [
+    {
+      "item_id": "bees-band-a-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 4: 'smaller than one drop' contradicts pack's 'about a twelfth of a teaspoon' per bee"
+      ],
+      "cost_usd": 0.001595
+    },
+    {
+      "item_id": "bees-band-a-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 4: says one bee's honey is 'smaller than one drop'; pack says about a twelfth of a teaspoon, which is larger"
+      ],
+      "cost_usd": 0.00173
+    },
+    {
+      "item_id": "bees-band-a-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "age_appropriate",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 7: 'beekeepers' is not explained",
+        "chapter 4: says one bee's honey is 'smaller than one drop'; pack says about a twelfth of a teaspoon"
+      ],
+      "cost_usd": 0.001835
+    },
+    {
+      "item_id": "bicycles-band-b-5min-tricks",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "age_appropriate",
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapter 2: 'patent' is not explained for an 8-year-old",
+        "chapters 3, 6 and 8: Dinger explains each stop; Omar only reacts or rides along",
+        "chapter 2: Omar asks for 'something smoother' but the next stop is the rougher penny-farthing"
+      ],
+      "cost_usd": 0.002374
+    },
+    {
+      "item_id": "bicycles-band-b-5min-tricks",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "age_appropriate",
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapter 2: 'patent' is a big word and is not explained",
+        "chapters 2-7: Dinger leads every stop and explains every fact; Omar only reacts or observes"
+      ],
+      "cost_usd": 0.00267
+    },
+    {
+      "item_id": "bicycles-band-b-5min-tricks",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "age_appropriate",
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapter 2: 'patent' is a big word and is not explained in everyday words",
+        "chapter 7: 'tubing' is a big word and is not explained in everyday words",
+        "chapters 2-8: Omar only reacts, rides along or jokes; Dinger explains every stop and fact, and Omar's choices never change where the story goes"
+      ],
+      "cost_usd": 0.002407
+    },
+    {
+      "item_id": "climb-walls-band-a-15min-wild",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001781
+    },
+    {
+      "item_id": "climb-walls-band-a-15min-wild",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapters 2-8: Spark explains every fact; Sam's guesses and spotting change nothing in the story",
+        "chapter 2: 'thinner than your eyelash' is a size fact the pack does not give"
+      ],
+      "cost_usd": 0.002166
+    },
+    {
+      "item_id": "climb-walls-band-a-15min-wild",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 2: 'thinner than your eyelash' is a size fact the pack does not give; remove it or use only pack wording"
+      ],
+      "cost_usd": 0.002066
+    },
+    {
+      "item_id": "lego-band-a-pair",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 7: 'Everything LEGO has ever made still fits together' is a sweeping claim the pack does not support; pack only covers DUPLO compatibility"
+      ],
+      "cost_usd": 0.001931
+    },
+    {
+      "item_id": "lego-band-a-pair",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.00174
+    },
+    {
+      "item_id": "lego-band-a-pair",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001748
+    },
+    {
+      "item_id": "pompeii-band-c-15min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002218
+    },
+    {
+      "item_id": "pompeii-band-c-15min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 3: Pliny's age ('about sixteen') is a number not in the pack",
+        "chapter 6: Herculaneum's 'hotter and wetter' mud and gas burial is a substantial fact not in the pack"
+      ],
+      "cost_usd": 0.002305
+    },
+    {
+      "item_id": "pompeii-band-c-15min",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002004
+    },
+    {
+      "item_id": "rainbows-band-b-5min-teasing",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001702
+    },
+    {
+      "item_id": "rainbows-band-b-5min-teasing",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001744
+    },
+    {
+      "item_id": "rainbows-band-b-5min-teasing",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001722
+    },
+    {
+      "item_id": "sharks-band-b-siblings",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 7: Eugenie training sharks 'to push buttons for food' is not in the fact pack"
+      ],
+      "cost_usd": 0.001997
+    },
+    {
+      "item_id": "sharks-band-b-siblings",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.00206
+    },
+    {
+      "item_id": "sharks-band-b-siblings",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002163
+    },
+    {
+      "item_id": "sleep-band-a-5min-dark",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapters 2-8: Leo only asks and reacts; Ollie explains every fact and no Leo choice changes the story"
+      ],
+      "cost_usd": 0.002001
+    },
+    {
+      "item_id": "sleep-band-a-5min-dark",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001769
+    },
+    {
+      "item_id": "sleep-band-a-5min-dark",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001849
+    },
+    {
+      "item_id": "sleep-band-c-5min-bedtime",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002358
+    },
+    {
+      "item_id": "sleep-band-c-5min-bedtime",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001854
+    },
+    {
+      "item_id": "sleep-band-c-5min-bedtime",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002096
+    },
+    {
+      "item_id": "sleep-band-d-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001881
+    },
+    {
+      "item_id": "sleep-band-d-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001829
+    },
+    {
+      "item_id": "sleep-band-d-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.00195
+    },
+    {
+      "item_id": "space-race-band-b-15min-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "failed_checks": [
+        "age_appropriate"
+      ],
+      "reasons": [
+        "chapter 1: 'rivet' is not explained",
+        "chapter 2: 'satellite' is not explained"
+      ],
+      "cost_usd": 0.003008
+    },
+    {
+      "item_id": "space-race-band-b-15min-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B",
+        "too scary for band B: scary_level 2, limit 1"
+      ],
+      "failed_checks": [
+        "age_appropriate",
+        "scary_level"
+      ],
+      "reasons": [
+        "chapter 2: 'satellite' is used and never explained in everyday words",
+        "chapter 4: 'capsules' is used and never explained in everyday words"
+      ],
+      "cost_usd": 0.002881
+    },
+    {
+      "item_id": "space-race-band-b-15min-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B",
+        "too scary for band B: scary_level 2, limit 1",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "age_appropriate",
+        "scary_level",
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapter 1: 'rivet' is a big word and is not explained",
+        "chapter 5: 'podium' is a big word and is not explained",
+        "chapters 3, 5 and 8: Maya's drawings and guesses change nothing; Barnacle leads each stop and confirms her ideas",
+        "chapter 8: Apollo 13 tension lasts over several paragraphs before it resolves, so scary_level is 2, above band B's limit of 1"
+      ],
+      "cost_usd": 0.003175
+    },
+    {
+      "item_id": "space-race-band-d",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapters 1-8: Eli only observes; guides give every fact and no choice of his changes where the story goes"
+      ],
+      "cost_usd": 0.002411
+    },
+    {
+      "item_id": "space-race-band-d",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapters 2-8: Eli's deductions are confirmed by guides and never change where the story goes"
+      ],
+      "cost_usd": 0.00256
+    },
+    {
+      "item_id": "space-race-band-d",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapters 4-5: guides state every fact and Eli only reacts; give Eli a choice or idea that changes the scene",
+        "chapter 6: Eli notes the Korolev reveal but changes nothing; give him a deduction that alters what happens",
+        "chapter 8: Eli only watches the engineers solve Apollo 13; let his idea contribute to the fix"
+      ],
+      "cost_usd": 0.002404
+    },
+    {
+      "item_id": "titanic-band-c",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "age_appropriate",
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapter 1: 'sextant' is a technical term and is never explained",
+        "chapters 2-7: Hana spots details but Harland leads every stop; her choices change no outcome"
+      ],
+      "cost_usd": 0.002637
+    },
+    {
+      "item_id": "titanic-band-c",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C"
+      ],
+      "failed_checks": [
+        "age_appropriate"
+      ],
+      "reasons": [
+        "chapter 1: 'sextant' is a technical term and is never explained (repeated in chapter 8)"
+      ],
+      "cost_usd": 0.00202
+    },
+    {
+      "item_id": "titanic-band-c",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "age_appropriate",
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapter 1: 'sextant' is a big word never explained in everyday words",
+        "chapters 1-8: Harland explains every fact; Hana's spotting never changes what happens next"
+      ],
+      "cost_usd": 0.002486
+    },
+    {
+      "item_id": "video-games-band-b-15min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002725
+    },
+    {
+      "item_id": "video-games-band-b-15min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002493
+    },
+    {
+      "item_id": "video-games-band-b-15min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "failed_checks": [
+        "age_appropriate"
+      ],
+      "reasons": [
+        "chapter 1: 'sprite' is not explained",
+        "chapter 7: 'speedrunner' is not explained"
+      ],
+      "cost_usd": 0.002814
+    },
+    {
+      "item_id": "video-games-band-c-solo",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002467
+    },
+    {
+      "item_id": "video-games-band-c-solo",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.00239
+    },
+    {
+      "item_id": "video-games-band-c-solo",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002465
+    },
+    {
+      "item_id": "volcanoes-mixed-ages",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "failed_checks": [
+        "age_appropriate"
+      ],
+      "reasons": [
+        "over band A big-word budget of 6: magma, lava, plates, hotspot, shield volcano, supervolcano, seismographs, satellites"
+      ],
+      "cost_usd": 0.002594
+    },
+    {
+      "item_id": "volcanoes-mixed-ages",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002396
+    },
+    {
+      "item_id": "volcanoes-mixed-ages",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "failed_checks": [
+        "age_appropriate"
+      ],
+      "reasons": [
+        "band A budget is 6 big words; story uses 7: magma, plates, hotspot, shield volcano, supervolcano, seismographs, satellites"
+      ],
+      "cost_usd": 0.002506
+    }
+  ]
+}

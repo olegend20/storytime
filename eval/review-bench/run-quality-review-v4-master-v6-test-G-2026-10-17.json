@@ -1,0 +1,800 @@
+{
+  "kind": "review-bench-run",
+  "ran_at": "2026-10-17T01:53:04.447Z",
+  "set": "eval/review-bench/set-master-v6-test-2026-10-17.json",
+  "prompt": {
+    "id": "quality-review",
+    "version": 4,
+    "dir": "eval/review-bench/candidates/g-procedures-substantial"
+  },
+  "reviewer": {
+    "model": "claude-haiku-5-5"
+  },
+  "samples": 3,
+  "labelled": false,
+  "summary": {
+    "calls": 48,
+    "format_failures": 0,
+    "wrong_fails": {
+      "count": 0,
+      "of": 0
+    },
+    "catches": {
+      "count": 0,
+      "of": 0
+    },
+    "flips": {
+      "count": 5,
+      "of": 16
+    },
+    "longest_reason": 134,
+    "cost_usd": 0.11926300000000001,
+    "passes": {
+      "count": 18,
+      "of": 48
+    },
+    "by_check": {
+      "age_appropriate": 7,
+      "kids_are_active_participants": 20,
+      "facts_consistent_with_pack": 19,
+      "scary_level": 3
+    },
+    "deterministic": {
+      "passed": 13,
+      "of": 16,
+      "by_check": {
+        "word_count_in_range": 2,
+        "banned_word": 1,
+        "sentence_length": 1
+      }
+    }
+  },
+  "reviews": [
+    {
+      "item_id": "bicycles-band-c-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "age_appropriate",
+        "kids_are_active_participants",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 1: 'truing' and 'spoke tension' are technical terms, never explained",
+        "chapter 3: 'millions of people... for about a decade' is a number not in the pack",
+        "chapter 5: 'He was a vet' is a fact about Dunlop that the pack never gives",
+        "chapters 2-8: Hub explains every fact; Tom only asks, reacts or rides, and nothing he does changes the path"
+      ],
+      "cost_usd": 0.003379
+    },
+    {
+      "item_id": "bicycles-band-c-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapters 2-9: Tom only asks, comments and reacts; Hub leads every stop and nothing changes because of Tom",
+        "chapter 2: 'first pedal bike with American paperwork' is a record claim not in the pack",
+        "chapter 2: 'millions of people did, for about a decade' gives a number the pack does not support",
+        "chapter 5: Dunlop's job as a vet is a personal fact the pack never mentions"
+      ],
+      "cost_usd": 0.002536
+    },
+    {
+      "item_id": "bicycles-band-c-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapters 2-9: Tom only asks and observes; Hub leads every stop and no choice of Tom's changes the route",
+        "chapter 2: 'first pedal bike with American paperwork' is a record claim not in the pack",
+        "chapter 3: 'millions of people' for penny-farthings is a number the pack does not give",
+        "chapter 5: Dunlop being a vet and his son's tricycle are not in the pack"
+      ],
+      "cost_usd": 0.002712
+    },
+    {
+      "item_id": "climb-walls-mixed-3-11",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapters 1-9: Dot explains every fact; Isla's observations only prompt her explanations",
+        "chapter 4 and chapter 6: Rosa only counts ants or scratches bark; neither changes the route"
+      ],
+      "cost_usd": 0.002378
+    },
+    {
+      "item_id": "climb-walls-mixed-3-11",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "Rosa only counts legs, waves and cheers; no idea or choice of hers changes the route"
+      ],
+      "cost_usd": 0.002227
+    },
+    {
+      "item_id": "climb-walls-mixed-3-11",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "Dot leads every stop and explains every fact; Rosa and Isla never change where the story goes",
+        "chapter 3: Rosa's wave and chapter 6: her claw remark change nothing; give her a choice that alters the route"
+      ],
+      "cost_usd": 0.002325
+    },
+    {
+      "item_id": "dinosaurs-band-a-15min-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.00241
+    },
+    {
+      "item_id": "dinosaurs-band-a-15min-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "age_appropriate",
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapter 8: 'skeleton' is a big word and is not explained",
+        "chapters 2-8: Juno only counts, names, or reacts; no choice of hers changes the route",
+        "chapter 4: Juno's 'Not scary, just FEATHERY' changes nothing; the brick's lesson continues unchanged"
+      ],
+      "cost_usd": 0.002412
+    },
+    {
+      "item_id": "dinosaurs-band-a-15min-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002499
+    },
+    {
+      "item_id": "dinosaurs-band-c-15min-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 3: Mary Anning 'born in Lyme Regis' is a birthplace the pack never states"
+      ],
+      "cost_usd": 0.002561
+    },
+    {
+      "item_id": "dinosaurs-band-c-15min-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "age_appropriate",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 4: 'enamel' is technical and not explained",
+        "chapter 4: 'ten school buses' is a number not in pack and clashes with 100 feet",
+        "chapter 3: Mary Anning 'born in Lyme Regis' is a place not in pack",
+        "chapter 6: Maiasaura 'good mother lizard' meaning is not in pack"
+      ],
+      "cost_usd": 0.002575
+    },
+    {
+      "item_id": "dinosaurs-band-c-15min-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.00267
+    },
+    {
+      "item_id": "honey-band-a-15min-twins",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapters 1-9: Buzz leads every stop and explains every fact; children's ideas change no outcome",
+        "chapter 5: Finn's 'fan harder' only makes the bees buzz louder; the story goes the same way",
+        "chapter 3: Nell copies the kissing motion; nothing in the story changes because of it"
+      ],
+      "cost_usd": 0.001957
+    },
+    {
+      "item_id": "honey-band-a-15min-twins",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapters 4-8: Buzz leads every stop; Nell's and Finn's ideas are refused or change nothing, so the children only ask and react"
+      ],
+      "cost_usd": 0.00191
+    },
+    {
+      "item_id": "honey-band-a-15min-twins",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapters 5-8: Buzz explains every fact while Nell and Finn only ask, count or copy",
+        "chapter 5: Finn's 'fan harder' changes nothing the story depends on",
+        "chapter 8: Nell's 'Can I be a scout bee?' is answered and changes nothing"
+      ],
+      "cost_usd": 0.002035
+    },
+    {
+      "item_id": "lego-band-c-rivals",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002335
+    },
+    {
+      "item_id": "lego-band-c-rivals",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002555
+    },
+    {
+      "item_id": "lego-band-c-rivals",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C"
+      ],
+      "failed_checks": [
+        "age_appropriate"
+      ],
+      "reasons": [
+        "chapter 4: 'prototype' is a technical term and is not explained"
+      ],
+      "cost_usd": 0.002462
+    },
+    {
+      "item_id": "magnets-band-b-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001963
+    },
+    {
+      "item_id": "magnets-band-b-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapters 2-8: Bolt explains every fact and Ada mostly asks or reacts; her tests change nothing",
+        "chapter 8: 'a hundred times' is a number the pack does not give"
+      ],
+      "cost_usd": 0.002586
+    },
+    {
+      "item_id": "magnets-band-b-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002083
+    },
+    {
+      "item_id": "pompeii-band-b-care",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 4: 'one of the oldest ones we know of anywhere' overstates pack's 'oldest known Roman amphitheaters'; limit to Roman ones"
+      ],
+      "cost_usd": 0.00348
+    },
+    {
+      "item_id": "pompeii-band-b-care",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.00191
+    },
+    {
+      "item_id": "pompeii-band-b-care",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002154
+    },
+    {
+      "item_id": "rainbows-band-a-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001894
+    },
+    {
+      "item_id": "rainbows-band-a-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001531
+    },
+    {
+      "item_id": "rainbows-band-a-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001639
+    },
+    {
+      "item_id": "sharks-band-a-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapters 1-8: Finn leads every stop and explains every fact; no child's choice changes the course",
+        "chapter 4: 'biggest shark that ever lived' is a record claim the pack does not support"
+      ],
+      "cost_usd": 0.002278
+    },
+    {
+      "item_id": "sharks-band-a-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapters 1-8: Finn leads every stop and explains every fact; children only ask, react or wave, and no choice changes the story",
+        "chapter 4: 'the biggest shark that ever lived' is a record claim not in the pack"
+      ],
+      "cost_usd": 0.0019
+    },
+    {
+      "item_id": "sharks-band-a-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "all chapters: Finn leads every stop and explains every fact; Milo and Juno only ask, wave or react, changing nothing",
+        "chapter 4: 'the biggest shark that ever lived' is a record claim not in the pack"
+      ],
+      "cost_usd": 0.002288
+    },
+    {
+      "item_id": "soccer-band-c-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002026
+    },
+    {
+      "item_id": "soccer-band-c-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002338
+    },
+    {
+      "item_id": "soccer-band-c-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002455
+    },
+    {
+      "item_id": "soccer-band-c-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.003242
+    },
+    {
+      "item_id": "soccer-band-c-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002473
+    },
+    {
+      "item_id": "soccer-band-c-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002599
+    },
+    {
+      "item_id": "soccer-band-d",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 1: Pip leads every stop; Mia notices things but no choice changes the path",
+        "chapter 4: 'twelve clubs' agreeing to McGregor's league is a number not in the pack",
+        "chapter 6: 'Boxing Day, 1920' is a date not in the pack",
+        "chapter 8: Pele's age of 'seventeen' is a number not in the pack"
+      ],
+      "cost_usd": 0.00282
+    },
+    {
+      "item_id": "soccer-band-d",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapters 1-10: Mia's insights never change the route; Pip leads every stop and explains each fact",
+        "chapter 5: 'twelve clubs' for the 1888 league is a number the pack never gives",
+        "chapter 4: 'four years from here' for the World Cup contradicts the pack's 1930 date",
+        "chapter 8: Pele's age of 'seventeen' is a number the pack never gives"
+      ],
+      "cost_usd": 0.002934
+    },
+    {
+      "item_id": "soccer-band-d",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 6: Boxing Day 1920 date and 'during WWI' context are not in the pack",
+        "chapter 5: 'twelve clubs' for McGregor's league is not in the pack",
+        "chapter 8: Pele's age of seventeen in 1958 is not in the pack",
+        "Mia's observations (first touch, play-tested rules, the tally) never change where the story goes; give her a choice that alters a stop"
+      ],
+      "cost_usd": 0.003235
+    },
+    {
+      "item_id": "space-race-band-c-15min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "age_appropriate",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 2: 'gantry' is a technical term and is not explained",
+        "chapter 8: 'command module' is a technical term and is not explained",
+        "chapter 5: Tereshkova's factory job is not in the fact pack",
+        "chapter 5: 'only woman ever to fly a solo space mission' is not in the fact pack",
+        "chapter 5: 'more time in space than every American astronaut combined' is not in the fact pack"
+      ],
+      "cost_usd": 0.002932
+    },
+    {
+      "item_id": "space-race-band-c-15min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "age_appropriate",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 2: technical term 'gantry' is not explained",
+        "chapter 8: technical term 'command module' is not explained on first use",
+        "chapter 5: 'more time in space than every American astronaut combined' is a record not in the fact pack",
+        "chapter 5: 'only woman ever to fly a solo space mission' is a record not in the fact pack",
+        "chapter 5: 'worked in a factory before she trained' is a biographical claim not in the fact pack"
+      ],
+      "cost_usd": 0.003267
+    },
+    {
+      "item_id": "space-race-band-c-15min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "age_appropriate",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 2: 'gantry' is not explained",
+        "chapter 7: 'command module' is not explained",
+        "chapter 5: 'more time in space than every American astronaut combined' is not in pack",
+        "chapter 5: Tereshkova's factory job is not in pack"
+      ],
+      "cost_usd": 0.003163
+    },
+    {
+      "item_id": "titanic-band-b",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapter 2: Maya's wall question is praised but the guide gives the answer; her idea changes nothing",
+        "chapter 4: Maya's worry about too few lifeboats is brushed off; her sketch changes nothing"
+      ],
+      "cost_usd": 0.002631
+    },
+    {
+      "item_id": "titanic-band-b",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapters 2-6: Maya's questions and drawings change no event; the walls, lifeboats and rescue unfold the same either way"
+      ],
+      "cost_usd": 0.00291
+    },
+    {
+      "item_id": "titanic-band-b",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "Maya: her questions and drawings never change the events; the rescue and rule-change happen regardless"
+      ],
+      "cost_usd": 0.002071
+    },
+    {
+      "item_id": "volcanoes-band-b-15min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "too scary for band B: scary_level 2, limit 1",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "scary_level",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 7: names David Johnston, a scientist the fact pack never mentions",
+        "chapter 6: claims Krakatoa's sound travelled farther than any recorded sound, a record not in the pack"
+      ],
+      "cost_usd": 0.002809
+    },
+    {
+      "item_id": "volcanoes-band-b-15min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "too scary for band B: scary_level 2, limit 1",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "scary_level",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 6: claims Krakatoa's sound travelled farther than any recorded; not in pack",
+        "chapter 7: names scientist David Johnston, a person the pack never mentions"
+      ],
+      "cost_usd": 0.003049
+    },
+    {
+      "item_id": "volcanoes-band-b-15min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "too scary for band B: scary_level 2, limit 1",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "scary_level",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 6: 'farther than any sound ever recorded' is a real-world record not in the pack",
+        "chapter 7: names scientist David Johnston, a named person not in the pack"
+      ],
+      "cost_usd": 0.002665
+    }
+  ]
+}

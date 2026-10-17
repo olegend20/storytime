@@ -925,6 +925,21 @@ estimate $7.88 a run. Two live baselines (owner-approved, ~$33) measure the per-
 deadline; a caller abort is no longer retried. VT-R1-VT-R5 in
 `test/unit/callmodel-transport.test.ts`.
 
+### 2026-10-16 — writer prompt master v6: the children steer, nothing beyond the pack (issue #58, DECISIONS #203)
+
+Owner approved ~$26.50 for the writer hill-climb; $26.31 spent at list ($11.37 bench, $14.94
+eval). Three candidates on the train half, scored by the shipped reviewer and by the strict G:
+v6 won on clean first drafts (deterministic checks pass and reviewer v4 passes) at 62% against
+v5's 46%, and held on the untouched test half (63% against 35%; G 38% against 11%). v7 (numbers
+as worded, more words to explain) and v8 (blocked words named) lost ground on banned words and
+short stories and are kept in `eval/review-bench/candidates/`. The 32-story eval (rule 5):
+mean 4.02 against v5's 3.89 (+0.13, above the ±0.10 noise), first drafts untouched 14/32
+against 4/30, disqualified 2 against 2 (titanic-band-b rules 2 and 3, space-race-band-b rule 10,
+both safety-review discards after the rewrite). Still FAIL on the lowest-story and
+disqualification criteria. Time to first chapter median 118.7 s: the v5 run's 79.5 s was the
+fast outlier, the two 2026-10-14 baseline runs took 110 s and 120 s; total median 296 s
+against 260-333 s. No latency change.
+
 ### 2026-10-15 — the quality reviewer moves to Claude Haiku 5.5 (issue #58, DECISIONS #200–#202)
 
 Owner approved: the F7 quality review runs on Haiku 5.5 with thinking (`quality_reviewer` role,

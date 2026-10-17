@@ -78,3 +78,25 @@ pnpm review-bench --set=eval/review-bench/set-master-v6-<date>.json --samples=3
 
 The strict reviewer G is switched on only once first drafts pass it as often as they pass v4
 today.
+
+## Writer hill-climb (2026-10-16, DECISIONS #203)
+
+Each candidate wrote the 16 train-half first drafts once, scored 3 times by each reviewer.
+"Clean" is a review that passes on a draft that also passes the deterministic checks: a first
+draft the gate would accept without a rewrite (the L4 safety review is not part of the bench).
+
+| writer | half | drafts | reviewer v4 passes | clean (v4) | G passes | clean (G) | deterministic | sets / runs |
+|---|---|---|---|---|---|---|---|---|
+| v5 (shipped) | train | 16 | 67/128 (52%) | 59/128 (46%) | 15/80 (19%) | 13/80 (16%) | 14/16 | `set-2026-10-15.json` |
+| **v6** | train | 15 | 31/45 (69%) | **28/45 (62%)** | 16/45 (36%) | 13/45 (29%) | 13/15 | `set-master-v6-2026-10-17.json` |
+| v7 | train | 16 | 31/48 (65%) | 21/48 (44%) | 24/48 (50%) | 15/48 (31%) | 11/16 | `set-master-v7-2026-10-17.json` |
+| v8 | train | 15 | 30/45 (67%) | 22/45 (49%) | 16/45 (36%) | 14/45 (31%) | 11/15 | `set-master-v8-2026-10-17.json` |
+| v5 (shipped) | test | 16 | 42/80 (53%) | 28/80 (35%) | 11/80 (14%) | 9/80 (11%) | 10/16 | `set-2026-10-15.json` |
+| **v6** | test | 16 | 33/48 (69%) | **30/48 (63%)** | 18/48 (38%) | 18/48 (38%) | 13/16 | `set-master-v6-test-2026-10-17.json` |
+
+v6 shipped as `prompts/master.v6.md`. v7 and v8 are kept in `candidates/master-v7-numbers-words`
+and `candidates/master-v8-blocked-words`. One draft each was lost on v6 train (the gateway
+dropped the write stream) and v8 train (the input guard refused `volcanoes-mixed-ages` as
+too mature, a false positive). Each writer was sampled once, and 5 of 15 drafts flip between
+pass and fail across 3 reviews, so gaps of a few points between v6, v7 and v8 are noise; the
+v5 to v6 gain held on the test half, which was not used to choose.
