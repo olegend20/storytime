@@ -454,3 +454,13 @@ test('a connection lost mid-story waits for the saved story and opens it', async
   await expect(page.getByRole('button', { name: /try again/i })).toHaveCount(0)
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
 })
+
+/** Issue #59: the server discarded the story after the drop - said at once, and that it was free. */
+test('a connection lost before a discard says it could not be finished, and that no story was used', async ({ page }) => {
+  await startStory(page, '!dropdiscard the history of soccer')
+  const alert = page.getByRole('alert').filter({ hasText: /couldn.t finish that story/ })
+  await expect(alert).toBeVisible({ timeout: 20_000 })
+  await expect(alert.getByText(/didn.t use one of your stories/)).toBeVisible()
+  await expect(alert.getByRole('button', { name: /try again/i })).toBeVisible()
+  await expect(page.getByTestId('finishing')).toHaveCount(0)
+})

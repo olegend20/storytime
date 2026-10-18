@@ -225,12 +225,18 @@ export interface StartStreamResult {
 export async function startGeneration(
   body: GenerateStoryBody,
   signal?: AbortSignal,
+  /** Sent as `x-generation-id`: how the page asks how the request ended if the stream drops. */
+  generationId?: string,
 ): Promise<StartStreamResult> {
   let res: Response
   try {
     res = await fetch(apiUrl('/stories/generate'), {
       method: 'POST',
-      headers: { 'content-type': 'application/json', accept: 'text/event-stream' },
+      headers: {
+        'content-type': 'application/json',
+        accept: 'text/event-stream',
+        ...(generationId ? { 'x-generation-id': generationId } : {}),
+      },
       body: JSON.stringify(body),
       signal: signal ?? null,
     })

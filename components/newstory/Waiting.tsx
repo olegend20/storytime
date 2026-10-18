@@ -22,7 +22,8 @@ export function Waiting({
   /** The server's label for the topic, from the `facts` event; null before it arrives. */
   topicLabel: string | null
   stage: 'facts' | 'writing'
-  onCancel: () => void
+  /** Absent while the page waits for a story the server is still finishing (issue #59). */
+  onCancel?: () => void
 }) {
   const who = joinNames(names)
   return (
@@ -51,9 +52,11 @@ export function Waiting({
           {topicLabel ? ` · About ${topicLabel}` : ''}
         </p>
       ) : null}
-      <button type="button" className="st-textlink" onClick={onCancel}>
-        Back to tonight’s book
-      </button>
+      {onCancel ? (
+        <button type="button" className="st-textlink" onClick={onCancel}>
+          Back to tonight’s book
+        </button>
+      ) : null}
     </section>
   )
 }

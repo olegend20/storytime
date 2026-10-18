@@ -355,21 +355,22 @@ export interface RunGenerationResult {
   bibleUpdate: Promise<unknown> | null
   /** Why `status` is `failed`: the underlying error's message. Never shown to a parent. */
   error?: string
+  /**
+   * Why it was not saved, as a stable code safe to log and store (issue #59): the rules and
+   * checks behind a discard, the error class behind a failure. Never free text from an error.
+   */
+  reason?: string
 }
 
 /**
- * The streamed half. Emits `meta` as soon as the title is known, chapters as they arrive,
- * then runs the gate, saves, consumes quota and emits `done`.
- */
-/**
  * One line per finished request (issue #59), so the share of accepted requests that end in a
  * saved story can be read from the platform's logs: `outcome=ready|flagged|discarded|failed`.
- * Topic keys and rule numbers only - never the parent's words or the story's text.
+ * Topic keys, rule numbers and error classes only - never the parent's words or the story's text.
  */
 function logOutcome(
   prepared: PreparedGeneration,
   startedAt: number,
-  outcome: StoryStatus | 'discarded' | 'failed',
+  outcome: StoryStatus | 'discarded',
   writeCalls: number,
   reason?: string,
 ): void {
@@ -377,11 +378,32 @@ function logOutcome(
   const line =
     `[generate] outcome=${outcome} band=${prepared.band} topic=${prepared.topicKey} ` +
     `secs=${secs} writes=${writeCalls}` +
-    (reason ? ` reason=${reason.replace(/\s+/g, ' ').slice(0, 300)}` : '')
+    (reason ? ` reason=${reason}` : '')
   if (outcome === 'discarded' || outcome === 'failed') console.warn(line)
   else console.info(line)
 }
 
+/** A discard's reason: the hard rules that survived the ladder, and any failed checks. */
+function discardReason(quality: QualityResult): string {
+  const rules = [...new Set(quality.hard_violations.map((v) => v.rule))].sort((a, b) => a - b)
+  const checks = [...new Set(quality.failures.map((f) => f.check))]
+  return `rules ${rules.join(',') || 'none'}` + (checks.length > 0 ? `; checks ${checks.join(',')}` : '')
+}
+
+/**
+ * A failure's reason: the error's class, and the HTTP status for a model call. An error's
+ * message can quote a database value or the model's output, so it is not used.
+ */
+function failureReason(err: unknown): string {
+  const name = err instanceof Error ? err.name || err.constructor.name : typeof err
+  const status = err instanceof ModelCallError && err.detail.status ? ` status=${err.detail.status}` : ''
+  return `${name}${status}`
+}
+
+/**
+ * The streamed half. Emits `meta` as soon as the title is known, chapters as they arrive,
+ * then runs the gate, saves, consumes quota and emits `done`.
+ */
 export async function runGeneration(
   prepared: PreparedGeneration,
   channel: SseChannel,
@@ -772,17 +794,12 @@ export async function runGeneration(
         quota_consumed: false,
         resets_at: null,
       })
-      logOutcome(
-        prepared,
-        startedAt,
-        'discarded',
-        writeCalls,
-        `rules ${[...new Set(gate.result.hard_violations.map((v) => v.rule))].sort((a, b) => a - b).join(',') || 'none'}` +
-          (gate.result.failures.length > 0 ? `; checks ${gate.result.failures.map((f) => f.check).join(',')}` : ''),
-      )
+      const reason = discardReason(gate.result)
+      logOutcome(prepared, startedAt, 'discarded', writeCalls, reason)
       return {
         storyId: prepared.storyId,
         status: 'discarded',
+        reason,
         story,
         quality: gate.result,
         wordCount: gate.result.word_count,
@@ -867,8 +884,10 @@ export async function runGeneration(
     } else {
       console.error('[generate] unexpected failure:', err)
     }
-    logOutcome(prepared, startedAt, 'failed', writeCalls, err instanceof Error ? err.message : String(err))
+    const reason = failureReason(err)
+    logOutcome(prepared, startedAt, 'failed', writeCalls, reason)
     return {
+      reason,
       storyId: prepared.storyId,
       status: 'failed',
       story: null,

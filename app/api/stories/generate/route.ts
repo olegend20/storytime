@@ -1,5 +1,6 @@
 import { after } from 'next/server'
 import { supabaseServer } from '@/lib/supabase/server'
+import { supabaseService } from '@/lib/supabase/service'
 import { parentMessage } from '@/lib/messages'
 import type { ErrorBody } from '@/lib/schemas'
 import {
@@ -10,6 +11,7 @@ import {
   SseChannel,
   SSE_HEADERS,
 } from '@/lib/generate'
+import { finishGenerationRequest, generationIdFrom, startGenerationRequest } from '@/lib/generate/requests'
 
 /**
  * POST /api/stories/generate - the SSE endpoint in `lib/schemas/api.ts` (F6).
@@ -95,6 +97,13 @@ export async function POST(request: Request): Promise<Response> {
   const early = await precheckGeneration(familyId, body, deps)
   if (!early.ok) return json(early.error, early.status)
 
+  // Issue #59: accepted, so recorded - a page that loses the stream asks how it ended by this id.
+  const generationId = generationIdFrom(request)
+  const records = generationId ? supabaseService() : null
+  if (generationId && records) await startGenerationRequest(records, generationId, familyId)
+  const finish = (outcome: Parameters<typeof finishGenerationRequest>[2]) =>
+    generationId && records ? finishGenerationRequest(records, generationId, outcome) : Promise.resolve()
+
   const channel = new SseChannel()
   const run = (async () => {
     const prepared = await prepareGeneration(familyId, body, deps)
@@ -103,10 +112,13 @@ export async function POST(request: Request): Promise<Response> {
       // handles before the first chapter.
       channel.push({ type: 'error', ...prepared.error })
       channel.close()
+      await finish({ status: 'refused', storyId: null, reason: prepared.error.code })
       return null
     }
-    return runGeneration(prepared.prepared, channel, deps)
-  })().catch((err: unknown) => {
+    const result = await runGeneration(prepared.prepared, channel, deps)
+    await finish({ status: result.status, storyId: result.storyId, reason: result.reason ?? null })
+    return result
+  })().catch(async (err: unknown) => {
     // Anything that threw outside the pipeline's own handling (a database read in the
     // preparation, say): the parent is told it failed and can try again - never left to
     // read an ended stream as "still being made".
@@ -119,6 +131,7 @@ export async function POST(request: Request): Promise<Response> {
       resets_at: null,
     })
     channel.close()
+    await finish({ status: 'failed', storyId: null, reason: 'unexpected' })
     return null
   })
 

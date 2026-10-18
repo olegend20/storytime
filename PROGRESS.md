@@ -878,7 +878,7 @@ e2e real 4 ✅.
 
 ### 2026-10-17 — a dropped connection never loses a story (issue #59, DECISIONS #204)
 
-Owner report: on a phone, generation "always errors out" with "We lost the connection, but your story is still being made…". Production 14–17 Oct: 7 accepted requests, 5 saved, 2 discarded (rule 7, retired by #40); the volcano story was saved 6½ minutes after the request, 3½ minutes after the page gave up on it. The page now waits for the story and opens it when it is saved, and each finished request logs one `[generate] outcome=` line, so the SLA (accepted requests that end in a saved story, target 99%) can be read from the logs. No model calls, no prompt or schema changes, no spend.
+Owner report: on a phone, generation "always errors out" with "We lost the connection, but your story is still being made…". Production 14–17 Oct: 7 accepted requests, 5 saved, 2 discarded (rule 7, retired by #40); the volcano story was saved 6½ minutes after the request, 3½ minutes after the page gave up on it. The page now asks how its own request ended (new `generation_requests` table, `GET /api/stories/generate/{id}`) and opens the story when it is saved, or says at once that it could not be made and was free. The table and a `[generate] outcome=` log line make the SLA (accepted requests that end in a saved story, target 99%) measurable. No model calls, no prompt or schema changes, no spend.
 
 ### 2026-10-14 — a first write cut off before any chapter is written again (issue #52, DECISIONS #195)
 

@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ApiError, fetchChildren, fetchLibrary, fetchQuota, fetchStory, fetchSuggestedTopics } from '@/lib/client/api'
-import { FINISHING_MESSAGE, NOT_FINISHED, visibilityAwareSleep, waitForSavedStory } from '@/lib/client/finish'
+import { fetchChildren, fetchGenerationStatus, fetchQuota, fetchSuggestedTopics } from '@/lib/client/api'
+import { FINISHING_MESSAGE, NOT_FINISHED, NOT_KNOWN, visibilityAwareSleep, waitForSavedStory } from '@/lib/client/finish'
 import {
   initialStreamState,
   readGenerationEvents,
@@ -251,7 +251,8 @@ export function NewStoryFlow({
     const controller = new AbortController()
     abortRef.current = controller
 
-    const started = await startGeneration(body, controller.signal)
+    const generationId = crypto.randomUUID()
+    const started = await startGeneration(body, controller.signal, generationId)
     if (!started.ok || !started.stream) {
       // Pre-stream failure: back to the form with the message and the contents intact.
       dispatch({ kind: 'fail', error: started.error ?? { code: 'generation_failed', message: 'Please try again.', quota_consumed: false, resets_at: null } })
@@ -262,40 +263,31 @@ export function NewStoryFlow({
     // after this point is not "we couldn't reach StoryTime": the story is still being made
     // on the server and lands in the library (2026-10-08, a phone that gave up mid-wait).
     let finished = false
-    let storyId: string | null = null
     try {
       for await (const action of readGenerationEvents(started.stream, controller.signal)) {
         if (action.kind === 'event' && (action.event.type === 'done' || action.event.type === 'error')) finished = true
-        if (action.kind === 'event' && action.event.type === 'meta') storyId = action.event.story_id
         dispatch(action)
       }
     } catch {
       /* the connection dropped; handled below */
     }
     if (!finished && !controller.signal.aborted) {
-      // Issue #59: wait for it here and open it, instead of sending the parent to a library
-      // the story has not reached yet. Reads only - a retry would make a second story.
+      // Issue #59: ask how the request ended and open the story here, instead of sending the
+      // parent to a library the story has not reached yet. Reads only - a retry would make a
+      // second story.
       dispatch({ kind: 'finishing' })
       const result = await waitForSavedStory(
-        { storyId, sentAt },
+        { generationId, sentAt },
         {
-          isSaved: async (id) => {
-            try {
-              await fetchStory(id, controller.signal)
-              return true
-            } catch (err) {
-              if (err instanceof ApiError && err.status === 404) return false
-              throw err
-            }
-          },
-          library: async () => (await fetchLibrary(controller.signal)).stories,
+          status: (id) => fetchGenerationStatus(id, controller.signal),
           now: Date.now,
           sleep: visibilityAwareSleep(controller.signal),
           signal: controller.signal,
         },
       )
       if (result.kind === 'saved') router.push(`/stories/${result.storyId}`)
-      else if (result.kind === 'gave_up') dispatch({ kind: 'fail', error: NOT_FINISHED })
+      else if (result.kind === 'not_made') dispatch({ kind: 'fail', error: NOT_FINISHED })
+      else if (result.kind === 'unknown') dispatch({ kind: 'fail', error: NOT_KNOWN })
     }
     // A new story can leave a new fact pack ready: next time, ask for the ideas again.
     forgetSuggestedTopics()
@@ -335,7 +327,8 @@ export function NewStoryFlow({
           names={names}
           topicLabel={stream.facts?.topic_label ?? null}
           stage={stream.facts ? 'writing' : 'facts'}
-          onCancel={backToForm}
+          // Not while finishing: the story is still coming, and the form would start a second.
+          onCancel={stream.phase === 'finishing' ? undefined : backToForm}
         />
       </main>
     )
