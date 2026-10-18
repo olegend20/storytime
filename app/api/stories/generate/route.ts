@@ -101,8 +101,8 @@ export async function POST(request: Request): Promise<Response> {
   const generationId = generationIdFrom(request)
   const records = generationId ? supabaseService() : null
   if (generationId && records) await startGenerationRequest(records, generationId, familyId)
-  const finish = (outcome: Parameters<typeof finishGenerationRequest>[2]) =>
-    generationId && records ? finishGenerationRequest(records, generationId, outcome) : Promise.resolve()
+  const finish = (outcome: Parameters<typeof finishGenerationRequest>[3]) =>
+    generationId && records ? finishGenerationRequest(records, generationId, familyId, outcome) : Promise.resolve()
 
   const channel = new SseChannel()
   const run = (async () => {

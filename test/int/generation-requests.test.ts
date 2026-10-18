@@ -34,14 +34,14 @@ describe.skipIf(!available)('generation_requests (int)', () => {
     await startGenerationRequest(family.db, id, family.familyId)
     expect(await readGenerationRequest(family.db, family.familyId, id)).toEqual({ status: 'writing', story_id: null })
 
-    await finishGenerationRequest(family.db, id, { status: 'ready', storyId })
+    await finishGenerationRequest(family.db, id, family.familyId, { status: 'ready', storyId })
     expect(await readGenerationRequest(family.db, family.familyId, id)).toEqual({ status: 'ready', story_id: storyId })
   })
 
   it('a discarded request is told apart from one still writing, and never hands out its story id', async () => {
     const id = randomUUID()
     await startGenerationRequest(family.db, id, family.familyId)
-    await finishGenerationRequest(family.db, id, { status: 'discarded', storyId: randomUUID(), reason: 'rules 7' })
+    await finishGenerationRequest(family.db, id, family.familyId, { status: 'discarded', storyId: randomUUID(), reason: 'rules 7' })
     expect(await readGenerationRequest(family.db, family.familyId, id)).toEqual({ status: 'discarded', story_id: null })
     const { data } = await family.db.from('generation_requests').select('reason, finished_at').eq('id', id).single()
     expect(data?.reason).toBe('rules 7')
@@ -55,10 +55,12 @@ describe.skipIf(!available)('generation_requests (int)', () => {
     expect(await readGenerationRequest(family.db, family.familyId, id, later)).toEqual({ status: 'failed', story_id: null })
   })
 
-  it("another family's request, or a malformed id, is not found", async () => {
+  it("another family's request, or a malformed id, is not found - and cannot be finished by them", async () => {
     const id = randomUUID()
     await startGenerationRequest(family.db, id, family.familyId)
     expect(await readGenerationRequest(family.db, other.familyId, id)).toBeNull()
+    await finishGenerationRequest(family.db, id, other.familyId, { status: 'ready', storyId: randomUUID() })
+    expect(await readGenerationRequest(family.db, family.familyId, id)).toEqual({ status: 'writing', story_id: null })
     expect(await readGenerationRequest(family.db, family.familyId, 'not-a-uuid')).toBeNull()
   })
 

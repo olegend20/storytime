@@ -4,7 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
  * How each accepted story request ended (issue #59): the `generation_requests` table.
  *
  * The page sends an id with the request (`x-generation-id`). If its stream drops, it asks
- * `GET /api/generations/{id}` instead of guessing from the library - a discarded story has no
+ * `GET /api/stories/generate/{id}` instead of guessing from the library - a discarded story has no
  * `stories` row, so only this record can tell "still writing" from "not made". Recording is
  * best-effort: a failed write here is logged and never fails the story.
  */
@@ -29,25 +29,39 @@ export function generationIdFrom(request: Request): string | null {
 }
 
 export async function startGenerationRequest(db: SupabaseClient, id: string, familyId: string): Promise<void> {
-  const { error } = await db.from('generation_requests').insert({ id, family_id: familyId })
-  if (error) console.warn(`[generate] generation_requests start: ${error.message}`)
+  try {
+    const { error } = await db.from('generation_requests').insert({ id, family_id: familyId })
+    if (error) console.warn(`[generate] generation_requests start: ${error.message}`)
+  } catch (err) {
+    console.warn('[generate] generation_requests start threw:', err)
+  }
 }
 
+/**
+ * Best-effort, and never throws: it runs after the story is saved, and a throw there would be
+ * reported to the parent as a failure. Scoped to the family, because the page chose the id.
+ */
 export async function finishGenerationRequest(
   db: SupabaseClient,
   id: string,
+  familyId: string,
   outcome: { status: Exclude<GenerationRequestStatus, 'writing'>; storyId: string | null; reason?: string | null },
 ): Promise<void> {
-  const { error } = await db
-    .from('generation_requests')
-    .update({
-      status: outcome.status,
-      story_id: outcome.storyId,
-      reason: outcome.reason?.slice(0, 200) ?? null,
-      finished_at: new Date().toISOString(),
-    })
-    .eq('id', id)
-  if (error) console.warn(`[generate] generation_requests finish: ${error.message}`)
+  try {
+    const { error } = await db
+      .from('generation_requests')
+      .update({
+        status: outcome.status,
+        story_id: outcome.storyId,
+        reason: outcome.reason?.slice(0, 200) ?? null,
+        finished_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .eq('family_id', familyId)
+    if (error) console.warn(`[generate] generation_requests finish: ${error.message}`)
+  } catch (err) {
+    console.warn('[generate] generation_requests finish threw:', err)
+  }
 }
 
 export interface GenerationRequestView {
