@@ -70,7 +70,8 @@ export async function finishGenerationRequest(
       .from('generation_requests')
       .update({
         status: outcome.status,
-        story_id: outcome.storyId,
+        // A null here never erases the id noted when the request was prepared.
+        ...(outcome.storyId ? { story_id: outcome.storyId } : {}),
         reason: outcome.reason?.slice(0, 200) ?? null,
         finished_at: new Date().toISOString(),
       })
@@ -105,9 +106,10 @@ export async function readGenerationRequest(
   if (error) throw new Error(`generation_requests read: ${error.message}`)
   if (!data) return null
   const row = data as { status: GenerationRequestStatus; story_id: string | null; started_at: string }
-  if (row.status === 'writing' && row.story_id) {
-    // Still "writing", but the story may be saved and only the finish write lost: a saved story
-    // must never be reported as not made (the page would offer a retry and make a second one).
+  if ((row.status === 'writing' || row.status === 'failed') && row.story_id) {
+    // Still "writing" with the finish write lost, or "failed" after the save (the quota step
+    // threw): a saved story must never be reported as not made - the page would offer a retry
+    // and make a second one.
     const { data: story, error: storyError } = await db
       .from('stories')
       .select('status')

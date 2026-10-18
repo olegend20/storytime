@@ -90,6 +90,10 @@ describe.skipIf(!available)('generation_requests (int)', () => {
     expect(await readGenerationRequest(family.db, family.familyId, id, later)).toEqual({ status: 'flagged', story_id: storyId })
     // ...and only by its own family.
     expect(await readGenerationRequest(family.db, other.familyId, id, later)).toBeNull()
+
+    // Failed after the save (the quota step threw), and the catch path's null id: still saved.
+    await finishGenerationRequest(family.db, id, family.familyId, { status: 'failed', storyId: null, reason: 'unexpected' })
+    expect(await readGenerationRequest(family.db, family.familyId, id)).toEqual({ status: 'flagged', story_id: storyId })
   })
 
   it("another family's request, or a malformed id, is not found - and cannot be finished by them", async () => {
