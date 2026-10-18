@@ -107,7 +107,9 @@ export function generationEvents(story: LibraryStory, opts: StreamOptions): unkn
   const failAfter = opts.scenario === 'midstream_failure' ? 2 : Number.POSITIVE_INFINITY
   for (const [index, chapter] of story.content.chapters.entries()) {
     // The stream simply ends: what a parent's browser sees when the connection drops.
-    if (opts.scenario === 'connection_dropped' && index >= 2) return events
+    if ((opts.scenario === 'connection_dropped' || opts.scenario === 'connection_dropped_discarded') && index >= 2) {
+      return events
+    }
     if (index >= failAfter) {
       events.push(midstreamErrorEvent())
       return events

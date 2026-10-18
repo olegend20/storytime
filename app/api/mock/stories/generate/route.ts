@@ -8,6 +8,7 @@ import {
 } from '@/lib/mock/scenarios'
 import { json, quotaLimit, resetsAt, streamSourceStory, withSession } from '@/lib/mock/store'
 import { generationStream, sseHeaders } from '@/lib/mock/stream'
+import { generationIdFrom } from '@/lib/generate/requests'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -90,9 +91,18 @@ export async function POST(req: Request): Promise<Response> {
       sequence: source.sequence,
       content_notice: scenario === 'borrowed_character' ? ('borrowed_character' as const) : null,
     }
-    if (scenario !== 'midstream_failure') {
+    const saved = scenario !== 'midstream_failure' && scenario !== 'connection_dropped_discarded'
+    if (saved) {
       state.quotaUsed += 1
       state.stories.set(story.id, story)
+    }
+    // Issue #59: how the request ended, for a page that lost the stream.
+    const generationId = generationIdFrom(req)
+    if (generationId) {
+      state.generations.set(generationId, {
+        status: saved ? 'ready' : scenario === 'midstream_failure' ? 'failed' : 'discarded',
+        story_id: saved ? story.id : null,
+      })
     }
 
     return new Response(

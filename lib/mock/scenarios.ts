@@ -23,6 +23,8 @@ export type MockScenario =
   | 'midstream_failure'
   /** The connection drops mid-story: no `done`, no `error` (2026-10-08, a phone giving up). */
   | 'connection_dropped'
+  /** The connection drops, and the server then discards the story (issue #59). */
+  | 'connection_dropped_discarded'
   | 'unknown_event'
   | 'slow'
   /** The writer "thinks" for a few seconds before the first chapter: the fact cards' moment. */
@@ -38,6 +40,7 @@ const SENTINELS: ReadonlyArray<[string, MockScenario]> = [
   ['!budget', 'budget_exceeded'],
   ['!midfail', 'midstream_failure'],
   ['!dropped', 'connection_dropped'],
+  ['!dropdiscard', 'connection_dropped_discarded'],
   ['!unknownevent', 'unknown_event'],
   ['!slow', 'slow'],
   ['!thinking', 'thinking'],

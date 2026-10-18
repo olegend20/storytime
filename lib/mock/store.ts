@@ -35,6 +35,8 @@ export interface MockState {
   generationEnabled: boolean
   /** Stories streamed so far, so a second generation returns a different story. */
   generated: number
+  /** How each request ended, by the page's `x-generation-id` (issue #59). */
+  generations: Map<string, { status: 'ready' | 'discarded' | 'failed'; story_id: string | null }>
 }
 
 const sessions = new Map<string, MockState>()
@@ -77,6 +79,7 @@ function freshState(): MockState {
     modelCalls: 0,
     generationEnabled: true,
     generated: 0,
+    generations: new Map(),
   }
 }
 

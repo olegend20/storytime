@@ -2,6 +2,8 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { RETRY_MIN_MS, WRITER_MAX_TOKENS } from '@/lib/generate/pipeline'
+import { FINISH_WAIT_MS } from '@/lib/client/finish'
+import { STALE_AFTER_MS } from '@/lib/generate/requests'
 
 /**
  * Things the first production deployment (issue #18) depended on, pinned so they cannot
@@ -44,6 +46,12 @@ describe('deployment configuration', () => {
     expect(seconds * 1000 - oneCappedWrite * 1000).toBeGreaterThanOrEqual(RETRY_MIN_MS)
     // And stay inside Vercel Pro's Fluid-compute ceiling.
     expect(seconds).toBeLessThanOrEqual(800)
+    // Issue #59: a request still "writing" after the platform must have killed it is
+    // reported failed (by the server's clock), soon after; and the page's own backstop,
+    // reached only when it cannot ask at all, comes after that.
+    expect(STALE_AFTER_MS).toBeGreaterThan(seconds * 1000)
+    expect(STALE_AFTER_MS).toBeLessThanOrEqual(seconds * 1000 + 120_000)
+    expect(FINISH_WAIT_MS).toBeGreaterThan(STALE_AFTER_MS)
   })
 
   it('no secret is exposed to the browser: every NEXT_PUBLIC_ name the code reads is a public one', () => {
