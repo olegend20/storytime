@@ -876,6 +876,10 @@ Each has an e2e test on desktop and phone (the wake lock and offline tests stub 
 browser APIs). **Gates:** lint ✅ · typecheck ✅ · unit+int 1013 ✅ · e2e mock **132** ✅ ·
 e2e real 4 ✅.
 
+### 2026-10-17 — a dropped connection never loses a story (issue #59, DECISIONS #204)
+
+Owner report: on a phone, generation "always errors out" with "We lost the connection, but your story is still being made…". Production 14–17 Oct: 7 accepted requests, 5 saved, 2 discarded (rule 7, retired by #40); the volcano story was saved 6½ minutes after the request, 3½ minutes after the page gave up on it. The page now waits for the story and opens it when it is saved, and each finished request logs one `[generate] outcome=` line, so the SLA (accepted requests that end in a saved story, target 99%) can be read from the logs. No model calls, no prompt or schema changes, no spend.
+
 ### 2026-10-14 — a first write cut off before any chapter is written again (issue #52, DECISIONS #195)
 
 If the connection drops while the story is still being thought up, before any chapter is on

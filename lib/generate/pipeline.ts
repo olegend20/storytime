@@ -361,11 +361,33 @@ export interface RunGenerationResult {
  * The streamed half. Emits `meta` as soon as the title is known, chapters as they arrive,
  * then runs the gate, saves, consumes quota and emits `done`.
  */
+/**
+ * One line per finished request (issue #59), so the share of accepted requests that end in a
+ * saved story can be read from the platform's logs: `outcome=ready|flagged|discarded|failed`.
+ * Topic keys and rule numbers only - never the parent's words or the story's text.
+ */
+function logOutcome(
+  prepared: PreparedGeneration,
+  startedAt: number,
+  outcome: StoryStatus | 'discarded' | 'failed',
+  writeCalls: number,
+  reason?: string,
+): void {
+  const secs = Math.round((Date.now() - startedAt) / 1000)
+  const line =
+    `[generate] outcome=${outcome} band=${prepared.band} topic=${prepared.topicKey} ` +
+    `secs=${secs} writes=${writeCalls}` +
+    (reason ? ` reason=${reason.replace(/\s+/g, ' ').slice(0, 300)}` : '')
+  if (outcome === 'discarded' || outcome === 'failed') console.warn(line)
+  else console.info(line)
+}
+
 export async function runGeneration(
   prepared: PreparedGeneration,
   channel: SseChannel,
   deps: GenerationDeps = {},
 ): Promise<RunGenerationResult> {
+  const startedAt = Date.now()
   const db = deps.db ?? supabaseService()
   const sink = deps.sink
   const pack = prepared.factPack?.content ?? null
@@ -750,6 +772,14 @@ export async function runGeneration(
         quota_consumed: false,
         resets_at: null,
       })
+      logOutcome(
+        prepared,
+        startedAt,
+        'discarded',
+        writeCalls,
+        `rules ${[...new Set(gate.result.hard_violations.map((v) => v.rule))].sort((a, b) => a - b).join(',') || 'none'}` +
+          (gate.result.failures.length > 0 ? `; checks ${gate.result.failures.map((f) => f.check).join(',')}` : ''),
+      )
       return {
         storyId: prepared.storyId,
         status: 'discarded',
@@ -811,6 +841,7 @@ export async function runGeneration(
       date: (deps.now?.() ?? new Date()).toISOString().slice(0, 10),
     })
 
+    logOutcome(prepared, startedAt, status, writeCalls)
     return {
       storyId: prepared.storyId,
       status,
@@ -836,6 +867,7 @@ export async function runGeneration(
     } else {
       console.error('[generate] unexpected failure:', err)
     }
+    logOutcome(prepared, startedAt, 'failed', writeCalls, err instanceof Error ? err.message : String(err))
     return {
       storyId: prepared.storyId,
       status: 'failed',

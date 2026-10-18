@@ -441,16 +441,16 @@ test('an ordinary story carries no notice', async ({ page }) => {
 
 /**
  * 2026-10-08: a phone lost the connection while a story was being made, and the page said
- * "We couldn't reach StoryTime" - though the story was made and saved. A connection lost
- * after the server accepted the request now says the story is still coming, with no retry
- * (that would make a second story) and a way to the library.
+ * "We couldn't reach StoryTime" - though the story was made and saved. Issue #59, 2026-10-17:
+ * the "still being made, see your library" message that replaced it sent parents to a library
+ * the story had not reached yet. Now the page waits, and opens the story itself once it is
+ * saved - never offering a retry, which would make a second story.
  */
-test('a connection lost mid-story says the story is still being made, and offers the library, not a retry', async ({ page }) => {
+test('a connection lost mid-story waits for the saved story and opens it', async ({ page }) => {
   await startStory(page, '!dropped the history of soccer')
-  const alert = page.getByRole('alert').filter({ hasText: /still being made/ })
-  await expect(alert).toBeVisible({ timeout: 20_000 })
-  await expect(alert.getByRole('link', { name: 'Open your library' })).toHaveAttribute('href', '/library')
-  await expect(alert.getByRole('button', { name: /try again/i })).toHaveCount(0)
+  // The chapters that arrived stay on screen while it waits, and the wait is not an error.
+  await expect(page).toHaveURL(/\/stories\/[0-9a-f-]{36}$/, { timeout: 30_000 })
   await expect(page.getByText(/couldn.t reach StoryTime/)).toHaveCount(0)
-  await expect(page.getByText(/didn.t use one of your stories/)).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /try again/i })).toHaveCount(0)
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
 })

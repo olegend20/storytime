@@ -29,7 +29,11 @@ export interface StreamingChapter extends Chapter {
 }
 
 export interface StreamState {
-  phase: 'idle' | 'connecting' | 'streaming' | 'done' | 'error'
+  /**
+   * `finishing`: the stream dropped after the server accepted the request, and the page is
+   * waiting for the story to be saved (lib/client/finish.ts, issue #59).
+   */
+  phase: 'idle' | 'connecting' | 'streaming' | 'finishing' | 'done' | 'error'
   /** The fact cards, sent before the writer starts. Null until then. */
   facts: FactsEvent | null
   meta: MetaEvent | null
@@ -67,6 +71,8 @@ export type StreamAction =
   | { kind: 'event'; event: SseEvent }
   | { kind: 'unknown' }
   | { kind: 'fail'; error: ErrorBody }
+  /** The connection dropped mid-story; what arrived stays on screen while the page waits. */
+  | { kind: 'finishing' }
 
 const EMPTY_CHAPTER: StreamingChapter = { heading: '', text: '', shout_line: null, complete: false }
 
@@ -92,6 +98,8 @@ export function streamReducer(state: StreamState, action: StreamAction): StreamS
       return { ...state, unknownEvents: state.unknownEvents + 1 }
     case 'fail':
       return { ...state, phase: 'error', error: action.error }
+    case 'finishing':
+      return { ...state, phase: 'finishing', error: null }
     case 'event':
       break
   }
@@ -202,19 +210,6 @@ export function needsFreeRetryNote(error: ErrorBody): boolean {
 }
 
 export const FREE_RETRY_NOTE = "Try again — this didn't use one of your stories."
-
-/** What went wrong, before the stream opened. */
-/**
- * The connection dropped after the server accepted the request: the story is still being
- * written, and will be saved. Not a failure the parent should retry (that would make a
- * second story) - the library is where it will appear.
- */
-export const STILL_MAKING: ErrorBody = {
-  code: 'still_making',
-  message: "We lost the connection, but your story is still being made. It'll be in your library in a few minutes.",
-  quota_consumed: false,
-  resets_at: null,
-}
 
 function fallbackError(code: string, message: string): ErrorBody {
   return { code, message, quota_consumed: false, resets_at: null }

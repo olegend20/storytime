@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
-import { fetchChildren, fetchQuota, fetchSuggestedTopics } from '@/lib/client/api'
+import { useRouter } from 'next/navigation'
+import { ApiError, fetchChildren, fetchLibrary, fetchQuota, fetchStory, fetchSuggestedTopics } from '@/lib/client/api'
+import { FINISHING_MESSAGE, NOT_FINISHED, visibilityAwareSleep, waitForSavedStory } from '@/lib/client/finish'
 import {
   initialStreamState,
   readGenerationEvents,
-  STILL_MAKING,
   startGeneration,
   streamProgress,
   streamReducer,
@@ -119,6 +120,7 @@ export function NewStoryFlow({
   )
   const [showTopicError, setShowTopicError] = useState(false)
   const [stream, dispatch] = useReducer(streamReducer, initialStreamState)
+  const router = useRouter()
   const abortRef = useRef<AbortController | null>(null)
   const topicRef = useRef<HTMLInputElement>(null)
   const focusedOnce = useRef(false)
@@ -230,7 +232,7 @@ export function NewStoryFlow({
   const quotaBlocked = quotaLeft === 0 || quota?.generation_enabled === false
   // A clock time in the parent's own locale: only the browser knows it, so not before hydration.
   const resetLabel = hydrated ? resetTimeLabel(quota?.resets_at) : null
-  const busy = stream.phase === 'connecting' || stream.phase === 'streaming'
+  const busy = stream.phase === 'connecting' || stream.phase === 'streaming' || stream.phase === 'finishing'
 
   const submit = useCallback(async () => {
     if (busy) return
@@ -245,6 +247,7 @@ export function NewStoryFlow({
     saveFormMemory({ childIds: effectiveForm.childIds, lengthMinutes: effectiveForm.lengthMinutes })
 
     dispatch({ kind: 'start' })
+    const sentAt = Date.now()
     const controller = new AbortController()
     abortRef.current = controller
 
@@ -259,21 +262,45 @@ export function NewStoryFlow({
     // after this point is not "we couldn't reach StoryTime": the story is still being made
     // on the server and lands in the library (2026-10-08, a phone that gave up mid-wait).
     let finished = false
+    let storyId: string | null = null
     try {
       for await (const action of readGenerationEvents(started.stream, controller.signal)) {
         if (action.kind === 'event' && (action.event.type === 'done' || action.event.type === 'error')) finished = true
+        if (action.kind === 'event' && action.event.type === 'meta') storyId = action.event.story_id
         dispatch(action)
       }
     } catch {
       /* the connection dropped; handled below */
     }
     if (!finished && !controller.signal.aborted) {
-      dispatch({ kind: 'fail', error: STILL_MAKING })
+      // Issue #59: wait for it here and open it, instead of sending the parent to a library
+      // the story has not reached yet. Reads only - a retry would make a second story.
+      dispatch({ kind: 'finishing' })
+      const result = await waitForSavedStory(
+        { storyId, sentAt },
+        {
+          isSaved: async (id) => {
+            try {
+              await fetchStory(id, controller.signal)
+              return true
+            } catch (err) {
+              if (err instanceof ApiError && err.status === 404) return false
+              throw err
+            }
+          },
+          library: async () => (await fetchLibrary(controller.signal)).stories,
+          now: Date.now,
+          sleep: visibilityAwareSleep(controller.signal),
+          signal: controller.signal,
+        },
+      )
+      if (result.kind === 'saved') router.push(`/stories/${result.storyId}`)
+      else if (result.kind === 'gave_up') dispatch({ kind: 'fail', error: NOT_FINISHED })
     }
     // A new story can leave a new fact pack ready: next time, ask for the ideas again.
     forgetSuggestedTopics()
     void refreshQuota()
-  }, [busy, effectiveForm, refreshQuota])
+  }, [busy, effectiveForm, refreshQuota, router])
 
   useEffect(() => () => abortRef.current?.abort(), [])
 
@@ -292,9 +319,18 @@ export function NewStoryFlow({
   // Waiting for the writer, quietly. The reader takes over the moment the title (`meta`)
   // arrives; until then the moon shows the stage the server has reached.
   const names = selectedChildren.map((c) => c.first_name)
-  if ((stream.phase === 'connecting' || stream.phase === 'streaming') && !stream.meta) {
+  // Not an alert: nothing has gone wrong that the parent must act on (issue #59).
+  const finishingNote =
+    stream.phase === 'finishing' ? (
+      <div className="card p-4" role="status" data-testid="finishing">
+        <p className="mt-0 mb-0">{FINISHING_MESSAGE}</p>
+      </div>
+    ) : null
+
+  if ((stream.phase === 'connecting' || stream.phase === 'streaming' || stream.phase === 'finishing') && !stream.meta) {
     return (
       <main id="main" className="st-main">
+        {finishingNote}
         <Waiting
           names={names}
           topicLabel={stream.facts?.topic_label ?? null}
@@ -309,6 +345,7 @@ export function NewStoryFlow({
   if (stream.phase === 'streaming' || stream.phase === 'done' || stream.meta) {
     return (
       <main id="main">
+        {finishingNote && <div className="st-reader-aside">{finishingNote}</div>}
         {stream.error && (
           <div className="st-reader-aside">
             <GenerationError error={stream.error} onRetry={() => void submit()} />
