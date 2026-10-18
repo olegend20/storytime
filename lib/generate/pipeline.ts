@@ -355,6 +355,49 @@ export interface RunGenerationResult {
   bibleUpdate: Promise<unknown> | null
   /** Why `status` is `failed`: the underlying error's message. Never shown to a parent. */
   error?: string
+  /**
+   * Why it was not saved, as a stable code safe to log and store (issue #59): the rules and
+   * checks behind a discard, the error class behind a failure. Never free text from an error.
+   */
+  reason?: string
+}
+
+/**
+ * One line per finished request (issue #59), so the share of accepted requests that end in a
+ * saved story can be read from the platform's logs: `outcome=ready|flagged|discarded|failed`.
+ * Topic keys, rule numbers and error classes only - never the parent's words or the story's text.
+ */
+function logOutcome(
+  prepared: PreparedGeneration,
+  startedAt: number,
+  outcome: StoryStatus | 'discarded',
+  writeCalls: number,
+  reason?: string,
+): void {
+  const secs = Math.round((Date.now() - startedAt) / 1000)
+  const line =
+    `[generate] outcome=${outcome} band=${prepared.band} topic=${prepared.topicKey} ` +
+    `secs=${secs} writes=${writeCalls}` +
+    (reason ? ` reason=${reason}` : '')
+  if (outcome === 'discarded' || outcome === 'failed') console.warn(line)
+  else console.info(line)
+}
+
+/** A discard's reason: the hard rules that survived the ladder, and any failed checks. */
+function discardReason(quality: QualityResult): string {
+  const rules = [...new Set(quality.hard_violations.map((v) => v.rule))].sort((a, b) => a - b)
+  const checks = [...new Set(quality.failures.map((f) => f.check))]
+  return `rules ${rules.join(',') || 'none'}` + (checks.length > 0 ? `; checks ${checks.join(',')}` : '')
+}
+
+/**
+ * A failure's reason: the error's class, and the HTTP status for a model call. An error's
+ * message can quote a database value or the model's output, so it is not used.
+ */
+function failureReason(err: unknown): string {
+  const name = err instanceof Error ? err.name || err.constructor.name : typeof err
+  const status = err instanceof ModelCallError && err.detail.status ? ` status=${err.detail.status}` : ''
+  return `${name}${status}`
 }
 
 /**
@@ -366,6 +409,7 @@ export async function runGeneration(
   channel: SseChannel,
   deps: GenerationDeps = {},
 ): Promise<RunGenerationResult> {
+  const startedAt = Date.now()
   const db = deps.db ?? supabaseService()
   const sink = deps.sink
   const pack = prepared.factPack?.content ?? null
@@ -750,9 +794,12 @@ export async function runGeneration(
         quota_consumed: false,
         resets_at: null,
       })
+      const reason = discardReason(gate.result)
+      logOutcome(prepared, startedAt, 'discarded', writeCalls, reason)
       return {
         storyId: prepared.storyId,
         status: 'discarded',
+        reason,
         story,
         quality: gate.result,
         wordCount: gate.result.word_count,
@@ -811,6 +858,7 @@ export async function runGeneration(
       date: (deps.now?.() ?? new Date()).toISOString().slice(0, 10),
     })
 
+    logOutcome(prepared, startedAt, status, writeCalls)
     return {
       storyId: prepared.storyId,
       status,
@@ -836,7 +884,10 @@ export async function runGeneration(
     } else {
       console.error('[generate] unexpected failure:', err)
     }
+    const reason = failureReason(err)
+    logOutcome(prepared, startedAt, 'failed', writeCalls, reason)
     return {
+      reason,
       storyId: prepared.storyId,
       status: 'failed',
       story: null,
