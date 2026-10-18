@@ -31,6 +31,11 @@ const READING_LEVEL_LABEL: Record<ReadingLevel, string> = {
   older: 'reads older',
 }
 
+/** Issue #43: the parent left the name blank and we chose one. */
+export function generatedNameNotice(name: string): string {
+  return `We'll call them ${name} in the stories. Change it any time.`
+}
+
 async function readError(response: Response): Promise<string> {
   try {
     const body = (await response.json()) as { message?: string }
@@ -65,11 +70,14 @@ export default function ChildrenManager({ initial }: { initial: ChildView[] }) {
       setError(await readError(response))
       return
     }
-    const { child } = (await response.json()) as { child: ChildView }
+    const { child, name_generated } = (await response.json()) as {
+      child: ChildView
+      name_generated?: boolean
+    }
     setChildren((current) => [...current, child])
     setAddDraft(EMPTY_DRAFT)
     setAdding(false)
-    setNotice(`${child.first_name} added.`)
+    setNotice(name_generated ? generatedNameNotice(child.first_name) : `${child.first_name} added.`)
   }
 
   async function save(id: string, payload: ChildPayload) {
@@ -85,10 +93,13 @@ export default function ChildrenManager({ initial }: { initial: ChildView[] }) {
       setError(await readError(response))
       return
     }
-    const { child } = (await response.json()) as { child: ChildView }
+    const { child, name_generated } = (await response.json()) as {
+      child: ChildView
+      name_generated?: boolean
+    }
     setChildren((current) => current.map((c) => (c.id === id ? child : c)))
     setEditingId(null)
-    setNotice(`${child.first_name} updated.`)
+    setNotice(name_generated ? generatedNameNotice(child.first_name) : `${child.first_name} updated.`)
   }
 
   async function remove(child: ChildView) {

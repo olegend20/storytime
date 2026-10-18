@@ -45,7 +45,8 @@ export function draftFromChild(child: {
 }
 
 export interface ChildPayload {
-  first_name: string
+  /** `null` when left blank: the server chooses a name (issue #43). */
+  first_name: string | null
   age: number
   likes: string[]
   notes: string | null
@@ -96,7 +97,7 @@ export default function ChildForm({
   function submit(event: React.FormEvent) {
     event.preventDefault()
     const candidate = {
-      first_name: draft.first_name,
+      first_name: draft.first_name.trim() === '' ? null : draft.first_name,
       age: draft.age.trim() === '' ? Number.NaN : Number(draft.age),
       likes: draft.likes,
       notes: draft.notes.trim() === '' ? null : draft.notes,
@@ -120,7 +121,7 @@ export default function ChildForm({
       <div className="flex flex-col gap-4 sm:flex-row">
         <div className="sm:flex-1">
           <label htmlFor="first_name" className="block text-sm font-medium">
-            First name
+            First name <span className="font-normal opacity-55">(optional)</span>
           </label>
           <input
             id="first_name"
@@ -130,9 +131,11 @@ export default function ChildForm({
             onChange={(e) => setDraft({ ...draft, first_name: e.target.value })}
             className={`mt-1.5 ${inputClass}`}
             autoComplete="off"
-            required
           />
-          <p className="mt-1 mb-0 text-xs opacity-55">First name only — never a surname.</p>
+          <p className="mt-1 mb-0 text-xs opacity-55">
+            First name only — never a surname. Leave it blank and we&apos;ll choose a name for
+            the stories.
+          </p>
         </div>
         <div className="sm:w-28">
           <label htmlFor="age" className="block text-sm font-medium">
