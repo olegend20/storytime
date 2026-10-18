@@ -4,7 +4,14 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type Rea
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { fetchChildren, fetchGenerationStatus, fetchQuota, fetchSuggestedTopics } from '@/lib/client/api'
-import { FINISHING_MESSAGE, NOT_FINISHED, NOT_KNOWN, visibilityAwareSleep, waitForSavedStory } from '@/lib/client/finish'
+import {
+  FINISHING_MESSAGE,
+  NOT_FINISHED,
+  NOT_KNOWN,
+  newGenerationId,
+  visibilityAwareSleep,
+  waitForSavedStory,
+} from '@/lib/client/finish'
 import {
   initialStreamState,
   readGenerationEvents,
@@ -246,13 +253,14 @@ export function NewStoryFlow({
     // F10 AC: "the form remembers the last-used children and length".
     saveFormMemory({ childIds: effectiveForm.childIds, lengthMinutes: effectiveForm.lengthMinutes })
 
+    // Before 'start': nothing here may throw once the page shows it is connecting.
+    const generationId = newGenerationId()
     dispatch({ kind: 'start' })
     const sentAt = Date.now()
     const controller = new AbortController()
     abortRef.current = controller
 
-    const generationId = crypto.randomUUID()
-    const started = await startGeneration(body, controller.signal, generationId)
+    const started = await startGeneration(body, controller.signal, generationId ?? undefined)
     if (!started.ok || !started.stream) {
       // Pre-stream failure: back to the form with the message and the contents intact.
       dispatch({ kind: 'fail', error: started.error ?? { code: 'generation_failed', message: 'Please try again.', quota_consumed: false, resets_at: null } })
@@ -276,7 +284,9 @@ export function NewStoryFlow({
       // parent to a library the story has not reached yet. Reads only - a retry would make a
       // second story.
       dispatch({ kind: 'finishing' })
-      const result = await waitForSavedStory(
+      const result = !generationId
+        ? ({ kind: 'unknown' } as const) // no id to ask by (a browser without crypto)
+        : await waitForSavedStory(
         { generationId, sentAt },
         {
           status: (id) => fetchGenerationStatus(id, controller.signal),

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   FINISH_POLL_MS,
   FINISH_WAIT_MS,
+  newGenerationId,
   visibilityAwareSleep,
   waitForSavedStory,
   type FinishDeps,
@@ -111,5 +112,15 @@ describe('waiting for a story after the connection dropped (issue #59)', () => {
     } finally {
       Object.defineProperty(globalThis, 'document', { value: original, configurable: true })
     }
+  })
+
+  it('makes a v4 id without crypto.randomUUID (iOS Safari before 15.4), and none without crypto', () => {
+    const v4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+    const legacy = { getRandomValues: <T extends ArrayBufferView | null>(a: T) => globalThis.crypto.getRandomValues(a as never) as T }
+    const ids = new Set(Array.from({ length: 50 }, () => newGenerationId(legacy)))
+    expect(ids.size).toBe(50)
+    for (const id of ids) expect(id).toMatch(v4)
+    expect(newGenerationId(null)).toBeNull()
+    expect(newGenerationId({ getRandomValues: () => { throw new Error('insecure context') } })).toBeNull()
   })
 })
