@@ -11,7 +11,12 @@ import {
   SseChannel,
   SSE_HEADERS,
 } from '@/lib/generate'
-import { finishGenerationRequest, generationIdFrom, startGenerationRequest } from '@/lib/generate/requests'
+import {
+  finishGenerationRequest,
+  generationIdFrom,
+  noteGenerationStory,
+  startGenerationRequest,
+} from '@/lib/generate/requests'
 
 /**
  * POST /api/stories/generate - the SSE endpoint in `lib/schemas/api.ts` (F6).
@@ -115,6 +120,7 @@ export async function POST(request: Request): Promise<Response> {
       await finish({ status: 'refused', storyId: null, reason: prepared.error.code })
       return null
     }
+    if (generationId && records) await noteGenerationStory(records, generationId, familyId, prepared.prepared.storyId)
     const result = await runGeneration(prepared.prepared, channel, deps)
     await finish({ status: result.status, storyId: result.storyId, reason: result.reason ?? null })
     return result

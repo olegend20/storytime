@@ -38,6 +38,24 @@ export async function startGenerationRequest(db: SupabaseClient, id: string, fam
 }
 
 /**
+ * The story's id, known once the request is prepared and before anything is written. If the
+ * finish write is then lost, the read still finds the saved story by it (PR #60 review).
+ */
+export async function noteGenerationStory(db: SupabaseClient, id: string, familyId: string, storyId: string): Promise<void> {
+  try {
+    const { error } = await db
+      .from('generation_requests')
+      .update({ story_id: storyId })
+      .eq('id', id)
+      .eq('family_id', familyId)
+      .eq('status', 'writing')
+    if (error) console.warn(`[generate] generation_requests story id: ${error.message}`)
+  } catch (err) {
+    console.warn('[generate] generation_requests story id threw:', err)
+  }
+}
+
+/**
  * Best-effort, and never throws: it runs after the story is saved, and a throw there would be
  * reported to the parent as a failure. Scoped to the family, because the page chose the id.
  */
@@ -87,6 +105,19 @@ export async function readGenerationRequest(
   if (error) throw new Error(`generation_requests read: ${error.message}`)
   if (!data) return null
   const row = data as { status: GenerationRequestStatus; story_id: string | null; started_at: string }
+  if (row.status === 'writing' && row.story_id) {
+    // Still "writing", but the story may be saved and only the finish write lost: a saved story
+    // must never be reported as not made (the page would offer a retry and make a second one).
+    const { data: story, error: storyError } = await db
+      .from('stories')
+      .select('status')
+      .eq('id', row.story_id)
+      .eq('family_id', familyId)
+      .maybeSingle()
+    if (storyError) throw new Error(`generation_requests story read: ${storyError.message}`)
+    const storyStatus = (story as { status: string } | null)?.status
+    if (storyStatus === 'ready' || storyStatus === 'flagged') return { status: storyStatus, story_id: row.story_id }
+  }
   const saved = row.status === 'ready' || row.status === 'flagged'
   const stale = row.status === 'writing' && now - Date.parse(row.started_at) > STALE_AFTER_MS
   return { status: stale ? 'failed' : row.status, story_id: saved ? row.story_id : null }

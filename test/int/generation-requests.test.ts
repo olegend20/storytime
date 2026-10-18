@@ -4,6 +4,7 @@ import {
   STALE_AFTER_MS,
   finishGenerationRequest,
   generationIdFrom,
+  noteGenerationStory,
   readGenerationRequest,
   startGenerationRequest,
 } from '@/lib/generate/requests'
@@ -55,6 +56,42 @@ describe.skipIf(!available)('generation_requests (int)', () => {
     expect(await readGenerationRequest(family.db, family.familyId, id, later)).toEqual({ status: 'failed', story_id: null })
   })
 
+  it('a saved story whose finish write was lost is still found, never reported as not made', async () => {
+    const id = randomUUID()
+    const storyId = randomUUID()
+    await startGenerationRequest(family.db, id, family.familyId)
+    await noteGenerationStory(family.db, id, family.familyId, storyId)
+    const later = Date.now() + STALE_AFTER_MS + 1_000
+    // Prepared, nothing saved yet: still writing, then failed once the platform must have killed it.
+    expect(await readGenerationRequest(family.db, family.familyId, id)).toEqual({ status: 'writing', story_id: null })
+    expect(await readGenerationRequest(family.db, family.familyId, id, later)).toEqual({ status: 'failed', story_id: null })
+
+    const series = await family.db
+      .from('series')
+      .insert({ family_id: family.familyId, child_ids: [family.children[0]!.id], child_key: `genreq-${id}` })
+      .select('id')
+      .single()
+    expect(series.error).toBeNull()
+    const story = await family.db.from('stories').insert({
+      id: storyId,
+      family_id: family.familyId,
+      series_id: series.data!.id,
+      topic_input: 'volcanoes',
+      topic_key: 'volcanoes',
+      length_minutes: 5,
+      age_band: 'A',
+      title: 'Saved, finish lost',
+      content: { chapters: [] },
+      status: 'flagged',
+    })
+    expect(story.error).toBeNull()
+    // The story is saved and the finish write never came: found by its id, at once and when stale.
+    expect(await readGenerationRequest(family.db, family.familyId, id)).toEqual({ status: 'flagged', story_id: storyId })
+    expect(await readGenerationRequest(family.db, family.familyId, id, later)).toEqual({ status: 'flagged', story_id: storyId })
+    // ...and only by its own family.
+    expect(await readGenerationRequest(family.db, other.familyId, id, later)).toBeNull()
+  })
+
   it("another family's request, or a malformed id, is not found - and cannot be finished by them", async () => {
     const id = randomUUID()
     await startGenerationRequest(family.db, id, family.familyId)
@@ -69,8 +106,13 @@ describe.skipIf(!available)('generation_requests (int)', () => {
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     if (!anonKey) return
     const anon = createClient(process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321', anonKey, { auth: { persistSession: false } })
-    const { data } = await anon.from('generation_requests').select('id').limit(1)
-    expect(data ?? []).toEqual([])
+    // Rows exist (the tests above wrote them), so an empty answer means the read was refused.
+    const { count } = await family.db.from('generation_requests').select('id', { count: 'exact', head: true })
+    expect(count).toBeGreaterThan(0)
+    const read = await anon.from('generation_requests').select('id').limit(1)
+    expect(read.error !== null || (read.data ?? []).length === 0).toBe(true)
+    const write = await anon.from('generation_requests').insert({ id: randomUUID(), family_id: family.familyId })
+    expect(write.error).not.toBeNull()
   })
 
   it('takes the id from the x-generation-id header, and only a uuid', () => {
