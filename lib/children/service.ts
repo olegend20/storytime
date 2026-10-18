@@ -9,6 +9,7 @@ import {
   ReadingLevel,
 } from '@/lib/schemas'
 import { FIELD_MAX_LENGTH, sanitize, sanitizeLikes } from '@/lib/http/sanitize'
+import { pickGeneratedName } from './names'
 
 /**
  * F3 - children profiles. CRUD against `children`, RLS-scoped to the caller's family.
@@ -35,7 +36,8 @@ const SELECT_COLUMNS = 'id,family_id,first_name,age,likes,notes,reading_level,cr
 /** PATCH accepts any subset of the fields; every rule is reused from `ChildInput`'s parts. */
 export const ChildPatch = z
   .object({
-    first_name: ChildFirstName.optional(),
+    /** `null` asks for a generated name, as on create (issue #43). */
+    first_name: ChildFirstName.nullable().optional(),
     age: ChildAge.optional(),
     likes: z.array(ChildLike).max(10, 'Up to 10 likes per child.').optional(),
     notes: z
@@ -48,6 +50,15 @@ export const ChildPatch = z
   })
   .refine((v) => Object.keys(v).length > 0, 'There is nothing to update.')
 export type ChildPatch = z.infer<typeof ChildPatch>
+
+/** The family's other children's names, so a generated name never repeats one. */
+async function siblingNames(db: SupabaseClient, familyId: string, exceptId?: string): Promise<string[]> {
+  const { data, error } = await db.from('children').select('id,first_name').eq('family_id', familyId)
+  if (error) throw new ChildServiceError(`Could not load the family's children: ${error.message}`, error)
+  return ((data ?? []) as { id: string; first_name: string }[])
+    .filter((c) => c.id !== exceptId)
+    .map((c) => c.first_name)
+}
 
 export class ChildLimitError extends Error {
   readonly limit = MAX_CHILDREN_PER_FAMILY
@@ -120,11 +131,12 @@ export async function createChild(
   const existing = await countChildren(db, familyId)
   if (existing >= MAX_CHILDREN_PER_FAMILY) throw new ChildLimitError()
 
+  const firstName = input.first_name ?? pickGeneratedName(await siblingNames(db, familyId))
   const { data, error } = await db
     .from('children')
     .insert({
       family_id: familyId,
-      first_name: input.first_name,
+      first_name: firstName,
       age: input.age,
       likes: input.likes,
       notes: input.notes,
@@ -142,9 +154,13 @@ export async function updateChild(
   childId: string,
   patch: ChildPatch,
 ): Promise<ChildRow | null> {
+  const update =
+    patch.first_name === null
+      ? { ...patch, first_name: pickGeneratedName(await siblingNames(db, familyId, childId)) }
+      : patch
   const { data, error } = await db
     .from('children')
-    .update(patch)
+    .update(update)
     .eq('family_id', familyId)
     .eq('id', childId)
     .select(SELECT_COLUMNS)
@@ -220,9 +236,14 @@ export function sanitizeChildPayload(raw: unknown): SanitizedChildPayload {
   }
 
   if ('first_name' in body) {
-    const cleaned = sanitize('first_name', body.first_name, { cap: false })
-    flag('first_name', cleaned.removed.html)
-    input.first_name = cleaned.value
+    if (body.first_name === null) {
+      input.first_name = null
+    } else {
+      const cleaned = sanitize('first_name', body.first_name, { cap: false })
+      flag('first_name', cleaned.removed.html)
+      // A blank name is "choose one for me" (issue #43), not a validation error.
+      input.first_name = cleaned.value === '' ? null : cleaned.value
+    }
   }
   if ('age' in body) {
     // Forms post numbers as strings; coerce here so the schema's own message is shown.
