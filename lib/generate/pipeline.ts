@@ -311,11 +311,15 @@ export function onlyHardRuleBreaches(result: QualityResult, band: AgeBand): bool
   )
 }
 
-/** Below this much time before the request deadline, the ladder cuts instead of mending. */
-export const MEND_MIN_MS = 40_000
+/**
+ * Below this much time before the request deadline, the ladder cuts instead of mending: the
+ * mend, the gate again and possibly a cut's gate. A gate is one thinking quality review run
+ * beside the safety review - median ~10 s, p95 ~30 s on the review bench (DECISIONS #201).
+ */
+export const MEND_MIN_MS = 70_000
 
-/** Time the gate, the mend and the save need after a write. */
-export const AFTER_WRITE_MS = 45_000
+/** Time the gate, the mend and the save need after a write: up to three gates (#201). */
+export const AFTER_WRITE_MS = 90_000
 /**
  * Below this, rung 3 does not start: a 5- or 10-minute story takes 60-90 s to write, plus
  * AFTER_WRITE_MS. A truncated first write usually spent most of the request already.
@@ -357,6 +361,12 @@ export interface RunGenerationResult {
   bibleUpdate: Promise<unknown> | null
   /** Why `status` is `failed`: the underlying error's message. Never shown to a parent. */
   error?: string
+  /**
+   * The draft the gate reviewed first, and the request it was written to: what the eval
+   * keeps so the quality reviewer can be replayed on it (issue #58). Absent when no draft
+   * reached the gate.
+   */
+  firstGated?: { story: StoryOutput; request: GenerationRequest }
   /**
    * Why it was not saved, as a stable code safe to log and store (issue #59): the rules and
    * checks behind a discard, the error class behind a failure. Never free text from an error.
@@ -576,6 +586,10 @@ export async function runGeneration(
       return { story: facts.value, notes: [...draft.notes, ...facts.notes] }
     }
     let { story, notes: normalized } = tidy(parsed)
+    const firstGated = { story, request }
+    if (deps.firstDraftOnly) {
+      return { storyId: prepared.storyId, status: 'discarded', story, quality: null, wordCount: storyWordCount(story), writeCalls, bibleUpdate: null, firstGated }
+    }
 
     // ---- the gate ----
     let gate = await runQualityGate({
@@ -807,6 +821,7 @@ export async function runGeneration(
         wordCount: gate.result.word_count,
         writeCalls,
         bibleUpdate: null,
+        firstGated,
       }
     }
 
@@ -890,6 +905,7 @@ export async function runGeneration(
       wordCount,
       writeCalls,
       bibleUpdate,
+      firstGated,
     }
   } catch (err) {
     const message = parentMessage('generation_failed')

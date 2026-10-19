@@ -1,0 +1,917 @@
+{
+  "kind": "review-bench-run",
+  "ran_at": "2026-10-15T17:12:10.357Z",
+  "set": "eval/review-bench/set-2026-10-15.json (split:test)",
+  "prompt": {
+    "id": "quality-review",
+    "version": 4,
+    "dir": "prompts"
+  },
+  "reviewer": {
+    "model": "claude-haiku-5-5"
+  },
+  "samples": 5,
+  "labelled": true,
+  "summary": {
+    "calls": 80,
+    "format_failures": 0,
+    "wrong_fails": {
+      "count": 7,
+      "of": 30
+    },
+    "catches": {
+      "count": 31,
+      "of": 50
+    },
+    "flips": {
+      "count": 8,
+      "of": 16
+    },
+    "longest_reason": 144,
+    "cost_usd": 0.17007899999999998
+  },
+  "reviews": [
+    {
+      "item_id": "bicycles-band-c-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002077
+    },
+    {
+      "item_id": "bicycles-band-c-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002072
+    },
+    {
+      "item_id": "bicycles-band-c-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001849
+    },
+    {
+      "item_id": "bicycles-band-c-5min",
+      "sample": 4,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001865
+    },
+    {
+      "item_id": "bicycles-band-c-5min",
+      "sample": 5,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001846
+    },
+    {
+      "item_id": "climb-walls-mixed-3-11",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "chapter 6: 'honeycomb-shaped' is not explained for a 3-year-old"
+      ],
+      "cost_usd": 0.001711
+    },
+    {
+      "item_id": "climb-walls-mixed-3-11",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001853
+    },
+    {
+      "item_id": "climb-walls-mixed-3-11",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001697
+    },
+    {
+      "item_id": "climb-walls-mixed-3-11",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 6: 'honeycomb-shaped' is a big word and is not explained",
+        "chapter 8: says scientists made gloves; pack f14 describes a handheld paddle"
+      ],
+      "cost_usd": 0.001934
+    },
+    {
+      "item_id": "climb-walls-mixed-3-11",
+      "sample": 5,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001555
+    },
+    {
+      "item_id": "dinosaurs-band-a-15min-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 9: says '66 million years after this' (230 mya); pack says extinction was 66 million years ago"
+      ],
+      "cost_usd": 0.001963
+    },
+    {
+      "item_id": "dinosaurs-band-a-15min-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001942
+    },
+    {
+      "item_id": "dinosaurs-band-a-15min-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 9: says extinction was '66 million years after this'; pack says 66 million years ago, so the direction is wrong"
+      ],
+      "cost_usd": 0.00218
+    },
+    {
+      "item_id": "dinosaurs-band-a-15min-continuity",
+      "sample": 4,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001934
+    },
+    {
+      "item_id": "dinosaurs-band-a-15min-continuity",
+      "sample": 5,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001843
+    },
+    {
+      "item_id": "dinosaurs-band-c-15min-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002047
+    },
+    {
+      "item_id": "dinosaurs-band-c-15min-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001937
+    },
+    {
+      "item_id": "dinosaurs-band-c-15min-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.0021
+    },
+    {
+      "item_id": "dinosaurs-band-c-15min-continuity",
+      "sample": 4,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002234
+    },
+    {
+      "item_id": "dinosaurs-band-c-15min-continuity",
+      "sample": 5,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002256
+    },
+    {
+      "item_id": "honey-band-a-15min-twins",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 2: queen 'lays more than a thousand eggs... every single day' overstates pack, which says sometimes over a thousand a day"
+      ],
+      "cost_usd": 0.001818
+    },
+    {
+      "item_id": "honey-band-a-15min-twins",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 2: queen 'lays more than a thousand eggs. Every single day' contradicts pack 'sometimes over a thousand a day'"
+      ],
+      "cost_usd": 0.001659
+    },
+    {
+      "item_id": "honey-band-a-15min-twins",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001466
+    },
+    {
+      "item_id": "honey-band-a-15min-twins",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 2: queen 'lays more than a thousand eggs. Every single day' contradicts pack 'sometimes over a thousand a day'; soften to 'sometimes'"
+      ],
+      "cost_usd": 0.001715
+    },
+    {
+      "item_id": "honey-band-a-15min-twins",
+      "sample": 5,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001662
+    },
+    {
+      "item_id": "lego-band-c-rivals",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001993
+    },
+    {
+      "item_id": "lego-band-c-rivals",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "ch 2: 'Ole Kirk never spoke Latin' is an unsourced claim not in the pack",
+        "ch 8: 'now in charge' of LEGO is unsupported; pack only says CEO from 2004"
+      ],
+      "cost_usd": 0.002361
+    },
+    {
+      "item_id": "lego-band-c-rivals",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001892
+    },
+    {
+      "item_id": "lego-band-c-rivals",
+      "sample": 4,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002336
+    },
+    {
+      "item_id": "lego-band-c-rivals",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 8: says Knudstorp is 'now in charge'; not in pack and wrong for present day, as he stepped down as CEO in 2017"
+      ],
+      "cost_usd": 0.002272
+    },
+    {
+      "item_id": "magnets-band-b-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 5: 'Earth's north. Always has. Always will.' is a claim not in the pack and is misleading; Earth's magnetic field has reversed over time"
+      ],
+      "cost_usd": 0.001825
+    },
+    {
+      "item_id": "magnets-band-b-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001673
+    },
+    {
+      "item_id": "magnets-band-b-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 5: 'Earth's north... Always has. Always will.' is not in pack and overstates it; pack says magnetic poles wander"
+      ],
+      "cost_usd": 0.001622
+    },
+    {
+      "item_id": "magnets-band-b-5min",
+      "sample": 4,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.00167
+    },
+    {
+      "item_id": "magnets-band-b-5min",
+      "sample": 5,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001895
+    },
+    {
+      "item_id": "pompeii-band-b-care",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B",
+        "too scary for band B: scary_level 2, limit 1",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapter 4: 'ceremony' is a big word and is not explained"
+      ],
+      "cost_usd": 0.002524
+    },
+    {
+      "item_id": "pompeii-band-b-care",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "too scary for band B: scary_level 2, limit 1",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "Nora mostly listens and asks questions; the tessera drives every scene and Nora changes nothing in the plot"
+      ],
+      "cost_usd": 0.002309
+    },
+    {
+      "item_id": "pompeii-band-b-care",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "too scary for band B: scary_level 2, limit 1"
+      ],
+      "reasons": [],
+      "cost_usd": 0.002565
+    },
+    {
+      "item_id": "pompeii-band-b-care",
+      "sample": 4,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002347
+    },
+    {
+      "item_id": "pompeii-band-b-care",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "chapter 4: 'ceremony' is a big word and is not explained"
+      ],
+      "cost_usd": 0.002285
+    },
+    {
+      "item_id": "rainbows-band-a-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001394
+    },
+    {
+      "item_id": "rainbows-band-a-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001415
+    },
+    {
+      "item_id": "rainbows-band-a-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001581
+    },
+    {
+      "item_id": "rainbows-band-a-5min",
+      "sample": 4,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001388
+    },
+    {
+      "item_id": "rainbows-band-a-5min",
+      "sample": 5,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.0015
+    },
+    {
+      "item_id": "sharks-band-a-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "Splash explains and guides every chapter; Milo and Juno mostly ask, copy and cheer without changing what happens"
+      ],
+      "cost_usd": 0.001708
+    },
+    {
+      "item_id": "sharks-band-a-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "Milo and Juno mostly ask questions and react; Splash does the teaching and the moves, and the kids make no choices that change the outcome"
+      ],
+      "cost_usd": 0.001706
+    },
+    {
+      "item_id": "sharks-band-a-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 2-7: Splash shows and tells every fact; Milo and Juno mostly ask, react and copy his moves"
+      ],
+      "cost_usd": 0.001824
+    },
+    {
+      "item_id": "sharks-band-a-continuity",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "megalodon 'bigger than a bus' is not in the fact pack",
+        "Splash explains every fact; Milo and Juno ask and react but no choice changes the outcome"
+      ],
+      "cost_usd": 0.001853
+    },
+    {
+      "item_id": "sharks-band-a-continuity",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "chapter 8: 'keepsake' is not explained in everyday words"
+      ],
+      "cost_usd": 0.002093
+    },
+    {
+      "item_id": "soccer-band-c-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 5-7: Lena only reacts; no choice of hers changes the events"
+      ],
+      "cost_usd": 0.001901
+    },
+    {
+      "item_id": "soccer-band-c-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 1-7: Lena mostly watches history; Mundo drives every scene and Lena changes nothing"
+      ],
+      "cost_usd": 0.002068
+    },
+    {
+      "item_id": "soccer-band-c-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "Lena mostly reacts: give her a choice that changes a scene, e.g. chapter 4 save or chapter 3 lines idea, not just gasps and laughs"
+      ],
+      "cost_usd": 0.002272
+    },
+    {
+      "item_id": "soccer-band-c-5min",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "Lena mostly watches and reacts; Mundo drives every scene, so give Lena a choice or action that changes an event in at least several chapters"
+      ],
+      "cost_usd": 0.002184
+    },
+    {
+      "item_id": "soccer-band-c-5min",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 3-8: Lena mostly watches and reacts while Mundo narrates; give her a choice that changes an outcome"
+      ],
+      "cost_usd": 0.002196
+    },
+    {
+      "item_id": "soccer-band-c-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002959
+    },
+    {
+      "item_id": "soccer-band-c-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002255
+    },
+    {
+      "item_id": "soccer-band-c-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002493
+    },
+    {
+      "item_id": "soccer-band-c-continuity",
+      "sample": 4,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002208
+    },
+    {
+      "item_id": "soccer-band-c-continuity",
+      "sample": 5,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002685
+    },
+    {
+      "item_id": "soccer-band-d",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002272
+    },
+    {
+      "item_id": "soccer-band-d",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 4: says FA Cup began 'the year before this' (1888 context); pack says 1871-72",
+        "chapter 7: 1996 attendance of 40,000 is not in the fact pack; verify or remove"
+      ],
+      "cost_usd": 0.002459
+    },
+    {
+      "item_id": "soccer-band-d",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 7: 1996 final 'America versus China' with '40,000' and a 'California' stadium is not in pack and conflicts with 'Atlanta' setting"
+      ],
+      "cost_usd": 0.002355
+    },
+    {
+      "item_id": "soccer-band-d",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "1996 scene: stadium 'in California' but tournament is Atlanta per pack; fix the location"
+      ],
+      "cost_usd": 0.002208
+    },
+    {
+      "item_id": "soccer-band-d",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 7: 1996 Olympic final set in a California stadium with 40,000 crowd; not in pack, and the final was in Georgia"
+      ],
+      "cost_usd": 0.003334
+    },
+    {
+      "item_id": "space-race-band-c-15min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002182
+    },
+    {
+      "item_id": "space-race-band-c-15min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002568
+    },
+    {
+      "item_id": "space-race-band-c-15min",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002648
+    },
+    {
+      "item_id": "space-race-band-c-15min",
+      "sample": 4,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002798
+    },
+    {
+      "item_id": "space-race-band-c-15min",
+      "sample": 5,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002544
+    },
+    {
+      "item_id": "titanic-band-b",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "too scary for band B: scary_level 2, limit 1"
+      ],
+      "reasons": [],
+      "cost_usd": 0.00264
+    },
+    {
+      "item_id": "titanic-band-b",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002018
+    },
+    {
+      "item_id": "titanic-band-b",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "too scary for band B: scary_level 2, limit 1",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "Maya mostly watches and asks questions while Compass explains and guides; her choices change nothing that happens"
+      ],
+      "cost_usd": 0.002683
+    },
+    {
+      "item_id": "titanic-band-b",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "Maya mostly watches while Compass explains and solves events; her drawings and questions never change what happens"
+      ],
+      "cost_usd": 0.002416
+    },
+    {
+      "item_id": "titanic-band-b",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 5-7: Maya mostly watches and reacts while Compass explains and drives events"
+      ],
+      "cost_usd": 0.002069
+    },
+    {
+      "item_id": "volcanoes-band-b-15min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 3: 'taller than thirteen Empire State Buildings' is wrong (4,000 m is about nine) and not in the pack"
+      ],
+      "cost_usd": 0.002527
+    },
+    {
+      "item_id": "volcanoes-band-b-15min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 3: 'taller than thirteen Empire State Buildings' is wrong; 4,000 m is about nine, and the claim is not in the pack"
+      ],
+      "cost_usd": 0.002891
+    },
+    {
+      "item_id": "volcanoes-band-b-15min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 3: 'thirteen Empire State Buildings' is not in the pack and is wrong; 4,000 m is about nine"
+      ],
+      "cost_usd": 0.002844
+    },
+    {
+      "item_id": "volcanoes-band-b-15min",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "too scary for band B: scary_level 2, limit 1",
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 3: Mauna Loa 'taller than thirteen Empire State Buildings' is wrong; 4,000 m is about nine",
+        "chapter 5: Hawaii-to-New York analogy implies about 3,000 miles, but the real distance is roughly 4,800",
+        "chapters 1-8: Ember makes every trip and decision; Zara asks and reacts, so she needs a choice that changes the journey"
+      ],
+      "cost_usd": 0.003103
+    },
+    {
+      "item_id": "volcanoes-band-b-15min",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 3: 'taller than thirteen Empire State Buildings' is false (4,000 m is about nine) and not in the pack"
+      ],
+      "cost_usd": 0.003053
+    }
+  ]
+}

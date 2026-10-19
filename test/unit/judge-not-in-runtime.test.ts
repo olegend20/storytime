@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
+import { modelForRole } from '@/lib/ai/pricing'
 
 /**
  * THE JUDGE MUST NEVER RUN IN THE NIGHTLY GENERATION PATH.
@@ -87,7 +88,7 @@ describe('the judge is confined to the eval harness', () => {
    * The positive half: the per-story quality check must be the CHEAP model. If this ever
    * points at a judge-tier model, every story silently gets dearer.
    */
-  it('the per-story quality gate runs on the helper model, not a judge model', () => {
+  it('the per-story quality gate runs on a cheap reviewer role, not the writer or a judge model', () => {
     const gate = sourceFiles('lib/quality')
       .map((f) => readFileSync(join(process.cwd(), f), 'utf8'))
       .join('\n')
@@ -99,9 +100,13 @@ describe('the judge is confined to the eval harness', () => {
     expect(gate).not.toMatch(/role: 'writer'/)
     expect(gate).not.toMatch(/judge_primary|judge_secondary|judge_score|judge_pairwise/)
     expect(gate).not.toMatch(/from '@\/lib\/eval/)
-    // It must name the helper role, i.e. Haiku resolved through config/models.json.
-    expect(/role: 'helper'|modelForRole\('helper'\)/.test(gate),
-      'the quality gate should call the helper model').toBe(true)
+    // It must name the quality_reviewer role (DECISIONS #201), resolved through
+    // config/models.json - and that role must be a Haiku, never the writer or a judge.
+    expect(/modelForRole\('quality_reviewer'\)/.test(gate),
+      'the quality gate should call the quality_reviewer model').toBe(true)
+    const reviewer = modelForRole('quality_reviewer')
+    expect(reviewer).toMatch(/^claude-haiku-/)
+    for (const role of ['writer', 'judge_primary', 'judge_secondary']) expect(reviewer).not.toBe(modelForRole(role))
   })
 })
 

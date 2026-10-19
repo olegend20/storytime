@@ -1,0 +1,732 @@
+{
+  "kind": "review-bench-run",
+  "ran_at": "2026-10-17T01:00:12.014Z",
+  "set": "eval/review-bench/set-master-v6-2026-10-17.json",
+  "prompt": {
+    "id": "quality-review",
+    "version": 4,
+    "dir": "eval/review-bench/candidates/g-procedures-substantial"
+  },
+  "reviewer": {
+    "model": "claude-haiku-5-5"
+  },
+  "samples": 3,
+  "labelled": false,
+  "summary": {
+    "calls": 45,
+    "format_failures": 0,
+    "wrong_fails": {
+      "count": 0,
+      "of": 0
+    },
+    "catches": {
+      "count": 0,
+      "of": 0
+    },
+    "flips": {
+      "count": 5,
+      "of": 15
+    },
+    "longest_reason": 149,
+    "cost_usd": 0.10385199999999999,
+    "passes": {
+      "count": 16,
+      "of": 45
+    },
+    "by_check": {
+      "kids_are_active_participants": 17,
+      "facts_consistent_with_pack": 18,
+      "age_appropriate": 6
+    },
+    "deterministic": {
+      "passed": 13,
+      "of": 15,
+      "by_check": {
+        "banned_word": 1,
+        "sentence_length": 1
+      }
+    }
+  },
+  "reviews": [
+    {
+      "item_id": "bees-band-a-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapters 3, 5, 7: Juno's guesses and attempts (dance, flapping, counting) change nothing; Pip just corrects her and keeps going",
+        "chapters 4 and 8: Juno's door-opening and block-building are small acts that do not change where the story goes"
+      ],
+      "cost_usd": 0.001786
+    },
+    {
+      "item_id": "bees-band-a-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 4: Juno's guarding does not change the story; Pip sets the course",
+        "chapter 5: Juno's wiggle dance gets 'close enough' and changes nothing",
+        "chapter 7: Juno's arm-flapping fails and changes nothing; Pip explains every fact",
+        "chapter 3: states 2,000 eggs 'every single day'; pack says up to 2,000 during spring"
+      ],
+      "cost_usd": 0.002035
+    },
+    {
+      "item_id": "bees-band-a-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001711
+    },
+    {
+      "item_id": "bicycles-band-b-5min-tricks",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 5: Dunlop built the tire for his son's tricycle; the pack never mentions this"
+      ],
+      "cost_usd": 0.002152
+    },
+    {
+      "item_id": "bicycles-band-b-5min-tricks",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 5: 'built it for his son's tricycle' is not in the fact pack; remove it"
+      ],
+      "cost_usd": 0.002181
+    },
+    {
+      "item_id": "bicycles-band-b-5min-tricks",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 5: Dunlop built a tire for his son's tricycle; pack never mentions this"
+      ],
+      "cost_usd": 0.002015
+    },
+    {
+      "item_id": "climb-walls-band-a-15min-wild",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002331
+    },
+    {
+      "item_id": "climb-walls-band-a-15min-wild",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 8: 'sticky gloves' for climbing glass is not in the pack; pack says a gecko-inspired paddle (f14)"
+      ],
+      "cost_usd": 0.002218
+    },
+    {
+      "item_id": "climb-walls-band-a-15min-wild",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001993
+    },
+    {
+      "item_id": "lego-band-a-pair",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapter 2 and 6: Juno only cheers or waves and changes nothing in the story",
+        "chapter 8: Juno's hat swap changes nothing in the story's outcome"
+      ],
+      "cost_usd": 0.002004
+    },
+    {
+      "item_id": "lego-band-a-pair",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapters 2-8: Juno only reacts, waves, or decorates; no moment where her choice changes the story"
+      ],
+      "cost_usd": 0.00176
+    },
+    {
+      "item_id": "lego-band-a-pair",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "age_appropriate",
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapter 3: 'pellets' is a big word and is not explained in everyday words",
+        "chapters 2, 4, 6 and 8: Juno only watches, shouts, tests bricks or swaps a hat; nothing she does changes the story"
+      ],
+      "cost_usd": 0.00225
+    },
+    {
+      "item_id": "rainbows-band-b-5min-teasing",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001801
+    },
+    {
+      "item_id": "rainbows-band-b-5min-teasing",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001729
+    },
+    {
+      "item_id": "rainbows-band-b-5min-teasing",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001803
+    },
+    {
+      "item_id": "sharks-band-b-siblings",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapters 2-7: the guide chooses every stop and explains each fact; Jack and Ellie ask, react and copy without changing the outcome",
+        "chapter 6: Jack and Ellie copy the walking fish, which changes nothing in the story"
+      ],
+      "cost_usd": 0.002922
+    },
+    {
+      "item_id": "sharks-band-b-siblings",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002422
+    },
+    {
+      "item_id": "sharks-band-b-siblings",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002748
+    },
+    {
+      "item_id": "sleep-band-a-5min-dark",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 5: says bats in general sleep twenty hours and are 'the sleepiest of all'; pack says some small bats, among the sleepiest"
+      ],
+      "cost_usd": 0.001791
+    },
+    {
+      "item_id": "sleep-band-a-5min-dark",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapters 3-8: Leo only asks and reacts; Hoot leads every stop and the route never changes because of Leo"
+      ],
+      "cost_usd": 0.001871
+    },
+    {
+      "item_id": "sleep-band-a-5min-dark",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "Leo never changes the route: Hoot leads every stop and explains every fact, and Leo only asks, reacts, or names things (chapters 1-8)"
+      ],
+      "cost_usd": 0.0017
+    },
+    {
+      "item_id": "sleep-band-c-5min-bedtime",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 2: 'four or five times a night' is a number the fact pack never gives; remove it or say 'several times'"
+      ],
+      "cost_usd": 0.002363
+    },
+    {
+      "item_id": "sleep-band-c-5min-bedtime",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 2: 'four or five times a night' is a number the fact pack never gives"
+      ],
+      "cost_usd": 0.002224
+    },
+    {
+      "item_id": "sleep-band-c-5min-bedtime",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 1: Kleitman as Aserinsky's 'teacher' is a relationship the fact pack never mentions"
+      ],
+      "cost_usd": 0.001783
+    },
+    {
+      "item_id": "sleep-band-d-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002069
+    },
+    {
+      "item_id": "sleep-band-d-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001703
+    },
+    {
+      "item_id": "sleep-band-d-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001504
+    },
+    {
+      "item_id": "space-race-band-b-15min-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 5: Tereshkova's factory job is a substantial fact not in the pack; cut it",
+        "chapters 2-9: Maya only asks, reacts or waves; Barnacle picks every stop and explains every fact",
+        "chapter 3: Maya catches and releases a sparkle, changing nothing; give her a choice that alters the route"
+      ],
+      "cost_usd": 0.003228
+    },
+    {
+      "item_id": "space-race-band-b-15min-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B",
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "age_appropriate",
+        "kids_are_active_participants",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 5: 'podium' is a big word and is not explained",
+        "chapter 9: 'hatch' is a big word and is not explained",
+        "chapter 4: 'Nobody got hurt' contradicts pack f12, which says three astronauts died in the Apollo 1 fire",
+        "chapters 3, 5, 8: Maya only asks, reacts, sketches or presses a hand; Barnacle chooses every stop and no choice of hers changes the route"
+      ],
+      "cost_usd": 0.002965
+    },
+    {
+      "item_id": "space-race-band-b-15min-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapters 2-8: Maya only waves, asks, spins and sketches; Barnacle leads every stop and explains every fact, and no choice of Maya's changes the story",
+        "chapter 5: Tereshkova's factory job is a biographical detail the fact pack never mentions"
+      ],
+      "cost_usd": 0.003081
+    },
+    {
+      "item_id": "space-race-band-d",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002699
+    },
+    {
+      "item_id": "space-race-band-d",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002367
+    },
+    {
+      "item_id": "space-race-band-d",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002266
+    },
+    {
+      "item_id": "titanic-band-c",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "age_appropriate",
+        "kids_are_active_participants",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 1: 'gantry' is a technical term, not explained",
+        "chapter 7: 'submersible' is not explained",
+        "chapter 7: 'sonar' is not explained",
+        "chapter 2: 'flood any four' compartments claim is a number not in the pack",
+        "chapter 5: 'fifty-eight miles off' is a number not in the pack",
+        "chapters 5-7: Hana only watches; her questions change no events"
+      ],
+      "cost_usd": 0.002761
+    },
+    {
+      "item_id": "titanic-band-c",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "age_appropriate",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 7: 'sonar' is a technical term and is not explained",
+        "chapter 5: 'Fifty-eight miles off' is a distance the fact pack does not contain",
+        "chapter 8: 'a hundred years, almost to the day, after the keel' is wrong; keel 1909 to 2012 is about 103 years"
+      ],
+      "cost_usd": 0.002537
+    },
+    {
+      "item_id": "titanic-band-c",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "age_appropriate",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 7: 'sonar' is a technical term and is never explained",
+        "chapter 7: 'submersible' is a technical term and is never explained",
+        "chapter 4: 'more than twice that many' contradicts pack's 2,224 aboard; 2 x 1,178 exceeds it",
+        "chapter 5: 'Fifty-eight miles off' for Carpathia is a number the fact pack does not contain"
+      ],
+      "cost_usd": 0.00279
+    },
+    {
+      "item_id": "video-games-band-b-15min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "ch 2: Byte overrules Ben's rematch request; Ben's choice changes no stop",
+        "chs 1-9: Byte chooses every stop and explains every fact; Ben only plays and reacts"
+      ],
+      "cost_usd": 0.00325
+    },
+    {
+      "item_id": "video-games-band-b-15min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapters 2-9: Byte picks every stop and explains every fact; Ben's wins and jokes change nothing"
+      ],
+      "cost_usd": 0.002819
+    },
+    {
+      "item_id": "video-games-band-b-15min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapters 2-9: Byte decides every stop and Ben's plays and observations change no outcome",
+        "chapter 2: 'nobody outside this lab has even seen this game yet' is a historical claim not in the pack"
+      ],
+      "cost_usd": 0.003078
+    },
+    {
+      "item_id": "video-games-band-c-solo",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "age_appropriate",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 1: 'refresh rate' is a technical term and is not explained",
+        "chapter 2: 'PvP' is a technical term and is not explained",
+        "chapter 1: 'first video game anybody could sit down and play' is a record not in the fact pack",
+        "chapter 2: 'cost more than a house' is an unsourced price claim not in the fact pack",
+        "chapter 5: 'arcades start running out of quarters' is a historical claim not in the fact pack"
+      ],
+      "cost_usd": 0.003124
+    },
+    {
+      "item_id": "video-games-band-c-solo",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 5: Space Invaders coin-shortage claim is not in the fact pack",
+        "chapter 2: PDP-1 'cost more than a house' is a price claim not in the fact pack"
+      ],
+      "cost_usd": 0.002525
+    },
+    {
+      "item_id": "video-games-band-c-solo",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002024
+    },
+    {
+      "item_id": "volcanoes-mixed-ages",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapter 3: Theo spots the horseshoe but Rumble's route and explanation don't change",
+        "chapter 4: Juno's wish to climb and Milo's model are answered without changing the trip",
+        "chapter 7: Juno's worry is settled by Rumble alone; no child changes the outcome"
+      ],
+      "cost_usd": 0.002269
+    },
+    {
+      "item_id": "volcanoes-mixed-ages",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002888
+    },
+    {
+      "item_id": "volcanoes-mixed-ages",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapters 2-8: Rumble leads every stop and explains each fact; kids' ideas change no outcome"
+      ],
+      "cost_usd": 0.002312
+    }
+  ]
+}

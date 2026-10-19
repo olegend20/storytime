@@ -74,7 +74,7 @@ import {
   STUB_PASSING_REVIEW,
 } from '../helpers/fixtures'
 import { buildPrompt } from '@/lib/generate/prompt'
-import { buildQualityReviewMessage, measuredForReview } from '@/lib/quality/review'
+import { buildQualityReviewMessage, measuredForReview, QUALITY_REVIEW_THINKING_MAX_TOKENS } from '@/lib/quality/review'
 import { AFTER_WRITE_MS, RETRY_MIN_MS, WRITER_MAX_TOKENS } from '@/lib/generate/pipeline'
 import { MEND_MAX_TOKENS, cutViolations, mendUserMessage, passagesFor } from '@/lib/generate/mend'
 import { STORY_OUTPUT_FORMAT } from '@/lib/generate/output-schema'
@@ -305,7 +305,7 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     stubFixture(
       'quality',
       callFixtureKey({
-        model: helperModel,
+        model: modelForRole('quality_reviewer'),
         system: [{ text: loadPrompt('quality-review').body }],
         messages: [
           {
@@ -318,7 +318,7 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
             ),
           },
         ],
-        maxTokens: 2_000,
+        maxTokens: QUALITY_REVIEW_THINKING_MAX_TOKENS,
       }),
       JSON.stringify(STUB_PASSING_REVIEW),
       { input_tokens: 7_800, output_tokens: 120 },
@@ -348,7 +348,7 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       stubFixture(
         'quality',
         callFixtureKey({
-          model: helperModel,
+          model: modelForRole('quality_reviewer'),
           system: [{ text: loadPrompt('quality-review').body }],
           messages: [
             {
@@ -361,7 +361,7 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
               ),
             },
           ],
-          maxTokens: 2_000,
+          maxTokens: QUALITY_REVIEW_THINKING_MAX_TOKENS,
         }),
         JSON.stringify(STUB_PASSING_REVIEW),
         { input_tokens: 7_900, output_tokens: 120 },
@@ -555,6 +555,32 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     if (result.bibleUpdate) await result.bibleUpdate
   })
 
+  it('#58: firstDraftOnly stops at the gate - the draft comes back, nothing is reviewed, saved or counted', async () => {
+    const run = await prepared()
+    const { story } = stubResponsesFor(run)
+    const sink = new MemoryLogSink()
+    const quota = new RecordingQuota()
+    const { events, result } = await collect(run, { db: family.db, sink, quota, now: () => FIXED_NOW, firstDraftOnly: true })
+
+    expect(result.firstGated?.story.title).toBe(story.title)
+    expect(result.firstGated?.request).toEqual(run.request)
+    expect(result.quality).toBeNull()
+    expect(sink.rows.map((r) => r.purpose)).toEqual(['write'])
+    expect(events.some((e) => e.type === 'done')).toBe(false)
+    expect(quota.calls).toEqual([])
+    const { data: saved } = await family.db.from('stories').select('id').eq('id', run.storyId)
+    expect(saved).toEqual([])
+  })
+
+  it('#58: a normal run reports the draft the gate reviewed first', async () => {
+    const run = await prepared()
+    const { story } = stubResponsesFor(run)
+    const { result } = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
+    expect(result.status).toBe('ready')
+    expect(result.firstGated?.story.title).toBe(story.title)
+    if (result.bibleUpdate) await result.bibleUpdate
+  })
+
   it('F7 VT: a hard safety violation triggers exactly one rewrite carrying the reasons', async () => {
     const run = await prepared()
     // The reasons the gate will produce from the stubbed safety verdict below. They go into
@@ -667,10 +693,10 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     stubFixture(
       'quality',
       callFixtureKey({
-        model: helperModel,
+        model: modelForRole('quality_reviewer'),
         system: [{ text: loadPrompt('quality-review').body }],
         messages: [{ role: 'user', content: buildQualityReviewMessage(mended, run.request, FIXTURE_FACT_PACK, measuredForReview(mended, run.request.age_band)) }],
-        maxTokens: 2_000,
+        maxTokens: QUALITY_REVIEW_THINKING_MAX_TOKENS,
       }),
       JSON.stringify(STUB_PASSING_REVIEW),
       { input_tokens: 7_800, output_tokens: 120 },
@@ -810,10 +836,10 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     stubFixture(
       'quality',
       callFixtureKey({
-        model: helperModel,
+        model: modelForRole('quality_reviewer'),
         system: [{ text: loadPrompt('quality-review').body }],
         messages: [{ role: 'user', content: buildQualityReviewMessage(retried, shorter, FIXTURE_FACT_PACK, measuredForReview(retried, 'A')) }],
-        maxTokens: 2_000,
+        maxTokens: QUALITY_REVIEW_THINKING_MAX_TOKENS,
       }),
       JSON.stringify(STUB_PASSING_REVIEW),
     )

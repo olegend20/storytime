@@ -1,0 +1,1155 @@
+{
+  "kind": "review-bench-run",
+  "ran_at": "2026-10-15T17:12:42.865Z",
+  "set": "eval/review-bench/set-2026-10-15.json (split:test)",
+  "prompt": {
+    "id": "quality-review",
+    "version": 4,
+    "dir": "eval/review-bench/candidates/g-procedures-substantial"
+  },
+  "reviewer": {
+    "model": "claude-haiku-5-5"
+  },
+  "samples": 5,
+  "labelled": true,
+  "summary": {
+    "calls": 80,
+    "format_failures": 0,
+    "wrong_fails": {
+      "count": 22,
+      "of": 30
+    },
+    "catches": {
+      "count": 47,
+      "of": 50
+    },
+    "flips": {
+      "count": 5,
+      "of": 16
+    },
+    "longest_reason": 155,
+    "cost_usd": 0.200318
+  },
+  "reviews": [
+    {
+      "item_id": "bicycles-band-c-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 5: 'veterinarian' and 'built this for his son's tricycle' are not in the fact pack"
+      ],
+      "cost_usd": 0.002414
+    },
+    {
+      "item_id": "bicycles-band-c-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 5: Dunlop's veterinary job, the son's tricycle and Belfast are not in the fact pack; cut or source them"
+      ],
+      "cost_usd": 0.002262
+    },
+    {
+      "item_id": "bicycles-band-c-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 5: Dunlop's job as a veterinarian and the son's tricycle are not in the fact pack; remove or hedge"
+      ],
+      "cost_usd": 0.002197
+    },
+    {
+      "item_id": "bicycles-band-c-5min",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 5: Belfast, Dunlop's vet job and son's tricycle are not in the pack"
+      ],
+      "cost_usd": 0.002364
+    },
+    {
+      "item_id": "bicycles-band-c-5min",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 5: Dunlop as a 'veterinarian' and the son's tricycle origin are not in the fact pack"
+      ],
+      "cost_usd": 0.002434
+    },
+    {
+      "item_id": "climb-walls-mixed-3-11",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 1 and 4: Rosa's glass test and toy ant change nothing; give Rosa a choice that alters the route",
+        "chapters 2-7: Tokay chooses every stop and explains every fact; give Isla or Rosa a decision that changes where the tour goes"
+      ],
+      "cost_usd": 0.002141
+    },
+    {
+      "item_id": "climb-walls-mixed-3-11",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "Rosa only copies or reacts (ch 1, 4, 6); her hand, toy ant and hops change nothing; Tokay leads every stop",
+        "Isla mostly asks and guesses; her ideas don't change where the story goes (ch 4-5)"
+      ],
+      "cost_usd": 0.002068
+    },
+    {
+      "item_id": "climb-walls-mixed-3-11",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapter 6: 'honeycomb-shaped' is not explained",
+        "chapters 1-8: Tokay explains every fact; Rosa and Isla only ask, react or pretend, and no choice changes the story",
+        "chapter 4: Rosa's toy ant falls off the wall and changes nothing"
+      ],
+      "cost_usd": 0.001899
+    },
+    {
+      "item_id": "climb-walls-mixed-3-11",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapters 2-7: Rosa only reacts or pretends; her ant and hop tests change nothing",
+        "chapter 8: says scientists made special gloves for glass walls; pack says a 2014 handheld paddle"
+      ],
+      "cost_usd": 0.002556
+    },
+    {
+      "item_id": "climb-walls-mixed-3-11",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 6: 'honeycomb-shaped' is not explained for a 3-year-old",
+        "chapter 8: 'special gloves' for glass not in pack; pack's 2014 glass-climbing device is a handheld paddle"
+      ],
+      "cost_usd": 0.002194
+    },
+    {
+      "item_id": "dinosaurs-band-a-15min-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 2-9: Juno only reacts, copies and hops; none of his choices changes where the story goes"
+      ],
+      "cost_usd": 0.002361
+    },
+    {
+      "item_id": "dinosaurs-band-a-15min-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapters 3-7: Juno only hops, copies and reacts; no plot change comes from him",
+        "chapter 9: says 'about 66 million years after this' (230 million years ago); pack says 66 million years ago"
+      ],
+      "cost_usd": 0.002143
+    },
+    {
+      "item_id": "dinosaurs-band-a-15min-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapters 3-9: Juno's footprint hop, pet request and pterosaur arms change nothing; give him a choice that alters the route",
+        "chapter 9: 'About 66 million years after this' contradicts pack f2, which dates the extinction 66 million years ago"
+      ],
+      "cost_usd": 0.003167
+    },
+    {
+      "item_id": "dinosaurs-band-a-15min-continuity",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 2-7: Juno only hops, counts, grabs Milo's hand or asks questions; no choice changes the route"
+      ],
+      "cost_usd": 0.002361
+    },
+    {
+      "item_id": "dinosaurs-band-a-15min-continuity",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 2-10: Juno only asks, copies and reacts; no moment changes the story because of him"
+      ],
+      "cost_usd": 0.002569
+    },
+    {
+      "item_id": "dinosaurs-band-c-15min-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.00289
+    },
+    {
+      "item_id": "dinosaurs-band-c-15min-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapters 1-7: Bit leads every stop and explains; Theo only asks, observes or reacts, changing no outcome",
+        "chapter 6: Maiasaura meaning 'good mother lizard' is a substantial fact absent from the pack",
+        "chapter 4: thagomizer origin as a joke is a substantial fact absent from the pack"
+      ],
+      "cost_usd": 0.002863
+    },
+    {
+      "item_id": "dinosaurs-band-c-15min-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002637
+    },
+    {
+      "item_id": "dinosaurs-band-c-15min-continuity",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 1, 3, 4, 6: Bit leads every stop and explains each fact; Theo mostly asks and reacts",
+        "chapter 4: Theo creeps up to the Triceratops, which just goes back to chewing; nothing changes",
+        "chapter 6: Theo only observes the nest; his choice does not change the scene"
+      ],
+      "cost_usd": 0.002827
+    },
+    {
+      "item_id": "dinosaurs-band-c-15min-continuity",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 4: 'ten cars bumper to bumper' is a number not in the pack, and it is wrong: 100 feet is about six or seven cars",
+        "chapter 4: thagomizer 'made the name up as a joke' is a claim the pack does not contain",
+        "chapter 6: Maiasaura meaning 'good mother lizard' is a fact the pack does not contain"
+      ],
+      "cost_usd": 0.003068
+    },
+    {
+      "item_id": "honey-band-a-15min-twins",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapters 1-9: Buzzby leads every stop and explains each fact; Finn and Nell ask or react but change nothing",
+        "chapter 4: Nell's pantry idea is praised but does not change the story; show her idea shaping a choice or result",
+        "chapter 2: queen 'lays more than a thousand eggs. Every single day'; pack says 'sometimes over a thousand a day'"
+      ],
+      "cost_usd": 0.002053
+    },
+    {
+      "item_id": "honey-band-a-15min-twins",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapters 2-9: Buzzby explains every fact while Finn and Nell count, copy, or react without changing the story",
+        "chapter 2: queen 'lays more than a thousand eggs. Every single day' contradicts pack, which says sometimes over a thousand"
+      ],
+      "cost_usd": 0.002492
+    },
+    {
+      "item_id": "honey-band-a-15min-twins",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "ch 3-5: Buzzby explains each step; Finn and Nell's sipping, passing and fanning change nothing",
+        "ch 8: Finn's thank-you to the beekeeper changes nothing in the scene",
+        "ch 2: says queen lays over a thousand eggs every single day; pack says sometimes over a thousand"
+      ],
+      "cost_usd": 0.002213
+    },
+    {
+      "item_id": "honey-band-a-15min-twins",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapters 1-9: Buzzby leads every stop and explains every fact; no child's idea changes the path",
+        "chapter 2: queen 'lays more than a thousand eggs. Every single day' vs pack 'sometimes over a thousand a day'"
+      ],
+      "cost_usd": 0.001923
+    },
+    {
+      "item_id": "honey-band-a-15min-twins",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapters 1-9: Buzzby leads every stop and explains every fact; Finn and Nell ask, copy or react without changing the story",
+        "chapter 2: says queen lays more than a thousand eggs every day; pack says sometimes over a thousand a day"
+      ],
+      "cost_usd": 0.00222
+    },
+    {
+      "item_id": "lego-band-c-rivals",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 2-8: Sami only asks questions, sketches or reacts; Click explains every stop and no choice she makes changes the history"
+      ],
+      "cost_usd": 0.003334
+    },
+    {
+      "item_id": "lego-band-c-rivals",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.003259
+    },
+    {
+      "item_id": "lego-band-c-rivals",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 3-8: Click explains each stop and the children mostly react or ride along; their actions do not change the history"
+      ],
+      "cost_usd": 0.002896
+    },
+    {
+      "item_id": "lego-band-c-rivals",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 8: 'first time' LEGO built movie-licensed toys is a record the pack does not give"
+      ],
+      "cost_usd": 0.003674
+    },
+    {
+      "item_id": "lego-band-c-rivals",
+      "sample": 5,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002894
+    },
+    {
+      "item_id": "magnets-band-b-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002091
+    },
+    {
+      "item_id": "magnets-band-b-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 3-8: Bolt leads every stop and explains each fact; Ada's flips, spins and switch-flicks change nothing"
+      ],
+      "cost_usd": 0.001875
+    },
+    {
+      "item_id": "magnets-band-b-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 3-8: Bolt opens every journey and explains each fact; Ada only tests what he suggests and her choices never change where the story goes"
+      ],
+      "cost_usd": 0.002081
+    },
+    {
+      "item_id": "magnets-band-b-5min",
+      "sample": 4,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002013
+    },
+    {
+      "item_id": "magnets-band-b-5min",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapter 2: Ada tilts the paper, but Bolt delivers the field fact and nothing she does changes the outcome",
+        "chapter 4: Ada's compass spin only shows the needle pointing north; Bolt explains the rest",
+        "chapter 6: Ada flicks the switch, but Bolt explains the electromagnet and her actions change nothing"
+      ],
+      "cost_usd": 0.002322
+    },
+    {
+      "item_id": "pompeii-band-b-care",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "too scary for band B: scary_level 2, limit 1",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 1-9: Nora only asks, reacts and notices; the tessera leads every stop and explains each fact. Give Nora a choice that changes where the story goes"
+      ],
+      "cost_usd": 0.002905
+    },
+    {
+      "item_id": "pompeii-band-b-care",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 2-8: tessera leads every stop and explains every fact; Nora's ideas and shouts change nothing"
+      ],
+      "cost_usd": 0.002281
+    },
+    {
+      "item_id": "pompeii-band-b-care",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "too scary for band B: scary_level 2, limit 1",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "Nora only asks, reacts and rides along in ch 1-8; tessera leads every stop and no choice changes the story"
+      ],
+      "cost_usd": 0.002687
+    },
+    {
+      "item_id": "pompeii-band-b-care",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "too scary for band B: scary_level 2, limit 1",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 1-8: Nora only asks, reacts or observes; the tessera leads every stop and changes nothing she does"
+      ],
+      "cost_usd": 0.002698
+    },
+    {
+      "item_id": "pompeii-band-b-care",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "too scary for band B: scary_level 2, limit 1",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 2-8: the tessera leads every stop and explains every fact; Nora's ideas and shouts change nothing in the plot",
+        "chapter 2: Nora's echo shout is a reaction that does not alter the scene; give her a choice that changes where the story goes"
+      ],
+      "cost_usd": 0.003076
+    },
+    {
+      "item_id": "rainbows-band-a-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 6: Kamal al-Din using glass balls to practice is not in the fact pack"
+      ],
+      "cost_usd": 0.001415
+    },
+    {
+      "item_id": "rainbows-band-a-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.00157
+    },
+    {
+      "item_id": "rainbows-band-a-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001473
+    },
+    {
+      "item_id": "rainbows-band-a-5min",
+      "sample": 4,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001366
+    },
+    {
+      "item_id": "rainbows-band-a-5min",
+      "sample": 5,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001419
+    },
+    {
+      "item_id": "sharks-band-a-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapters 1-8: Milo and Juno only ask, react or copy; no choice changes where the story goes",
+        "chapter 4: 'Bigger than a bus!' for megalodon is a size claim the pack does not give"
+      ],
+      "cost_usd": 0.001976
+    },
+    {
+      "item_id": "sharks-band-a-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapters 1-8: Splash leads every stop and explains every fact; kids' ideas never change events",
+        "chapter 6: Milo and Juno only copy the shark's walk, changing nothing",
+        "chapter 4: 'bigger than a bus' for megalodon is a size claim the pack never gives",
+        "chapter 7: 'sharks eat the sick or weak fish' is a specific claim the pack never mentions"
+      ],
+      "cost_usd": 0.002386
+    },
+    {
+      "item_id": "sharks-band-a-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 3: children only ask and react; no child choice changes the scene",
+        "chapter 4: Milo and Juno's actions change nothing; Splash leads every fact",
+        "chapter 4: megalodon 'bigger than a bus' is a size claim not in the pack"
+      ],
+      "cost_usd": 0.001787
+    },
+    {
+      "item_id": "sharks-band-a-continuity",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapters 2-8: Splash leads every stop and explains every fact; children only ask, copy and react, and no child choice changes the route",
+        "chapter 4: 'megalodon was bigger than a bus' is a size claim the pack never gives"
+      ],
+      "cost_usd": 0.002
+    },
+    {
+      "item_id": "sharks-band-a-continuity",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 4: 'Bigger than a bus!' gives megalodon a size the pack never states; use only the tooth-length fact",
+        "chapters 2-7: Milo and Juno only ask, react and copy Splash; give one of them a choice that changes where the story goes"
+      ],
+      "cost_usd": 0.00208
+    },
+    {
+      "item_id": "soccer-band-c-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 8: shout line 'CLEAN SHEET!' uses a technical term that is never explained",
+        "chapter 6: 'Thirteen teams came' is a number not in the fact pack",
+        "chapter 6: final score 'Uruguay 4, Argentina 2' is not in the fact pack",
+        "chapter 6 names Montevideo and chapter 7 names Mexico, neither in the fact pack",
+        "chapters 1-7: Mundo leads every stop and explains every fact; Lena asks and reacts, and her ideas change nothing"
+      ],
+      "cost_usd": 0.003014
+    },
+    {
+      "item_id": "soccer-band-c-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 6: 'Thirteen teams came' is a number the fact pack never mentions",
+        "chapter 2: Mundo dismisses Lena's idea for lines and a closer goal; the history plays out unchanged",
+        "chapter 4: Lena's dive stops nothing and changes no outcome; Mundo drives every stop"
+      ],
+      "cost_usd": 0.002272
+    },
+    {
+      "item_id": "soccer-band-c-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 4: Lena's dive changes nothing and the guide drives every stop",
+        "chapter 2: 'thirteen teams came' is a number the pack does not give",
+        "chapter 4: 'seven men signing papers' conflicts with pack's seven European countries",
+        "chapter 6: score 'Uruguay 4, Argentina 2' is not in the pack",
+        "chapter 3: goalkeeper hand exception is a substantial rule the pack never mentions"
+      ],
+      "cost_usd": 0.002269
+    },
+    {
+      "item_id": "soccer-band-c-5min",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 6: 'Thirteen teams came' is a number the fact pack does not contain",
+        "chapter 6: final score 'Uruguay 4, Argentina 2' is not in the fact pack",
+        "chapter 4: Lena's save changes nothing; Mundo drives every stop and the score stays historical",
+        "chapter 3: Lena spots the goalkeeper rule but her reaction changes nothing in the story"
+      ],
+      "cost_usd": 0.002042
+    },
+    {
+      "item_id": "soccer-band-c-5min",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 6: 'Thirteen teams came' is a number the pack never gives",
+        "chapter 3: goalkeeper hand-use exception is a rule detail not in the pack",
+        "chapters 2-8: Mundo leads every stop and explains each fact; Lena's dive, question and pledge change no outcome"
+      ],
+      "cost_usd": 0.002336
+    },
+    {
+      "item_id": "soccer-band-c-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 6: 'Now it's over two hundred' states a FIFA membership number the pack never gives"
+      ],
+      "cost_usd": 0.00291
+    },
+    {
+      "item_id": "soccer-band-c-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 4: claims the no-hands rule is 'still exactly the same today'; not in pack and inaccurate (goalkeepers may use hands)",
+        "chapter 6: 'Now it's over two hundred' countries; number not in pack"
+      ],
+      "cost_usd": 0.003031
+    },
+    {
+      "item_id": "soccer-band-c-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 6: 'now it's over two hundred' gives a country count the pack never mentions",
+        "chapter 7: Lily Parr 'kept playing anyway' is a claim about her not in the pack"
+      ],
+      "cost_usd": 0.003055
+    },
+    {
+      "item_id": "soccer-band-c-continuity",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 6: 'Now it's over two hundred' FIFA members is a number not in the pack"
+      ],
+      "cost_usd": 0.002908
+    },
+    {
+      "item_id": "soccer-band-c-continuity",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 6: 'Now it's over two hundred' gives a FIFA membership number the fact pack does not contain; remove it"
+      ],
+      "cost_usd": 0.003006
+    },
+    {
+      "item_id": "soccer-band-d",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "ch 3: rugby split claim is not in the fact pack",
+        "ch 4: crowd of about 4,000 is not in the fact pack",
+        "ch 5: England joining FIFA a year later is not in the fact pack",
+        "ch 6: thirteen teams and four European entrants are not in the fact pack",
+        "ch 7: 1972 Title IX law is not in the fact pack",
+        "ch 7: 1996 Atlanta final and 40,000 crowd are not in the fact pack"
+      ],
+      "cost_usd": 0.002964
+    },
+    {
+      "item_id": "soccer-band-d",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 4: crowd of 'about four thousand' is not in the pack",
+        "chapter 3: rugby split from the 1863 rules is not in the pack",
+        "chapter 5: England joining FIFA a year later is not in the pack",
+        "chapter 6: 'thirteen teams' and 'only four Europeans' are not in the pack",
+        "chapter 7: Title IX 1972 law and its soccer effect are not in the pack",
+        "chapter 7: 1996 Olympic final and '40,000 people' are not in the pack",
+        "chapter 7: Mia Hamm as a named player is not in the pack"
+      ],
+      "cost_usd": 0.003071
+    },
+    {
+      "item_id": "soccer-band-d",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 4: '4,000' spectators at 1872 match not in fact pack",
+        "chapter 4: FA Cup 'first played the year before this' contradicts its 1871–72 date",
+        "chapter 3: rugby split from the 1863 rulebook is an event not in fact pack",
+        "chapter 6: 'thirteen teams' and 'four Europeans' not in fact pack",
+        "chapter 6: first World Cup ball 'lost to history' is a claim not in fact pack",
+        "chapter 7: Title IX law and its effect on girls' soccer not in fact pack",
+        "chapter 7: 'first coach in the '80s' for US women's team not in fact pack",
+        "chapter 7: '40,000 people' at 1996 Olympic final not in fact pack"
+      ],
+      "cost_usd": 0.003221
+    },
+    {
+      "item_id": "soccer-band-d",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "ch1: feathers-stuffed ball and net between poles not in pack",
+        "ch4: 'about four thousand' spectators not in pack",
+        "ch5: England joining a year later not in pack",
+        "ch6: '13 teams' and 'four Europeans' not in pack",
+        "ch6: fate of first World Cup ball not in pack",
+        "ch7: Title IX (1972) not in pack; 'thousands of girls' unsupported",
+        "ch7: US women's first coach in 1980s not in pack",
+        "ch7: 1996 Atlanta Olympics, 40,000 crowd, first Olympic tournament not in pack",
+        "ch7: Mia Hamm header goal not in pack"
+      ],
+      "cost_usd": 0.002774
+    },
+    {
+      "item_id": "soccer-band-d",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 4: 'about four thousand people' spectators is a number the pack never gives",
+        "chapter 6: 'thirteen teams' and 'only four Europeans' are numbers the pack never gives",
+        "chapter 7: 1996 Atlanta Olympics women's final, America v China, and 40,000 crowd are not in the pack",
+        "chapter 7: Title IX 1972 is a named law and event the pack never mentions",
+        "chapter 7: Mia Hamm is a named person the pack never mentions"
+      ],
+      "cost_usd": 0.002829
+    },
+    {
+      "item_id": "space-race-band-c-15min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 4: states Tereshkova worked in a factory and was picked from dozens of candidates; pack has neither"
+      ],
+      "cost_usd": 0.002854
+    },
+    {
+      "item_id": "space-race-band-c-15min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 4 and True Facts: '48 times' orbits for Tereshkova; pack gives no orbit count",
+        "chapter 4: 'dozens of trained candidates' is a number the pack does not give"
+      ],
+      "cost_usd": 0.003178
+    },
+    {
+      "item_id": "space-race-band-c-15min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 3: '48 times' orbits for Tereshkova is a number the pack never gives",
+        "chapter 5: Korolev 'designed almost every rocket' including Gagarin's and Leonov's ships; pack says only chief designer"
+      ],
+      "cost_usd": 0.002626
+    },
+    {
+      "item_id": "space-race-band-c-15min",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 4: Tereshkova 'factory' job and 'dozens of candidates' are not in the pack"
+      ],
+      "cost_usd": 0.002696
+    },
+    {
+      "item_id": "space-race-band-c-15min",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 4: 'picked out of dozens of trained candidates' is a number the pack never gives; remove it",
+        "chapter 4: Tereshkova 'used to work in a factory' is not in the pack; remove it",
+        "chapter 5: Korolev 'designed almost every rocket' incl. Sputnik and Gagarin's ship; pack only says chief designer, so drop the specific designs"
+      ],
+      "cost_usd": 0.002685
+    },
+    {
+      "item_id": "titanic-band-b",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.00277
+    },
+    {
+      "item_id": "titanic-band-b",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "too scary for band B: scary_level 2, limit 1",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 2-7: Maya only asks, counts or reacts; Compass explains every stop and no choice of hers changes what happens"
+      ],
+      "cost_usd": 0.002553
+    },
+    {
+      "item_id": "titanic-band-b",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "too scary for band B: scary_level 2, limit 1",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "all chapters: Compass explains every stop; Maya only asks, draws and reacts, and nothing she does changes the outcome"
+      ],
+      "cost_usd": 0.002556
+    },
+    {
+      "item_id": "titanic-band-b",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "ch1-8: Compass leads every stop and explains every fact; Maya asks and sketches but changes nothing",
+        "ch4: captain adds the flag to Maya's drawing; her sketch never affects the plot",
+        "ch7: Maya's question about lifeboats is answered by Compass; no choice she makes alters events"
+      ],
+      "cost_usd": 0.002198
+    },
+    {
+      "item_id": "titanic-band-b",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "too scary for band B: scary_level 2, limit 1",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 1-8: Maya only draws, counts and asks; Compass leads every stop and explains every fact",
+        "chapter 3: Maya's watertight idea is agreed with but changes nothing in the story"
+      ],
+      "cost_usd": 0.002499
+    },
+    {
+      "item_id": "volcanoes-band-b-15min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "too scary for band B: scary_level 2, limit 1",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 3: Empire State comparison is not in pack and is wrong (4,000 m is about nine buildings)",
+        "chapter 5: 'loudest sound in recorded history' is a real-world record not in pack",
+        "chapter 5: Hawaii-to-New York bang comparison is not in pack and misstates the distance"
+      ],
+      "cost_usd": 0.00298
+    },
+    {
+      "item_id": "volcanoes-band-b-15min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 3: 'thirteen Empire State Buildings' height claim is not in pack and is wrong for 4,000 m",
+        "chapter 5: 'loudest sound in recorded history' is a record claim not in pack",
+        "chapter 5: Hawaii-to-New-York comparison implies a distance longer than the 3,000 miles given"
+      ],
+      "cost_usd": 0.003423
+    },
+    {
+      "item_id": "volcanoes-band-b-15min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 3: 'thirteen Empire State Buildings' is an unsourced number and is wrong for 4,000 m",
+        "chapter 5: 'loudest sound in recorded history' is a record claim the pack does not support"
+      ],
+      "cost_usd": 0.002535
+    },
+    {
+      "item_id": "volcanoes-band-b-15min",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "too scary for band B: scary_level 2, limit 1",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 3: 'taller than thirteen Empire State Buildings' is a number the pack lacks and is wrong; remove it or use the pack's 4,000 meters",
+        "chapter 5: 'loudest sound in recorded history' is a real-world record the pack does not give; say only that it was heard about 3,000 miles away"
+      ],
+      "cost_usd": 0.002667
+    },
+    {
+      "item_id": "volcanoes-band-b-15min",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 3: 'thirteen Empire State Buildings' is a number not in the pack and is inaccurate",
+        "chapter 5: 'loudest sound in recorded history' is a record claim not in the pack"
+      ],
+      "cost_usd": 0.002522
+    }
+  ]
+}

@@ -1,0 +1,636 @@
+{
+  "kind": "review-bench-run",
+  "ran_at": "2026-10-17T01:51:12.962Z",
+  "set": "eval/review-bench/set-master-v6-test-2026-10-17.json",
+  "prompt": {
+    "id": "quality-review",
+    "version": 4,
+    "dir": "prompts"
+  },
+  "reviewer": {
+    "model": "claude-haiku-5-5"
+  },
+  "samples": 3,
+  "labelled": false,
+  "summary": {
+    "calls": 48,
+    "format_failures": 0,
+    "wrong_fails": {
+      "count": 0,
+      "of": 0
+    },
+    "catches": {
+      "count": 0,
+      "of": 0
+    },
+    "flips": {
+      "count": 5,
+      "of": 16
+    },
+    "longest_reason": 122,
+    "cost_usd": 0.09977900000000002,
+    "passes": {
+      "count": 33,
+      "of": 48
+    },
+    "by_check": {
+      "age_appropriate": 6,
+      "kids_are_active_participants": 7,
+      "facts_consistent_with_pack": 4,
+      "scary_level": 2
+    },
+    "deterministic": {
+      "passed": 13,
+      "of": 16,
+      "by_check": {
+        "word_count_in_range": 2,
+        "banned_word": 1,
+        "sentence_length": 1
+      }
+    }
+  },
+  "reviews": [
+    {
+      "item_id": "bicycles-band-c-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002253
+    },
+    {
+      "item_id": "bicycles-band-c-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002165
+    },
+    {
+      "item_id": "bicycles-band-c-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002284
+    },
+    {
+      "item_id": "climb-walls-mixed-3-11",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001692
+    },
+    {
+      "item_id": "climb-walls-mixed-3-11",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001695
+    },
+    {
+      "item_id": "climb-walls-mixed-3-11",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001881
+    },
+    {
+      "item_id": "dinosaurs-band-a-15min-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002442
+    },
+    {
+      "item_id": "dinosaurs-band-a-15min-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "failed_checks": [
+        "age_appropriate"
+      ],
+      "reasons": [
+        "chapter 6: 'reptile' is a big word and is not explained on the spot"
+      ],
+      "cost_usd": 0.00207
+    },
+    {
+      "item_id": "dinosaurs-band-a-15min-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001939
+    },
+    {
+      "item_id": "dinosaurs-band-c-15min-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002283
+    },
+    {
+      "item_id": "dinosaurs-band-c-15min-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002108
+    },
+    {
+      "item_id": "dinosaurs-band-c-15min-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002146
+    },
+    {
+      "item_id": "honey-band-a-15min-twins",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001629
+    },
+    {
+      "item_id": "honey-band-a-15min-twins",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "children mostly watch and ask; Buzz makes every decision and solves each problem"
+      ],
+      "cost_usd": 0.001969
+    },
+    {
+      "item_id": "honey-band-a-15min-twins",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapters 1-9: Buzz explains and drives every step; kids mostly watch, ask and react",
+        "chapter 7: 'Every one of them is a girl, doing every job' contradicts pack f13 (drones are male and make no honey)"
+      ],
+      "cost_usd": 0.001968
+    },
+    {
+      "item_id": "lego-band-c-rivals",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002212
+    },
+    {
+      "item_id": "lego-band-c-rivals",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002646
+    },
+    {
+      "item_id": "lego-band-c-rivals",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002378
+    },
+    {
+      "item_id": "magnets-band-b-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001622
+    },
+    {
+      "item_id": "magnets-band-b-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001587
+    },
+    {
+      "item_id": "magnets-band-b-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001567
+    },
+    {
+      "item_id": "pompeii-band-b-care",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001909
+    },
+    {
+      "item_id": "pompeii-band-b-care",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001928
+    },
+    {
+      "item_id": "pompeii-band-b-care",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapters 5-7: Nora only watches and asks; Tessera explains every discovery and drives the events"
+      ],
+      "cost_usd": 0.002052
+    },
+    {
+      "item_id": "rainbows-band-a-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001346
+    },
+    {
+      "item_id": "rainbows-band-a-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001376
+    },
+    {
+      "item_id": "rainbows-band-a-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001481
+    },
+    {
+      "item_id": "sharks-band-a-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "Finn leads every stop; kids ask and react, but no choice of theirs changes the trip"
+      ],
+      "cost_usd": 0.001904
+    },
+    {
+      "item_id": "sharks-band-a-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapters 3, 4 and 8: Milo and Juno mostly ask and react while Finn explains; no choice they make changes what happens"
+      ],
+      "cost_usd": 0.002018
+    },
+    {
+      "item_id": "sharks-band-a-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "Finn drives almost every scene; kids mostly ask and react, and no choice by Milo or Juno changes what happens"
+      ],
+      "cost_usd": 0.002013
+    },
+    {
+      "item_id": "soccer-band-c-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001837
+    },
+    {
+      "item_id": "soccer-band-c-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.00197
+    },
+    {
+      "item_id": "soccer-band-c-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001952
+    },
+    {
+      "item_id": "soccer-band-c-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002055
+    },
+    {
+      "item_id": "soccer-band-c-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002157
+    },
+    {
+      "item_id": "soccer-band-c-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 7: 'days before the tournament' is not in the pack and is historically wrong; the trophy was stolen months earlier"
+      ],
+      "cost_usd": 0.00292
+    },
+    {
+      "item_id": "soccer-band-d",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002459
+    },
+    {
+      "item_id": "soccer-band-d",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002061
+    },
+    {
+      "item_id": "soccer-band-d",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.002123
+    },
+    {
+      "item_id": "space-race-band-c-15min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C"
+      ],
+      "failed_checks": [
+        "age_appropriate"
+      ],
+      "reasons": [
+        "chapter 2: 'gantry' is a technical term and is not explained",
+        "chapter 8: 'command module' is a technical term and is not explained"
+      ],
+      "cost_usd": 0.002459
+    },
+    {
+      "item_id": "space-race-band-c-15min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "age_appropriate",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 2: 'gantry' is a technical term and is not explained",
+        "chapter 5: claim that Tereshkova's time in space exceeded all Americans combined is not in the fact pack"
+      ],
+      "cost_usd": 0.002712
+    },
+    {
+      "item_id": "space-race-band-c-15min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C"
+      ],
+      "failed_checks": [
+        "age_appropriate"
+      ],
+      "reasons": [
+        "chapter 1: 'booster' is not explained",
+        "chapter 2: 'gantry' is not explained",
+        "chapter 8: 'command module' is not explained"
+      ],
+      "cost_usd": 0.002632
+    },
+    {
+      "item_id": "titanic-band-b",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001943
+    },
+    {
+      "item_id": "titanic-band-b",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "failed_checks": [],
+      "reasons": [],
+      "cost_usd": 0.001806
+    },
+    {
+      "item_id": "titanic-band-b",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "failed_checks": [
+        "age_appropriate",
+        "kids_are_active_participants"
+      ],
+      "reasons": [
+        "chapter 6: 'steamship' (Carpathia) is a big word not explained",
+        "Maya mostly watches and asks; guides explain everything and the rescue happens without her choices"
+      ],
+      "cost_usd": 0.002421
+    },
+    {
+      "item_id": "volcanoes-band-b-15min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "too scary for band B: scary_level 2, limit 1"
+      ],
+      "failed_checks": [
+        "scary_level"
+      ],
+      "reasons": [],
+      "cost_usd": 0.002847
+    },
+    {
+      "item_id": "volcanoes-band-b-15min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "too scary for band B: scary_level 2, limit 1",
+        "facts contradict the fact pack"
+      ],
+      "failed_checks": [
+        "scary_level",
+        "facts_consistent_with_pack"
+      ],
+      "reasons": [
+        "chapter 6: claims Krakatoa's sound was the loudest ever recorded; not in pack"
+      ],
+      "cost_usd": 0.002473
+    },
+    {
+      "item_id": "volcanoes-band-b-15min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "failed_checks": [
+        "age_appropriate"
+      ],
+      "reasons": [
+        "chapter 1: 'geode' is a big word and is never explained"
+      ],
+      "cost_usd": 0.002389
+    }
+  ]
+}

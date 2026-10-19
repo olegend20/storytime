@@ -33,10 +33,13 @@ export const CHARS_PER_TOKEN = 3.8
  * 1,771 / 94. The writer line was close; the helpers' inputs had drifted. The real misses
  * were rewrites (not counted at all) and the judge's output - see `EXPECTED_REWRITE_RATE`
  * and `JUDGE_OUTPUT_TOKENS`. Re-measure when the writer prompt or the gate changes.
+ *
+ * The quality review moved to Haiku 5.5 on 2026-10-15 (DECISIONS #201): measured on the
+ * review bench that day, 10,390 in / 2,625 out a review, most of the output its thinking.
  */
 export const STORY_CALL_TOKENS = {
   normalize: { input: 300, output: 50 },
-  quality: { input: 7_200, output: 150 },
+  quality: { input: 10_400, output: 2_600 },
   bible_update: { input: 5_300, output: 600 },
   /**
    * The writing call: master prompt cached, request block uncached. `thinking` is what the
@@ -146,13 +149,18 @@ function writeCallCost(writer: string, words: number, extraOutput = 0): number {
   })
 }
 
+/** One F7 quality review, on its own role (DECISIONS #201). */
+function qualityReviewCost(): number {
+  return computeCost({ model: modelForRole('quality_reviewer'), input: STORY_CALL_TOKENS.quality.input, output: STORY_CALL_TOKENS.quality.output })
+}
+
 /** Expected cost of rewrites for one story: the rate times a second write and a second review. */
 function expectedRewriteCost(writer: string, words: number): number {
   const helper = modelForRole('helper')
   return (
     EXPECTED_REWRITE_RATE *
     (writeCallCost(writer, words, STORY_CALL_TOKENS.rewrite.extraOutput) +
-      computeCost({ model: helper, input: STORY_CALL_TOKENS.quality.input, output: STORY_CALL_TOKENS.quality.output }) +
+      qualityReviewCost() +
       computeCost({ model: helper, input: STORY_CALL_TOKENS.safety.input, output: STORY_CALL_TOKENS.safety.output }))
   )
 }
@@ -164,7 +172,7 @@ function storyGenerationCost(writer: string, words: number): number {
     computeCost({ model: helper, input: STORY_CALL_TOKENS.safety.input, output: STORY_CALL_TOKENS.safety.output }) +
     computeCost({ model: helper, input: STORY_CALL_TOKENS.normalize.input, output: STORY_CALL_TOKENS.normalize.output }) +
     writeCallCost(writer, words) +
-    computeCost({ model: helper, input: STORY_CALL_TOKENS.quality.input, output: STORY_CALL_TOKENS.quality.output }) +
+    qualityReviewCost() +
     computeCost({ model: helper, input: STORY_CALL_TOKENS.bible_update.input, output: STORY_CALL_TOKENS.bible_update.output })
   )
 }
@@ -261,8 +269,8 @@ export function estimateEvalCost(
   lines.push({
     what: `rewrites: ~${Math.round(EXPECTED_REWRITE_RATE * 100)}% of stories (write + quality + safety again)`,
     calls: Math.round(scenarios.length * EXPECTED_REWRITE_RATE) * 3,
-    // One writing call and two helper reviews per rewrite.
-    model: `${writer} + ${modelForRole('helper')}`,
+    // One writing call, the quality review and the safety review per rewrite.
+    model: `${writer} + ${modelForRole('quality_reviewer')} + ${modelForRole('helper')}`,
     usd: scenarios.reduce((n, s) => n + expectedRewriteCost(writer, targetWordsMid(s)), 0),
   })
   lines.push({
@@ -345,7 +353,7 @@ export function estimateBakeoffCost(
     lines.push({
       what: `rewrites on ${contestant}: ~${Math.round(EXPECTED_REWRITE_RATE * 100)}% of stories`,
       calls: Math.round(scenarios.length * samples * EXPECTED_REWRITE_RATE) * 3,
-      model: `${contestant} + ${modelForRole('helper')}`,
+      model: `${contestant} + ${modelForRole('quality_reviewer')} + ${modelForRole('helper')}`,
       usd: scenarios.reduce((n, s) => n + samples * expectedRewriteCost(contestant, targetWordsMid(s)), 0),
     })
   }

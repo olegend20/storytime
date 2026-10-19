@@ -13,6 +13,18 @@
       "url": "https://platform.claude.com/docs/en/models/overview",
       "fetched": "2026-09-27",
       "used_for": "model IDs, context windows, max output, cache-read multipliers"
+    },
+    {
+      "page": "Pricing",
+      "url": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "fetched": "2026-10-15",
+      "used_for": "claude-haiku-5-5 (issue #58 review bench). Haiku 4.5 and Sonnet 5 rows re-checked unchanged."
+    },
+    {
+      "page": "Claude Haiku 5.5 overview",
+      "url": "https://platform.claude.com/docs/en/models/haiku-5-5/overview",
+      "fetched": "2026-10-15",
+      "used_for": "claude-haiku-5-5 id and prices by prompt length"
     }
   ],
   "refresh_policy": {
@@ -67,6 +79,16 @@
       "cache_write_1h": 2.0,
       "cache_read": 0.1,
       "cache_read_multiplier": 0.1
+    },
+    "claude-haiku-5-5": {
+      "display_name": "Claude Haiku 5.5",
+      "input": 0.1,
+      "output": 0.5,
+      "cache_write_5m": 0.125,
+      "cache_write_1h": 0.2,
+      "cache_read": 0.01,
+      "cache_read_multiplier": 0.1,
+      "note": "Prices for prompts up to 100,000 tokens. A prompt over 100,000 tokens (cache reads and writes included) pays 5x: $0.50 / $2.50 / $0.625 / $1 / $0.05. Not modelled: every StoryTime helper prompt is under 15,000 tokens."
     }
   }
 }

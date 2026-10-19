@@ -948,6 +948,42 @@ estimate $7.88 a run. Two live baselines (owner-approved, ~$33) measure the per-
 deadline; a caller abort is no longer retried. VT-R1-VT-R5 in
 `test/unit/callmodel-transport.test.ts`.
 
+### 2026-10-16 — writer prompt master v6: the children steer, nothing beyond the pack (issue #58, DECISIONS #203)
+
+Owner approved ~$26.50 for the writer hill-climb; $26.31 spent at list ($11.37 bench, $14.94
+eval). Three candidates on the train half, scored by the shipped reviewer and by the strict G:
+v6 won on clean first drafts (deterministic checks pass and reviewer v4 passes) at 62% against
+v5's 46%, and held on the untouched test half (63% against 35%; G 38% against 11%). v7 (numbers
+as worded, more words to explain) and v8 (blocked words named) lost ground on banned words and
+short stories and are kept in `eval/review-bench/candidates/`. The 32-story eval (rule 5):
+mean 4.02 against v5's 3.89 (+0.13, above the ±0.10 noise), first drafts untouched 14/32
+against 4/30, disqualified 2 against 2 (titanic-band-b rules 2 and 3, space-race-band-b rule 10,
+both safety-review discards after the rewrite). Still FAIL on the lowest-story and
+disqualification criteria. Time to first chapter median 118.7 s: the v5 run's 79.5 s was the
+fast outlier, the two 2026-10-14 baseline runs took 110 s and 120 s; total median 296 s
+against 260-333 s. No latency change.
+
+### 2026-10-15 — the quality reviewer moves to Claude Haiku 5.5 (issue #58, DECISIONS #200–#202)
+
+Owner approved: the F7 quality review runs on Haiku 5.5 with thinking (`quality_reviewer` role,
+prompt v4); the safety review and other helper steps stay on Haiku 4.5. On the bench: 0 format
+failures in 1,232 reviews, 64-83% agreement with the labels on train against 31-56%, 68% on test.
+A review takes ~10 s (p95 ~30 s) instead of 2.5 s, after the chapters have streamed, so the gate
+now runs both reviews together and the time kept after a write is 90 s. Each story's expected
+cost falls $0.0047 at list price. The bench now scores the writer too (first drafts the reviewer
+passes, failures by judgement, deterministic checks): master v5's baseline is 52% of reviews
+passing v4, 16% passing the strict G, failing mostly on children who only watch and on facts.
+That is the writer hill-climb that comes next.
+
+### 2026-10-15 — the quality reviewer gets its own bench (issue #58, DECISIONS #197–#199)
+
+`pnpm review-bench`: 32 first drafts frozen at the gate ($5.68), hand-labelled, scored per
+reviewer prompt for ~$0.40 a half (train to tune, test to check). Ships `quality-review.v4`
+(reasons ≤150 characters; an omitted pack fact is not a failure): train wrong fails 10 -> 6
+of 15, test catches 21 -> 27 of 30. The eval keeps each first draft; a review that fails
+validation says why. Finding: the reviewer is near chance against the labels, and most
+drafts really fail, mostly on children who only watch (#199). Spend $9.07 of ~$10 approved.
+
 ### 2026-10-13 — latency in the eval (issue #46, DECISIONS #184)
 
 `pnpm eval` now reports time to first chapter (the number to hill-climb), total time and

@@ -1,4 +1,4 @@
-import { callModel, type GenerationLogSink } from '@/lib/ai'
+import { callModel, capabilities, modelForRole, parseJsonLoose, type GenerationLogSink } from '@/lib/ai'
 import { loadPrompt } from '@/lib/prompts'
 import { dataBlock } from '@/lib/datablock'
 import { sentenceStats } from '@/lib/bands'
@@ -13,7 +13,7 @@ import {
 } from '@/lib/schemas'
 
 /**
- * The single model review in the F7 gate: one Haiku call, and only when the deterministic
+ * The single model review in the F7 gate: one call to the `quality_reviewer` model, and only when the deterministic
  * checks already passed.
  *
  * The story, the fact pack and the request all go inside data blocks, and the prompt states
@@ -94,18 +94,55 @@ export async function reviewStoryQuality(
   pack: FactPack | null,
   opts: QualityReviewOptions = {},
 ): Promise<QualityReview> {
-  const prompt = loadPrompt('quality-review')
+  return (await runQualityReview(story, request, pack, opts)).review
+}
+
+/** One quality review with what the review bench (issue #58) measures beside the verdict. */
+export interface QualityReviewRun {
+  review: QualityReview
+  /** The model's answer as returned. Never logged: it quotes the story. */
+  text: string
+  /** False when the answer did not validate and the fail-closed review was used. */
+  valid: boolean
+  costUsd: number
+}
+
+/** max_tokens for a reviewer that thinks: its thinking is spent inside it (~2,600 measured). */
+export const QUALITY_REVIEW_THINKING_MAX_TOKENS = 16_000
+
+/**
+ * The call behind `reviewStoryQuality`. `systemPrompt` replaces the shipped
+ * `quality-review` prompt, and `model`/`effort`/`thinking` the configured `quality_reviewer`:
+ * only the review bench sets them, to score a candidate.
+ */
+export async function runQualityReview(
+  story: StoryOutput,
+  request: GenerationRequest,
+  pack: FactPack | null,
+  opts: QualityReviewOptions & {
+    systemPrompt?: string
+    model?: string
+    effort?: 'low' | 'medium' | 'high'
+    thinking?: 'adaptive' | 'off'
+  } = {},
+): Promise<QualityReviewRun> {
+  // The quality review has its own role (DECISIONS #201). A model that thinks by default
+  // spends its thinking inside max_tokens: 2,000 would cut it off.
+  const model = opts.model ?? modelForRole('quality_reviewer')
+  const thinks = capabilities(model).thinking === 'adaptive_default_on' && opts.thinking !== 'off'
   const result = await callModel({
     purpose: 'quality',
-    role: 'helper',
-    system: [{ text: prompt.body }],
+    model,
+    ...(opts.effort ? { effort: opts.effort } : {}),
+    ...(opts.thinking ? { thinking: opts.thinking } : {}),
+    system: [{ text: opts.systemPrompt ?? loadPrompt('quality-review').body }],
     messages: [
       {
         role: 'user',
         content: buildQualityReviewMessage(story, request, pack, opts.measured ?? null),
       },
     ],
-    maxTokens: 2_000,
+    maxTokens: thinks ? QUALITY_REVIEW_THINKING_MAX_TOKENS : 2_000,
     schema: QualityReview,
     familyId: opts.familyId ?? null,
     storyId: opts.storyId ?? null,
@@ -115,16 +152,29 @@ export async function reviewStoryQuality(
 
   if (!result.data) {
     // Fail closed on output (GUARDRAILS.md §1.3): an unreadable review is not a pass.
-    return {
+    const review: QualityReview = {
       age_appropriate: false,
       scary_level: 3,
       kids_are_active_participants: false,
       facts_consistent_with_pack: false,
       tone_matches_request: false,
-      reasons: ['quality review output did not validate; treating as a failure'],
+      reasons: [`quality review output did not validate; treating as a failure${invalidBecause(result.text)}`.slice(0, 300)],
     }
+    return { review, text: result.text, valid: false, costUsd: result.costUsd }
   }
-  return result.data
+  return { review: result.data, text: result.text, valid: true, costUsd: result.costUsd }
+}
+
+/**
+ * Why a review's JSON failed: the zod issue paths and messages, never the text itself (it
+ * quotes the story). Issue #58: four reviews failed this way in one eval, with no trace of why.
+ */
+export function invalidBecause(text: string): string {
+  const json = parseJsonLoose(text)
+  if (json === undefined) return ' (not JSON)'
+  const parsed = QualityReview.safeParse(json)
+  if (parsed.success) return ''
+  return ` (${parsed.error.issues.map((i) => `${i.path.join('.') || 'root'}: ${i.message}`).join('; ')})`
 }
 
 /**

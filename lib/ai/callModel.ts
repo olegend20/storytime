@@ -202,6 +202,11 @@ function applyCapabilities(
       out.thinking = { type: 'adaptive' }
     }
   }
+  // Haiku 5.5 thinks unless told not to, so "off" has to be said. Every other model stays as it
+  // was: omitting the parameter is already "off" for them, or they reject "disabled".
+  if (opts.thinking === 'off' && thinkingMode === 'adaptive_default_on') {
+    out.thinking = { type: 'disabled' }
+  }
 
   if (opts.effort && caps.supports_effort === true) {
     out.output_config = { effort: opts.effort }

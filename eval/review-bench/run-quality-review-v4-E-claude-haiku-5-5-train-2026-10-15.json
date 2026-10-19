@@ -1,0 +1,925 @@
+{
+  "kind": "review-bench-run",
+  "ran_at": "2026-10-15T16:57:10.669Z",
+  "set": "eval/review-bench/set-2026-10-15.json (split:train)",
+  "prompt": {
+    "id": "quality-review",
+    "version": 4,
+    "dir": "eval/review-bench/candidates/e-no-concessions"
+  },
+  "reviewer": {
+    "model": "claude-haiku-5-5"
+  },
+  "samples": 5,
+  "labelled": true,
+  "summary": {
+    "calls": 80,
+    "format_failures": 0,
+    "wrong_fails": {
+      "count": 2,
+      "of": 25
+    },
+    "catches": {
+      "count": 33,
+      "of": 55
+    },
+    "flips": {
+      "count": 7,
+      "of": 16
+    },
+    "longest_reason": 175,
+    "cost_usd": 0.15585199999999996
+  },
+  "reviews": [
+    {
+      "item_id": "bees-band-a-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001417
+    },
+    {
+      "item_id": "bees-band-a-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001548
+    },
+    {
+      "item_id": "bees-band-a-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.00141
+    },
+    {
+      "item_id": "bees-band-a-5min",
+      "sample": 4,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001398
+    },
+    {
+      "item_id": "bees-band-a-5min",
+      "sample": 5,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001396
+    },
+    {
+      "item_id": "bicycles-band-b-5min-tricks",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001772
+    },
+    {
+      "item_id": "bicycles-band-b-5min-tricks",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "Ting drives every time jump and explains each stop; Omar mostly reacts and tests bikes without changing any outcome"
+      ],
+      "cost_usd": 0.001687
+    },
+    {
+      "item_id": "bicycles-band-b-5min-tricks",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002116
+    },
+    {
+      "item_id": "bicycles-band-b-5min-tricks",
+      "sample": 4,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001681
+    },
+    {
+      "item_id": "bicycles-band-b-5min-tricks",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "Omar mostly reacts; Ting chooses every stop and nothing Omar decides changes what happens"
+      ],
+      "cost_usd": 0.002075
+    },
+    {
+      "item_id": "climb-walls-band-a-15min-wild",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapter 3: 'reputation' is a big word and is not explained; add a plain-words explanation",
+        "Tiko picks every stop and explains each trick; Sam mostly watches, asks and reacts, so give Sam a choice that changes the route or the outcome"
+      ],
+      "cost_usd": 0.001958
+    },
+    {
+      "item_id": "climb-walls-band-a-15min-wild",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001849
+    },
+    {
+      "item_id": "climb-walls-band-a-15min-wild",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapter 3: 'reputation' is not explained (\"Spiders get a bad reputation\")",
+        "Tiko leads every trip and Sam only watches and reacts; he changes nothing"
+      ],
+      "cost_usd": 0.001902
+    },
+    {
+      "item_id": "climb-walls-band-a-15min-wild",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 1-8: Tiko explains and drives every move; Sam mostly watches, reacts and says wow, and his observations change nothing"
+      ],
+      "cost_usd": 0.001955
+    },
+    {
+      "item_id": "climb-walls-band-a-15min-wild",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A",
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 3: 'reputation' is a big word and is not explained; add a plain-words explanation",
+        "chapter 8: paddles are 'worn' on the person; pack says a handheld paddle pressed to glass",
+        "chapter 1: says gecko hairs grab 'bumps' on glass; pack describes molecular attraction at very close range, not bumps"
+      ],
+      "cost_usd": 0.002558
+    },
+    {
+      "item_id": "lego-band-a-pair",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001523
+    },
+    {
+      "item_id": "lego-band-a-pair",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001581
+    },
+    {
+      "item_id": "lego-band-a-pair",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001561
+    },
+    {
+      "item_id": "lego-band-a-pair",
+      "sample": 4,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001604
+    },
+    {
+      "item_id": "lego-band-a-pair",
+      "sample": 5,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001673
+    },
+    {
+      "item_id": "pompeii-band-c-15min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "Minerva explains nearly every discovery; Isla notes and asks but never changes what happens, so have her make a choice or act on a deduction that matters to the plot"
+      ],
+      "cost_usd": 0.002558
+    },
+    {
+      "item_id": "pompeii-band-c-15min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002308
+    },
+    {
+      "item_id": "pompeii-band-c-15min",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002366
+    },
+    {
+      "item_id": "pompeii-band-c-15min",
+      "sample": 4,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002193
+    },
+    {
+      "item_id": "pompeii-band-c-15min",
+      "sample": 5,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002363
+    },
+    {
+      "item_id": "rainbows-band-b-5min-teasing",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001501
+    },
+    {
+      "item_id": "rainbows-band-b-5min-teasing",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001516
+    },
+    {
+      "item_id": "rainbows-band-b-5min-teasing",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001487
+    },
+    {
+      "item_id": "rainbows-band-b-5min-teasing",
+      "sample": 4,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001485
+    },
+    {
+      "item_id": "rainbows-band-b-5min-teasing",
+      "sample": 5,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001578
+    },
+    {
+      "item_id": "sharks-band-b-siblings",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001731
+    },
+    {
+      "item_id": "sharks-band-b-siblings",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001877
+    },
+    {
+      "item_id": "sharks-band-b-siblings",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001806
+    },
+    {
+      "item_id": "sharks-band-b-siblings",
+      "sample": 4,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.00174
+    },
+    {
+      "item_id": "sharks-band-b-siblings",
+      "sample": 5,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001858
+    },
+    {
+      "item_id": "sleep-band-a-5min-dark",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 2-9: Leo mostly reacts or counts; Oliver makes every discovery, so Leo never changes the journey"
+      ],
+      "cost_usd": 0.001459
+    },
+    {
+      "item_id": "sleep-band-a-5min-dark",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "Leo mostly reacts and points; Oliver makes every choice and drives the train, so Leo changes nothing"
+      ],
+      "cost_usd": 0.001485
+    },
+    {
+      "item_id": "sleep-band-a-5min-dark",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "Leo mostly watches and reacts; Oliver explains every idea and Leo's choices change nothing in the plot. Give Leo a real decision or a discovery of his own in several chapters."
+      ],
+      "cost_usd": 0.001497
+    },
+    {
+      "item_id": "sleep-band-a-5min-dark",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "Leo mostly listens and reacts; Oliver drives every discovery and nothing Leo does changes what happens"
+      ],
+      "cost_usd": 0.001461
+    },
+    {
+      "item_id": "sleep-band-a-5min-dark",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 2-9: Oliver explains every fact and drives every move; Leo mostly reacts, copies or counts, and never changes what happens"
+      ],
+      "cost_usd": 0.001495
+    },
+    {
+      "item_id": "sleep-band-c-5min-bedtime",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 1-8: Arjun mostly watches and reacts; the Nightwatchman explains and drives every event, so Arjun needs a choice or action that changes what happens"
+      ],
+      "cost_usd": 0.001813
+    },
+    {
+      "item_id": "sleep-band-c-5min-bedtime",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 2-7: Arjun mostly asks questions and reacts; give him a choice or action that changes what happens"
+      ],
+      "cost_usd": 0.001727
+    },
+    {
+      "item_id": "sleep-band-c-5min-bedtime",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapters 1-8: Arjun mostly asks questions and reacts; the Nightwatchman drives every scene and no choice of Arjun's changes the outcome"
+      ],
+      "cost_usd": 0.0018
+    },
+    {
+      "item_id": "sleep-band-c-5min-bedtime",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "Arjun mostly watches and asks questions; the Nightwatchman drives every scene and solves each problem"
+      ],
+      "cost_usd": 0.00166
+    },
+    {
+      "item_id": "sleep-band-c-5min-bedtime",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "Arjun mostly asks and reacts; the Nightwatchman drives every scene and Arjun's choices change nothing"
+      ],
+      "cost_usd": 0.001939
+    },
+    {
+      "item_id": "sleep-band-d-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001783
+    },
+    {
+      "item_id": "sleep-band-d-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001677
+    },
+    {
+      "item_id": "sleep-band-d-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 7: bat 'sleepiest mammal on record' is stronger than pack's 'among the sleepiest'",
+        "chapter 7: giraffe 'shortest sleeper of any big animal' is stronger than pack's 'among the shortest'"
+      ],
+      "cost_usd": 0.001805
+    },
+    {
+      "item_id": "sleep-band-d-5min",
+      "sample": 4,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001786
+    },
+    {
+      "item_id": "sleep-band-d-5min",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 7: giraffe 'shortest sleeper of any big animal' overstates pack's 'among the shortest sleepers'",
+        "chapter 7: bat 'sleepiest mammal on record' overstates pack's 'among the sleepiest mammals known'"
+      ],
+      "cost_usd": 0.002088
+    },
+    {
+      "item_id": "space-race-band-b-15min-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "chapter 1: 'rivet' is a big word and is not explained",
+        "chapter 7: 'gravity' is a big word and is not explained"
+      ],
+      "cost_usd": 0.002299
+    },
+    {
+      "item_id": "space-race-band-b-15min-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "chapter 7: 'cosmonaut' is a big word and is not explained; say it means a Soviet space traveler"
+      ],
+      "cost_usd": 0.002359
+    },
+    {
+      "item_id": "space-race-band-b-15min-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "chapter 1: 'rivet' is not explained; add a short everyday explanation",
+        "chapter 7: 'gravity' is not explained; say what it is in everyday words"
+      ],
+      "cost_usd": 0.002613
+    },
+    {
+      "item_id": "space-race-band-b-15min-continuity",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 7: 'cosmonaut' is not explained",
+        "chapter 7: 'gravity' is not explained",
+        "chapter 9: 'oxygen' is not explained",
+        "chapter 6: '48 orbits' is not in the fact pack; drop it or it must be sourced"
+      ],
+      "cost_usd": 0.002717
+    },
+    {
+      "item_id": "space-race-band-b-15min-continuity",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "chapter 1: 'rivet' is not explained; say it is a metal pin that holds the bridge together",
+        "chapter 7: 'gravity' is not explained; say it is the pull that keeps things on the ground"
+      ],
+      "cost_usd": 0.002451
+    },
+    {
+      "item_id": "space-race-band-d",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002009
+    },
+    {
+      "item_id": "space-race-band-d",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001935
+    },
+    {
+      "item_id": "space-race-band-d",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001942
+    },
+    {
+      "item_id": "space-race-band-d",
+      "sample": 4,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001805
+    },
+    {
+      "item_id": "space-race-band-d",
+      "sample": 5,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002179
+    },
+    {
+      "item_id": "titanic-band-c",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapters 3-8: Hana mostly watches and asks; the compass explains and decides, so she changes nothing",
+        "chapter 7: '58 miles' and 'four hours' for Carpathia are not in the fact pack; remove or hedge"
+      ],
+      "cost_usd": 0.001997
+    },
+    {
+      "item_id": "titanic-band-c",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "Hana mostly observes and asks questions; the compass explains each event and her choices do not change what happens"
+      ],
+      "cost_usd": 0.002162
+    },
+    {
+      "item_id": "titanic-band-c",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapter 1: 'riveter' and 'rivets' are technical and never explained",
+        "chapter 1: 'slip' (shipbuilding term) is not explained",
+        "chapters 3-8: Hana observes and asks questions; the compass explains and drives events, and no choice of hers changes what happens"
+      ],
+      "cost_usd": 0.002605
+    },
+    {
+      "item_id": "titanic-band-c",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "Hana mostly watches and asks questions; her choices change no events, the compass narrates and drives everything"
+      ],
+      "cost_usd": 0.001946
+    },
+    {
+      "item_id": "titanic-band-c",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "Hana mostly watches and asks questions; the compass explains each event and she changes no outcome"
+      ],
+      "cost_usd": 0.00201
+    },
+    {
+      "item_id": "video-games-band-b-15min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002628
+    },
+    {
+      "item_id": "video-games-band-b-15min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 2: 'first game anybody built just for computers' is not in the fact pack; soften or drop"
+      ],
+      "cost_usd": 0.002326
+    },
+    {
+      "item_id": "video-games-band-b-15min",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002215
+    },
+    {
+      "item_id": "video-games-band-b-15min",
+      "sample": 4,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002041
+    },
+    {
+      "item_id": "video-games-band-b-15min",
+      "sample": 5,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.003148
+    },
+    {
+      "item_id": "video-games-band-c-solo",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002014
+    },
+    {
+      "item_id": "video-games-band-c-solo",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002192
+    },
+    {
+      "item_id": "video-games-band-c-solo",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 2: 'the second video game ever made' is a ranking claim not in the fact pack"
+      ],
+      "cost_usd": 0.002478
+    },
+    {
+      "item_id": "video-games-band-c-solo",
+      "sample": 4,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001998
+    },
+    {
+      "item_id": "video-games-band-c-solo",
+      "sample": 5,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002099
+    },
+    {
+      "item_id": "volcanoes-mixed-ages",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 6: 'stack three Everests... still not as tall' conflicts with pack's 'nearly three times taller than Everest'; three Everests would be taller than Olympus Mons",
+        "chapters 2-8: Pip finds every answer and solves each problem; the children mostly ask, react and say 'wow'. Give Juno, Milo or Theo a choice or a fix that changes what happens"
+      ],
+      "cost_usd": 0.001995
+    },
+    {
+      "item_id": "volcanoes-mixed-ages",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.002639
+    },
+    {
+      "item_id": "volcanoes-mixed-ages",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Pip makes every move and the children mostly ask and react; no child's choice changes the trip",
+        "chapter 6: says Olympus Mons is taller than three Everests stacked; pack says nearly three times Everest's height"
+      ],
+      "cost_usd": 0.002026
+    },
+    {
+      "item_id": "volcanoes-mixed-ages",
+      "sample": 4,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "chapter 8 heading: 'souvenir' is a big word and is not explained"
+      ],
+      "cost_usd": 0.002352
+    },
+    {
+      "item_id": "volcanoes-mixed-ages",
+      "sample": 5,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A",
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 8 heading: 'souvenir' is a big word and is not explained",
+        "chapter 6: 'stack Mount Everest three times, still not as tall' contradicts pack: Olympus Mons is nearly three times Everest's height",
+        "chapters 2-8: Pip explains and solves everything; the children only ask questions and react, and no choice changes the trip"
+      ],
+      "cost_usd": 0.002166
+    }
+  ]
+}

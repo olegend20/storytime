@@ -1,6 +1,6 @@
 {
   "$comment": "Model IDs are config, never hard-coded in source. Swapping the writing model must require no code change (F14 AC).",
-  "updated_at": "2026-09-30",
+  "updated_at": "2026-10-15",
   "sources": [
     {
       "page": "Models overview",
@@ -12,6 +12,18 @@
       "url": "https://platform.claude.com/docs/en/models/overview",
       "fetched": "2026-09-30",
       "note": "pr_reviewer role added"
+    },
+    {
+      "page": "Claude Haiku 5.5 overview",
+      "url": "https://platform.claude.com/docs/en/models/haiku-5-5/overview",
+      "fetched": "2026-10-15",
+      "note": "claude-haiku-5-5 capabilities, for the review bench (issue #58)."
+    },
+    {
+      "page": "Models overview",
+      "url": "https://platform.claude.com/docs/en/models/overview",
+      "fetched": "2026-10-15",
+      "note": "quality_reviewer role added: claude-haiku-5-5 confirmed current (adaptive thinking, default effort medium). Prices re-checked on the pricing page the same day, unchanged."
     }
   ],
   "roles": {
@@ -22,8 +34,13 @@
     },
     "helper": {
       "model": "claude-haiku-4-5-20251001",
-      "why": "All cheap structured steps: normalize, L2 input classifier, quality gate, bible update, JSON repair.",
+      "why": "All cheap structured steps: normalize, L2 input classifier, L4 safety review, bible update, JSON repair.",
       "env_override": "HELPER_MODEL"
+    },
+    "quality_reviewer": {
+      "model": "claude-haiku-5-5",
+      "why": "Owner approved 2026-10-15 (issue #58, DECISIONS #201). The F7 quality review only. On the review bench, Haiku 5.5 with its default adaptive thinking (effort medium) had 0 format failures in 1,232 reviews against 2-10% on Haiku 4.5, and agreed with the hand labels on 64-83% of the train half against 31-56%. With thinking off it is no better than Haiku 4.5, so thinking stays on. The safety review and the other helper steps stay on the helper until each has its own eval.",
+      "env_override": "QUALITY_REVIEWER_MODEL"
     },
     "factpack": {
       "model": "claude-sonnet-5",
@@ -101,6 +118,18 @@
       "supports_web_search": false,
       "tokenizer": "pre_v4_7",
       "notes": "Does NOT support the effort parameter (errors). Uses the older tokenizer, so token counts are ~30% lower than the 4.7+ models for identical text - bake-off cost must reconcile against measured generation_logs, not computed estimates. We send no thinking config: helper tasks are structured extraction and need none."
+    },
+    "claude-haiku-5-5": {
+      "context_window": 1000000,
+      "max_output": 128000,
+      "thinking": "adaptive_default_on",
+      "default_effort": "medium",
+      "supports_effort": true,
+      "supports_budget_tokens": false,
+      "supports_temperature": false,
+      "supports_web_search": false,
+      "tokenizer": "v4_7",
+      "notes": "Released 2026-10-07. Adaptive thinking is ON by default, steered by effort; omit temperature/top_p/top_k (400). About 30% more tokens than Haiku 4.5 for the same text. Whether it accepts thinking {type:'disabled'} is probed in the review bench, not documented on the overview page."
     }
   }
 }

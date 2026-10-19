@@ -1,0 +1,717 @@
+{
+  "kind": "review-bench-run",
+  "ran_at": "2026-10-15T05:37:56.000Z",
+  "set": "eval/review-bench/set-2026-10-15.json (split:test)",
+  "prompt": {
+    "id": "quality-review",
+    "version": 4,
+    "dir": "eval/review-bench/candidates/a-short-facts"
+  },
+  "samples": 3,
+  "labelled": true,
+  "summary": {
+    "calls": 48,
+    "format_failures": 5,
+    "wrong_fails": {
+      "count": 12,
+      "of": 18
+    },
+    "catches": {
+      "count": 27,
+      "of": 30
+    },
+    "flips": {
+      "count": 2,
+      "of": 16
+    },
+    "longest_reason": 251,
+    "cost_usd": 0.40994599999999987
+  },
+  "reviews": [
+    {
+      "item_id": "bicycles-band-c-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.007574
+    },
+    {
+      "item_id": "bicycles-band-c-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.007574
+    },
+    {
+      "item_id": "bicycles-band-c-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.007574
+    },
+    {
+      "item_id": "climb-walls-mixed-3-11",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 6: 'honeycomb-shaped' is not explained for a 3-year-old",
+        "Chapter 2: 'beetles' named without saying what they are",
+        "Chapter 4: 'cockroaches' named without saying what they are"
+      ],
+      "cost_usd": 0.007177
+    },
+    {
+      "item_id": "climb-walls-mixed-3-11",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 6: 'honeycomb-shaped' not explained for a 3-year-old",
+        "Chapter 1: 'van der Waals forces' concept (molecular attractions) exceeds band A vocabulary budget",
+        "Chapter 5: 'hooves' explained but 'squishy middle' may confuse; needs clearer everyday comparison"
+      ],
+      "cost_usd": 0.007277
+    },
+    {
+      "item_id": "climb-walls-mixed-3-11",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 6: 'honeycomb-shaped' not explained for 3-year-old",
+        "Chapter 5: 'hooves' explained but 'squishy middle' is vague—should say 'soft grip' or similar",
+        "Budget: 8 big words used (millions, setae-equivalent); band A allows max 6"
+      ],
+      "cost_usd": 0.007282
+    },
+    {
+      "item_id": "dinosaurs-band-a-15min-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 7: 'Is it going to get us?' creates suspense beyond band A limit; resolve within sentence",
+        "Chapter 6: 'Pterosaur' and 'Microraptor' unexplained big words for age 4",
+        "Chapter 6: 'Plesiosaur' and 'Mosasaur' unexplained big words for age 4"
+      ],
+      "cost_usd": 0.009087
+    },
+    {
+      "item_id": "dinosaurs-band-a-15min-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 7: 'T. rex' not explained as a name; use 'Tyrannosaurus rex' or 'T. rex (a dinosaur name)'",
+        "Chapter 6: 'Pterosaur', 'Microraptor', 'Plesiosaur', 'Mosasaur' — five technical names with no explanation of what they are",
+        "Chapter 8: 'Argentinosaurus' not explained; add 'a dinosaur's name' or similar",
+        "Exceeds Band A vocabulary budget: 11 big words when limit is 6"
+      ],
+      "cost_usd": 0.009332
+    },
+    {
+      "item_id": "dinosaurs-band-a-15min-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 7: 'T. rex' not explained — use full name or 'Tyrannosaurus rex' on first mention",
+        "Chapter 6: 'Pterosaur' and 'Microraptor' not explained — add 'a flying reptile' and 'a small gliding dinosaur' respectively",
+        "Chapter 6: 'Plesiosaur' and 'Mosasaur' not explained — add brief description of each",
+        "Chapter 1: 'paleontologist' explained but very abstract for age 4 — 'bone detective' alone is clearer than the fancy word"
+      ],
+      "cost_usd": 0.009357
+    },
+    {
+      "item_id": "dinosaurs-band-c-15min-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Chapter 6: states 1990 discovery of Sue; pack says 1990 is when found, but doesn't confirm this as a fact used elsewhere—verify consistency",
+        "Chapter 6: farmer's dog legend presented as 'might be true, might just be a good story'—correctly hedges legend-status fact f24"
+      ],
+      "cost_usd": 0.009861
+    },
+    {
+      "item_id": "dinosaurs-band-c-15min-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Chapter 6: states Sue found in 1990; pack says 1990 but context is unclear if this is presented as established fact or legend per f24"
+      ],
+      "cost_usd": 0.009666
+    },
+    {
+      "item_id": "dinosaurs-band-c-15min-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Chapter 6: states farmer's dog found Sue's skeleton as fact; pack marks this as legend/folklore"
+      ],
+      "cost_usd": 0.009606
+    },
+    {
+      "item_id": "honey-band-a-15min-twins",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 1: 'proboscis' is not explained on the spot",
+        "Chapter 2: 'honey stomach' is explained but 'sixty thousand' may overwhelm band A",
+        "Chapter 5: 'two hundred times every single second' is abstract for age 4",
+        "Chapter 8: 'enzymes' concept (via 'bee spit is magic') stretches band A vocabulary"
+      ],
+      "cost_usd": 0.007789
+    },
+    {
+      "item_id": "honey-band-a-15min-twins",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 1: 'proboscis' is not explained in everyday words",
+        "Chapter 2: 'honey stomach' explained but called 'special bee pouch' first—use one term consistently",
+        "Chapter 8: 'enzymes' concept implied but not stated; 'bee spit' is child-friendly but lacks clarity on what it does"
+      ],
+      "cost_usd": 0.007724
+    },
+    {
+      "item_id": "honey-band-a-15min-twins",
+      "sample": 3,
+      "valid": false,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A",
+        "too scary for band A: scary_level 3, limit 1",
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack",
+        "tone does not match the requested tones"
+      ],
+      "reasons": [
+        "quality review output did not validate; treating as a failure (not JSON)"
+      ],
+      "raw_text": "```json\n{\n  \"age_appropriate\": false,\n  \"scary_level\": 1,\n  \"kids_are_active_participants\": true,\n  \"facts_consistent_with_pack\": true,\n  \"tone_matches_request\": true,\n  \"reasons\": [\n    \"Chapter 1: 'proboscis' not explained on the spot\",\n    \"Chapter 2: 'honey stomach' explained but pack calls it 'honey stomach'; story uses both 'honey stomach' and later 'pouch' inconsistently\",\n    \"Chapter 3: 'bee spit' magic explanation skips the enzyme detail but is age-appropriate; however 'trophallaxis' is never mentioned (not required)\",\n    \"Chapter 8: 'beekeeper' is a role name, not a big word, but 'apiarist' from pack is not used; story is consistent\"\n  ]\n}\n```\n\nWait, let me reconsider. Re-reading against the rubric:\n\n- **proboscis**: Chapter 1 says \"She unrolled a long, curly tongue, called a proboscis, like a bendy straw.\" This IS explained on the spot (the next phrase \"like a bendy straw\" explains it in everyday words). ✓\n- **honey stomach**: Chapter 2 says \"a special bee pouch, called a honey stomach\" and later \"a special pouch in a bee.\" The term is explained. ✓\n- All other terms check out as explained or as names.\n- Sentence length: 6.2 words average, within Band A spec. ✓\n- Story length: 15 minutes, matches request. ✓\n- Suspense: The glowing jar and shrinking is a brief magical wobble, resolved immediately. Peak = 1. ✓\n- Kids active: Finn sips nectar, passes it, flaps, waves, counts. Nell holds the flower, watches, copies dances, counts, waves. Both participate. ✓\n- Facts: All checked against pack. Consistent. ✓\n- Tone: Silly (SLUUURP, EWWW, spit magic, wiggling), calm (bedtime framing, gentle language, no sustained tension). ✓\n\n```json\n{\n  \"age_appropriate\": true,\n  \"scary_level\": 1,\n  \"kids_are_active_participants\": true,\n  \"facts_consistent_with_pack\": true,\n  \"tone_matches_request\": true,\n  \"reasons\": []\n}\n```",
+      "cost_usd": 0.009894
+    },
+    {
+      "item_id": "lego-band-c-rivals",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Chapter 8: story says 'early 2000s happened' as cause of crisis; pack specifies 'early 2000s' as timeframe when trouble occurred, not what caused it"
+      ],
+      "cost_usd": 0.009336
+    },
+    {
+      "item_id": "lego-band-c-rivals",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.009091
+    },
+    {
+      "item_id": "lego-band-c-rivals",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.009091
+    },
+    {
+      "item_id": "magnets-band-b-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.006431
+    },
+    {
+      "item_id": "magnets-band-b-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.006431
+    },
+    {
+      "item_id": "magnets-band-b-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.006431
+    },
+    {
+      "item_id": "pompeii-band-b-care",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "Chapter 2: 'amphitheater' used without explanation; 'gladiators' explained but 'amphitheater' is not",
+        "Chapter 4: 'fresco' explained but 'plaster' in same sentence also needs explanation for age 7",
+        "Chapter 8: 'archaeologists' not explained on the spot"
+      ],
+      "cost_usd": 0.00844
+    },
+    {
+      "item_id": "pompeii-band-b-care",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "Chapter 5: 'volcano' and 'erupt' used without clear explanation of what happens",
+        "Chapter 7: 'twenty feet' needs context; compare to something a 7-year-old knows",
+        "Chapter 8: 'archaeologists' not explained on the spot"
+      ],
+      "cost_usd": 0.00837
+    },
+    {
+      "item_id": "pompeii-band-b-care",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "chapter 7: 'twenty feet' is stated; pack says '13 to 20 feet' — verify intent",
+        "chapter 6: 'Plinian eruption' term used but not explained for age 7"
+      ],
+      "cost_usd": 0.008295
+    },
+    {
+      "item_id": "rainbows-band-a-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 5: 'Ibn al-Haytham' is a name but needs context; story should say what he is (a scientist/thinker who studied light)",
+        "Chapter 7: 'prism' is not explained; needs 'a small glass shape that splits light'",
+        "Chapter 7: 'Isaac Newton' needs context; story should say who he is or what he did",
+        "Chapter 1: WHOOSH pulled them into puddle is briefly startling for 3-year-old; verify intended scare level"
+      ],
+      "cost_usd": 0.006188
+    },
+    {
+      "item_id": "rainbows-band-a-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 5: 'Ibn al-Haytham' is a name but context ('a long time ago, he watched how light travels') demands historical knowledge beyond age 3",
+        "Chapter 6: 'Kamal al-Din al-Farisi' same issue; unfamiliar historical figure without enough grounding",
+        "Chapter 7: 'Isaac Newton' and 'prism' — prism is unexplained big word; Newton's name alone is not the problem"
+      ],
+      "cost_usd": 0.006113
+    },
+    {
+      "item_id": "rainbows-band-a-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 5: 'Ibn al-Haytham' unexplained; Band A needs everyday-word introduction to who he is",
+        "Chapter 6: 'Kamal al-Din al-Farisi' unexplained; Band A needs everyday-word introduction",
+        "Chapter 7: 'prism' unexplained; Band A must explain on the spot what this glass shape does",
+        "Chapters 5–7: three historical figures exceed Band A's big-word budget of 6 total; simplify or cut"
+      ],
+      "cost_usd": 0.006183
+    },
+    {
+      "item_id": "sharks-band-a-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.006739
+    },
+    {
+      "item_id": "sharks-band-a-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 1: 'bendy' explained as 'bendy like the top part of your ear', but 'skeleton' is not explained for the youngest reader",
+        "Chapter 4: 'megalodon' used repeatedly but explained only as 'a giant shark' — 'megalodon' itself is a big word and should be explained as 'an ancient giant shark' or similar on first use",
+        "Chapter 6: 'epaulette' is not explained — story says 'epaulette shark' but never defines what 'epaulette' means"
+      ],
+      "cost_usd": 0.007414
+    },
+    {
+      "item_id": "sharks-band-a-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "Chapter 4: 'megalodon' used but not explained as a shark; explained only after as 'a giant shark'",
+        "Chapter 6: 'epaulette shark' is a name, not explained; story treats it as known",
+        "Chapter 6: 'electricity' and 'electrical' concepts unexplained for age 4; 'tiny zaps' alone insufficient"
+      ],
+      "cost_usd": 0.007219
+    },
+    {
+      "item_id": "soccer-band-c-5min",
+      "sample": 1,
+      "valid": false,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "too scary for band C: scary_level 3, limit 2",
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack",
+        "tone does not match the requested tones"
+      ],
+      "reasons": [
+        "quality review output did not validate; treating as a failure (not JSON)"
+      ],
+      "raw_text": "```json\n{\n  \"age_appropriate\": true,\n  \"scary_level\": 1,\n  \"kids_are_active_participants\": true,\n  \"facts_consistent_with_pack\": false,\n  \"tone_matches_request\": true,\n  \"reasons\": [\n    \"Chapter 4: states Pele won World Cup with three teams in 1958, 1962, 1970; pack confirms this is correct\",\n    \"Chapter 4: states first international match was Scotland 0, England 0 in 1872; pack says 'a 0-0 draw' — both agree\",\n    \"Chapter 7: Ken Aston invented cards at 1970 Mexico World Cup; pack says 'debuting at the 1970 World Cup' without specifying Mexico — consistent\",\n    \"Chapter 2: states King Edward II banned mob football in 1314; pack confirms\",\n    \"Chapter 3: Cambridge Rules mentioned as 1848 attempt; pack f4 confirms but story calls them 'Cambridge Rules of 1848' and pack says 'Cambridge Rules' — match\",\n    \"Chapter 6: states World Cup trophy named after Jules Rimet 'for a while'; pack f19 says Brazil kept original after third title and FIFA introduced new trophy in 1974 — story simplifies but does not contradict\"\n  ]\n}\n```\n\nWait — let me reconsider the `reasons` array. I should only list actual failures. Let me re-read the facts against the story carefully:\n\n- f1: cuju over 2,000 years ago ✓ (story: \"Over 2,000 years ago, in China, people played a game called cuju\")\n- f2: soccer from 'assoc' ✓ (story: \"They shortened 'assoc' into a word Lena already used every day: soccer\")\n- f3: Edward II banned mob football 1314 ✓ (story: \"In 1314, he banned it in London\")\n- f5: FA founded October 26, 1863, no hands ✓ (story: \"October 26, 1863, Morley's group founded the Football Association... Rule one: no carrying the ball with your hands\")\n- f6: Morley wrote Laws of the Game ✓ (story: \"he personally wrote the first official rulebook, the Laws of the Game\")\n- f7: FA Cup 1871-72, oldest ✓ (story: \"the FA Cup, first played in 1871-72, the oldest football competition still running anywhere on Earth\")\n- f8: Scotland 0, England 0, 1872 ✓ (story: \"Scotland 0, England 0\")\n- f10: FIFA Paris 1904 ✓ (story: \"Paris, 1904 — seven men signing papers, founding FIFA\")\n- f21: Lily Parr, Dick, Kerr Ladies ✓\n- f22: ban lifted 1971 ✓ (story: \"In 1971, the ban finally got lifted\")\n- f23: Women's World Cup China 1991, US won ✓ (story: \"China hosted the first official Women's World Cup... The United States won it\")\n- f12: Uruguay 1930, Uruguay won ✓ (story: \"Uruguay 4, Argentina 2. The stadium exploded\")\n- f14: Pickles, 1966, found trophy ✓\n- f17: Pele three World Cups 1958, 1962, 1970 ✓\n- f18: Ken Aston, yellow/red cards, 1970 ✓ (story: \"Ken Aston... yellow and red cards, debuting right here\" at 1970 Mexico)\n\nAll facts check out. The `facts_consistent_with_pack` should be `true`.\n\n```json\n{\n  \"age_appropriate\": true,\n  \"scary_level\": 1,\n  \"kids_are_active_participants\": true,\n  \"facts_consistent_with_pack\": true,\n  \"tone_matches_request\": true,\n  \"reasons\": []\n}\n```",
+      "cost_usd": 0.011613
+    },
+    {
+      "item_id": "soccer-band-c-5min",
+      "sample": 2,
+      "valid": false,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "too scary for band C: scary_level 3, limit 2",
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack",
+        "tone does not match the requested tones"
+      ],
+      "reasons": [
+        "quality review output did not validate; treating as a failure (not JSON)"
+      ],
+      "raw_text": "```json\n{\n  \"age_appropriate\": true,\n  \"scary_level\": 1,\n  \"kids_are_active_participants\": true,\n  \"facts_consistent_with_pack\": false,\n  \"tone_matches_request\": true,\n  \"reasons\": [\n    \"Chapter 4: states 1871-72 for FA Cup; pack says 1871-72 (consistent)\",\n    \"Chapter 7: states Pele won World Cup on three teams in 1958, 1962, 1970; pack confirms this is correct\",\n    \"Chapter 4: William McGregor founding the league in 1888 is correct per pack f9\",\n    \"Chapter 3: Cambridge Rules date stated as 1848; pack f4 confirms this\",\n    \"Pack f4 (Cambridge Rules) mentioned in story but not in true_facts list provided to reader\"\n  ]\n}\n```\n\nWait, let me reconsider. Looking at the facts again:\n\nThe story mentions the **Cambridge Rules of 1848** in Chapter 3. Pack fact f4 confirms this happened. However, f4 is in the pack but the true_facts array in the story **does not include f4**. This is not a failure — the writer chooses which facts to use in the true_facts recap. This is intentional omission, not an error.\n\nLet me verify all factual claims against the pack:\n- Cuju 2,000 years ago: ✓ f1\n- King Edward II 1314: ✓ f3\n- Morley 1863, Football Association: ✓ f5, f6\n- Soccer from \"assoc\": ✓ f2\n- Scotland 0, England 0, 1872: ✓ f8\n- FA Cup 1871-72: ✓ f7\n- FIFA 1904 Paris: ✓ f10\n- Lily Parr, Dick Kerr Ladies: ✓ f21\n- 1921 ban, 1971 lifted: ✓ f22\n- Women's World Cup 1991, China, USA won: ✓ f23\n- Uruguay 1930, Uruguay won: ✓ f12\n- Jules Rimet: ✓ f13\n- Pickles 1966: ✓ f14\n- Ken Aston yellow/red cards 1970: ✓ f18\n- Pele three World Cups 1958, 1962, 1970: ✓ f17\n\nAll facts check out. The true_facts array omits f4 (Cambridge Rules), f9 (McGregor/League), f11, f13 (Jules Rimet name), f15, f16, f18, f19 — but these omissions are the writer's choice, not errors.\n\n```json\n{\n  \"age_appropriate\": true,\n  \"scary_level\": 1,\n  \"kids_are_active_participants\": true,\n  \"facts_consistent_with_pack\": true,\n  \"tone_matches_request\": true,\n  \"reasons\": []\n}\n```",
+      "cost_usd": 0.010413
+    },
+    {
+      "item_id": "soccer-band-c-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Chapter 4: states 'first played in 1871-72' for FA Cup; pack says '1871-72' but story presents it as after 1872 Scotland match"
+      ],
+      "cost_usd": 0.007318
+    },
+    {
+      "item_id": "soccer-band-c-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Level 7: f20 is confidence 'medium-high' but story presents 1920s ban as settled; pack notes it's kid_safe:false, min_age 7—treat with hedge",
+        "Level 7: story says ban lasted 50 years (1921–1971); pack f20 says 1921, f22 says lifted 1971—dates work, but f20 is marked kid_safe:false; story presents it plainly without softening language like 'unfairly' or 'wrongly'",
+        "Level 9: story says Brazil won World Cup 5 times; pack f16 lists 1958, 1962, 1970, 1994, 2002—story never mentions 1994 or 2002, only the three Pele was in"
+      ],
+      "cost_usd": 0.010298
+    },
+    {
+      "item_id": "soccer-band-c-continuity",
+      "sample": 2,
+      "valid": false,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "too scary for band C: scary_level 3, limit 2",
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack",
+        "tone does not match the requested tones"
+      ],
+      "reasons": [
+        "quality review output did not validate; treating as a failure (not JSON)"
+      ],
+      "raw_text": "```json\n{\n  \"age_appropriate\": false,\n  \"scary_level\": 1,\n  \"kids_are_active_participants\": true,\n  \"facts_consistent_with_pack\": false,\n  \"tone_matches_request\": true,\n  \"reasons\": [\n    \"Chapter 7: states women's ban lasted 50 years (1921–1971); pack says ban began in 1921, lifted 1971, but doesn't specify 1921 start date — verify if '50 years later' is accurate\",\n    \"Chapter 9: states Brazil won World Cup 'five times total'; pack lists only four: 1958, 1962, 1970, 1994, 2002 — that's five, but story doesn't name them, creating ambiguity\"\n  ]\n}\n```\n\nWait—I need to reconsider. The pack fact f16 states Brazil won five times: 1958, 1962, 1970, 1994, and 2002. The story says \"Brazil's won it **five times total**\" — this is consistent. Let me recheck the women's ban.\n\nPack f20 says the ban happened in 1921. Pack f22 says it was lifted in 1971. That's exactly 50 years. The story says \"Fifty years later, in 1971, the ban was finally lifted,\" which is accurate given the 1921 start.\n\nActually, on closer inspection of Chapter 7: \"They banned it. Lily kept playing anyway, on whatever field she could find.\" The story places Lily in the 1920s (before the ban narrative), then says the ban happened after that era was \"massive.\" The pack's f20 says the ban was in 1921, and f21 describes Lily as a star in 1920s England — so Lily's glory years were *before* the ban, which makes narrative sense. The story then correctly states the 50-year gap to 1971. This checks out.\n\nThe facts are consistent. Let me verify once more: all key claims match the pack or leave facts out (which is permitted).\n\n```json\n{\n  \"age_appropriate\": true,\n  \"scary_level\": 1,\n  \"kids_are_active_participants\": true,\n  \"facts_consistent_with_pack\": true,\n  \"tone_matches_request\": true,\n  \"reasons\": []\n}\n```",
+      "cost_usd": 0.011753
+    },
+    {
+      "item_id": "soccer-band-c-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Level 7: pack says women's ban was 1921 (f20); story says '1920s' then '50 years later, 1971' — math doesn't align with 1921",
+        "Level 2: 'bladder' explained but unusual for band C reader; consider whether 'pig's bladder' needs context softening"
+      ],
+      "cost_usd": 0.009758
+    },
+    {
+      "item_id": "soccer-band-d",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band D",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Chapter 6: states Uruguay won 1930 World Cup; pack says Uruguay beat Argentina in final",
+        "Chapter 7 ending: forwards only women's fight without acknowledging the 1921 ban (f20) or 1971 comeback (f22)",
+        "Missing major history: no mention of Pele, Brazil's five titles, 1966 England, or women's 50-year FA ban"
+      ],
+      "cost_usd": 0.008894
+    },
+    {
+      "item_id": "soccer-band-d",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band D",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Chapter 6: states Uruguay won 1930 World Cup; pack says Uruguay beat Argentina in final",
+        "Chapter 7: states 40,000 at 1996 Olympics; pack does not mention 1996 Olympics or attendance figure",
+        "Chapter 7: omits sensitive f20 (1921 FA ban); pack flags as unfair history to celebrate overcoming"
+      ],
+      "cost_usd": 0.008854
+    },
+    {
+      "item_id": "soccer-band-d",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band D",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Chapter 6: states Uruguay won 1930 World Cup; pack says Uruguay beat Argentina in final",
+        "Story omits 1921 FA ban on women's football (f20) and Lily Parr (f21), key to women's soccer narrative",
+        "Chapter 7 jumps from 1972 Title IX to 1996 Olympics, skipping 1991 Women's World Cup (first official tournament)"
+      ],
+      "cost_usd": 0.008909
+    },
+    {
+      "item_id": "space-race-band-c-15min",
+      "sample": 1,
+      "valid": false,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "too scary for band C: scary_level 3, limit 2",
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack",
+        "tone does not match the requested tones"
+      ],
+      "reasons": [
+        "quality review output did not validate; treating as a failure (not JSON)"
+      ],
+      "raw_text": "```json\n{\n  \"age_appropriate\": false,\n  \"scary_level\": 1,\n  \"kids_are_active_participants\": true,\n  \"facts_consistent_with_pack\": false,\n  \"tone_matches_request\": true,\n  \"reasons\": [\n    \"Chapter 2: Explorer 1 launch date contradicts pack (states January 31, 1958; pack says January 31, 1958 — verify actual discrepancy)\",\n    \"Chapter 2: 'trapped' unexplained technical term for 10-year-old\",\n    \"Chapter 4: Kennedy's speech date given as May 25, 1961; pack confirms this but story context unclear\",\n    \"Sensitive fact f12 (Apollo 1 fire) omitted entirely — pack marks it as 'kid_safe: false' but inclusion/omission is writer's choice, not an error\",\n    \"Chapter 5: Korolev's death presented plainly without emotional preparation for a mysterious character's sudden passing\"\n  ]\n}\n```\n\nWait — I need to reconsider. Let me check the facts more carefully:\n\n```json\n{\n  \"age_appropriate\": false,\n  \"scary_level\": 1,\n  \"kids_are_active_participants\": true,\n  \"facts_consistent_with_pack\": true,\n  \"tone_matches_request\": true,\n  \"reasons\": [\n    \"Chapter 2: 'trapped' is not explained for age 10 reader\"\n  ]\n}\n```",
+      "cost_usd": 0.011881
+    },
+    {
+      "item_id": "space-race-band-c-15min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 2: Explorer 1 launched January 31, 1958; pack says October 1, 1958 is NASA's start date, not Explorer 1's launch",
+        "chapter 7: Saturn V stated as 363 feet tall; pack confirms this is correct but needs Statue of Liberty comparison checked",
+        "pack fact f8 (Shepard/Freedom 7) and f12 (Apollo 1 fire) unused; f12 marked not kid-safe for band C, f8 mentioned but story omits it was suborbital",
+        "chapter 5: Korolev revealed by name mid-story; pack says identity kept secret until death in 1966, so revealing it here contradicts the mystery setup"
+      ],
+      "cost_usd": 0.011321
+    },
+    {
+      "item_id": "space-race-band-c-15min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "Chapter 2: Explorer 1 launched January 31, 1958; pack says 1958 but story places it after Sputnik 2 (November 1957) with no acknowledgment of the actual earlier date",
+        "Chapter 8: Apollo 13 oxygen tank explosion described as 'exploded inside the spacecraft' without mention of the actual January 27, 1967 Apollo 1 fire tragedy (f12), which is marked kid_safe:false and should be omitted or handled differently for band C"
+      ],
+      "cost_usd": 0.011076
+    },
+    {
+      "item_id": "titanic-band-b",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B",
+        "too scary for band B: scary_level 2, limit 1"
+      ],
+      "reasons": [
+        "Chapter 5: iceberg collision and sinking scenario exceeds band B suspense limit of 1",
+        "Chapter 7: discussion of empty lifeboat seats and people who didn't survive is emotionally heavy for a 7-year-old bedtime story"
+      ],
+      "cost_usd": 0.007698
+    },
+    {
+      "item_id": "titanic-band-b",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "Chapter 5: 'wireless' not explained; context does not make it clear to a 7-year-old",
+        "Chapter 8: '12,500 feet' and '370 miles' are abstract for band B; no bedtime-safe comparison given"
+      ],
+      "cost_usd": 0.007708
+    },
+    {
+      "item_id": "titanic-band-b",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B",
+        "too scary for band B: scary_level 2, limit 1"
+      ],
+      "reasons": [
+        "Chapter 5: scary_level peaks at 2 (tension lasting through iceberg collision and distress signals); band B allows max 1",
+        "Chapter 6–7: sustained tension (people in lifeboats, empty seats, implicit drowning) exceeds band B limit"
+      ],
+      "cost_usd": 0.007718
+    },
+    {
+      "item_id": "volcanoes-band-b-15min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B",
+        "too scary for band B: scary_level 2, limit 1"
+      ],
+      "reasons": [
+        "Chapter 4: 'Plinian' eruption type not explained; story says 'they even named his kind of huge, explosive eruption after him' but 6-year-old needs to know what that type is called",
+        "Chapter 5: 'seismographs' used without explanation—should be 'machines that feel the ground wobble' (already used correctly in Chapter 6)"
+      ],
+      "cost_usd": 0.008576
+    },
+    {
+      "item_id": "volcanoes-band-b-15min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B",
+        "too scary for band B: scary_level 2, limit 1"
+      ],
+      "reasons": [
+        "Chapter 4: Vesuvius eruption presented as historical fact with no hedge; pack notes real casualties and suggests focus on science, not loss of life",
+        "Chapter 5: 'Krakatoa' section omits tsunami deaths; pack fact f13 notes deadliest volcanic disasters; tone unsuitable for bedtime after excitement built",
+        "Chapter 6: 'landslide' and 'satellites' unexplained; band B allows max 10 big words with explanations"
+      ],
+      "cost_usd": 0.008681
+    },
+    {
+      "item_id": "volcanoes-band-b-15min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B",
+        "too scary for band B: scary_level 2, limit 1"
+      ],
+      "reasons": [
+        "Chapter 4: Vesuvius eruption presented as historical fact with no hedge; pack flags as sensitive (real loss of life); needs 'people say' or 'the story goes'",
+        "Chapter 5: 'Year Without a Summer' unexplained; define or remove for band B",
+        "Chapter 6: 'landslide' is unexplained big word; add everyday definition",
+        "Chapter 6: 'satellites' unexplained; add what they are/do in simple words",
+        "Scary level 2 (tension lasting multiple chapters: Vesuvius, Krakatoa, Tambora, St. Helens) exceeds band B limit of 1"
+      ],
+      "cost_usd": 0.008931
+    }
+  ]
+}

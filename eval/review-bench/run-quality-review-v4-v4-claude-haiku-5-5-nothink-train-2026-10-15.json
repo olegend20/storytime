@@ -1,0 +1,744 @@
+{
+  "kind": "review-bench-run",
+  "ran_at": "2026-10-15T16:50:01.360Z",
+  "set": "eval/review-bench/set-2026-10-15.json (split:train)",
+  "prompt": {
+    "id": "quality-review",
+    "version": 4,
+    "dir": "prompts"
+  },
+  "reviewer": {
+    "model": "claude-haiku-5-5",
+    "thinking": "off"
+  },
+  "samples": 3,
+  "labelled": true,
+  "summary": {
+    "calls": 48,
+    "format_failures": 0,
+    "wrong_fails": {
+      "count": 12,
+      "of": 15
+    },
+    "catches": {
+      "count": 22,
+      "of": 33
+    },
+    "flips": {
+      "count": 1,
+      "of": 16
+    },
+    "longest_reason": 232,
+    "cost_usd": 0.054695000000000014
+  },
+  "reviews": [
+    {
+      "item_id": "bees-band-a-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "chapter 1: 'amber' is not explained for a 4-year-old",
+        "chapter 2: 'queen' explained only by 'mom of them all'; 'drones' bolded but not explained in everyday words",
+        "chapter 6: 'hexagons' explained, but 'wax' and 'honeycomb' used without explanation"
+      ],
+      "cost_usd": 0.000892
+    },
+    {
+      "item_id": "bees-band-a-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "chapter 1: 'amber' is explained, but 'hexagons' in chapter 6 is explained only by its shape, so keep it",
+        "chapter 8: 'acidic' is not used, but 'hexagons' is fine; check 'pollinate' is not used",
+        "chapter 4: 'nectar' explained; ok",
+        "chapter 2: 'drones' explained in chapter 2 with 'make new bees'; ok"
+      ],
+      "cost_usd": 0.000909
+    },
+    {
+      "item_id": "bees-band-a-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "chapter 1: 'amber' is not explained for age 4 in the story",
+        "chapter 2: 'queen' explained only loosely; 'hive' and 'colony' need plain explanation",
+        "chapter 6: 'hexagons' is explained, but chapter 8 'orchards' is unexplained",
+        "chapter 4: 'nectar' explained; 'pollinate' not present but 'mammal skin' absent is fine",
+        "chapter 5: 'scientist' and 'waggle dance' unexplained beyond name for band A",
+        "chapter 8: 'pollinate' not used; 'acidic' absent; big word budget exceeded for band A"
+      ],
+      "cost_usd": 0.000947
+    },
+    {
+      "item_id": "bicycles-band-b-5min-tricks",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "chapter 4: 'Stop 4' explains 'chain' only loosely; 'derailleurs' and 'pneumatic' not used but 'emancipate' absent so fine; big word 'standard' ok",
+        "chapter 5: 'pneumatic' not used but 'suspension' is a big word and is not explained",
+        "chapter 8: 'derailleurs' is named but the explanation is given; 'kilometers' ok; no violation"
+      ],
+      "cost_usd": 0.001007
+    },
+    {
+      "item_id": "bicycles-band-b-5min-tricks",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "chapter 4: 'penny-farthing' is a name, but 'steered' and 'pneumatic' are not explained in chapter 1 or 2",
+        "chapter 5: 'pneumatic' is not used; 'suspension' is not explained anywhere in the story",
+        "chapter 6: 'emancipate' is not used; 'bloomers' is explained but 'Golden Age of Bicycles' gets no plain meaning beyond a craze",
+        "chapter 8: 'derailleurs' is named but 'gears' gadget explanation is fine; 'kilometers' is a unit and acceptable"
+      ],
+      "cost_usd": 0.001034
+    },
+    {
+      "item_id": "bicycles-band-b-5min-tricks",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "chapter 1: 'skate park' ok, but 'BMX' not explained for band B",
+        "chapter 2: 'patent' not explained",
+        "chapter 4: 'chain' used before explanation is clear",
+        "chapter 8: 'derailleurs' not explained in chapter 8 text",
+        "chapter 9: 'mountain bikes' and 'dirt jumps' ok; 'Netherlands' and 'Denmark' fine"
+      ],
+      "cost_usd": 0.001009
+    },
+    {
+      "item_id": "climb-walls-band-a-15min-wild",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "chapter 1: 'microscope' is a big word not explained as a tool that makes small things look huge",
+        "chapter 3: 'reputation' is a big word not explained",
+        "chapter 8: 'scientists' is explained only partly; 'synthetic' not used but 'specialist' phrasing adds unexplained weight"
+      ],
+      "cost_usd": 0.001136
+    },
+    {
+      "item_id": "climb-walls-band-a-15min-wild",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapter 1: 'microscope' not explained for age band A beyond a phrase; 'magnifying glass' comparison helps but big word budget exceeded",
+        "chapter 3: 'reputation' is an unexplained big word",
+        "chapter 4: 'grappling hooks' explained only by simile; 'scuttled' is fine but 'suction' absent here",
+        "chapter 7: 'slime' and 'ripple' fine, but no big word explained for 'muscular foot' (appears in chapter 7 narration)",
+        "chapter 8: 'scientists' and 'synthetic' not explained; 'people whose whole job is studying how things work' is a paraphrase, so 'scientists' is explained, but 'copying' and 'paddles' are fine; 'synthetic' not used, so no issue there",
+        "chapter 1: 'Tokay gecko' is a name, acceptable; 'reputation' in chapter 3 is the main unexplained big word",
+        "kids_are_active_participants: Sam mostly watches and reacts, asks questions and tries things, but Tiko explains and solves everything"
+      ],
+      "cost_usd": 0.001266
+    },
+    {
+      "item_id": "climb-walls-band-a-15min-wild",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapter 1: 'microscope' is not explained as a big word",
+        "chapter 1: 'microscope' is explained, but 'looking tool' is not a big word; 'tiny hairs' fine",
+        "chapter 2: 'residue' not used; 'mucus' not used; no unexplained big words found beyond 'microscope' in chapter 1",
+        "chapter 8: 'scientists' and 'synthetic' not explained; 'people whose whole job is studying how things work' explains scientists only once",
+        "chapter 8: Tiko is never shown to do anything; the child does not change the outcome"
+      ],
+      "cost_usd": 0.001182
+    },
+    {
+      "item_id": "lego-band-a-pair",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "chapter 1: 'carpenter' is not explained on the spot for age band A",
+        "chapter 1: 'tornado' is an unexplained big word for age band A",
+        "chapter 2: 'coincidence' is explained, but 'Danish' and 'Latin' are unexplained big words",
+        "chapter 3: 'molds' and 'nozzle' are unexplained big words for age band A",
+        "chapter 4: 'hollow' is used without an everyday explanation",
+        "chapter 5: 'patent' is explained only loosely; needs an everyday meaning on the spot",
+        "chapter 8: 'biggest tire-makers' phrasing is not a factual claim in the pack and is hedged, but 'thousands' is fine"
+      ],
+      "cost_usd": 0.001074
+    },
+    {
+      "item_id": "lego-band-a-pair",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "chapter 1: 'carpenter' is not explained on the spot for age band A",
+        "chapter 1: 'apron' and 'sanded' are unexplained for age band A",
+        "chapter 2: 'Latin' is not explained for age band A",
+        "chapter 2: 'coincidence' is explained, but 'Danish' is unexplained for age band A",
+        "chapter 3: 'molds' is unexplained for age band A",
+        "chapter 4: 'Automatic Binding Bricks' is a long technical name not explained as a term",
+        "chapter 5: 'patent' is not explained for age band A",
+        "chapter 6: 'LEGOLAND' is a name, but the story never says it is a park with rides"
+      ],
+      "cost_usd": 0.001071
+    },
+    {
+      "item_id": "lego-band-a-pair",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "chapter 1: 'carpenter' is not explained on the spot for band A",
+        "chapter 1: 'Clicky' explains 'carpenter' but 'apron' and 'sanded' are unexplained for ages 3-5",
+        "chapter 2: 'coincidence' is explained but 'Latin' is used without a plain-word explanation",
+        "chapter 3: 'molds' and 'nozzle' are big words used without explanation",
+        "chapter 4: 'hollow' is used without explanation for ages 3-5",
+        "chapter 5: 'patent' is explained as 'special papers' but 'patent' itself is over budget with other big words",
+        "chapter 8: 'some people say' tire claim is presented as a playful fact without a clear hedge"
+      ],
+      "cost_usd": 0.001078
+    },
+    {
+      "item_id": "pompeii-band-c-15min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001485
+    },
+    {
+      "item_id": "pompeii-band-c-15min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001485
+    },
+    {
+      "item_id": "pompeii-band-c-15min",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001485
+    },
+    {
+      "item_id": "rainbows-band-b-5min-teasing",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "chapter 2: 'refraction' is explained, fine; chapter 3: 'prism' explained, fine",
+        "chapter 4: 'antisolar' not used, ok; chapter 7: 'Bifrost' is a name, ok",
+        "chapter 5: 'Alexander' not used; no big-word failure found"
+      ],
+      "cost_usd": 0.000975
+    },
+    {
+      "item_id": "rainbows-band-b-5min-teasing",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "chapter 2: 'refraction' is explained as bending of light, acceptable",
+        "chapter 3: 'prism' is not explained on the spot; it is described as a glass triangle, acceptable",
+        "chapter 4: 'antisolar' not used; no unexplained big words found",
+        "chapter 6: 'moonbow' is explained as moonlight rainbow, acceptable"
+      ],
+      "cost_usd": 0.000971
+    },
+    {
+      "item_id": "rainbows-band-b-5min-teasing",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "chapter 2: 'refraction' is explained once, fine; chapter 3: 'prism' is explained as a glass triangle, fine; chapter 3: 'Isaac Newton' is a name, fine",
+        "chapter 1: 'Lumi' explanation ok; no unexplained big words found beyond banded budget"
+      ],
+      "cost_usd": 0.000963
+    },
+    {
+      "item_id": "sharks-band-b-siblings",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapter 4: 'sandpaper' is explained, but 'epaulette shark' in ch 6 is not a big word issue; 'cartilage' explained once ok",
+        "chapter 7: 'Shark Lady' tricks and curiosity told, but Jack and Ellie only watch and wave; they do not change events",
+        "chapter 3: 'extinct' explained; 'fossils' explained; 'Megalodon' is a name and fine"
+      ],
+      "cost_usd": 0.0011
+    },
+    {
+      "item_id": "sharks-band-b-siblings",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "chapter 3: 'Megalodon' is explained but 'extinct' explanation is fine; check 'fossils' explained once",
+        "chapter 6: 'epaulette shark' is a name, but 'reefs' and 'puddles' need no change; 'coral' unexplained is an everyday word, ok",
+        "chapter 4: 'sandpaper' is everyday; no issue",
+        "chapter 2: 'cartilage' explained as bendy stuff, ok; 'skeleton' unexplained as a big word for band B",
+        "chapter 7: 'curious' and 'referees' fine; 'balanced' fine",
+        "big words exceed band B budget of 10: 'Megalodon', 'extinct', 'fossils', 'cartilage', 'skeleton', 'epaulette', 'referees', 'curious', 'Megalodon' repeated, 'plankton' absent"
+      ],
+      "cost_usd": 0.001158
+    },
+    {
+      "item_id": "sharks-band-b-siblings",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B",
+        "too scary for band B: scary_level 2, limit 1"
+      ],
+      "reasons": [
+        "chapter 2: 'cartilage' is explained but 'epaulette' and 'carcass' are not; check big-word budget for band B",
+        "chapter 4: 'confetti' fine; 'sandpaper' used as simile without explanation is acceptable",
+        "chapter 8: 'whale shark' description is fine; check 'extinct' explained in chapter 3 only once (ok)",
+        "chapter 3: Megalodon scene reaches suspense level 2 (shadow bigger than house), exceeds band B limit of 1 without immediate resolution"
+      ],
+      "cost_usd": 0.001104
+    },
+    {
+      "item_id": "sleep-band-a-5min-dark",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapter 1: 'hum' and glow is fine, but 'Papa' growth lines fine; big word 'cycle' explained only partly in chapter 3 - ok",
+        "chapter 2: 'scientists' and 'dream sleep' used without explanation of what dream sleep is in everyday words",
+        "chapter 3: 'cycle' is explained, but 'ninety minutes' cycle ok; no problem here",
+        "chapter 5: 'growing helper' is an unexplained stand-in; the word 'hormone' is never used but the idea is vague to a 5-year-old",
+        "chapter 6: 'tiny clock hides right behind your eyes' is not explained as a brain region; no big word, so no fault",
+        "chapter 4: Leo only flops his arms; he does not change what happens in the story",
+        "chapter 9: Leo only climbs into bed; the children do nothing that changes the outcome except moving his own train set"
+      ],
+      "cost_usd": 0.000986
+    },
+    {
+      "item_id": "sleep-band-a-5min-dark",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.000828
+    },
+    {
+      "item_id": "sleep-band-a-5min-dark",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.000828
+    },
+    {
+      "item_id": "sleep-band-c-5min-bedtime",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapter 2: 'circadian' is explained only as 'old words meaning about a day'; the explanation is thin for a band C reader",
+        "chapter 5: Arjun only watches the animals; he does not change anything in the story",
+        "chapter 6: 'growth hormone' is explained, but 'REM sleep' is re-explained with 'busy, dreaming' only once; acceptable"
+      ],
+      "cost_usd": 0.001062
+    },
+    {
+      "item_id": "sleep-band-c-5min-bedtime",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapter 2: 'circadian' explained only as old words, not as the body clock it names",
+        "chapter 5: 'bottlenose dolphins' and 'slip fielder' not explained for band C",
+        "chapter 7: 'glymphatic system' explained only as a car wash, not what it flushes out",
+        "chapter 5: Arjun only watches and reacts; the Nightwatchman does the explaining"
+      ],
+      "cost_usd": 0.001066
+    },
+    {
+      "item_id": "sleep-band-c-5min-bedtime",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapter 2: 'circadian' is explained but 'master clock' use is fine; 'suprachiasmatic' not used, ok",
+        "chapter 4: Arjun only watches Randy; no choice or action by the child",
+        "chapter 5: Arjun only watches the animals; the guide does all the explaining"
+      ],
+      "cost_usd": 0.00105
+    },
+    {
+      "item_id": "sleep-band-d-5min",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001112
+    },
+    {
+      "item_id": "sleep-band-d-5min",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001112
+    },
+    {
+      "item_id": "sleep-band-d-5min",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001112
+    },
+    {
+      "item_id": "space-race-band-b-15min-continuity",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "chapter 1: 'rivet' is not explained",
+        "chapter 1: 'orbit' is explained, but 'satellite' explanation is fine; 'rivet' and 'humming bridge' context is unexplained",
+        "chapter 2: 'capsule' explained, but 'cosmonaut' used in chapter 7 without explanation",
+        "chapter 5: 'capsule' repeated without need; big-word budget for band B (10) exceeded with 'Vostok', 'parachute', 'cosmonaut', 'cosmonaut', 'Columbia', 'spacewalk'",
+        "chapter 7: 'spacewalk' explained only by the cord detail; 'cosmonaut' unexplained",
+        "chapter 9: 'oxygen tank' and 'Apollo 13' explained only loosely; 'Saturn V' used before 'rocket' context is clear"
+      ],
+      "cost_usd": 0.001323
+    },
+    {
+      "item_id": "space-race-band-b-15min-continuity",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "chapter 1: 'humming bridge' and 'rivet' not explained",
+        "chapter 1: 'orbit' explained but 'Soviet Union' used without plain meaning for age 7",
+        "chapter 2: 'capsule' explained only in passing, acceptable but 'orbit' re-used in chapter 2 fine",
+        "chapter 8: 'astronauts' and 'Moon dust' fine; 'photograph' unexplained at band B",
+        "chapter 9: 'Saturn V' is a name, fine; 'oxygen tank' and 'crippled' not explained for age 7"
+      ],
+      "cost_usd": 0.001276
+    },
+    {
+      "item_id": "space-race-band-b-15min-continuity",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "chapter 2: 'capsule' is explained, but 'cosmonaut' in chapter 7 is not explained",
+        "chapter 8: 'command' phrasing and 'orbit' used without explanation beyond chapter 1 is acceptable, but 'astronauts' and 'orbit' fine; 'cosmonaut' unexplained in chapter 7",
+        "chapter 9: 'Statue of Liberty' fine; 'oxygen tank' and 'docked' not explained for band B",
+        "chapter 9: 'crew' and 'engineers' everyday; 'ships gently came together in orbit' is clear"
+      ],
+      "cost_usd": 0.001279
+    },
+    {
+      "item_id": "space-race-band-d",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001201
+    },
+    {
+      "item_id": "space-race-band-d",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001201
+    },
+    {
+      "item_id": "space-race-band-d",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001201
+    },
+    {
+      "item_id": "titanic-band-c",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C"
+      ],
+      "reasons": [
+        "chapter 4: 'telegrams' and 'watertight' used without explanation",
+        "chapter 6: 'Pomeranian' is a breed name not explained for band C reader",
+        "chapter 8: 'oceanographer' is explained, but 'submersible' is explained only as a tiny submarine, acceptable; 'treaty' and 'SOLAS' need one plain-language gloss"
+      ],
+      "cost_usd": 0.001257
+    },
+    {
+      "item_id": "titanic-band-c",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C"
+      ],
+      "reasons": [
+        "chapter 4: 'telegrams' and 'watertight' unexplained for band C reader",
+        "chapter 5: 'oceanographer' explained only in later chapter, but 'submersible' used before explanation",
+        "chapter 8: 'SOLAS' explained, but 'treaty' and 'submersible' need a plain-word gloss"
+      ],
+      "cost_usd": 0.001249
+    },
+    {
+      "item_id": "titanic-band-c",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band C"
+      ],
+      "reasons": [
+        "chapter 2: 'watertight compartments' explained only partly; 'ice-cube tray' analogy helps but term not clearly defined",
+        "chapter 4: 'wireless' explained, but 'Captain Edward John Smith' placed before role is clear is acceptable; no fault here on its own",
+        "chapter 8: 'SOLAS' explained as a treaty name only after use; 'International Ice Patrol' not explained in plain words",
+        "chapter 8: 'submersible' and 'oceanographer' explained in passing; 'treaty' used without definition"
+      ],
+      "cost_usd": 0.001286
+    },
+    {
+      "item_id": "video-games-band-b-15min",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "chapter 2: 'gravitational' is not explained",
+        "chapter 3: 'prototype' is not explained",
+        "chapter 4: 'arcade' is not explained"
+      ],
+      "cost_usd": 0.001252
+    },
+    {
+      "item_id": "video-games-band-b-15min",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B"
+      ],
+      "reasons": [
+        "chapter 1: 'physicist' is explained, but 'oscilloscope' is only partly explained; keep the explanation clear",
+        "chapter 7: 'Tetris' and 'NES' are introduced without explanation",
+        "chapter 9: 'developer' is used without explanation",
+        "chapter 9: 'World Video Game Hall of Fame' is a name, but 'museum hallway' explanation is fine; no change needed",
+        "chapter 4: 'jukebox' is used without explanation for a band 8 reader",
+        "chapter 6: 'landfill' is explained, but 'cartridges' in chapter 6 is not re-explained after chapter 5; acceptable"
+      ],
+      "cost_usd": 0.001341
+    },
+    {
+      "item_id": "video-games-band-b-15min",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band B",
+        "facts contradict the fact pack"
+      ],
+      "reasons": [
+        "chapter 1: 'physicist' explained, fine; 'oscilloscope' explained; 'Brookhaven' is a name, fine",
+        "chapter 6: 'landfill' explained as a giant dump, fine",
+        "chapter 4: 'jukebox' used as a comparison without explanation",
+        "chapter 9: 'developer' not explained for an 8-year-old",
+        "chapter 9: 'best-selling' is an everyday word, not a problem",
+        "chapter 7: 'Nintendo' and 'NES' introduced without saying what a console is in that context",
+        "chapter 2: 'torpedo' used for Ben's shot without explanation",
+        "chapter 6: 'landfill' explanation present, but 'cartridges' in that sentence is used for E.T. before the buried-cartridge fact is explained",
+        "chapter 6: story says cartridges were buried in a landfill and diggers found them in 2014; pack says landfill in New Mexico, consistent, but story says 'New Mexico' desert, which is a place detail, not a contradiction",
+        "chapter 3: 'Brown Box' presented as Baer's box in 1972 timeline, pack says prototype built late 1960s, not a contradiction",
+        "chapter 5: story says Space Invaders 'Made in 1978 ... for a company called Taito' consistent with pack",
+        "chapter 9: story says Minecraft is 'the best-selling video game ever made' as settled, pack confidence high, consistent",
+        "chapter 4: 'Story goes ... one Pong machine ... jammed' hedged properly, fine"
+      ],
+      "cost_usd": 0.001495
+    },
+    {
+      "item_id": "video-games-band-c-solo",
+      "sample": 1,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001216
+    },
+    {
+      "item_id": "video-games-band-c-solo",
+      "sample": 2,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001216
+    },
+    {
+      "item_id": "video-games-band-c-solo",
+      "sample": 3,
+      "valid": true,
+      "passed": true,
+      "failures": [],
+      "reasons": [],
+      "cost_usd": 0.001216
+    },
+    {
+      "item_id": "volcanoes-mixed-ages",
+      "sample": 1,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapter 2: 'magma' explained, but 'crust' is not in the story at all and 'gas' is unexplained",
+        "chapter 2: 'eruption' used before being explained in chapter 1",
+        "chapter 3: 'Pacific Ocean' and 'plates' used in a way a 4-year-old cannot follow; 'Indonesia' is a name, so fine",
+        "chapter 6: 'Olympus Mons' and 'Mars' are names, but 'cheat code' is an unexplained gaming term",
+        "chapter 6: Juno only watches and reacts; Milo and Theo only imagine, no child changes the outcome"
+      ],
+      "cost_usd": 0.001058
+    },
+    {
+      "item_id": "volcanoes-mixed-ages",
+      "sample": 2,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A"
+      ],
+      "reasons": [
+        "chapter 2: 'magma' is explained, but 'gas' and 'ash' appear without everyday explanation",
+        "chapter 3: 'Pacific Ocean' and 'plates' not explained on the spot for age 4",
+        "chapter 4: 'hotspot' explained, but 'shield' and 'meters' used without explanation",
+        "chapter 6: 'Olympus Mons' and 'Mount Everest' are names; 'thirteen miles' fine, but 'solar' unexplained",
+        "chapter 7: 'supervolcano' explained, but 'seismic' not used; 'listening machines' is adequate; 'ash' unexplained again"
+      ],
+      "cost_usd": 0.001061
+    },
+    {
+      "item_id": "volcanoes-mixed-ages",
+      "sample": 3,
+      "valid": true,
+      "passed": false,
+      "failures": [
+        "not age-appropriate for band A",
+        "the children must DO things that change what happens, not watch"
+      ],
+      "reasons": [
+        "chapter 2: 'magma' explained, but 'Ring of Fire' in chapter 3 is fine; 'seismograph' not used, ok",
+        "chapter 3: 'plates' used before explained beyond 'giant puzzle pieces' (acceptable), but 'Pacific Ocean' fine",
+        "chapter 6: 'Olympus Mons' is a name, fine; 'Everest' comparison is fine; no unexplained big word",
+        "chapter 7: 'supervolcano' explained as giant volcano hiding deep underground; 'listening machines' and 'sky machines' used instead of big words",
+        "chapter 1-8: Juno, Milo and Theo mostly watch while Pip explains; they do not make the key choices or decisions that change the outcome"
+      ],
+      "cost_usd": 0.00108
+    }
+  ]
+}

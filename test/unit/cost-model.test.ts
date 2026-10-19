@@ -10,15 +10,20 @@ import { computeCost } from '@/lib/ai/pricing'
  * The four totals below are the medians named in the lane brief. If a price changes and one
  * of these drifts, that is the signal to re-check the brief's band — not to edit the number
  * here to match.
+ *
+ * 2026-10-15 (DECISIONS #201): the quality review moved to Haiku 5.5 on its own role, with
+ * re-measured tokens, and costs $0.0023 a story against $0.007. Every total below fell by
+ * $0.0047 from the brief's ($0.045 / $0.071 / $0.125 / $0.284), and the Sonnet write share
+ * rose from ~70% to ~75%. A deliberate change, re-derived, not drift.
  */
 describe('F8 expected cost per story', () => {
   const HELPER = 'claude-haiku-4-5-20251001'
 
   it.each([
-    ['claude-haiku-4-5-20251001', 0.045],
-    ['claude-sonnet-5', 0.071],
-    ['claude-opus-5-5', 0.125],
-    ['claude-fable-5-1', 0.284],
+    ['claude-haiku-4-5-20251001', 0.0398],
+    ['claude-sonnet-5', 0.0667],
+    ['claude-opus-5-5', 0.1197],
+    ['claude-fable-5-1', 0.2789],
   ] as const)('%s writes a story for about $%s', (writer, expected) => {
     const got = expectedStoryCost(writer, HELPER)
     // Within 2% of the brief's figure. Opus lands at $0.12435 against a quoted $0.125, so a
@@ -34,10 +39,10 @@ describe('F8 expected cost per story', () => {
    * that matters: the lever on cost per story is story LENGTH and regeneration count, not
    * prompt size.
    */
-  it('spends about 70% of a Sonnet 5 story on the write call output tokens', () => {
+  it('spends about 75% of a Sonnet 5 story on the write call output tokens', () => {
     const { writeOutputShare } = expectedStoryCost('claude-sonnet-5', HELPER)
-    expect(writeOutputShare).toBeGreaterThan(0.68)
-    expect(writeOutputShare).toBeLessThan(0.72)
+    expect(writeOutputShare).toBeGreaterThan(0.73)
+    expect(writeOutputShare).toBeLessThan(0.77)
   })
 
   /**
