@@ -323,8 +323,9 @@ export const AFTER_WRITE_MS = 90_000
 /**
  * Below this, rung 3 does not start: a 5- or 10-minute story takes 60-90 s to write, plus
  * AFTER_WRITE_MS. A truncated first write usually spent most of the request already.
+ * Tied to AFTER_WRITE_MS so the write always keeps its 90 s when that grows (PR #63 review).
  */
-export const RETRY_MIN_MS = 150_000
+export const RETRY_MIN_MS = AFTER_WRITE_MS + 90_000
 
 /** One length tier down; the shortest stays where it is. */
 export function shorterLength(minutes: LengthMinutes): LengthMinutes {
