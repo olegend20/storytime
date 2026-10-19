@@ -308,12 +308,17 @@ describe('issue #66: quotes the ladder could not place on 2026-10-17', () => {
     expect(locateViolation(story, hard(3, 'and he was so frightened'))).toBeNull()
   })
 
-  it('a scanner window whose hit sits in no flagged piece is placed whole, or not at all - never beside the hit', () => {
-    const story = storyWith(['The boat rocked gently on the bay.', 'Pet it!', 'Ellie laughed at the waves below.'])
-    expect(locateViolation(story, hard(10, '…oat rocked gently on the bay. Pet it! Ellie laughed at the wav…'))?.text).toContain('Pet it!')
-    // The window no longer matches whole (the text changed): no run from a neighbour is used.
-    story.chapters[1]!.text = 'The boat rocked gently on the bay. Ellie laughed at the waves below.'
-    expect(locateViolation(story, hard(10, '…oat rocked gently on the bay. Pet it! Ellie laughed at the wav…'))).toBeNull()
+  it('a scanner window is placed on its flagged piece, never on a neighbour by a run', () => {
+    const story = storyWith(['The boat rocked gently on the bay.', 'Juno patted the whale shark.', 'Ellie laughed at the waves below.'])
+    const window = '…oat rocked gently on the bay. Juno patted the whale shark. Ellie laughed at the wav…'
+    expect(locateViolation(story, hard(10, window))?.text).toBe('Juno patted the whale shark.')
+  })
+
+  it("a reviewer quote trimmed with '...' on a rule the scanner does not cover is still placed by a run (PR #67 review)", () => {
+    const story = storyWith([KEEP, 'Theo held up his picture and everyone giggled at his tiny drawing.'])
+    // Stale and trimmed: the reviewer's wording, not the text's; rule 13 has no scanner phrase here.
+    const v = hard(13, '...and everyone giggled at his tiny drawing again')
+    expect(locateViolation(story, v)?.text).toBe('Theo held up his picture and everyone giggled at his tiny drawing.')
   })
 
   it('a flagged title is placed and replaced with plain words', () => {

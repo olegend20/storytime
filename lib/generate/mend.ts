@@ -191,10 +191,14 @@ export function locateViolation(story: StoryOutput, violation: OutputViolation):
     .split(/\n\s*\n/)
     .flatMap((para) => splitSentences(normalized(para).text))
     .filter((s) => s.length >= 12)
-  const windowed = /^(?:…|\.\.\.)|(?:…|\.\.\.)$/.test(violation.quote.trim())
-  const flagged = windowed
+  // A scanner window: trimmed with ellipses AND holding a piece the scanner flags for this
+  // rule. A reviewer trims quotes with "..." too; with no flagged piece it is an ordinary
+  // quote, and its runs are tried like any other (PR #67 review).
+  const trimmed = /^(?:…|\.\.\.)|(?:…|\.\.\.)$/.test(violation.quote.trim())
+  const flagged = trimmed
     ? pieces.filter((piece) => scanStoryText(piece).hardViolations.some((v) => v.rule === violation.rule))
-    : pieces
+    : []
+  const windowed = flagged.length > 0
   const candidates = windowed ? [...flagged, quote] : [quote, ...pieces]
   // Whole quotes and sentences are long enough to match as they are (a window's first and
   // last pieces are cut mid-word); only the short runs below must be whole words.
@@ -209,7 +213,7 @@ export function locateViolation(story: StoryOutput, violation: OutputViolation):
   const total = (needle: string) => parts.reduce((n, p) => n + wordHits(p.norm.text, needle).length, 0)
   const offers: { run: string; cover: number; words: number }[] = []
   // A scanner window's runs come from its flagged pieces only: a run from a neighbour would
-  // place the cut beside the hit. Nothing flagged and no whole match: unplaced, so discarded.
+  // place the cut beside the hit.
   const runPieces = windowed ? flagged : pieces.length > 0 ? pieces : [quote]
   for (const piece of runPieces) {
     const words = piece.split(' ').filter((w) => w !== '')
