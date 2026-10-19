@@ -8,11 +8,34 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 const drops = vi.hoisted(() => ({
   queue: [] as { partial: string; dropped?: boolean; hang?: boolean }[],
   signals: [] as (AbortSignal | undefined)[],
+  /**
+   * Issue #72: how many times the gateway drops the rewrite. The rewrite goes through
+   * callModel, whose own drop loop (VT-R1/R2) is stood in for here: it makes
+   * min(maxDrops, maxRetries) + 1 attempts, so the pipeline's options decide the outcome.
+   */
+  rewriteDrops: 0,
+  rewriteAttempts: 0,
+  rewriteRefuses: false,
 }))
 vi.mock('@/lib/ai', async (orig) => {
   const actual = await orig<typeof import('@/lib/ai')>()
   return {
     ...actual,
+    callModel: async (opts: Parameters<typeof actual.callModel>[0]) => {
+      if (opts.purpose === 'rewrite' && drops.rewriteRefuses) throw new actual.ModelRefusalError('stub', 'stub', null)
+      if (opts.purpose !== 'rewrite' || drops.rewriteDrops === 0) return actual.callModel(opts)
+      const attempts = Math.min(opts.maxDrops ?? 1, opts.maxRetries ?? 2) + 1
+      if (drops.rewriteDrops >= attempts) {
+        drops.rewriteDrops -= attempts
+        drops.rewriteAttempts += attempts
+        throw new actual.ModelCallError(`rewrite call to stub failed after ${attempts} attempt(s): terminated`, {
+          purpose: 'rewrite', model: 'stub', attempts, retryable: true,
+        })
+      }
+      drops.rewriteAttempts += drops.rewriteDrops + 1
+      drops.rewriteDrops = 0
+      return actual.callModel(opts)
+    },
     streamModel: async (opts: Parameters<typeof actual.streamModel>[0]) => {
       const next = drops.queue.shift()
       if (!next) return actual.streamModel(opts)
@@ -75,7 +98,7 @@ import {
 } from '../helpers/fixtures'
 import { buildPrompt } from '@/lib/generate/prompt'
 import { buildQualityReviewMessage, measuredForReview, QUALITY_REVIEW_THINKING_MAX_TOKENS } from '@/lib/quality/review'
-import { AFTER_WRITE_MS, RETRY_MIN_MS, WRITER_MAX_TOKENS } from '@/lib/generate/pipeline'
+import { AFTER_WRITE_MS, MAX_DROP_RETRIES, RETRY_MIN_MS, WRITER_MAX_TOKENS } from '@/lib/generate/pipeline'
 import { MEND_MAX_TOKENS, cutViolations, mendUserMessage, passagesFor } from '@/lib/generate/mend'
 import { STORY_OUTPUT_FORMAT } from '@/lib/generate/output-schema'
 import { buildBibleUpdateMessage } from '@/lib/bible'
@@ -952,15 +975,7 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       expect(events.at(-1)).toMatchObject({ type: 'error', code: 'generation_failed' })
     })
 
-    it('VT-W5: a second drop is not retried again, and a failure that is not a drop is never retried', async () => {
-      const run = await prepared()
-      stubResponsesFor(run)
-      drops.queue.push({ partial: META_ONLY }, { partial: '' })
-      const twice = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
-      expect(twice.result.status).toBe('failed')
-      expect(twice.result.writeCalls).toBe(2)
-      expect(drops.queue).toHaveLength(0)
-
+    it('VT-W5: a failure that is not a drop is never retried (the drop limit: #72 below)', async () => {
       const other = await prepared()
       stubResponsesFor(other)
       drops.queue.push({ partial: '', dropped: false })
@@ -993,6 +1008,171 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       expect(result.status).toBe('failed')
       expect(result.writeCalls).toBe(2)
       expect(events.at(-1)).toMatchObject({ type: 'error', code: 'generation_failed', quota_consumed: false })
+    })
+  })
+
+  describe('issue #72: a dropped connection no longer loses a story', () => {
+    const META_ONLY = '{"title":"The Lost Signal","subtitle":null,"chapters":['
+    afterEach(() => {
+      drops.queue.length = 0
+      drops.signals.length = 0
+      drops.rewriteDrops = 0
+      drops.rewriteAttempts = 0
+      drops.rewriteRefuses = false
+    })
+    const tooScaryOnce = () => {
+      let calls = 0
+      return {
+        review: async (): Promise<OutputSafetyReview> =>
+          ++calls === 1 ? { ...clean, scary_level: 2 } : clean,
+      }
+    }
+
+    it('VT-F1: a rewrite that drops on every attempt falls back to attempt 1, flagged and saved', async () => {
+      const run = await prepared()
+      const { story } = stubResponsesFor(run, { rewriteReasons: ['scary_level 2 above band A limit'] })
+      drops.rewriteDrops = 99
+      const quota = new RecordingQuota()
+      const { events, result } = await collect(run, {
+        db: family.db, sink: new MemoryLogSink(), quota, safetyReviewer: tooScaryOnce(), now: () => FIXED_NOW,
+      })
+
+      expect(result.status).toBe('flagged')
+      expect(result.writeCalls).toBe(2)
+      expect(drops.rewriteAttempts).toBe(MAX_DROP_RETRIES + 1)
+      expect(result.story?.title).toBe(story.title)
+      expect(result.quality?.rewrite_reasons.join(' ')).toMatch(/rewrite output unusable: rewrite_failed/)
+      expect(events.at(-1)?.type).toBe('done')
+      const { data: row } = await family.db.from('stories').select('status').eq('id', run.storyId).single()
+      expect((row as { status: string }).status).toBe('flagged')
+      expect(quota.calls).toEqual(['consumeQuota'])
+      if (result.bibleUpdate) await result.bibleUpdate
+    })
+
+    it('VT-F2: a fallback that still holds a hard breach goes down the ladder - cut, regated, flagged', async () => {
+      const run = await prepared()
+      const { story } = stubResponsesFor(run, {
+        rewriteReasons: ['GUARDRAILS rule 10 breached', 'output safety review returned safe: false', 'scary_level 2 above band A limit'],
+      })
+      const quote = SENTENCE.slice(0, 40)
+      const violations: OutputViolation[] = [{ rule: 10, quote, severity: 'hard' }]
+      stubMendFor(run, story, violations, [])
+      const afterCut = cutViolations(story, violations)
+      expect(afterCut.complete).toBe(true)
+      stubMendFor(run, afterCut.story, [], [])
+      let reviewCall = 0
+      const safetyReviewer = {
+        review: async (s: StoryOutput): Promise<OutputSafetyReview> => {
+          reviewCall += 1
+          if (reviewCall === 1) return { ...hardViolation(quote, 10), scary_level: 2 }
+          return JSON.stringify(s).includes(SENTENCE) ? hardViolation(quote, 10) : clean
+        },
+      }
+      drops.rewriteDrops = 99
+      const { result } = await collect(run, {
+        db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), safetyReviewer, now: () => FIXED_NOW,
+      })
+
+      expect(result.status).toBe('flagged')
+      expect(result.quality?.mended).toEqual({ edits: 0, cut: 1, rules: [10] })
+      expect(result.quality?.hard_violations).toEqual([])
+      expect(result.quality?.safety?.safe).toBe(true)
+      expect(JSON.stringify(result.story)).not.toContain(SENTENCE)
+      expect(reviewCall).toBe(2)
+      if (result.bibleUpdate) await result.bibleUpdate
+    })
+
+    it('VT-F2: a fallback whose breach survives the ladder is still discarded', async () => {
+      const run = await prepared()
+      const { story } = stubResponsesFor(run, {
+        rewriteReasons: ['GUARDRAILS rule 10 breached', 'output safety review returned safe: false', 'scary_level 2 above band A limit'],
+      })
+      // A quote the ladder cannot place: nothing to mend, nothing to cut.
+      const violations: OutputViolation[] = [{ rule: 10, quote: 'a line that is nowhere in the story', severity: 'hard' }]
+      stubMendFor(run, story, violations, [])
+      const safetyReviewer = {
+        review: async (): Promise<OutputSafetyReview> => ({ ...hardViolation(violations[0]!.quote, 10), scary_level: 2 }),
+      }
+      drops.rewriteDrops = 99
+      const quota = new RecordingQuota()
+      const { events, result } = await collect(run, {
+        db: family.db, sink: new MemoryLogSink(), quota, safetyReviewer, now: () => FIXED_NOW,
+      })
+      expect(result.status).toBe('discarded')
+      expect(events.at(-1)).toMatchObject({ type: 'error', code: 'generation_failed', quota_consumed: false })
+      expect(quota.calls).toEqual([])
+    })
+
+    it('VT-F3: a refusal on the rewrite still fails the request - no fallback', async () => {
+      const run = await prepared()
+      stubResponsesFor(run, { rewriteReasons: ['scary_level 2 above band A limit'] })
+      drops.rewriteRefuses = true
+      const { result } = await collect(run, {
+        db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), safetyReviewer: tooScaryOnce(), now: () => FIXED_NOW,
+      })
+      expect(result.status).toBe('failed')
+      expect(result.reason).toMatch(/ModelRefusalError/)
+    })
+
+    it('VT-W7: a first write dropped twice before any chapter is written a third time and saved', async () => {
+      const run = await prepared()
+      const { story } = stubResponsesFor(run)
+      drops.queue.push({ partial: META_ONLY }, { partial: '' })
+      const { events, result } = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
+      expect(result.status).toBe('ready')
+      expect(result.writeCalls).toBe(3)
+      expect(result.story?.title).toBe(story.title)
+      expect(events.at(-1)?.type).toBe('done')
+      if (result.bibleUpdate) await result.bibleUpdate
+    })
+
+    it('VT-W5: a first write dropped MAX_DROP_RETRIES + 1 times fails cleanly', async () => {
+      const run = await prepared()
+      stubResponsesFor(run)
+      for (let i = 0; i <= MAX_DROP_RETRIES; i += 1) drops.queue.push({ partial: '' })
+      const { events, result } = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
+      expect(result.status).toBe('failed')
+      expect(result.writeCalls).toBe(MAX_DROP_RETRIES + 1)
+      expect(drops.queue).toHaveLength(0)
+      expect(events.at(-1)).toMatchObject({ type: 'error', code: 'generation_failed', quota_consumed: false })
+    })
+
+    /**
+     * VT-DB, the drop bench: the nine runs that dropped in the 2026-10-19 live eval, with their
+     * exact patterns from generation_logs (12 drops). One retry saved 6 of them; issue #72's
+     * target is all 9. Fixtures stand in for the model, so this measures the plumbing, free.
+     */
+    it('VT-DB: the drop bench - every run that dropped on 2026-10-19 now saves a story', async () => {
+      const RUNS = [
+        { at: '16:49', write: 1, rewrite: 0 },
+        { at: '17:01', write: 0, rewrite: 1 },
+        { at: '17:28', write: 0, rewrite: 2 }, // space race, band C - lost
+        { at: '17:59', write: 0, rewrite: 1 },
+        { at: '18:46', write: 2, rewrite: 0 }, // volcanoes, band B - lost
+        { at: '18:51', write: 1, rewrite: 0 },
+        { at: '19:38', write: 0, rewrite: 2 }, // dinosaurs, band C - lost
+        { at: '19:42', write: 1, rewrite: 0 },
+        { at: '19:57', write: 0, rewrite: 1 },
+      ]
+      const saved: string[] = []
+      for (const r of RUNS) {
+        const run = await prepared()
+        stubResponsesFor(run, r.rewrite > 0 ? { rewriteReasons: ['scary_level 2 above band A limit'] } : {})
+        for (let i = 0; i < r.write; i += 1) drops.queue.push({ partial: i === 0 ? META_ONLY : '' })
+        drops.rewriteDrops = r.rewrite
+        const { result } = await collect(run, {
+          db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW,
+          ...(r.rewrite > 0 ? { safetyReviewer: tooScaryOnce() } : {}),
+        })
+        if (result.status === 'ready' || result.status === 'flagged') saved.push(r.at)
+        if (result.bibleUpdate) await result.bibleUpdate
+        drops.queue.length = 0
+        drops.rewriteDrops = 0
+        // Each run starts from the same bible, as each run in the eval did.
+        await writeBible(await loadBible(seriesId, { db: family.db }), BIBLE_AT_START, family.db)
+      }
+      console.info(`[drop bench] ${saved.length}/${RUNS.length} saved`)
+      expect(saved).toEqual(RUNS.map((r) => r.at))
     })
   })
 

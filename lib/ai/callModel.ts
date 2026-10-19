@@ -64,6 +64,13 @@ export interface CallModelOptions<T = string> {
    */
   deadlineAt?: number
   minRetryMs?: number
+  /**
+   * How many dropped streams are retried (default 1; issue #72). Each retry of a long call is a
+   * whole new call, and the gateway bills the dropped one in full, so only a caller with
+   * nothing to fall back on - or a deadline that bounds it - asks for more. Never more
+   * attempts than `maxRetries` allows.
+   */
+  maxDrops?: number
   /** Log correlation. */
   familyId?: string | null
   storyId?: string | null
@@ -351,7 +358,8 @@ export async function callModel<T = string>(
   }
 
   // ---- Live path, with per-attempt logging. ----
-  // A dropped stream is retried once at most: each retry of a long call is a whole new call.
+  // A dropped stream is retried `maxDrops` times at most: each retry of a long call is a whole new call.
+  const maxDrops = opts.maxDrops ?? 1
   let drops = 0
   const timeLeft = () => (opts.deadlineAt === undefined ? Number.POSITIVE_INFINITY : opts.deadlineAt - Date.now())
   for (let attempt = 1; attempt <= maxRetries + 1; attempt += 1) {
@@ -440,7 +448,7 @@ export async function callModel<T = string>(
       const retryable =
         retryableKind &&
         opts.signal?.aborted !== true &&
-        !(dropped && drops > 1) &&
+        !(dropped && drops > maxDrops) &&
         timeLeft() >= (opts.deadlineAt === undefined ? 0 : (opts.minRetryMs ?? 0))
       const latencyMs = Date.now() - started
       const message = timedOut

@@ -326,6 +326,13 @@ export const AFTER_WRITE_MS = 90_000
  * Tied to AFTER_WRITE_MS so the write always keeps its 90 s when that grows (PR #63 review).
  */
 export const RETRY_MIN_MS = AFTER_WRITE_MS + 90_000
+/**
+ * How many times a writing call the gateway drops is tried again (issue #72): on 2026-10-19,
+ * 12 of 67 writes were cut before any text arrived, and one retry lost three stories. Bounded
+ * by time as well - no retry starts with less than RETRY_MIN_MS left - and a dropped rewrite
+ * that runs out falls back to attempt 1's story, so this is a ceiling, rarely reached.
+ */
+export const MAX_DROP_RETRIES = 3
 
 /** One length tier down; the shortest stays where it is. */
 export function shorterLength(minutes: LengthMinutes): LengthMinutes {
@@ -496,21 +503,24 @@ export async function runGeneration(
         structured = false
         return write(false)
       })
-    const streamed = await firstWrite().catch((err: unknown) => {
-      // Issue #52: the gateway can cut a stream partway, even seconds in. If no chapter has
-      // reached the parent yet, nothing on the page would contradict a second write - so it
-      // is written again, streamed, once. The title may arrive twice; the page keeps the last.
-      // Never when a chapter is showing, and never without time to write, gate and save it.
+    // Issue #52: the gateway can cut a stream partway, even seconds in. If no chapter has
+    // reached the parent yet, nothing on the page would contradict another write - so it is
+    // written again, streamed, up to MAX_DROP_RETRIES times (#72). The title may arrive again;
+    // the page keeps the last. Never when a chapter is showing, and never without time to
+    // write, gate and save it.
+    const writeAgainAfterDrop = (drops: number) => (err: unknown): ReturnType<typeof write> => {
       const dropped = err instanceof ModelCallError && err.detail.dropped === true
       const left = deps.deadlineMs === undefined ? Number.POSITIVE_INFINITY : deps.deadlineMs - Date.now()
-      if (!dropped || chapterSent || left < RETRY_MIN_MS) throw err
+      if (!dropped || chapterSent || drops >= MAX_DROP_RETRIES || left < RETRY_MIN_MS) throw err
       console.warn(`[generate] the first write was cut off before any chapter was sent - writing it again (${(err as Error).message})`)
       parser = emitMetaAndChapters()
       writeCalls += 1
       // A full-length write can think for minutes, so it is cut off in time for the gate and
       // the save: past the deadline the platform kills the request and the parent gets nothing.
       return write(structured, deps.deadlineMs === undefined ? undefined : AbortSignal.timeout(left - AFTER_WRITE_MS))
-    })
+        .catch(writeAgainAfterDrop(drops + 1))
+    }
+    const streamed = await firstWrite().catch(writeAgainAfterDrop(0))
     parser.end()
 
     let parsed = await parseStoryOutput(streamed.text, {
@@ -710,21 +720,35 @@ export async function runGeneration(
           ...(deps.deadlineMs !== undefined
             ? { deadlineAt: deps.deadlineMs - AFTER_WRITE_MS, minRetryMs: RETRY_MIN_MS - AFTER_WRITE_MS }
             : {}),
+          // Issue #72: retried while time allows; if every attempt drops, attempt 1's story
+          // is still here to fall back on (below).
+          maxDrops: MAX_DROP_RETRIES, maxRetries: MAX_DROP_RETRIES,
           thinking: 'adaptive',
           ...(withFormat ? { outputConfig: { format: STORY_OUTPUT_FORMAT } } : {}),
           familyId: prepared.familyId,
           storyId: prepared.storyId,
           ...(sink ? { sink } : {}),
         })
-      const rewritten = await rewrite(structured).catch((err: unknown) => {
-        if (!structured || !structuredOutputRejected(err)) throw err
-        return rewrite(false)
-      })
-      parsed = await parseStoryOutput(rewritten.text, {
-        familyId: prepared.familyId,
-        storyId: prepared.storyId,
-        ...(sink ? { sink } : {}),
-      })
+      // Issue #72: a rewrite that never arrives - dropped on every attempt, a transport
+      // failure, our own deadline - is no reason to throw away the story already written. It
+      // takes the same path as an unusable rewrite below. A refusal still fails the request.
+      const rewritten = await rewrite(structured)
+        .catch((err: unknown) => {
+          if (!structured || !structuredOutputRejected(err)) throw err
+          return rewrite(false)
+        })
+        .catch((err: unknown) => {
+          if (!(err instanceof ModelCallError)) throw err
+          console.warn(`[generate] the rewrite never arrived - keeping attempt 1 (${err.message})`)
+          return null
+        })
+      parsed = rewritten
+        ? await parseStoryOutput(rewritten.text, {
+            familyId: prepared.familyId,
+            storyId: prepared.storyId,
+            ...(sink ? { sink } : {}),
+          })
+        : { ok: false, reason: 'rewrite_failed', issues: [] }
       if (parsed.ok) {
         ;({ story, notes: normalized } = tidy(parsed))
         // The rewrite replaced the text: whatever the in-place mend did is not in it.
@@ -742,9 +766,10 @@ export async function runGeneration(
           ...(deps.extraBlocklists ? { extraBlocklists: deps.extraBlocklists } : {}),
         })
       } else {
-        // Keep attempt 1's story rather than show the parent nothing. If it still holds a
-        // hard-rule breach it goes down the ladder below (mend, cut) like any second breach,
-        // instead of shipping flagged with the breach in it.
+        // Keep attempt 1's story rather than show the parent nothing - the rewrite was unusable
+        // or never arrived (#72). If it still holds a hard-rule breach it goes down the ladder
+        // below (mend, cut) like any second breach, instead of shipping flagged with the
+        // breach in it.
         const breached = gate.result.hard_violations.length > 0
         gate = {
           ...gate,
