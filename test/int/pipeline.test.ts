@@ -16,6 +16,7 @@ const drops = vi.hoisted(() => ({
   rewriteDrops: 0,
   rewriteAttempts: 0,
   rewriteRefuses: false,
+  rewriteStatus: 0,
 }))
 vi.mock('@/lib/ai', async (orig) => {
   const actual = await orig<typeof import('@/lib/ai')>()
@@ -23,6 +24,11 @@ vi.mock('@/lib/ai', async (orig) => {
     ...actual,
     callModel: async (opts: Parameters<typeof actual.callModel>[0]) => {
       if (opts.purpose === 'rewrite' && drops.rewriteRefuses) throw new actual.ModelRefusalError('stub', 'stub', null)
+      if (opts.purpose === 'rewrite' && drops.rewriteStatus) {
+        throw new actual.ModelCallError(`rewrite call to stub failed after 1 attempt(s): ${drops.rewriteStatus}`, {
+          purpose: 'rewrite', model: 'stub', attempts: 1, retryable: false, status: drops.rewriteStatus,
+        })
+      }
       if (opts.purpose !== 'rewrite' || drops.rewriteDrops === 0) return actual.callModel(opts)
       const attempts = Math.min(opts.maxDrops ?? 1, opts.maxRetries ?? 2) + 1
       if (drops.rewriteDrops >= attempts) {
@@ -1019,6 +1025,7 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       drops.rewriteDrops = 0
       drops.rewriteAttempts = 0
       drops.rewriteRefuses = false
+      drops.rewriteStatus = 0
     })
     const tooScaryOnce = () => {
       let calls = 0
@@ -1028,20 +1035,30 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       }
     }
 
+    /** A first draft sent back for a quality failure only - too short - like 10-19's dinosaurs. */
+    const tooShort = () => {
+      const base = stubStory()
+      return stubStory({
+        chapters: base.chapters.map((c) => ({ ...c, text: c.text.split(/(?<=[.!?])\s+/).slice(0, 2).join(' ') })),
+      })
+    }
+    const alwaysClean = { review: async (): Promise<OutputSafetyReview> => clean }
+
     it('VT-F1: a rewrite that drops on every attempt falls back to attempt 1, flagged and saved', async () => {
       const run = await prepared()
-      const { story } = stubResponsesFor(run, { rewriteReasons: ['scary_level 2 above band A limit'] })
+      const { story } = stubResponsesFor(run, { story: tooShort() })
       drops.rewriteDrops = 99
       const quota = new RecordingQuota()
       const { events, result } = await collect(run, {
-        db: family.db, sink: new MemoryLogSink(), quota, safetyReviewer: tooScaryOnce(), now: () => FIXED_NOW,
+        db: family.db, sink: new MemoryLogSink(), quota, safetyReviewer: alwaysClean, now: () => FIXED_NOW,
       })
 
       expect(result.status).toBe('flagged')
       expect(result.writeCalls).toBe(2)
       expect(drops.rewriteAttempts).toBe(MAX_DROP_RETRIES + 1)
       expect(result.story?.title).toBe(story.title)
-      expect(result.quality?.rewrite_reasons.join(' ')).toMatch(/rewrite output unusable: rewrite_failed/)
+      expect(result.quality?.rewrite_reasons).toContain('rewrite output unusable: rewrite_failed:dropped')
+      expect(result.quality?.first_attempt?.failures.map((f) => f.check)).toContain('word_count_in_range')
       expect(events.at(-1)?.type).toBe('done')
       const { data: row } = await family.db.from('stories').select('status').eq('id', run.storyId).single()
       expect((row as { status: string }).status).toBe('flagged')
@@ -1064,7 +1081,8 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       const safetyReviewer = {
         review: async (s: StoryOutput): Promise<OutputSafetyReview> => {
           reviewCall += 1
-          if (reviewCall === 1) return { ...hardViolation(quote, 10), scary_level: 2 }
+          // A hard breach only: the in-place mend finds no edit, so the full rewrite runs.
+          if (reviewCall === 1) return hardViolation(quote, 10)
           return JSON.stringify(s).includes(SENTENCE) ? hardViolation(quote, 10) : clean
         },
       }
@@ -1091,7 +1109,7 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       const violations: OutputViolation[] = [{ rule: 10, quote: 'a line that is nowhere in the story', severity: 'hard' }]
       stubMendFor(run, story, violations, [])
       const safetyReviewer = {
-        review: async (): Promise<OutputSafetyReview> => ({ ...hardViolation(violations[0]!.quote, 10), scary_level: 2 }),
+        review: async (): Promise<OutputSafetyReview> => hardViolation(violations[0]!.quote, 10),
       }
       drops.rewriteDrops = 99
       const quota = new RecordingQuota()
@@ -1112,6 +1130,30 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       })
       expect(result.status).toBe('failed')
       expect(result.reason).toMatch(/ModelRefusalError/)
+    })
+
+    it('VT-F4: attempt 1 sent back as too scary for its band is not delivered on a lost rewrite', async () => {
+      const run = await prepared()
+      stubResponsesFor(run)
+      drops.rewriteDrops = 99
+      const quota = new RecordingQuota()
+      const { events, result } = await collect(run, {
+        db: family.db, sink: new MemoryLogSink(), quota, safetyReviewer: tooScaryOnce(), now: () => FIXED_NOW,
+      })
+      expect(result.status).toBe('failed')
+      expect(events.at(-1)).toMatchObject({ type: 'error', code: 'generation_failed', quota_consumed: false })
+      expect(quota.calls).toEqual([])
+    })
+
+    it('VT-F5: a rewrite failing with a 4xx of our own making (wrong model id) fails loudly - no fallback', async () => {
+      const run = await prepared()
+      stubResponsesFor(run, { story: tooShort() })
+      drops.rewriteStatus = 404
+      const { result } = await collect(run, {
+        db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), safetyReviewer: alwaysClean, now: () => FIXED_NOW,
+      })
+      expect(result.status).toBe('failed')
+      expect(result.reason).toBe('ModelCallError status=404')
     })
 
     it('VT-W7: a first write dropped twice before any chapter is written a third time and saved', async () => {

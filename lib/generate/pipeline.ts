@@ -301,14 +301,37 @@ export async function prepareGeneration(
  * from the wording of its reasons (CLAUDE.md: reasons are prose, codes are the contract).
  */
 export function onlyHardRuleBreaches(result: QualityResult, band: AgeBand): boolean {
-  const safety = result.safety
   return (
     result.failures.length === 0 &&
     result.hard_violations.length > 0 &&
     (result.review === null || reviewPassed(result.review, band)) &&
-    (safety === null ||
-      (safety.scary_level <= MAX_SCARY_LEVEL[band] && safety.positive_portrayal && safety.ending_safe))
+    bandSafetyHolds(result, band)
   )
+}
+
+/**
+ * Whether attempt 1 passed the safety review's band checks - scary level, positive portrayal,
+ * a safe ending - the ones the mend/cut ladder cannot fix. Hard-rule breaches are the ladder's.
+ */
+export function bandSafetyHolds(result: QualityResult, band: AgeBand): boolean {
+  const safety = result.safety
+  return safety === null || (safety.scary_level <= MAX_SCARY_LEVEL[band] && safety.positive_portrayal && safety.ending_safe)
+}
+
+/**
+ * Why a rewrite never arrived, as a stable code (issue #72) - or null when the failure is not
+ * one to fall back from: a refusal, or a 4xx other than 408/409/429, which is an error of our
+ * own (a wrong model id, a prompt too long) and must fail loudly, not ship attempt 1.
+ */
+export function rewriteLost(err: unknown): string | null {
+  if (!(err instanceof ModelCallError)) return null
+  const status = err.detail.status
+  if (status !== undefined) {
+    return status >= 500 || status === 408 || status === 409 || status === 429 ? `rewrite_failed:status_${status}` : null
+  }
+  if (/deadline: exceeded/.test(err.message)) return 'rewrite_failed:deadline'
+  if (/terminated|Connection error/i.test(err.message)) return 'rewrite_failed:dropped'
+  return 'rewrite_failed:transport'
 }
 
 /**
@@ -430,6 +453,8 @@ export async function runGeneration(
   deps: GenerationDeps = {},
 ): Promise<RunGenerationResult> {
   const startedAt = Date.now()
+  /** Time left before the platform kills the request; unbounded where there is no deadline. */
+  const timeLeft = () => (deps.deadlineMs === undefined ? Number.POSITIVE_INFINITY : deps.deadlineMs - Date.now())
   const db = deps.db ?? supabaseService()
   const sink = deps.sink
   const pack = prepared.factPack?.content ?? null
@@ -510,7 +535,7 @@ export async function runGeneration(
     // write, gate and save it.
     const writeAgainAfterDrop = (drops: number) => (err: unknown): ReturnType<typeof write> => {
       const dropped = err instanceof ModelCallError && err.detail.dropped === true
-      const left = deps.deadlineMs === undefined ? Number.POSITIVE_INFINITY : deps.deadlineMs - Date.now()
+      const left = timeLeft()
       if (!dropped || chapterSent || drops >= MAX_DROP_RETRIES || left < RETRY_MIN_MS) throw err
       console.warn(`[generate] the first write was cut off before any chapter was sent - writing it again (${(err as Error).message})`)
       parser = emitMetaAndChapters()
@@ -545,7 +570,6 @@ export async function runGeneration(
       const why = unusable(parsed, streamed.stopReason, streamed.usage.output_tokens)
       // Only if there is time to write it, gate it and save it before the request is killed:
       // a retry the platform cuts off sends the parent nothing at all, not even an error.
-      const timeLeft = () => (deps.deadlineMs === undefined ? Number.POSITIVE_INFINITY : deps.deadlineMs - Date.now())
       const left = timeLeft()
       if (left < RETRY_MIN_MS) {
         throw new GenerationFailed(`${why}; no shorter retry: ${Math.round(left / 1000)} s left before the request deadline`)
@@ -565,10 +589,14 @@ export async function runGeneration(
           messages: retryPrompt.messages,
           maxTokens: WRITER_MAX_TOKENS,
           // Bounded by the time left, less what the gate and the save need after it - measured
-          // at the moment of the call (the no-format fallback comes later), and one attempt
-          // only: callModel's own retries would each get the full timeout again.
+          // at the moment of the call (the no-format fallback comes later). A drop is retried
+          // like the rewrite's (#72), each attempt capped at the same deadline, so no retry
+          // gets the full timeout again.
           timeoutMs: Math.min(600_000, timeLeft() - AFTER_WRITE_MS),
-          maxRetries: 0,
+          ...(deps.deadlineMs !== undefined
+            ? { deadlineAt: deps.deadlineMs - AFTER_WRITE_MS, minRetryMs: RETRY_MIN_MS - AFTER_WRITE_MS }
+            : {}),
+          maxDrops: MAX_DROP_RETRIES, maxRetries: MAX_DROP_RETRIES,
           thinking: 'adaptive',
           ...(withFormat ? { outputConfig: { format: STORY_OUTPUT_FORMAT } } : {}),
           familyId: prepared.familyId,
@@ -731,24 +759,29 @@ export async function runGeneration(
         })
       // Issue #72: a rewrite that never arrives - dropped on every attempt, a transport
       // failure, our own deadline - is no reason to throw away the story already written. It
-      // takes the same path as an unusable rewrite below. A refusal still fails the request.
+      // takes the same path as an unusable rewrite below, but only when attempt 1 passed the
+      // safety review's band checks: a story sent back as too scary for its band, or with an
+      // unsafe ending, is not delivered on a lost connection. A refusal, or an error of our
+      // own making (a 4xx: a wrong model id, a prompt too long), still fails the request.
       const rewritten = await rewrite(structured)
         .catch((err: unknown) => {
           if (!structured || !structuredOutputRejected(err)) throw err
           return rewrite(false)
         })
         .catch((err: unknown) => {
-          if (!(err instanceof ModelCallError)) throw err
-          console.warn(`[generate] the rewrite never arrived - keeping attempt 1 (${err.message})`)
-          return null
+          const lost = rewriteLost(err)
+          if (!lost || !bandSafetyHolds(gate.result, prepared.band)) throw err
+          console.warn(`[generate] the rewrite never arrived (${lost}) - keeping attempt 1: ${(err as Error).message}`)
+          return lost
         })
-      parsed = rewritten
-        ? await parseStoryOutput(rewritten.text, {
-            familyId: prepared.familyId,
-            storyId: prepared.storyId,
-            ...(sink ? { sink } : {}),
-          })
-        : { ok: false, reason: 'rewrite_failed', issues: [] }
+      parsed =
+        typeof rewritten !== 'string'
+          ? await parseStoryOutput(rewritten.text, {
+              familyId: prepared.familyId,
+              storyId: prepared.storyId,
+              ...(sink ? { sink } : {}),
+            })
+          : { ok: false, reason: rewritten, issues: [] }
       if (parsed.ok) {
         ;({ story, notes: normalized } = tidy(parsed))
         // The rewrite replaced the text: whatever the in-place mend did is not in it.

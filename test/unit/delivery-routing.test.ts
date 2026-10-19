@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { onlyHardRuleBreaches, shorterLength } from '@/lib/generate/pipeline'
+import { bandSafetyHolds, onlyHardRuleBreaches, rewriteLost, shorterLength } from '@/lib/generate/pipeline'
+import { ModelCallError, ModelRefusalError } from '@/lib/ai'
 import type { QualityResult } from '@/lib/schemas'
 
 /**
@@ -44,5 +45,38 @@ describe('rung 3: one length tier shorter', () => {
     expect(shorterLength(15)).toBe(10)
     expect(shorterLength(10)).toBe(5)
     expect(shorterLength(5)).toBe(5)
+  })
+})
+
+describe('issue #72: which lost rewrites fall back to attempt 1', () => {
+  const failed = (message: string, status?: number) =>
+    new ModelCallError(`rewrite call to claude-sonnet-5 failed after 4 attempt(s): ${message}`, {
+      purpose: 'rewrite', model: 'claude-sonnet-5', attempts: 4, retryable: false, ...(status ? { status } : {}),
+    })
+
+  it('VT-F6 a drop, our deadline, a 5xx or a rate limit is a lost rewrite, each with its own code', () => {
+    expect(rewriteLost(failed('terminated'))).toBe('rewrite_failed:dropped')
+    expect(rewriteLost(failed('Connection error.'))).toBe('rewrite_failed:dropped')
+    expect(rewriteLost(failed('deadline: exceeded timeoutMs=600000'))).toBe('rewrite_failed:deadline')
+    expect(rewriteLost(failed('overloaded', 529))).toBe('rewrite_failed:status_529')
+    expect(rewriteLost(failed('rate limited', 429))).toBe('rewrite_failed:status_429')
+    expect(rewriteLost(failed('something else'))).toBe('rewrite_failed:transport')
+  })
+
+  it('VT-F6 a 4xx of our own making, a refusal or any other error is not', () => {
+    expect(rewriteLost(failed('not_found_error: model', 404))).toBeNull()
+    expect(rewriteLost(failed('prompt is too long', 400))).toBeNull()
+    expect(rewriteLost(failed('authentication_error', 401))).toBeNull()
+    expect(rewriteLost(new ModelRefusalError('claude-sonnet-5', 'cyber', null))).toBeNull()
+    expect(rewriteLost(new Error('boom'))).toBeNull()
+  })
+
+  it('VT-F6 band safety: scary level over the band, a negative portrayal or an unsafe ending blocks the fallback', () => {
+    const safe = { ...base.safety!, safe: true, violations: [] }
+    expect(bandSafetyHolds({ ...base, safety: safe }, 'A')).toBe(true)
+    expect(bandSafetyHolds({ ...base, safety: null }, 'A')).toBe(true)
+    expect(bandSafetyHolds({ ...base, safety: { ...safe, scary_level: 2 } }, 'A')).toBe(false)
+    expect(bandSafetyHolds({ ...base, safety: { ...safe, positive_portrayal: false } }, 'C')).toBe(false)
+    expect(bandSafetyHolds({ ...base, safety: { ...safe, ending_safe: false } }, 'D')).toBe(false)
   })
 })
