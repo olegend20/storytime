@@ -108,6 +108,9 @@ describe('s4.2 deterministic output checks vs the reference stories', () => {
     expect(r10('Mia hugged Dad as the dolphins leapt.')).toBe(0)
     expect(r10('A whale sang far away. Dad patted her on the back.')).toBe(0)
     expect(r10('Juno touched the baby sea turtle.')).toBe(1)
+    // Issue #66: every touch is reported, once per sentence.
+    expect(r10('Juno touched the whale. Then Milo patted the seal.')).toBe(2)
+    expect(r10('Mia touched, patted and stroked the seal.')).toBe(1)
     // From the reviewer agent (PR #40): "soft" and "cuddly" describe real animals too.
     expect(r10('Mia stroked the soft seal.')).toBe(1)
     expect(r10('Theo hugged the cuddly koala.')).toBe(1)

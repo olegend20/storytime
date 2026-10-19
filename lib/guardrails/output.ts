@@ -132,7 +132,10 @@ const SECRET_FROM_GROWN_UPS =
 
 function addRule10Hits(text: string, violations: OutputViolation[]): void {
   TOUCH_VERB.lastIndex = 0
+  // One violation per sentence: "touched, patted and stroked the seal" is one breach.
+  let lastSentenceEnd = -1
   for (let m = TOUCH_VERB.exec(text); m; m = TOUCH_VERB.exec(text)) {
+    if (m.index < lastSentenceEnd) continue
     // "Pat smiled at the dolphins": a capitalised Pat or Pet is a name.
     if (m[0] === 'Pat' || m[0] === 'Pet') continue
     const after = text.slice(m.index + m[0].length, m.index + m[0].length + 40)
@@ -147,6 +150,8 @@ function addRule10Hits(text: string, violations: OutputViolation[]): void {
       // Every one, not the first: a story where two children touch the shark would otherwise
       // be cut once, scanned again and discarded for the second (issue #66).
       violations.push({ rule: 10, quote: quoteAround(text, m.index, m[0].length).slice(0, 400), severity: 'hard' })
+      const end = text.slice(m.index).search(/[.!?](?=\s|$)/)
+      lastSentenceEnd = end === -1 ? text.length : m.index + end + 1
     }
   }
   const secret = SECRET_FROM_GROWN_UPS.exec(text)

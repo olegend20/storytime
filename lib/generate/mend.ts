@@ -46,7 +46,12 @@ function sentencesAround(text: string, at: number, length: number): { start: num
   // Forwards: the next sentence end (or paragraph break) at or after the hit ends - or the
   // hit's own end, when it finishes its sentence ("grabbed his flipper.").
   const from = at + length
-  if (/[.!?]["'”’)\]]*$/.test(text.slice(at, from)) && (from === text.length || /\s/.test(text[from]!))) {
+  const hitText = text.slice(at, from)
+  if (
+    /[.!?]["'”’)\]]*$/.test(hitText) &&
+    !/\b(?:Mr|Mrs|Ms|Dr|St|Prof|Mt|Jr|Sr)\.$/.test(hitText) &&
+    (from === text.length || /\s/.test(text[from]!))
+  ) {
     return { start, end: from }
   }
   const rest = text.slice(from)
@@ -69,17 +74,27 @@ function bareQuote(quote: string): string {
  * the reviewer reads the whole story, facts list and all. None of them goes to the mend
  * model; the cut (rung 2) handles each one without inventing a word.
  */
-export type PassagePart = 'subtitle' | 'heading' | 'shout_line' | 'ending_line' | 'true_fact'
+export type PassagePart = 'title' | 'subtitle' | 'heading' | 'shout_line' | 'ending_line' | 'true_fact'
 
-/** The text with markdown emphasis dropped, quotes and dashes straightened and runs of
- * whitespace collapsed, and for each character kept, where it came from: a reviewer quotes
- * "On January 27" from "On **January 27**", and ’ as '. */
+/** Never part of a match: zero-width and direction controls (the scanner strips them too). */
+const INVISIBLE = /[\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff]/
+
+/** The text with markdown emphasis and HTML tags dropped, quotes and dashes straightened and
+ * runs of whitespace collapsed, and for each character kept, where it came from: a reviewer
+ * quotes "On January 27" from "On **January 27**", and ’ as '. */
 function normalized(text: string): { text: string; from: number[] } {
   let out = ''
   const from: number[] = []
   for (let i = 0; i < text.length; i++) {
     let ch = text[i]!
-    if (ch === '*') continue
+    if (ch === '<') {
+      const close = text.indexOf('>', i)
+      if (close !== -1 && /^<\/?[a-z][^<>]*>$/i.test(text.slice(i, close + 1))) {
+        i = close
+        continue
+      }
+    }
+    if (ch === '*' || INVISIBLE.test(ch)) continue
     if (ch === '\u2018' || ch === '\u2019') ch = "'"
     else if (ch === '\u201c' || ch === '\u201d') ch = '"'
     else if (ch === '\u2013' || ch === '\u2014') ch = '-'
@@ -93,31 +108,45 @@ function normalized(text: string): { text: string; from: number[] } {
   return { text: out, from }
 }
 
-/** Where `needle` (already normalized) sits in `text`, as a range of the original text. */
-function findNormalized(text: string, needle: string): { at: number; length: number } | null {
-  const n = normalized(text)
-  const at = n.text.indexOf(needle)
-  if (at === -1 || needle === '') return null
-  const start = n.from[at]!
-  const end = n.from[at + needle.length - 1]! + 1
-  return { at: start, length: end - start }
+const WORD_CHAR = /[\p{L}\p{N}]/u
+
+/**
+ * Every whole-word occurrence of `needle` in `hay`: "he was so" is not inside "she was so".
+ * A quote or a sentence of it is matched with `edges: false`: a window is cut mid-word.
+ */
+function wordHits(hay: string, needle: string, edges = true): number[] {
+  const hits: number[] = []
+  if (needle === '') return hits
+  const edgeStart = edges && WORD_CHAR.test(needle[0]!)
+  const edgeEnd = edges && WORD_CHAR.test(needle.at(-1)!)
+  for (let at = hay.indexOf(needle); at !== -1; at = hay.indexOf(needle, at + 1)) {
+    if (edgeStart && at > 0 && WORD_CHAR.test(hay[at - 1]!)) continue
+    const after = at + needle.length
+    if (edgeEnd && after < hay.length && WORD_CHAR.test(hay[after]!)) continue
+    hits.push(at)
+  }
+  return hits
 }
 
-/** Every searchable part of the story: chapter text first, then the rest. */
-function storyParts(story: StoryOutput): { part: PassagePart | null; index: number; text: string }[] {
-  const parts: { part: PassagePart | null; index: number; text: string }[] = story.chapters.map((c, i) => ({
-    part: null,
-    index: i,
-    text: c.text,
-  }))
-  if (story.subtitle) parts.push({ part: 'subtitle', index: 0, text: story.subtitle })
+interface SearchPart {
+  part: PassagePart | null
+  index: number
+  text: string
+  norm: { text: string; from: number[] }
+}
+
+/** Every searchable part of the story: chapter text first, then the rest, each normalized once. */
+function storyParts(story: StoryOutput): SearchPart[] {
+  const raw: Omit<SearchPart, 'norm'>[] = story.chapters.map((c, i) => ({ part: null, index: i, text: c.text }))
+  raw.push({ part: 'title', index: 0, text: story.title })
+  if (story.subtitle) raw.push({ part: 'subtitle', index: 0, text: story.subtitle })
   story.chapters.forEach((c, i) => {
-    parts.push({ part: 'heading', index: i, text: c.heading })
-    if (c.shout_line) parts.push({ part: 'shout_line', index: i, text: c.shout_line })
+    raw.push({ part: 'heading', index: i, text: c.heading })
+    if (c.shout_line) raw.push({ part: 'shout_line', index: i, text: c.shout_line })
   })
-  parts.push({ part: 'ending_line', index: 0, text: story.ending_line })
-  story.true_facts.forEach((f, i) => parts.push({ part: 'true_fact', index: i, text: f.text }))
-  return parts
+  raw.push({ part: 'ending_line', index: 0, text: story.ending_line })
+  story.true_facts.forEach((f, i) => raw.push({ part: 'true_fact', index: i, text: f.text }))
+  return raw.map((p) => ({ ...p, norm: normalized(p.text) }))
 }
 
 /** The shortest run of the quote's words that may place it, when it occurs once in the story. */
@@ -125,67 +154,81 @@ export const MIN_RUN_WORDS = 3
 
 /**
  * Where a violation's quote lives: the chapter and the sentence(s) that contain it, or the
- * subtitle, a heading, a shout line, the ending line or a true fact (issue #66). The
- * deterministic scanner's quote is a window around the match (`quoteAround`), so it is
- * tried whole, then by its own sentences, then by its longest words-run that the text has.
+ * title, subtitle, a heading, a shout line, the ending line or a true fact (issue #66).
+ *
+ * Tried in order: the quote whole, then its own sentences, then a run of its words that
+ * occurs exactly once in the story. A reviewer paraphrases, quotes a sentence the mend
+ * already changed, or glues the rule's own words onto the quote; a run must be unique, since
+ * "and the boys were" can sit in any harmless sentence and a cut placed on the wrong one
+ * would remove an innocent line. Whatever the ladder changes is reviewed again before it ships.
+ *
+ * A scanner quote is a window cut mid-sentence around the hit (`quoteAround`): only the
+ * pieces the scanner itself flags are tried before the window whole, so the hit is placed
+ * and not the harmless sentence beside it.
  */
 export function locateViolation(story: StoryOutput, violation: OutputViolation): Passage | null {
-  const quote = normalized(bareQuote(violation.quote)).text.trim()
-  if (quote === '') return null
-  // The quote whole; then its own sentences; then its longest run of words the text has
-  // (a reviewer paraphrases, quotes a sentence the mend already changed, or glues the rule's
-  // own words onto the quote; a scanner's window straddles a paragraph break).
-  // A run must occur exactly once in the whole story: "and the boys were" can sit in any
-  // harmless sentence, and a cut placed on the wrong sentence would ship the breach while
-  // removing an innocent line. Whatever the ladder changes is reviewed again before it ships.
-  const parts = storyParts(story)
-  const all = parts.map((p) => normalized(p.text).text).join('\n')
-  const occursOnce = (needle: string) => {
-    const first = all.indexOf(needle)
-    return first !== -1 && all.indexOf(needle, first + 1) === -1
-  }
-  const words = quote.split(' ').filter((w) => w !== '')
-  const runs: string[] = []
-  for (let n = Math.min(words.length, 8); n >= MIN_RUN_WORDS; n--) {
-    for (let i = 0; i + n <= words.length; i++) {
-      const run = words.slice(i, i + n).join(' ')
-      if (occursOnce(run)) runs.push(run)
-    }
-  }
-  // A quote's own sentences and paragraphs (a scanner window can hold a chapter heading).
-  // A scanner quote is a window cut mid-sentence at both ends around the hit: the piece the
-  // scanner flags goes first, then the pieces nearest the centre, so the hit is placed and
-  // not the line beside it.
   const raw = bareQuote(violation.quote)
-  const windowed = /^(?:…|\.\.\.)|(?:…|\.\.\.)$/.test(violation.quote.trim())
+  const quote = normalized(raw).text.trim()
+  if (quote === '') return null
+  const parts = storyParts(story)
+
+  const place = (needle: string, edges = true): Passage | null => {
+    for (const p of parts) {
+      const at = wordHits(p.norm.text, needle, edges)[0]
+      if (at === undefined) continue
+      if (p.part !== null) return { chapter: p.index, text: p.text, start: 0, rule: violation.rule, part: p.part }
+      const from = p.norm.from[at]!
+      const to = p.norm.from[at + needle.length - 1]! + 1
+      const { start, end } = sentencesAround(p.text, from, to - from)
+      const text = p.text.slice(start, end)
+      if (text.trim() !== '') return { chapter: p.index, text, start, rule: violation.rule }
+    }
+    return null
+  }
+
+  // The quote's own sentences, paragraph by paragraph (a scanner window can hold a heading).
   const pieces = raw
     .split(/\n\s*\n/)
     .flatMap((para) => splitSentences(normalized(para).text))
     .filter((s) => s.length >= 12)
-  const centre = normalized(raw).text.length / 2
-  const flat = normalized(raw).text
-  const distance = (piece: string) => {
-    const at = flat.indexOf(piece)
-    return at === -1 ? Number.MAX_SAFE_INTEGER : Math.abs(at + piece.length / 2 - centre)
-  }
-  // The piece the scanner itself flags for this rule holds the hit; the rest stand beside it.
-  const flags = (piece: string) => scanStoryText(piece).hardViolations.some((v) => v.rule === violation.rule)
-  const ordered = windowed
-    ? [...pieces].sort((a, b) => Number(flags(b)) - Number(flags(a)) || distance(a) - distance(b))
+  const windowed = /^(?:…|\.\.\.)|(?:…|\.\.\.)$/.test(violation.quote.trim())
+  const flagged = windowed
+    ? pieces.filter((piece) => scanStoryText(piece).hardViolations.some((v) => v.rule === violation.rule))
     : pieces
-  // A scanner window is tried by its pieces before whole: whole, it would cut the harmless
-  // sentences on either side of the hit along with it.
-  const candidates = windowed ? [...ordered, quote, ...runs] : [quote, ...ordered, ...runs]
+  const candidates = windowed ? [...flagged, quote] : [quote, ...pieces]
+  // Whole quotes and sentences are long enough to match as they are (a window's first and
+  // last pieces are cut mid-word); only the short runs below must be whole words.
   for (const needle of candidates) {
-    for (const p of parts) {
-      const hit = findNormalized(p.text, needle)
-      if (!hit) continue
-      if (p.part !== null) return { chapter: p.index, text: p.text, start: 0, rule: violation.rule, part: p.part }
-      const { start, end } = sentencesAround(p.text, hit.at, hit.length)
-      const text = p.text.slice(start, end)
-      if (text.trim() === '') continue
-      return { chapter: p.index, text, start, rule: violation.rule }
+    const hit = place(needle, false)
+    if (hit) return hit
+  }
+
+  // Runs last, built only now. Each piece offers its longest run unique to the story, and the
+  // run covering most of its own piece wins: "grabbed his flipper." is most of "Maya grabbed
+  // his flipper.", while "a wild animal" is a sliver of the rule text glued in front of it.
+  const total = (needle: string) => parts.reduce((n, p) => n + wordHits(p.norm.text, needle).length, 0)
+  const offers: { run: string; cover: number; words: number }[] = []
+  // A scanner window's runs come from its flagged pieces only: a run from a neighbour would
+  // place the cut beside the hit. Nothing flagged and no whole match: unplaced, so discarded.
+  const runPieces = windowed ? flagged : pieces.length > 0 ? pieces : [quote]
+  for (const piece of runPieces) {
+    const words = piece.split(' ').filter((w) => w !== '')
+    let found: string | null = null
+    for (let n = Math.min(words.length, 8); n >= MIN_RUN_WORDS && !found; n--) {
+      for (let i = 0; i + n <= words.length && !found; i++) {
+        const run = words.slice(i, i + n).join(' ')
+        if (total(run) === 1) found = run
+      }
     }
+    if (found) {
+      const n = found.split(' ').length
+      offers.push({ run: found, cover: n / words.length, words: n })
+    }
+  }
+  offers.sort((a, b) => b.cover - a.cover || b.words - a.words)
+  for (const { run } of offers) {
+    const hit = place(run)
+    if (hit) return hit
   }
   return null
 }
@@ -269,11 +312,14 @@ function removePassage(story: StoryOutput, passage: Passage): StoryOutput | null
 /**
  * Remove a part outside the chapter text (issue #66). Optional parts go; a true fact goes
  * while the story keeps its minimum; the required ending line and a heading are replaced
- * with plain words that add nothing ("The end.", "Chapter 3"), never with invented text.
+ * with plain words that add nothing ("The end.", "Chapter 3", "A Bedtime Story"), never
+ * with invented text.
  */
 function removePart(story: StoryOutput, passage: Passage): StoryOutput | null {
   const i = passage.chapter
   switch (passage.part) {
+    case 'title':
+      return { ...story, title: 'A Bedtime Story' }
     case 'subtitle':
       return { ...story, subtitle: null }
     case 'ending_line':

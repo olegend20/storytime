@@ -294,4 +294,45 @@ describe('issue #66: quotes the ladder could not place on 2026-10-17', () => {
     const where = locateViolation(story, hard(3, window))
     expect(where?.text).toBe('"Mermaids belong in water," Ellie announced, stepping in right behind him.')
   })
+
+  // From /code-review on PR #67.
+  it('glued rule text does not win: the run covering most of its own sentence is placed', () => {
+    const story = storyWith([KEEP, 'Maya grinned and grabbed his flipper.'])
+    story.true_facts.push({ text: 'Never feed a wild animal in the sea.', fact_id: 'f98' })
+    const glued = hard(10, 'A child touching, patting, stroking, feeding or riding a wild animal is a breach... Maya grabbed his flipper.')
+    expect(locateViolation(story, glued)).toMatchObject({ chapter: 1, text: 'Maya grinned and grabbed his flipper.' })
+  })
+
+  it('a run matches whole words only: "he was so" is not inside "she was so"', () => {
+    const story = storyWith(['Mia said she was so happy to see the sea.'])
+    expect(locateViolation(story, hard(3, 'and he was so frightened'))).toBeNull()
+  })
+
+  it('a scanner window whose hit sits in no flagged piece is placed whole, or not at all - never beside the hit', () => {
+    const story = storyWith(['The boat rocked gently on the bay.', 'Pet it!', 'Ellie laughed at the waves below.'])
+    expect(locateViolation(story, hard(10, '…oat rocked gently on the bay. Pet it! Ellie laughed at the wav…'))?.text).toContain('Pet it!')
+    // The window no longer matches whole (the text changed): no run from a neighbour is used.
+    story.chapters[1]!.text = 'The boat rocked gently on the bay. Ellie laughed at the waves below.'
+    expect(locateViolation(story, hard(10, '…oat rocked gently on the bay. Pet it! Ellie laughed at the wav…'))).toBeNull()
+  })
+
+  it('a flagged title is placed and replaced with plain words', () => {
+    const story = goodStory()
+    story.title = 'The Day Theo Rode the Wild Dolphin'
+    const v = hard(10, 'The Day Theo Rode the Wild Dolphin')
+    expect(locateViolation(story, v)).toMatchObject({ part: 'title' })
+    expect(cutViolations(story, [v]).story.title).toBe('A Bedtime Story')
+  })
+
+  it('a run ending at "Mr." does not end the passage mid-sentence', () => {
+    const story = storyWith([KEEP, 'Juno waved at Mr. Shark and patted his fin.'])
+    const where = locateViolation(story, hard(10, 'and then Juno waved at Mr.'))
+    expect(where?.text).toBe('Juno waved at Mr. Shark and patted his fin.')
+  })
+
+  it('invisible characters and stray tags in the story do not stop a match', () => {
+    const story = storyWith([KEEP, 'Juno reached out and \u200bpatted the <em>whale shark</em>.'])
+    const where = locateViolation(story, hard(10, 'Juno reached out and patted the whale shark.'))
+    expect(where?.chapter).toBe(1)
+  })
 })
