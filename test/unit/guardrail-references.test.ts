@@ -111,6 +111,8 @@ describe('s4.2 deterministic output checks vs the reference stories', () => {
     // Issue #66: every touch is reported, once per sentence.
     expect(r10('Juno touched the whale. Then Milo patted the seal.')).toBe(2)
     expect(r10('Mia touched, patted and stroked the seal.')).toBe(1)
+    // A blown kiss to someone stays romance (rule 1) though "blew a kiss" is allowed (2026-10-18).
+    expect(scanStoryText('Mia blew him a kiss.').hardViolations.filter((v) => v.rule === 1).length).toBe(1)
     // From the reviewer agent (PR #40): "soft" and "cuddly" describe real animals too.
     expect(r10('Mia stroked the soft seal.')).toBe(1)
     expect(r10('Theo hugged the cuddly koala.')).toBe(1)

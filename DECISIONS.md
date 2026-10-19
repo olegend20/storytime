@@ -439,6 +439,12 @@ The owner's first real stories: every first draft sent back, every rewrite faile
 |---|---|---|
 | 205 | **Rule 10's free check no longer treats "soft" or "cuddly" as a sign of a toy, and a safety review is made safe again by dropping a retired rule-7 report only when nothing else is left in it.** "Mia stroked the soft seal" and "Theo hugged the cuddly koala" are caught; "teddy", "plush", "stuffed" and "toy" still mark toys. A review with rule 7 and a soft concern stays unsafe. Both changes tighten a guardrail; neither loosens one. | Reviewer agent on #40 (non-blocking threads, answered there and fixed here so the owner's approval on #40 was not stripped). "However gentle the animal is made to seem" is the shape GUARDRAILS rule 10 names. The rule-7 flip was meant for a review whose only complaint was rule 7. |
 
+## 2026-10-18 — harmless phrases allowed in the output blocklist (issue #64)
+
+| # | Decision | Why |
+|---|---|---|
+| 206 | **The output blocklist's `allow` list gains "water pistol(s)", "water gun(s)", "squirt gun(s)", "glue gun(s)", "blew a kiss", "blew a tiny kiss", "blew kisses", "blow a kiss", "blows a kiss" and "blowing kisses".** An allowed phrase exempts only its own words. A bare "pistol" or "gun" is still a hit, and "blew him a kiss", "blew her a kiss" and "they kissed" are still rule-1 romance. | Owner approved 2026-10-18 (this loosens a guardrail, so it was the owner's call). The v6 eval (#203) found the blocklist rejecting phrases a scenario invites, such as a child who likes water pistols, each costing a rewrite. The input list already allowed "glue gun" and "water gun"; the output list did not. |
+
 ## 2026-10-18 — the mend ladder places every flagged line (issue #66)
 
 | # | Decision | Why |
