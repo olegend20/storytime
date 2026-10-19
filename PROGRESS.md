@@ -876,12 +876,24 @@ Each has an e2e test on desktop and phone (the wake lock and offline tests stub 
 browser APIs). **Gates:** lint ✅ · typecheck ✅ · unit+int 1013 ✅ · e2e mock **132** ✅ ·
 e2e real 4 ✅.
 
+### 2026-10-18 — harmless phrases allowed in stories (issue #64, DECISIONS #206)
+
+Owner-approved: "water pistol", "glue gun", "blew a kiss" and their variants no longer fail
+the output blocklist. A real pistol or gun, and a kiss blown *to someone*, are still caught.
+
 ### 2026-10-18 — #40 review follow-ups (issue #61, DECISIONS #205)
 
 Rule 10's free check catches a child stroking a "soft" or hugging a "cuddly" wild animal; a
 safety review with a retired rule-7 report and a soft concern stays unsafe; the rule-12
 constants sit below the comment that describes them. **Gates:** lint ✅ · typecheck ✅ ·
 unit+int 1340 ✅ · guardrails 32 ✅ · e2e mock 196 ✅ · e2e real 6 ✅.
+
+### 2026-10-18 — the mend ladder places every flagged line (issue #66, DECISIONS #207)
+
+`pnpm mend-bench` (free): 39 captured stories with hard violations. Violations placed 46/52 →
+**54/54**; stories a cut clears 32/39 → **39/39**; scanner hits cleared 11/13 → **13/13**.
+**Gates:** lint ✅ · typecheck ✅ · unit+int 1349 ✅ · guardrails 32 ✅ · e2e mock 196 ✅ ·
+e2e real 6 ✅. The 32-story live eval to confirm is waiting for the owner's OK (~$15).
 
 ### 2026-10-17 — a dropped connection never loses a story (issue #59, DECISIONS #204)
 
