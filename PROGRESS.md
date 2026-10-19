@@ -883,6 +883,13 @@ safety review with a retired rule-7 report and a soft concern stays unsafe; the 
 constants sit below the comment that describes them. **Gates:** lint ✅ · typecheck ✅ ·
 unit+int 1340 ✅ · guardrails 32 ✅ · e2e mock 196 ✅ · e2e real 6 ✅.
 
+### 2026-10-18 — the mend ladder places every flagged line (issue #66, DECISIONS #207)
+
+`pnpm mend-bench` (free): 39 captured stories with hard violations. Violations placed 46/52 →
+**54/54**; stories a cut clears 32/39 → **39/39**; scanner hits cleared 11/13 → **13/13**.
+**Gates:** lint ✅ · typecheck ✅ · unit+int 1349 ✅ · guardrails 32 ✅ · e2e mock 196 ✅ ·
+e2e real 6 ✅. The 32-story live eval to confirm is waiting for the owner's OK (~$15).
+
 ### 2026-10-17 — a dropped connection never loses a story (issue #59, DECISIONS #204)
 
 Owner report: on a phone, generation "always errors out" with "We lost the connection, but your story is still being made…". Production 14–17 Oct: 7 accepted requests, 5 saved, 2 discarded (rule 7, retired by #40); the volcano story was saved 6½ minutes after the request, 3½ minutes after the page gave up on it. The page now asks how its own request ended (new `generation_requests` table, `GET /api/stories/generate/{id}`) and opens the story when it is saved, or says at once that it could not be made and was free. The table and a `[generate] outcome=` log line make the SLA (accepted requests that end in a saved story, target 99%) measurable. No model calls, no prompt or schema changes, no spend.

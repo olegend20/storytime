@@ -144,8 +144,9 @@ function addRule10Hits(text: string, violations: OutputViolation[]): void {
     const partObject = TOUCHED_PART.test(object) && WILD_ANIMAL.test(text.slice(Math.max(0, m.index - 300), m.index))
     const ownedOrToy = animalObject ? NOT_WILD.test(animalObject[0]) : false
     if ((animalObject && !ownedOrToy) || partObject) {
+      // Every one, not the first: a story where two children touch the shark would otherwise
+      // be cut once, scanned again and discarded for the second (issue #66).
       violations.push({ rule: 10, quote: quoteAround(text, m.index, m[0].length).slice(0, 400), severity: 'hard' })
-      break
     }
   }
   const secret = SECRET_FROM_GROWN_UPS.exec(text)

@@ -220,3 +220,78 @@ describe('rung 2: the cut', () => {
     expect(cut).toEqual(story)
   })
 })
+
+describe('issue #66: quotes the ladder could not place on 2026-10-17', () => {
+  const hard = (rule: number, quote: string): OutputViolation => ({ rule, quote, severity: 'hard' })
+
+  it('a quote from a true fact is placed there, and the cut drops that fact while the story keeps its minimum', () => {
+    const story = goodStory()
+    story.true_facts.push({ text: 'On **January 27, 1967**, a fire during a ground test killed three astronauts.', fact_id: 'f99' })
+    const v = hard(2, 'On January 27, 1967, a fire during a ground test killed three astronauts')
+    expect(locateViolation(story, v)).toMatchObject({ part: 'true_fact', chapter: story.true_facts.length - 1 })
+    const cut = cutViolations(story, [v])
+    expect(cut.complete).toBe(true)
+    expect(cut.story.true_facts.map((f) => f.fact_id)).not.toContain('f99')
+    expect(cut.story.chapters).toEqual(story.chapters)
+    // At the minimum, a fact cannot go: not complete, so the story is not shipped with it.
+    const atMin = { ...story, true_facts: story.true_facts.slice(-8) }
+    expect(cutViolations(atMin, [v]).complete).toBe(false)
+  })
+
+  it('the subtitle and a shout line go; the ending line and a heading become plain words, never invented ones', () => {
+    const story = goodStory()
+    story.subtitle = 'A sleep-science adventure for a kid who should really be asleep by now'
+    story.ending_line = 'Goodnight, Phoenix. Goodnight, Cruz. Print well.'
+    story.chapters[2]!.heading = 'The Glitch at Midnight'
+    story.chapters[3]!.shout_line = 'Hold on tight to the wild dolphin!'
+    const vs = [
+      hard(12, story.subtitle),
+      hard(12, story.ending_line),
+      hard(3, 'The Glitch at Midnight'),
+      hard(10, 'Hold on tight to the wild dolphin!'),
+    ]
+    const cut = cutViolations(story, vs)
+    expect(cut.complete).toBe(true)
+    expect(cut.story.subtitle).toBeNull()
+    expect(cut.story.ending_line).toBe('The end.')
+    expect(cut.story.chapters[2]!.heading).toBe('Chapter 3')
+    expect(cut.story.chapters[3]!.shout_line).toBeNull()
+    expect(cut.story.chapters.map((c) => c.text)).toEqual(story.chapters.map((c) => c.text))
+  })
+
+  it('the mend model is sent chapter sentences only', async () => {
+    const story = goodStory()
+    story.ending_line = 'Goodnight, Phoenix. Goodnight, Cruz. Print well.'
+    const result = await mendStory(story, [hard(12, story.ending_line)])
+    expect(calls.made).toHaveLength(0)
+    expect(result.edits).toBe(0)
+  })
+
+  it("a reviewer quote with the rule's own words glued on, or a sentence the mend already changed, is placed by a run unique to the story", () => {
+    const flipper = 'Maya grinned and grabbed his flipper. "All aboard!"'
+    const story = storyWith([KEEP, flipper])
+    const glued = hard(10, 'A child touching, patting, stroking, feeding or riding a wild animal is a breach... Maya grabbed his flipper.')
+    expect(locateViolation(story, glued)).toMatchObject({ chapter: 1, text: 'Maya grinned and grabbed his flipper.' })
+    expect(cutViolations(story, [glued]).complete).toBe(true)
+  })
+
+  it('a three-word run that is not unique to the story places nothing', () => {
+    const story = storyWith(['Maya grabbed his hat and ran.', 'Then Maya grabbed his scarf too.'])
+    expect(locateViolation(story, hard(10, 'Maya grabbed his flipper.'))).toBeNull()
+  })
+
+  it("matches through markdown bold and curly quotes", () => {
+    const story = storyWith([KEEP, 'Juno said, “It’s **huge**,” and patted the whale shark.'])
+    const where = locateViolation(story, hard(10, `Juno said, "It's huge," and patted the whale shark.`))
+    expect(where?.text).toBe('Juno said, “It’s **huge**,” and patted the whale shark.')
+  })
+
+  it("a scanner window is placed on the hit, not on the harmless sentences beside it", () => {
+    const story = goodStory()
+    story.chapters[1]!.text = `"Mermaids belong in water," Ellie announced, stepping in right behind him.\n\nThe bubble swallowed them both. WHOOOOSH.`
+    story.chapters[1]!.shout_line = "LET'S DIVE!"
+    const window = `….\n\n"Mermaids belong in water," Ellie announced, stepping in right behind him.\n\nThe bubble swallowed them both. WHOOOOSH.\n\nLET'S DIVE!\n\nC…`
+    const where = locateViolation(story, hard(3, window))
+    expect(where?.text).toBe('"Mermaids belong in water," Ellie announced, stepping in right behind him.')
+  })
+})
