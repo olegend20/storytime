@@ -234,6 +234,21 @@ describe('the fact pack the writer sees', () => {
   it('is null when there is no pack', () => {
     expect(factPackForWriter(null)).toBeNull()
   })
+
+  it('leaves out a fact the youngest child is too young for, which the gate would reject', () => {
+    const pack = goodFactPack()
+    pack.facts[0]!.min_age = 9
+    const ids = (age?: number) => (factPackForWriter(pack, age) as { facts: { id: string }[] }).facts.map((f) => f.id)
+    expect(ids(4)).not.toContain(pack.facts[0]!.id)
+    expect(ids(9)).toContain(pack.facts[0]!.id)
+    expect(ids()).toHaveLength(pack.facts.filter((f) => f.kid_safe).length)
+    pack.facts[1]!.kid_safe = false
+    expect(ids(99)).not.toContain(pack.facts[1]!.id)
+    // buildPrompt filters by the youngest child in the request.
+    const built = buildPrompt({ request: request(), bible, factPack: pack })
+    const youngest = Math.min(...request().children.map((c) => c.age))
+    expect(JSON.stringify(built.messages).includes(pack.facts[0]!.text)).toBe(youngest >= 9)
+  })
 })
 
 describe('assembled prompt snapshot', () => {

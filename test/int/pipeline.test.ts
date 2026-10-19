@@ -274,11 +274,11 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
    */
   function stubResponsesFor(
     run: PreparedGeneration,
-    opts: { rewriteReasons?: string[] } = {},
+    opts: { rewriteReasons?: string[]; story?: StoryOutput } = {},
   ): { story: StoryOutput; rewritten: StoryOutput } {
     const writer = modelForRole('writer')
     const helperModel = modelForRole('helper')
-    const story = stubStory()
+    const story = opts.story ?? stubStory()
     const rewritten = stubRewrittenStory()
 
     // 1. the streamed write
@@ -520,6 +520,38 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       .eq('id', run.storyId)
       .single()
     expect((row as { content_notice: string | null }).content_notice).toBe('borrowed_character')
+    if (result.bibleUpdate) await result.bibleUpdate
+  })
+
+  it('a character nobody asked for is not a violation (rule 7 retired), but the saved story carries the notice', async () => {
+    const run = await prepared()
+    expect(run.contentNotice).toBeNull()
+    const plain = stubStory()
+    const story = {
+      ...plain,
+      chapters: plain.chapters.map((c, i) =>
+        i === 1 ? { ...c, text: `${c.text}\n\nThen Olaf waved at them from the window.` } : c,
+      ),
+    }
+    stubResponsesFor(run, { story })
+
+    const { events, result } = await collect(run, {
+      db: family.db,
+      sink: new MemoryLogSink(),
+      quota: new RecordingQuota(),
+      now: () => FIXED_NOW,
+    })
+    expect(result.status).toBe('ready')
+    const { data: row } = await family.db
+      .from('stories')
+      .select('content_notice')
+      .eq('id', run.storyId)
+      .single()
+    expect((row as { content_notice: string | null }).content_notice).toBe('borrowed_character')
+    // The reader sees it on first view too: a second meta, before done (reviewer agent, PR #40).
+    const metas = events.filter((e) => e.type === 'meta')
+    expect(metas.map((m) => (m as { content_notice: string | null }).content_notice)).toEqual([null, 'borrowed_character'])
+    expect(events.findIndex((e) => e === metas[1])).toBeLessThan(events.findIndex((e) => e.type === 'done'))
     if (result.bibleUpdate) await result.bibleUpdate
   })
 

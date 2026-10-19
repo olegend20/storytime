@@ -46,4 +46,4 @@ export function promptVersion(name: string): number {
 }
 
 export const INPUT_CLASSIFIER_PROMPT = 'guardrail.input-classifier.v2.md'
-export const OUTPUT_REVIEW_PROMPT = 'guardrail.output-review.v3.md'
+export const OUTPUT_REVIEW_PROMPT = 'guardrail.output-review.v4.md'

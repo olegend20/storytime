@@ -124,7 +124,7 @@ describe('F13 eval harness', () => {
     expect('skipped' in result.calibration).toBe(false)
     if ('skipped' in result.calibration) throw new Error('unreachable')
     expect(result.calibration.passed).toBe(true)
-    expect(result.judge_prompt.version).toBe('judge.v2')
+    expect(result.judge_prompt.version).toBe('judge.v3')
   })
 
   // eval-2026-10-06 died on scenario 2 of 8 when the writer produced no story, after $2.27.

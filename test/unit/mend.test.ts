@@ -129,7 +129,7 @@ describe('rung 1: the mend', () => {
     const content = (calls.made[0]!.messages as { content: string }[])[0]!.content
     expect(content).toBe(mendUserMessage(passagesFor(story, violations).passages))
     expect(content).toContain('<passages>')
-    expect(content).toContain('7. No branded fictional characters')
+    expect(content).toContain('Wild animals are watched, never touched')
   })
 
   it('applies no edit it did not ask for, none it cannot place, none that balloons, and each passage once', async () => {

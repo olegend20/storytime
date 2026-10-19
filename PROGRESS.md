@@ -880,6 +880,32 @@ e2e real 4 ✅.
 
 Owner report: on a phone, generation "always errors out" with "We lost the connection, but your story is still being made…". Production 14–17 Oct: 7 accepted requests, 5 saved, 2 discarded (rule 7, retired by #40); the volcano story was saved 6½ minutes after the request, 3½ minutes after the page gave up on it. The page now asks how its own request ended (new `generation_requests` table, `GET /api/stories/generate/{id}`) and opens the story when it is saved, or says at once that it could not be made and was free. The table and a `[generate] outcome=` log line make the SLA (accepted requests that end in a saved story, target 99%) measurable. No model calls, no prompt or schema changes, no spend.
 
+### 2026-10-08 — prompt first, guardrails as the backstop (DECISIONS #187–#194)
+
+Owner: retire hard rule 7 (characters from films and games are fine; the books are for
+personal use), tighten rule 10 (wild animals are watched, never touched), and "hill climb
+towards 0 rewrites because our system is better up front". Rule 7 is gone from the scanner,
+the L4 reviewer (`guardrail.output-review.v4`) and the judge (`judge.v3`); a story with a
+franchise character carries the personal-use notice, asked for or not. Writer: master v4 then
+v5, plus `fact-pack-note.v1` beside the pack, no `kid_safe: false` or too-old facts shown,
+length aim at the top of the range. Quality reviewer v3 stops failing what is not a fault.
+Two free gate checks added: rule 12 names our machinery (story bible, fact pack, `[f12]`),
+rule 10 catches wild-animal touching and secrets from grown-ups - which the L4 reviewer was
+found to miss in whole stories (both prompt versions, replayed live). The eval now reports
+**first drafts untouched**.
+
+| run | writer | first drafts untouched | mean (scored) | lowest | DQ | cost |
+|---|---|---|---|---|---|---|
+| 6-7 Oct baseline | master v3 | 0 / 12 | 4.15 (4) | 4.10 | 0 | - |
+| 8 Oct #1 | master v4 | 1 / 8 | 3.97 (8) | 3.00 | 0 | $4.82 |
+| 8 Oct #2 | v5 + quality-review v3 | 1 / 8 | 3.79 (8) | 1.00 | 1 (meta leak) | $3.71 |
+| 8 Oct #3 | + note, filters, length | (network failed 6 of 8) | - | - | 2 (rule 10) | $0.70 |
+| 8 Oct #3 re-run | + rule-10 check | **2 / 7** | **4.08** (7) | **3.90** | 0 | $3.49 |
+
+The re-run's eighth scenario (titanic) did not run: the API credit ran out. Rewrites that
+remain are mostly the quality reviewer (Haiku 4.5) still failing words the story explained
+or that are not big words, and pack words (extinct, nectar, seismograph) in band A.
+
 ### 2026-10-14 — a first write cut off before any chapter is written again (issue #52, DECISIONS #195)
 
 If the connection drops while the story is still being thought up, before any chapter is on
@@ -925,6 +951,7 @@ gateway by setting `ANTHROPIC_BASE_URL` - same models, prompts, tokens and cost.
 `ANTHROPIC_BASE_URL` and an Understudy key (`storytime-production`) in Vercel production on 2026-10-13.
 Gates: lint ✅ · typecheck ✅ · unit+int **1237** ✅ · guardrails 32 ✅ · e2e mock 192 ✅ · e2e real 6 ✅;
 live L2 corpus through the gateway 8/8 ✅ (168 Haiku calls, ~$0.40).
+
 
 ### 2026-10-07 — every parent gets a book: rung 3 (issue #32, DECISIONS #179)
 

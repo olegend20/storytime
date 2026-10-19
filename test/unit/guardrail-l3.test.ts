@@ -96,11 +96,11 @@ describe('s3.4 the L2 classifier prompt', () => {
 })
 
 describe('s4.3 the L4 review prompt', () => {
-  it('carries the data-block notice and the 14 rules', () => {
+  it('carries the data-block notice and the 14 rules, rule 7 retired', () => {
     const system = reviewSystemPrompt()
     expect(system).toContain(DATA_BLOCK_NOTICE)
     expect(system).toContain('No sexual or romantic content')
-    expect(system).toContain('branded fictional characters')
+    expect(system).toContain('Never report a violation of rule 7.')
   })
 
   it('wraps the story in a data block and escapes a closing tag inside it', () => {

@@ -31,7 +31,7 @@ import type { CapContext, JudgeContext, JudgeableStory } from './types'
  *     quietly dropped story.
  */
 
-export const JUDGE_PROMPT_FILE = 'judge.v2.md'
+export const JUDGE_PROMPT_FILE = 'judge.v3.md'
 const PROMPT_MARKER = '--- PROMPT ---'
 /** Judge output is short; the headroom is for models whose thinking is always on. */
 export const JUDGE_MAX_TOKENS = 16_000
@@ -45,7 +45,7 @@ export interface JudgePrompt {
 let cachedPrompt: JudgePrompt | null = null
 
 /**
- * Loads `prompts/judge.v2.md`, keeping only what follows the PROMPT marker. The sha is
+ * Loads `prompts/judge.v3.md`, keeping only what follows the PROMPT marker. The sha is
  * recorded in every results file: CLAUDE.md rule 5 requires a re-run when the prompt
  * changes, and a hash in the results is how a reviewer can tell that it did.
  */
