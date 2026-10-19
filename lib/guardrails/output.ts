@@ -114,7 +114,9 @@ const TOUCH_VERB = /\b(?:touch(?:ed|es|ing)?|pat(?:s|ted|ting)?|strok(?:e|ed|es|
 // "touch its skin": the animal's own body, said with "its" - not "the back of the boat".
 const TOUCHED_PART = /^\s+its\s+(?:[\w-]+\s+){0,2}?(?:skin|fins?|back|head|nose|fur|shell|tail|tentacles?|trunk|horns?|belly|scales?)\b/i
 // A toy, a pet or a picture is not a wild animal: "hugged her teddy bear", "fed his pet turtle".
-const NOT_WILD = /\b(?:toy|teddy|stuffed|plush|cuddly|soft|pet|model|statue|picture|drawing|photo|robot|balloon|lego|puppet|cartoon|my|his|her|their|our|your)\b/i
+// Never "soft" or "cuddly": they describe real animals too ("stroked the soft seal"), the
+// "however gentle the animal is made to seem" shape rule 10 names (PR #40 review).
+const NOT_WILD = /\b(?:toy|teddy|stuffed|plush|pet|model|statue|picture|drawing|photo|robot|balloon|lego|puppet|cartoon|my|his|her|their|our|your)\b/i
 // The animal is what the verb acts on: right after it, with at most an article and two
 // describing words between ("patted the baby whale shark"). A preposition, a conjunction or a
 // person in between means the animal is elsewhere in the scene: "rode a boat to see the

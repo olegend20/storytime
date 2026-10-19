@@ -204,6 +204,12 @@ describe('L2 wiring through guardInput', () => {
     expect(withAnother.review.violations.map((v) => v.rule)).toEqual([2])
     expect(withAnother.review.safe).toBe(false)
 
+    // Rule 7 plus a soft concern: the soft concern keeps the reviewer's unsafe (PR #40 review).
+    write(review([elsa, { rule: 9, quote: 'a bit spooky', severity: 'soft' }], false))
+    const withSoft = await reviewOutput({ ...reviewInput, sink: logs })
+    expect(withSoft.review.violations.map((v) => v.rule)).toEqual([9])
+    expect(withSoft.review.safe).toBe(false)
+
     // Unsafe for a reason that was never rule 7 stays unsafe.
     write(review([{ ...elsa, severity: 'soft' }], false, false))
     const unsafeEnding = await reviewOutput({ ...reviewInput, sink: logs })

@@ -95,7 +95,9 @@ export async function reviewOutput(input: ReviewInput): Promise<ReviewResult> {
   const review =
     kept.length === raw.violations.length
       ? raw
-      : { ...raw, violations: kept, safe: raw.safe || (droppedHard && !kept.some((v) => v.severity === 'hard')) }
+      : // Safe again only when rule 7 was the whole complaint: a soft concern left beside it
+        // keeps the reviewer's unsafe (PR #40 review).
+        { ...raw, violations: kept, safe: raw.safe || (droppedHard && kept.length === 0) }
 
   // A model that lists a hard violation but sets safe:true has contradicted itself.
   const hasHard = review.violations.some((v) => v.severity === 'hard')
