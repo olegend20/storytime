@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { MAX_CHILDREN_PER_FAMILY } from '@/lib/schemas'
 import { ensureFamily } from '@/lib/family/service'
 import { listChildren } from '@/lib/children/service'
+import { GENERATED_CHILD_NAMES } from '@/lib/children/names'
 import {
   handleCreateChild,
   handleDeleteChild,
@@ -36,6 +37,7 @@ interface Body {
   message?: string
   field?: string | null
   child?: { id: string; first_name: string; age: number; likes: string[]; notes: string | null }
+  name_generated?: boolean
   children?: { id: string; first_name: string }[]
   affected_series?: number
 }
@@ -86,7 +88,6 @@ describe.runIf(dbUp)('F3 children endpoint', () => {
     [{ first_name: 'Milo', age: 18 }, 'age 18'],
     [{ first_name: 'a'.repeat(31), age: 7 }, 'a 31-character name'],
     [{ first_name: 'Milo9', age: 7 }, 'digits in a name'],
-    [{ first_name: '', age: 7 }, 'an empty name'],
     [
       { first_name: 'Milo', age: 7, likes: Array.from({ length: 11 }, (_, i) => `l${i}`) },
       '11 likes',
@@ -202,6 +203,66 @@ describe.runIf(dbUp)('F3 children endpoint', () => {
     } finally {
       await cleanupUser(other)
     }
+  })
+})
+
+describe.runIf(dbUp)('#43 a name is optional, and we choose one', () => {
+  let user: TestUser | null = null
+  let ctx: ChildRequestContext
+
+  beforeAll(async () => {
+    user = await createTestUser('children-gen-name')
+    const family = await ensureFamily(user.client, user.userId)
+    ctx = { db: user.client, familyId: family.id }
+  })
+
+  afterAll(async () => cleanupUser(user))
+
+  it('VT-A1 a blank, missing or whitespace name saves with a name from the list', async () => {
+    for (const payload of [{ first_name: '', age: 7 }, { age: 5 }, { first_name: '   ', age: 9 }, { first_name: null, age: 6 }]) {
+      const response = await handleCreateChild(ctx, payload)
+      expect(response.status, JSON.stringify(payload)).toBe(201)
+      const result = await body(response)
+      expect(result.name_generated).toBe(true)
+      expect(GENERATED_CHILD_NAMES).toContain(result.child!.first_name)
+    }
+  })
+
+  it('a typed name is kept and not flagged as generated', async () => {
+    const result = await body(await handleCreateChild(ctx, { first_name: 'Ada', age: 8 }))
+    expect(result.child!.first_name).toBe('Ada')
+    expect(result.name_generated).toBe(false)
+  })
+
+  it('VT-A2 generated names never repeat a sibling, up to the 8-child ceiling', async () => {
+    for (let i = (await listChildren(ctx.db, ctx.familyId)).length; i < MAX_CHILDREN_PER_FAMILY; i += 1) {
+      expect((await handleCreateChild(ctx, { age: 4 })).status).toBe(201)
+    }
+    const names = (await listChildren(ctx.db, ctx.familyId)).map((c) => c.first_name.toLowerCase())
+    expect(names).toHaveLength(MAX_CHILDREN_PER_FAMILY)
+    expect(new Set(names).size).toBe(names.length)
+  })
+
+  it('VT-A4 the parent can replace a generated name, and blank it again for a new one', async () => {
+    const [first] = await listChildren(ctx.db, ctx.familyId)
+    const renamed = await body(await handleUpdateChild(ctx, first!.id, { first_name: 'Beatrix' }))
+    expect(renamed.child!.first_name).toBe('Beatrix')
+    expect(renamed.name_generated).toBe(false)
+
+    const blanked = await body(await handleUpdateChild(ctx, first!.id, { first_name: '' }))
+    expect(blanked.name_generated).toBe(true)
+    expect(GENERATED_CHILD_NAMES).toContain(blanked.child!.first_name)
+    const siblings = (await listChildren(ctx.db, ctx.familyId))
+      .filter((c) => c.id !== first!.id)
+      .map((c) => c.first_name.toLowerCase())
+    expect(siblings).not.toContain(blanked.child!.first_name.toLowerCase())
+  })
+
+  it('a patch that leaves the name out keeps it', async () => {
+    const [child] = await listChildren(ctx.db, ctx.familyId)
+    const result = await body(await handleUpdateChild(ctx, child!.id, { age: 10 }))
+    expect(result.child!.first_name).toBe(child!.first_name)
+    expect(result.name_generated).toBe(false)
   })
 })
 

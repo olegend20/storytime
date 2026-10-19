@@ -51,7 +51,8 @@ export async function handleCreateChild(
 
   try {
     const child = await createChild(ctx.db, ctx.familyId, parsed.data)
-    return apiOk({ child }, { status: 201 })
+    // Issue #43: tell the page we chose the name, so it can say so.
+    return apiOk({ child, name_generated: parsed.data.first_name === null }, { status: 201 })
   } catch (cause) {
     if (cause instanceof ChildLimitError) {
       return apiError('child_limit_reached', cause.message, { field: 'children' })
@@ -80,7 +81,7 @@ export async function handleUpdateChild(
 
   const child = await updateChild(ctx.db, ctx.familyId, childId, parsed.data)
   if (!child) return apiError('not_found', 'We could not find that child.')
-  return apiOk({ child })
+  return apiOk({ child, name_generated: parsed.data.first_name === null })
 }
 
 export async function handleDeleteChild(

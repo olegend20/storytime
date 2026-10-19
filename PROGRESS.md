@@ -876,6 +876,10 @@ Each has an e2e test on desktop and phone (the wake lock and offline tests stub 
 browser APIs). **Gates:** lint ✅ · typecheck ✅ · unit+int 1013 ✅ · e2e mock **132** ✅ ·
 e2e real 4 ✅.
 
+### 2026-10-17 — a dropped connection never loses a story (issue #59, DECISIONS #204)
+
+Owner report: on a phone, generation "always errors out" with "We lost the connection, but your story is still being made…". Production 14–17 Oct: 7 accepted requests, 5 saved, 2 discarded (rule 7, retired by #40); the volcano story was saved 6½ minutes after the request, 3½ minutes after the page gave up on it. The page now asks how its own request ended (new `generation_requests` table, `GET /api/stories/generate/{id}`) and opens the story when it is saved, or says at once that it could not be made and was free. The table and a `[generate] outcome=` log line make the SLA (accepted requests that end in a saved story, target 99%) measurable. No model calls, no prompt or schema changes, no spend.
+
 ### 2026-10-08 — prompt first, guardrails as the backstop (DECISIONS #187–#194)
 
 Owner: retire hard rule 7 (characters from films and games are fine; the books are for
@@ -967,6 +971,13 @@ drafts really fail, mostly on children who only watch (#199). Spend $9.07 of ~$1
 where the time went by step, with median/p95 and a comparison against the last run that
 flags any story 20% slower or faster. Report-only: latency never fails the eval. VT-L1-VT-L7
 in `test/int/eval-harness.test.ts`. The next live `pnpm eval` is the latency baseline.
+
+### 2026-10-13 — a child's name is optional (issue #43, DECISIONS #183)
+
+Leave a child's name blank and we choose one from a fixed list, save it, and say so; never a
+sibling's name, always editable. VT-A1-A5 in `test/int/children-api.test.ts`,
+`test/unit/child-names.test.ts` and `test/e2e/children.spec.ts`. Gates: lint ✅ · typecheck ✅ · unit+int **1289** ✅ ·
+guardrails 32 ✅ · e2e mock 194 ✅ · e2e real 6 ✅.
 
 ### 2026-10-13 — the same Claude models through Understudy (issue #41, DECISIONS #182)
 

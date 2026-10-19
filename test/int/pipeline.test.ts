@@ -402,10 +402,16 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     const sink = new MemoryLogSink()
     const quota = new RecordingQuota()
 
+    const info = vi.spyOn(console, 'info')
     const { events, result } = await collect(run, { db: family.db, sink, quota, now: () => FIXED_NOW })
 
     expect(result.status).toBe('ready')
     expect(result.writeCalls).toBe(1)
+    // Issue #59: every finished request logs one outcome line, the SLA's numerator.
+    expect(info.mock.calls.map((c) => String(c[0])).filter((l) => l.includes('outcome='))).toEqual([
+      expect.stringMatching(new RegExp(`^\\[generate\\] outcome=ready band=\\S+ topic=${run.topicKey} secs=\\d+ writes=1$`)),
+    ])
+    info.mockRestore()
 
     // Exactly one writing-model call, plus the cheap steps around it.
     const purposes = sink.rows.map((r) => r.purpose)
@@ -1061,6 +1067,7 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       }),
     }
 
+    const warn = vi.spyOn(console, 'warn')
     const { events, result } = await collect(run, {
       db: family.db,
       sink: new MemoryLogSink(),
@@ -1070,6 +1077,11 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     })
 
     expect(result.status).toBe('discarded')
+    // Issue #59: the discard was silent in production; it now names the rules that caused it.
+    const outcomes = warn.mock.calls.map((c) => String(c[0])).filter((l) => l.includes('outcome='))
+    warn.mockRestore()
+    expect(outcomes).toHaveLength(1)
+    expect(outcomes[0]).toMatch(/^\[generate\] outcome=discarded .* writes=2 reason=rules 3\b/)
     const error = events.at(-1)
     expect(error?.type).toBe('error')
     if (error?.type === 'error') {
@@ -1095,6 +1107,7 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       for await (const e of channel.events()) events.push(e)
     })()
 
+    const warn = vi.spyOn(console, 'warn')
     const result = await runGeneration(run, channel, {
       db: family.db,
       sink: new MemoryLogSink(),
@@ -1104,6 +1117,9 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     await drained
 
     expect(result.status).toBe('failed')
+    const outcomes = warn.mock.calls.map((c) => String(c[0])).filter((l) => l.includes('outcome='))
+    warn.mockRestore()
+    expect(outcomes).toEqual([expect.stringMatching(/^\[generate\] outcome=failed .* writes=1 reason=/)])
     expect(events.map((e) => e.type)).toEqual(['facts', 'error'])
     const failure = events[1] as Extract<SseEvent, { type: 'error' }>
     expect(failure.code).toBe('generation_failed')

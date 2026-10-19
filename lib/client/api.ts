@@ -1,4 +1,5 @@
 import { QuotaResponse, SuggestedTopicsResponse } from '@/lib/schemas'
+import { GenerationStatus } from './finish'
 import { ChildrenResponse, LibraryResponse, StoryResponse } from './types'
 
 /**
@@ -86,6 +87,16 @@ export async function fetchLibrary(signal?: AbortSignal): Promise<LibraryRespons
 
 export async function fetchStory(id: string, signal?: AbortSignal): Promise<StoryResponse> {
   return StoryResponse.parse(await getJson(`/stories/${encodeURIComponent(id)}`, signal))
+}
+
+/** How a story request ended, by the id the page sent with it (issue #59). Null: not known yet. */
+export async function fetchGenerationStatus(id: string, signal?: AbortSignal): Promise<GenerationStatus | null> {
+  try {
+    return GenerationStatus.parse(await getJson(`/stories/generate/${encodeURIComponent(id)}`, signal))
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return null
+    throw err
+  }
 }
 
 export async function deleteStory(id: string): Promise<void> {

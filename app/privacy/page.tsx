@@ -61,7 +61,8 @@ export default function PrivacyPage() {
         </p>
         <ul className="m-0 list-disc space-y-1.5 pl-5 text-[0.95rem] leading-relaxed">
           <li>
-            <strong>First name</strong> — so the story can be about them by name.
+            <strong>First name</strong> — so the story can be about them by name. Optional:
+            leave it blank and we&apos;ll choose a name for the stories instead.
           </li>
           <li>
             <strong>Age</strong> — a whole number, to pitch the vocabulary and how much peril
