@@ -876,6 +876,11 @@ Each has an e2e test on desktop and phone (the wake lock and offline tests stub 
 browser APIs). **Gates:** lint ✅ · typecheck ✅ · unit+int 1013 ✅ · e2e mock **132** ✅ ·
 e2e real 4 ✅.
 
+### 2026-10-18 — harmless phrases allowed in stories (issue #64, DECISIONS #206)
+
+Owner-approved: "water pistol", "glue gun", "blew a kiss" and their variants no longer fail
+the output blocklist. A real pistol or gun, and a kiss blown *to someone*, are still caught.
+
 ### 2026-10-18 — #40 review follow-ups (issue #61, DECISIONS #205)
 
 Rule 10's free check catches a child stroking a "soft" or hugging a "cuddly" wild animal; a
