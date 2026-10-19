@@ -125,6 +125,10 @@ describe('output blocklist does not flag legitimate reference prose', () => {
     )
     expect(scanBlocklist('He picked up the gun.').map((h) => h.match)).toContain('gun')
     expect(scanBlocklist('She kissed him goodnight.').map((h) => h.match)).toContain('kissed')
+    // The allowed phrases cover only themselves: a real pistol, and a kiss that is not blown.
+    expect(scanBlocklist('He pointed the pistol.').map((h) => h.match)).toContain('pistol')
+    expect(scanBlocklist('The pirate held a gun and a glue stick.').map((h) => h.match)).toContain('gun')
+    expect(scanBlocklist('They kissed under the tree.').map((h) => h.match)).toContain('kissed')
   })
 
   it('allowlists the phrases that would otherwise be false positives', () => {
@@ -140,6 +144,12 @@ describe('output blocklist does not flag legitimate reference prose', () => {
       'The workshop burned down in 1942, and Ole rebuilt it.',
       'Megalodon died out millions of years ago.',
       'People are often scared of sharks.',
+      // Owner approved 2026-10-18: harmless phrases a scenario invites (eval 2026-10-17).
+      'Theo filled his water pistol at the tap.',
+      'They had a water gun fight in the garden.',
+      'Dad heated the glue gun for the volcano model.',
+      'Grandma blew a tiny kiss from the window.',
+      'Mia blew kisses to the ducks.',
     ]) {
       expect(scanBlocklist(clean).map((h) => h.match), clean).toEqual([])
     }

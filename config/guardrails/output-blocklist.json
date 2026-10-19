@@ -1,6 +1,6 @@
 {
   "$comment": "Deterministic output blocklist for the F7 quality gate (GUARDRAILS.md §4.2). Story-specific and deliberately narrow: it catches unambiguous terms and phrases so that a rejection is never a judgement call. Nuance is the L4 model review's job (lane 6) - not this file. Bare emotive words are DELIBERATELY absent: the four reference stories legitimately contain 'blood' ('a tiny drop of blood'), 'dead' ('back from the dead'), 'died', 'shot' ('one free shot'), 'shooting' ('people who liked shooting things'), 'war', 'scared', 'bite' and 'burned'. A list that flagged those would flag the quality bar itself. AI/meta phrases live in the meta_content check (lib/quality/deterministic.ts) instead of here, so a meta leak reports one precise reason code rather than two. Lane 6 owns config/guardrails/blocklist.json for INPUT; this file is output-only and the two are applied together.",
-  "updated_at": "2026-09-27",
+  "updated_at": "2026-10-18",
   "terms": [
     "kill",
     "kills",
@@ -116,6 +116,20 @@
     "starting gun",
     "starter gun",
     "gun salute",
-    "time to kill"
+    "time to kill",
+    "water pistol",
+    "water pistols",
+    "water gun",
+    "water guns",
+    "squirt gun",
+    "squirt guns",
+    "glue gun",
+    "glue guns",
+    "blew a kiss",
+    "blew a tiny kiss",
+    "blew kisses",
+    "blow a kiss",
+    "blows a kiss",
+    "blowing kisses"
   ]
 }

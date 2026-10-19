@@ -108,6 +108,8 @@ describe('s4.2 deterministic output checks vs the reference stories', () => {
     expect(r10('Mia hugged Dad as the dolphins leapt.')).toBe(0)
     expect(r10('A whale sang far away. Dad patted her on the back.')).toBe(0)
     expect(r10('Juno touched the baby sea turtle.')).toBe(1)
+    // A blown kiss to someone stays romance (rule 1) though "blew a kiss" is allowed (2026-10-18).
+    expect(scanStoryText('Mia blew him a kiss.').hardViolations.filter((v) => v.rule === 1).length).toBe(1)
     // From the reviewer agent (PR #40): "soft" and "cuddly" describe real animals too.
     expect(r10('Mia stroked the soft seal.')).toBe(1)
     expect(r10('Theo hugged the cuddly koala.')).toBe(1)
