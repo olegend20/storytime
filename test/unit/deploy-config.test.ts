@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { RETRY_MIN_MS, WRITER_MAX_TOKENS } from '@/lib/generate/pipeline'
+import { AFTER_WRITE_MS, RETRY_MIN_MS, WRITER_MAX_TOKENS } from '@/lib/generate/pipeline'
 import { FINISH_WAIT_MS } from '@/lib/client/finish'
 import { STALE_AFTER_MS } from '@/lib/generate/requests'
 
@@ -44,6 +44,8 @@ describe('deployment configuration', () => {
     // Rung 3 (#32): after a write cut off at the cap there must still be room for the
     // shorter retry, or it never starts and the truncation case gets no book.
     expect(seconds * 1000 - oneCappedWrite * 1000).toBeGreaterThanOrEqual(RETRY_MIN_MS)
+    // A retry that starts must keep at least 90 s to write after the gate's share (PR #63 review).
+    expect(RETRY_MIN_MS - AFTER_WRITE_MS).toBeGreaterThanOrEqual(90_000)
     // And stay inside Vercel Pro's Fluid-compute ceiling.
     expect(seconds).toBeLessThanOrEqual(800)
     // Issue #59: a request still "writing" after the platform must have killed it is

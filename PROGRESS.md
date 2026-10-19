@@ -888,6 +888,10 @@ safety review with a retired rule-7 report and a soft concern stays unsafe; the 
 constants sit below the comment that describes them. **Gates:** lint ✅ · typecheck ✅ ·
 unit+int 1340 ✅ · guardrails 32 ✅ · e2e mock 196 ✅ · e2e real 6 ✅.
 
+### 2026-10-19 — a retry near the deadline keeps time to write (DECISIONS #208)
+
+`RETRY_MIN_MS` follows `AFTER_WRITE_MS` (+90 s): 150 → 180 s, from the #63 review.
+
 ### 2026-10-18 — the mend ladder places every flagged line (issue #66, DECISIONS #207)
 
 `pnpm mend-bench` (free): 39 captured stories with hard violations. Violations placed 46/52 →
