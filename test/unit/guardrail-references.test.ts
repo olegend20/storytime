@@ -111,7 +111,7 @@ describe('s4.2 deterministic output checks vs the reference stories', () => {
     // From the reviewer agent (PR #40): "soft" and "cuddly" describe real animals too.
     expect(r10('Mia stroked the soft seal.')).toBe(1)
     expect(r10('Theo hugged the cuddly koala.')).toBe(1)
-    expect(r10('Theo hugged his cuddly toy koala.')).toBe(0)
+    expect(r10('Theo hugged the cuddly toy koala.')).toBe(0)
     expect(r10("Theo patted the shark's nose.")).toBe(1)
     // "pet" as a noun never reaches the check: TOUCH_VERB only matches pets/petted/petting.
     expect(r10("Maya's pet turtle blinked.")).toBe(0)
