@@ -61,6 +61,11 @@ describe('issue #72: which lost rewrites fall back to attempt 1', () => {
     expect(rewriteLost(failed('overloaded', 529))).toBe('rewrite_failed:status_529')
     expect(rewriteLost(failed('rate limited', 429))).toBe('rewrite_failed:status_429')
     expect(rewriteLost(failed('something else'))).toBe('rewrite_failed:transport')
+    // A drop isDroppedStream caught by its code, not its message (#73 review): callModel flags it.
+    const reset = new ModelCallError('rewrite call to claude-sonnet-5 failed after 4 attempt(s): read ECONNRESET', {
+      purpose: 'rewrite', model: 'claude-sonnet-5', attempts: 4, retryable: false, dropped: true,
+    })
+    expect(rewriteLost(reset)).toBe('rewrite_failed:dropped')
   })
 
   it('VT-F6 a 4xx of our own making, a refusal or any other error is not', () => {

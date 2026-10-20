@@ -329,6 +329,7 @@ export function rewriteLost(err: unknown): string | null {
   if (status !== undefined) {
     return status >= 500 || status === 408 || status === 409 || status === 429 ? `rewrite_failed:status_${status}` : null
   }
+  if (err.detail.dropped === true) return 'rewrite_failed:dropped'
   if (/deadline: exceeded/.test(err.message)) return 'rewrite_failed:deadline'
   if (/terminated|Connection error/i.test(err.message)) return 'rewrite_failed:dropped'
   return 'rewrite_failed:transport'

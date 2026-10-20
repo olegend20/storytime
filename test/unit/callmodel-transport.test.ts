@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { ModelCallError } from '@/lib/ai/types'
 
 /**
  * Every live call streams (issue #41).
@@ -295,6 +296,8 @@ describe('issue #50: a stream the gateway drops partway is tried once more', () 
     const { error } = await rewrite({ maxDrops: 3, maxRetries: 2 })
     expect(calls.stream).toBe(3)
     expect(error!.message).toMatch(/failed after 3 attempt\(s\): terminated/)
+    // The pipeline tells a lost rewrite's cause by this flag, not the message (#73 review).
+    expect((error as ModelCallError).detail.dropped).toBe(true)
   })
 
   it('VT-R3 no retry without minRetryMs left, and no attempt runs past deadlineAt', async () => {

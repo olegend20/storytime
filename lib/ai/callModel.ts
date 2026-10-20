@@ -476,7 +476,7 @@ export async function callModel<T = string>(
       if (!retryable || attempt === maxRetries + 1) {
         throw new ModelCallError(
           `${opts.purpose} call to ${model} failed after ${attempt} attempt(s): ${message}`,
-          { purpose: opts.purpose, model, attempts: attempt, retryable, status },
+          { purpose: opts.purpose, model, attempts: attempt, retryable, status, ...(dropped ? { dropped: true } : {}) },
         )
       }
       await sleep(Math.min(2 ** attempt * 250, 4000), opts.signal)
