@@ -312,6 +312,8 @@ export function onlyHardRuleBreaches(result: QualityResult, band: AgeBand): bool
 /**
  * Whether attempt 1 passed the safety review's band checks - scary level, positive portrayal,
  * a safe ending - the ones the mend/cut ladder cannot fix. Hard-rule breaches are the ladder's.
+ * `safety === null` (no reviewer ran) counts as holding: this relies on production deps always
+ * setting a safety reviewer and attempt 1 being gated with `reviewDespiteFailures: true`.
  */
 export function bandSafetyHolds(result: QualityResult, band: AgeBand): boolean {
   const safety = result.safety
