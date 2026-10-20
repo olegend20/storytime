@@ -141,6 +141,12 @@ export interface GenerationDeps {
    * first drafts at the cost of the writes alone (issue #58). Unset in production.
    */
   firstDraftOnly?: boolean
+  /**
+   * Cut the first write, as the gateway does, once this many chapters have reached the page:
+   * the forced-drop eval measures stories continued after a drop (issue #74). Unset in
+   * production.
+   */
+  forceDropAfterChapters?: number
 }
 
 export function resolveQuota(deps: GenerationDeps): QuotaService {

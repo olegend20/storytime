@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabaseService } from '@/lib/supabase/service'
-import { callModel, streamModel, structuredOutputRejected, ModelCallError, ModelRefusalError } from '@/lib/ai'
+import { callModel, parseJsonLoose, streamModel, structuredOutputRejected, ModelCallError, ModelRefusalError } from '@/lib/ai'
 import { serverEnv } from '@/lib/env'
 import { parentMessage, type ParentMessageKey } from '@/lib/messages'
 import {
@@ -23,6 +23,7 @@ import {
   storyWordCount,
   targetWords,
   type AgeBand,
+  type Chapter,
 } from '@/lib/schemas'
 import {
   bandForChildren,
@@ -43,7 +44,7 @@ import { reviewPassed, runQualityGate } from '@/lib/quality'
 import { charactersTakingPart } from '@/lib/guardrails/output'
 import { borrowsCharacter, requestedCharacters } from '@/lib/guardrails/classify'
 import { cutViolations, mendStory } from './mend'
-import { buildPrompt } from './prompt'
+import { buildContinuationPrompt, buildPrompt, type BuiltPrompt, type StorySoFar } from './prompt'
 import { parseStoryOutput } from './parse'
 import { salvageTrueFacts } from './normalize'
 import { STORY_OUTPUT_FORMAT } from './output-schema'
@@ -349,6 +350,20 @@ export function rewriteLost(err: unknown): string | null {
 }
 
 /**
+ * The story a continuation finishes (issue #74): the chapters the parent already has, then the
+ * continuation's, under the title the page shows. Its ending, facts and bible suggestions cover
+ * the whole story, so they are the continuation's. '' when its reply has no JSON object: the
+ * unusable-output path (rung 3) then takes it, as it would a first write's.
+ */
+export function stitchContinuation(text: string, soFar: StorySoFar): string {
+  const rest = parseJsonLoose(text)
+  if (typeof rest !== 'object' || rest === null || Array.isArray(rest)) return ''
+  const chapters = (rest as { chapters?: unknown }).chapters
+  if (!Array.isArray(chapters)) return ''
+  return JSON.stringify({ ...rest, title: soFar.title, subtitle: soFar.subtitle, chapters: [...soFar.chapters, ...chapters] })
+}
+
+/**
  * Below this much time before the request deadline, the ladder cuts instead of mending: the
  * mend, the gate again and possibly a cut's gate. A gate is one thinking quality review run
  * beside the safety review - median ~10 s, p95 ~30 s on the review bench (DECISIONS #201).
@@ -476,10 +491,21 @@ export async function runGeneration(
   // Whether any chapter has reached the parent: until one has, a dropped first write can be
   // written again without contradicting the page (issue #52).
   let chapterSent = false
+  // What the parent has on the page - the title and each chapter by index - so a write that
+  // drops after a chapter was shown is continued from it rather than lost (issue #74).
+  let shownTitle: { title: string; subtitle: string | null } | null = null
+  const shown: (Chapter & { complete: boolean })[] = []
+  // The forced-drop eval only (#74): the first write is cut once this many chapters are whole.
+  const forcedDrop = deps.forceDropAfterChapters === undefined ? null : new AbortController()
 
-  const emitMetaAndChapters = (): StoryStreamParser =>
-    new StoryStreamParser({
-      onMeta: ({ title, subtitle }) =>
+  /** `resumeAt`: the index a continuation's first chapter takes on the page. */
+  const emitMetaAndChapters = (resumeAt: number | null = null): StoryStreamParser => {
+    const at = (index: number) => index + (resumeAt ?? 0)
+    return new StoryStreamParser({
+      onMeta: ({ title, subtitle }) => {
+        // A continuation repeats the title the page already shows; it is not sent again.
+        if (resumeAt !== null) return
+        shownTitle = { title, subtitle }
         channel.push({
           type: 'meta',
           story_id: prepared.storyId,
@@ -490,15 +516,38 @@ export async function runGeneration(
           target_words: prepared.request.target_words,
           topic_label: prepared.topicLabel,
           content_notice: prepared.contentNotice,
-        }),
+        })
+      },
       onChapterStart: (index, heading) => {
         chapterSent = true
-        channel.push({ type: 'chapter_start', index, heading })
+        shown[at(index)] = { heading, text: '', shout_line: null, complete: false }
+        channel.push({ type: 'chapter_start', index: at(index), heading })
       },
-      onChapterDelta: (index, text) => channel.push({ type: 'chapter_delta', index, text }),
-      onChapterEnd: (index, shoutLine) =>
-        channel.push({ type: 'chapter_end', index, shout_line: shoutLine }),
+      onChapterDelta: (index, text) => {
+        const chapter = shown[at(index)]
+        if (chapter) chapter.text += text
+        channel.push({ type: 'chapter_delta', index: at(index), text })
+      },
+      onChapterEnd: (index, shoutLine) => {
+        const chapter = shown[at(index)]
+        if (chapter) Object.assign(chapter, { shout_line: shoutLine, complete: true })
+        channel.push({ type: 'chapter_end', index: at(index), shout_line: shoutLine })
+        if (forcedDrop && shown.filter((c) => c?.complete).length >= (deps.forceDropAfterChapters ?? 0)) {
+          forcedDrop.abort()
+        }
+      },
     })
+  }
+  /** The title and the chapters that reached the parent whole, in order; null without a title. */
+  const storySoFar = (): StorySoFar | null => {
+    if (!shownTitle) return null
+    const chapters: Chapter[] = []
+    for (const c of shown) {
+      if (!c?.complete) break
+      chapters.push({ heading: c.heading, text: c.text, shout_line: c.shout_line })
+    }
+    return { ...shownTitle, chapters }
+  }
 
   try {
     // Something for the children while the writer thinks: the facts, before any prose.
@@ -517,47 +566,81 @@ export async function runGeneration(
       factPack: pack,
     })
     writeCalls += 1
-    const write = (structured: boolean, signal?: AbortSignal) =>
+    const writeWith = (p: BuiltPrompt, structured: boolean, signal?: AbortSignal) =>
       streamModel({
         purpose: 'write',
         role: 'writer',
         ...(deps.writingModel ? { model: deps.writingModel } : {}),
-        system: prompt.system,
-        messages: prompt.messages,
+        system: p.system,
+        messages: p.messages,
         maxTokens: WRITER_MAX_TOKENS,
         thinking: 'adaptive',
         ...(structured ? { outputFormat: STORY_OUTPUT_FORMAT } : {}),
         familyId: prepared.familyId,
         storyId: prepared.storyId,
         ...(sink ? { sink } : {}),
-        onText: (delta) => parser.feed(delta),
+        // Text after we stopped a write - the deadline, the forced-drop eval - never reaches the page.
+        onText: (delta) => {
+          if (!signal?.aborted) parser.feed(delta)
+        },
         ...(signal ? { signal } : {}),
       })
+    const write = (structured: boolean, signal?: AbortSignal) => writeWith(prompt, structured, signal)
     let structured = true
+    // The forced-drop eval's cut, reported as the gateway's would be. A replayed fixture runs
+    // to the end whatever the signal, so a write that finished after the cut counts as cut too.
+    const forcedCut = () =>
+      new ModelCallError('write stream failed: terminated (forced by the eval)', {
+        purpose: 'write', model: deps.writingModel ?? 'writer', attempts: 1, retryable: false, dropped: true,
+      })
     const firstWrite = () =>
-      write(structured).catch((err: unknown) => {
+      write(structured, forcedDrop?.signal).then((result) => {
+        if (forcedDrop?.signal.aborted) throw forcedCut()
+        return result
+      }, (err: unknown) => {
+        if (forcedDrop?.signal.aborted) throw forcedCut()
         // A rejected request fails before any text is streamed, so nothing reached the parent.
         if (!structured || !structuredOutputRejected(err)) throw err
         console.warn(`[generate] structured outputs rejected, writing without: ${(err as Error).message}`)
         structured = false
         return write(false)
       })
+    // Issue #74: once a chapter is showing, a new story would contradict the page. So the
+    // chapters that arrived whole stay, the one cut partway is cleared, and the writer is asked
+    // for the rest of this same story. Its chapters stream on from where the page stopped.
+    const continueFrom = (soFar: StorySoFar, signal?: AbortSignal): ReturnType<typeof write> => {
+      shown.length = soFar.chapters.length
+      // The chapter cut partway is cleared, or the next one opened, empty: the page shows
+      // "Still writing…" there until the rest arrives (the owner's decision, 2026-10-19).
+      channel.push({ type: 'chapter_start', index: soFar.chapters.length, heading: '' })
+      parser = emitMetaAndChapters(soFar.chapters.length)
+      const rest = buildContinuationPrompt({ request, bible: bibleAtStart, factPack: pack, soFar })
+      return writeWith(rest, structured, signal).then((result) => ({ ...result, text: stitchContinuation(result.text, soFar) }))
+    }
     // Issue #52: the gateway can cut a stream partway, even seconds in. If no chapter has
     // reached the parent yet, nothing on the page would contradict another write - so it is
-    // written again, streamed, up to MAX_DROP_RETRIES times (#72). The title may arrive again;
-    // the page keeps the last. Never when a chapter is showing, and never without time to
-    // write, gate and save it.
+    // written again, streamed. Once one has, the rest is written instead (#74). Either way up
+    // to MAX_DROP_RETRIES times (#72), and never without time to write, gate and save it.
     const writeAgainAfterDrop = (drops: number) => (err: unknown): ReturnType<typeof write> => {
       const dropped = err instanceof ModelCallError && err.detail.dropped === true
       const left = timeLeft()
-      if (!dropped || chapterSent || drops >= MAX_DROP_RETRIES || left < RETRY_MIN_MS) throw err
+      if (!dropped || drops >= MAX_DROP_RETRIES || left < RETRY_MIN_MS) throw err
+      // A full-length write can think for minutes, so it is cut off in time for the gate and
+      // the save: past the deadline the platform kills the request and the parent gets nothing.
+      const signal = deps.deadlineMs === undefined ? undefined : AbortSignal.timeout(left - AFTER_WRITE_MS)
+      if (chapterSent) {
+        const soFar = storySoFar()
+        if (!soFar) throw err
+        console.warn(
+          `[generate] the write was cut off after ${soFar.chapters.length} whole chapter(s) were sent - writing the rest (${(err as Error).message})`,
+        )
+        writeCalls += 1
+        return continueFrom(soFar, signal).catch(writeAgainAfterDrop(drops + 1))
+      }
       console.warn(`[generate] the first write was cut off before any chapter was sent - writing it again (${(err as Error).message})`)
       parser = emitMetaAndChapters()
       writeCalls += 1
-      // A full-length write can think for minutes, so it is cut off in time for the gate and
-      // the save: past the deadline the platform kills the request and the parent gets nothing.
-      return write(structured, deps.deadlineMs === undefined ? undefined : AbortSignal.timeout(left - AFTER_WRITE_MS))
-        .catch(writeAgainAfterDrop(drops + 1))
+      return write(structured, signal).catch(writeAgainAfterDrop(drops + 1))
     }
     const streamed = await firstWrite().catch(writeAgainAfterDrop(0))
     parser.end()

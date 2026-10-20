@@ -340,6 +340,29 @@ test('waiting shows the stage the server has reached, with no countdown, then th
   await expect(page.getByRole('heading', { name: 'Saved to your library' })).toBeVisible({ timeout: 30_000 })
 })
 
+/**
+ * VT-RS2 (issue #74): the writer's connection drops halfway through chapter 2. The half chapter
+ * goes, a gentle "Still writing…" line holds its place, and chapter 2 then arrives whole -
+ * never its first half twice. The owner's decisions 1B and 4B, 2026-10-19.
+ */
+test('a story the writer resumes after a drop clears the half chapter and finishes it once', async ({ page }) => {
+  await startStory(page, '!resumed the history of soccer')
+
+  const still = page.getByTestId('still-writing')
+  await expect(still).toBeVisible({ timeout: 15_000 })
+  await expect(still).toHaveText('Still writing the rest of your story…')
+  // Nothing about errors or connections: the pause reads as part of the writing.
+  expect(await page.getByTestId('chapters').innerText()).not.toMatch(/error|connection|drop|sorry/i)
+  // Chapter 1 stays; the half-written chapter 2 is gone.
+  await expect(page.locator('[data-chapter-index]')).toHaveCount(1)
+
+  await expect(page.getByRole('heading', { name: 'Saved to your library' })).toBeVisible({ timeout: 30_000 })
+  await expect(still).toHaveCount(0)
+  const chapter2 = await page.locator('[data-chapter-index="1"]').innerText()
+  const opening = chapter2.split('\n').find((line) => line.trim().length > 20)!.trim().slice(0, 30)
+  expect(chapter2.split(opening)).toHaveLength(2)
+})
+
 test('going back from the waiting screen returns to the creator with the draft intact', async ({ page }) => {
   await startStory(page, '!thinking the history of soccer')
   await expect(page.getByTestId('waiting')).toBeVisible()

@@ -239,6 +239,8 @@ export function estimateEvalCost(
     includeCalibration?: boolean
     /** Topics whose pack is already `ready`: shared, so this run pays nothing for them. */
     builtTopics?: ReadonlySet<string>
+    /** The forced-drop eval (issue #74): every first write is cut after this many chapters. */
+    forceDropAfterChapters?: number
   } = {},
 ): CostEstimate {
   const writer = opts.writer ?? modelForRole('writer')
@@ -273,6 +275,17 @@ export function estimateEvalCost(
     model: `${writer} + ${modelForRole('quality_reviewer')} + ${modelForRole('helper')}`,
     usd: scenarios.reduce((n, s) => n + expectedRewriteCost(writer, targetWordsMid(s)), 0),
   })
+  if (opts.forceDropAfterChapters !== undefined) {
+    // Priced as a whole write, not just the rest: the continuation thinks again from the
+    // start, and its prompt carries the chapters so far. The cut write is already counted in
+    // full above - the gateway bills a cut response in full (2026-10-19 report).
+    lines.push({
+      what: `forced drop after ${opts.forceDropAfterChapters} chapter(s): a continuation per story`,
+      calls: scenarios.length,
+      model: writer,
+      usd: scenarios.reduce((n, s) => n + writeCallCost(writer, targetWordsMid(s)), 0),
+    })
+  }
   lines.push({
     what: `SCORE ${scenarios.length} stories`,
     calls: scenarios.length,

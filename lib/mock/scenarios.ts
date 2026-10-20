@@ -31,6 +31,11 @@ export type MockScenario =
   | 'thinking'
   /** The parent asked for a film or game character: the story carries the notice (issue #27). */
   | 'borrowed_character'
+  /**
+   * The writer's connection drops halfway through chapter 2; the server clears it and writes
+   * the rest after a pause (issue #74).
+   */
+  | 'writer_resumed'
 
 const SENTINELS: ReadonlyArray<[string, MockScenario]> = [
   ['!refuse', 'topic_refused'],
@@ -45,6 +50,7 @@ const SENTINELS: ReadonlyArray<[string, MockScenario]> = [
   ['!slow', 'slow'],
   ['!thinking', 'thinking'],
   ['!character', 'borrowed_character'],
+  ['!resumed', 'writer_resumed'],
 ]
 
 export function scenarioFor(topicInput: string): MockScenario {

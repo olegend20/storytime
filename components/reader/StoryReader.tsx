@@ -158,26 +158,39 @@ export function StoryReader({
         onPointerUp={onPointerUp}
         data-testid="chapters"
       >
-        {story.chapters.map((chapter, index) => (
-          <section
-            key={index}
-            data-chapter-index={index}
-            id={`chapter-${index}`}
-            ref={(node) => {
-              sectionRefs.current[index] = node
-            }}
-            aria-labelledby={`chapter-heading-${index}`}
-            className="st-chapter"
-          >
-            <h2 id={`chapter-heading-${index}`} className="st-chapter-h">
-              {chapter.heading || `Chapter ${index + 1}`}
-            </h2>
-            <Prose text={chapter.text} dropCap={index === 0} />
-            {chapter.shout_line && (
-              <p className="sound mt-4 mb-0 text-center text-xl">{chapter.shout_line}</p>
-            )}
-          </section>
-        ))}
+        {story.chapters.map((chapter, index) =>
+          // A chapter with nothing in it yet is one the server cleared after a dropped
+          // connection, while the rest of the story is written (issue #74).
+          streaming && !chapter.heading && !chapter.text ? (
+            <p
+              key={index}
+              data-testid="still-writing"
+              className="st-chapter mt-6 text-center text-sm"
+              style={{ color: 'var(--fg-muted)' }}
+            >
+              Still writing the rest of your story…
+            </p>
+          ) : (
+            <section
+              key={index}
+              data-chapter-index={index}
+              id={`chapter-${index}`}
+              ref={(node) => {
+                sectionRefs.current[index] = node
+              }}
+              aria-labelledby={`chapter-heading-${index}`}
+              className="st-chapter"
+            >
+              <h2 id={`chapter-heading-${index}`} className="st-chapter-h">
+                {chapter.heading || `Chapter ${index + 1}`}
+              </h2>
+              <Prose text={chapter.text} dropCap={index === 0} />
+              {chapter.shout_line && (
+                <p className="sound mt-4 mb-0 text-center text-xl">{chapter.shout_line}</p>
+              )}
+            </section>
+          ),
+        )}
       </div>
 
       {story.endingLine && (
