@@ -321,6 +321,17 @@ export function bandSafetyHolds(result: QualityResult, band: AgeBand): boolean {
 }
 
 /**
+ * Whether attempt 1 may stand in for a rewrite that never arrived (#72): the band checks hold,
+ * and a "not safe" verdict is explained by hard-rule breaches, which the ladder mends or cuts
+ * and regates. A "not safe" with no hard breach has nothing for the ladder to fix, so the
+ * fallback is never looser than the gate it replaces (#73 review).
+ */
+export function fallbackSafetyHolds(result: QualityResult, band: AgeBand): boolean {
+  const safety = result.safety
+  return bandSafetyHolds(result, band) && (safety === null || safety.safe || result.hard_violations.length > 0)
+}
+
+/**
  * Why a rewrite never arrived, as a stable code (issue #72) - or null when the failure is not
  * one to fall back from: a refusal, or a 4xx other than 408/409/429, which is an error of our
  * own (a wrong model id, a prompt too long) and must fail loudly, not ship attempt 1.
@@ -773,7 +784,7 @@ export async function runGeneration(
         })
         .catch((err: unknown) => {
           const lost = rewriteLost(err)
-          if (!lost || !bandSafetyHolds(gate.result, prepared.band)) throw err
+          if (!lost || !fallbackSafetyHolds(gate.result, prepared.band)) throw err
           console.warn(`[generate] the rewrite never arrived (${lost}) - keeping attempt 1: ${(err as Error).message}`)
           return lost
         })

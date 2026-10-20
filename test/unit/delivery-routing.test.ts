@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bandSafetyHolds, onlyHardRuleBreaches, rewriteLost, shorterLength } from '@/lib/generate/pipeline'
+import { bandSafetyHolds, fallbackSafetyHolds, onlyHardRuleBreaches, rewriteLost, shorterLength } from '@/lib/generate/pipeline'
 import { ModelCallError, ModelRefusalError } from '@/lib/ai'
 import type { QualityResult } from '@/lib/schemas'
 
@@ -83,5 +83,15 @@ describe('issue #72: which lost rewrites fall back to attempt 1', () => {
     expect(bandSafetyHolds({ ...base, safety: { ...safe, scary_level: 2 } }, 'A')).toBe(false)
     expect(bandSafetyHolds({ ...base, safety: { ...safe, positive_portrayal: false } }, 'C')).toBe(false)
     expect(bandSafetyHolds({ ...base, safety: { ...safe, ending_safe: false } }, 'D')).toBe(false)
+  })
+
+  it('VT-F6 a lost rewrite never ships a "not safe" attempt 1 the ladder has nothing to fix in (#73 review)', () => {
+    const safe = { ...base.safety!, safe: true, violations: [] }
+    expect(fallbackSafetyHolds({ ...base, safety: safe, hard_violations: [] }, 'B')).toBe(true)
+    expect(fallbackSafetyHolds({ ...base, safety: null, hard_violations: [] }, 'B')).toBe(true)
+    // Not safe because of a hard breach: the ladder mends or cuts it and regates.
+    expect(fallbackSafetyHolds(base, 'B')).toBe(true)
+    expect(fallbackSafetyHolds({ ...base, safety: { ...safe, safe: false }, hard_violations: [] }, 'B')).toBe(false)
+    expect(fallbackSafetyHolds({ ...base, safety: { ...safe, scary_level: 3 }, hard_violations: [] }, 'B')).toBe(false)
   })
 })
