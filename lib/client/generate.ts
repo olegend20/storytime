@@ -111,12 +111,12 @@ export function streamReducer(state: StreamState, action: StreamAction): StreamS
       return { ...state, phase: 'streaming', meta: event }
     case 'chapter_start':
       // A chapter starts fresh, even one already on the page: after a dropped connection the
-      // server clears a chapter cut partway and writes it again (issue #74). Chapters after it
-      // never exist yet, as they arrive in order.
+      // server clears a chapter cut partway and writes it again (issue #74). Chapters arrive
+      // in order, so any after it are stale and go too.
       return {
         ...state,
         phase: 'streaming',
-        chapters: withChapter(state.chapters, event.index, () => ({
+        chapters: withChapter(state.chapters.slice(0, event.index + 1), event.index, () => ({
           ...EMPTY_CHAPTER,
           heading: event.heading,
         })),

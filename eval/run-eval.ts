@@ -1,6 +1,7 @@
 #!/usr/bin/env tsx
 import { MeteredLogSink } from '@/lib/ai'
 import { estimateEvalCost, formatEstimate } from '@/lib/eval/estimate'
+import { parseForceDropAfterChapters } from '@/lib/eval/pipeline'
 import { compareEvalRuns, formatEval, runEval, sameScenarios, type EvalResult } from '@/lib/eval/harness'
 import { evalScenarios, selectScenarios } from '@/lib/eval/scenarios'
 import { runCalibration, formatCalibration, type CalibrationResult } from '@/lib/eval/calibration'
@@ -65,9 +66,14 @@ async function main(): Promise<void> {
   // Issue #74: cut every first write after N whole chapters, to measure continued stories.
   const forceDrop = value('force-drop-after')
   if (forceDrop !== undefined) process.env.EVAL_FORCE_DROP_AFTER_CHAPTERS = forceDrop
-  const forceDropAfterChapters = process.env.EVAL_FORCE_DROP_AFTER_CHAPTERS
-    ? Number(process.env.EVAL_FORCE_DROP_AFTER_CHAPTERS)
-    : undefined
+  let forceDropAfterChapters: number | undefined
+  try {
+    forceDropAfterChapters = parseForceDropAfterChapters(process.env.EVAL_FORCE_DROP_AFTER_CHAPTERS)
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : String(err))
+    process.exitCode = 1
+    return
+  }
   const estimate = estimateEvalCost({
     scenarios,
     builtTopics: await readyFactPackTopics(),

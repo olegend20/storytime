@@ -16,6 +16,8 @@ export interface StoryStreamHandlers {
   onChapterStart: (index: number, heading: string) => void
   onChapterDelta: (index: number, text: string) => void
   onChapterEnd: (index: number, shoutLine: string | null) => void
+  /** The chapters array closed: every chapter is written, the ending and facts come next. */
+  onChaptersEnd?: () => void
 }
 
 const CHAPTER_PATH = /^chapters\[(\d+)\]$/
@@ -42,6 +44,9 @@ export class StoryStreamParser {
         // The chapters array opening means the header fields are done, even if the model
         // omitted `subtitle` entirely.
         if (path === 'chapters') this.maybeEmitMeta(true)
+      },
+      onArrayEnd: (path) => {
+        if (path === 'chapters') this.handlers.onChaptersEnd?.()
       },
       onObjectEnd: (path) => {
         const match = CHAPTER_PATH.exec(path)

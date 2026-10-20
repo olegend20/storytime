@@ -4,7 +4,7 @@ version: 1
 purpose: write
 role: writer
 plan_ref: issue #74; DECISIONS #210
-changes: v1 (2026-10-19) - the gateway cut 2 of 7 dropped writes in the 2026-10-20 eval after chapter 1 was on the page, and those stories were lost. The writer is asked for the rest of the same story instead of a new one.
+changes: v1 (2026-10-19) - in the #73 live eval (2026-10-19), the gateway cut 2 of its 7 dropped writes after chapter 1 was on the page, and those stories were lost. The writer is asked for the rest of the same story instead of a new one.
 note: Sent after the request, in place of "Write the story now", when a streamed write drops after a chapter reached the parent. %NEXT%, %LAST%, %WORDS%, %REMAINING%, %MIN% and %MAX% are filled in per call (not {{placeholders}}, which are rendered from config at load). <story_so_far> holds only this story's own finished chapters - never another story's text (CLAUDE.md rule 8; the owner's reading, 2026-10-19). It belongs to the writing prompt - changing it means re-running the forced-drop eval (CLAUDE.md rule 5).
 ---
 The connection broke while you were writing this story. The reader already has its title and the chapters in <story_so_far>: they are final and cannot change. Write the rest of the same story.

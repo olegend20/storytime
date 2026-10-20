@@ -65,6 +65,15 @@ describe('the continuation prompt (issue #74)', () => {
 
   it('has a version header, like every prompt (CLAUDE.md rule 5)', () => {
     expect(loadPrompt('continue').version).toBe(1)
+    expect(loadPrompt('continue-ending').version).toBe(1)
+  })
+
+  it('asks only for the ending when every chapter is written (#74 review)', () => {
+    const ending = buildContinuationPrompt({ request: req, bible, factPack: goodFactPack(), soFar: { ...soFar, chaptersComplete: true } })
+    const text = ending.messages[0]!.content as string
+    expect(text).toContain('`chapters` as an empty array')
+    expect(text).not.toContain('starting with chapter')
+    expect(text.trimEnd().endsWith('Write the end of the story now. Return the JSON object only.')).toBe(true)
   })
 })
 
@@ -77,6 +86,17 @@ describe('stitchContinuation (issue #74)', () => {
   it('reads a reply with text around the object', () => {
     const reply = '```json\n' + JSON.stringify({ ...story, chapters: story.chapters.slice(2) }) + '\n```'
     expect(JSON.parse(stitchContinuation(reply, soFar)).chapters).toHaveLength(story.chapters.length)
+  })
+
+  it('drops a chapter the page already has, matched by heading or text (#74 review)', () => {
+    const reply = JSON.stringify({ ...story, chapters: [{ ...story.chapters[1]!, heading: 'Renamed' }, ...story.chapters.slice(2)] })
+    expect(JSON.parse(stitchContinuation(reply, soFar))).toEqual(story)
+  })
+
+  it('adds no chapter when every chapter was already shown (#74 review)', () => {
+    const all = { ...soFar, chapters: story.chapters.map((c) => ({ heading: c.heading, text: c.text, shout_line: c.shout_line })), chaptersComplete: true }
+    const reply = JSON.stringify({ ...story, chapters: [{ heading: 'Chapter 99', text: 'More.', shout_line: null }] })
+    expect(JSON.parse(stitchContinuation(reply, all))).toEqual(story)
   })
 
   it('gives "" for a reply with no story in it, so the unusable-output path takes it', () => {
@@ -111,5 +131,15 @@ describe('the page restarts a chapter the server clears (issue #74, the owner\'s
       { kind: 'event', event: { type: 'chapter_end', index: 1, shout_line: null } },
     ] satisfies StreamAction[]
     expect(resumed.reduce(streamReducer, state).chapters[1]).toEqual({ heading: 'Chapter 2', text: 'Two, whole.', shout_line: null, complete: true })
+  })
+
+  it('drops any chapter after the one restarted: they arrive in order, so they are stale (#74 review)', () => {
+    const state = apply([
+      { kind: 'start' },
+      { kind: 'event', event: { type: 'chapter_start', index: 0, heading: 'One' } },
+      { kind: 'event', event: { type: 'chapter_start', index: 1, heading: 'Two' } },
+      { kind: 'event', event: { type: 'chapter_start', index: 0, heading: '' } },
+    ])
+    expect(state.chapters).toEqual([{ heading: '', text: '', shout_line: null, complete: false }])
   })
 })

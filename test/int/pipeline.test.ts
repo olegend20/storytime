@@ -1024,17 +1024,25 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     }
 
     /** What the parent had whole when the write dropped. */
-    function soFar(story: StoryOutput, whole: number): StorySoFar {
+    function soFar(story: StoryOutput, whole: number, chaptersComplete = false): StorySoFar {
       return {
         title: story.title,
         subtitle: story.subtitle,
         chapters: story.chapters.slice(0, whole).map((c) => ({ heading: c.heading, text: c.text, shout_line: c.shout_line })),
+        chaptersComplete,
       }
     }
 
-    /** The writer's reply to the continuation: the rest of the same story. */
-    function stubContinuation(run: PreparedGeneration, story: StoryOutput, whole: number): void {
-      const rest = buildContinuationPrompt({ request: run.request, bible: BIBLE_AT_START, factPack: FIXTURE_FACT_PACK, soFar: soFar(story, whole) })
+    /** The writer's reply to the continuation: by default the rest of the same story. */
+    function stubContinuation(
+      run: PreparedGeneration,
+      story: StoryOutput,
+      whole: number,
+      opts: { chaptersComplete?: boolean; reply?: StoryOutput['chapters'] } = {},
+    ): void {
+      const rest = buildContinuationPrompt({
+        request: run.request, bible: BIBLE_AT_START, factPack: FIXTURE_FACT_PACK, soFar: soFar(story, whole, opts.chaptersComplete),
+      })
       stubFixture(
         'write',
         streamFixtureKey({
@@ -1045,7 +1053,7 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
           thinking: 'adaptive',
           outputFormat: STORY_OUTPUT_FORMAT,
         }),
-        JSON.stringify({ ...story, chapters: story.chapters.slice(whole) }),
+        JSON.stringify({ ...story, chapters: opts.reply ?? story.chapters.slice(whole) }),
         { input_tokens: 1_900, cache_read_tokens: 4_200, output_tokens: 3_900 },
       )
     }
@@ -1166,6 +1174,47 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       const user = JSON.stringify(rest.messages)
       expect(user).not.toContain('UNFINISHED-HALF-CHAPTER')
       expect(user).not.toContain(story.chapters[2]!.text.slice(0, 40))
+      if (result.bibleUpdate) await result.bibleUpdate
+    })
+
+    it('VT-RS8: cut after the last chapter, only the ending is asked for - no "Still writing…", no extra chapter', async () => {
+      const run = await prepared()
+      const { story } = stubResponsesFor(run)
+      // Even a reply that adds a chapter is held to the chapters the page already has.
+      stubContinuation(run, story, story.chapters.length, { chaptersComplete: true, reply: [story.chapters[0]!] })
+      const whole = JSON.stringify({ title: story.title, subtitle: story.subtitle, chapters: story.chapters })
+      drops.queue.push({ partial: `${whole.slice(0, -1)},"ending_line":"And so` })
+      const { events, result } = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
+      expect(result.status).toBe('ready')
+      expect(result.story).toEqual(story)
+      expect(events.filter((e) => e.type === 'chapter_start' && e.heading === '')).toHaveLength(0)
+      expect(events.filter((e) => e.type === 'chapter_start')).toHaveLength(story.chapters.length)
+      if (result.bibleUpdate) await result.bibleUpdate
+    })
+
+    it('VT-RS9: a continuation that repeats chapters already shown is neither shown nor saved twice', async () => {
+      const run = await prepared()
+      const { story } = stubResponsesFor(run)
+      // The writer starts the story over instead of continuing it.
+      stubContinuation(run, story, 2, { reply: story.chapters })
+      drops.queue.push({ partial: cutAfter(story, 2, 'Half') })
+      const { events, result } = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
+      expect(result.status).toBe('ready')
+      expect(result.story).toEqual(story)
+      const starts = events.filter((e): e is Extract<SseEvent, { type: 'chapter_start' }> => e.type === 'chapter_start' && e.heading !== '')
+      // Chapters 1-2 and the half chapter 3 from the first write; then 3 onwards, once each.
+      expect(starts.map((e) => e.index)).toEqual([0, 1, 2, ...story.chapters.slice(2).map((_, i) => i + 2)])
+      if (result.bibleUpdate) await result.bibleUpdate
+    })
+
+    it('VT-RS10: a chapter the writer leaves without a heading never looks like a cleared one on the page', async () => {
+      const run = await prepared()
+      const story = stubStory()
+      story.chapters[1] = { ...story.chapters[1]!, heading: '' }
+      stubResponsesFor(run, { story })
+      const { events, result } = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
+      expect(events.filter((e) => e.type === 'chapter_start' && e.heading === '')).toHaveLength(0)
+      expect(events).toContainEqual({ type: 'chapter_start', index: 1, heading: 'Chapter 2' })
       if (result.bibleUpdate) await result.bibleUpdate
     })
 

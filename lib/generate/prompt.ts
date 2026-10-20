@@ -201,6 +201,11 @@ export interface StorySoFar {
   subtitle: string | null
   /** The chapters that arrived whole, in order. A chapter cut partway is not one of them. */
   chapters: Chapter[]
+  /**
+   * Every chapter is written - the drop came during the ending or the facts - so only those
+   * are asked for (prompts/continue-ending), and any chapters in the reply are ignored.
+   */
+  chaptersComplete?: boolean
 }
 
 /**
@@ -214,7 +219,7 @@ export function buildContinuationPrompt(input: BuildPromptInput & { soFar: Story
   const { soFar } = input
   const words = soFar.chapters.reduce((n, c) => n + countWords(c.text), 0)
   const aim = aimWords(input.request.target_words)
-  const ask = loadPrompt('continue')
+  const ask = loadPrompt(soFar.chaptersComplete ? 'continue-ending' : 'continue')
     .body.trim()
     .replaceAll('%NEXT%', String(soFar.chapters.length + 1))
     .replaceAll('%LAST%', String(soFar.chapters.length))

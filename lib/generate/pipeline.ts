@@ -24,6 +24,7 @@ import {
   targetWords,
   type AgeBand,
   type Chapter,
+  STORY_MAX_CHAPTERS,
 } from '@/lib/schemas'
 import {
   bandForChildren,
@@ -360,7 +361,19 @@ export function stitchContinuation(text: string, soFar: StorySoFar): string {
   if (typeof rest !== 'object' || rest === null || Array.isArray(rest)) return ''
   const chapters = (rest as { chapters?: unknown }).chapters
   if (!Array.isArray(chapters)) return ''
-  return JSON.stringify({ ...rest, title: soFar.title, subtitle: soFar.subtitle, chapters: [...soFar.chapters, ...chapters] })
+  // The page's chapters are final: none is repeated, and after the last one none is added.
+  const added = soFar.chaptersComplete ? [] : chapters.filter((c) => !repeatsChapter(soFar, c))
+  return JSON.stringify({ ...rest, title: soFar.title, subtitle: soFar.subtitle, chapters: [...soFar.chapters, ...added] })
+}
+
+/**
+ * Whether a continuation's chapter repeats one the page already has - by its heading, or its
+ * text when it has one. The prompt forbids it; a writer told to "write the story" still might.
+ */
+export function repeatsChapter(soFar: StorySoFar, chapter: unknown): boolean {
+  const { heading, text } = (chapter ?? {}) as { heading?: unknown; text?: unknown }
+  const same = (a: unknown, b: string) => typeof a === 'string' && a.trim() !== '' && a.trim().toLowerCase() === b.trim().toLowerCase()
+  return soFar.chapters.some((c) => same(heading, c.heading) || same(text, c.text))
 }
 
 /**
@@ -498,13 +511,23 @@ export async function runGeneration(
   // The forced-drop eval only (#74): the first write is cut once this many chapters are whole.
   const forcedDrop = deps.forceDropAfterChapters === undefined ? null : new AbortController()
 
-  /** `resumeAt`: the index a continuation's first chapter takes on the page. */
-  const emitMetaAndChapters = (resumeAt: number | null = null): StoryStreamParser => {
-    const at = (index: number) => index + (resumeAt ?? 0)
+  // Whether the latest write closed its chapters array: a drop after that needs only the
+  // ending and the facts, never another chapter (#74 review).
+  let chaptersDone = false
+
+  /**
+   * `resume`: what the page already has, when this parser reads a continuation. Its chapters
+   * then stream on from where the page stopped, and any it repeats are not shown again.
+   */
+  const emitMetaAndChapters = (resume: StorySoFar | null = null): StoryStreamParser => {
+    chaptersDone = false
+    // Continuation chapters that repeat one the page has, by their index in the reply.
+    const repeats = new Set<number>()
+    const at = (index: number) => (resume?.chapters.length ?? 0) + index - [...repeats].filter((r) => r < index).length
     return new StoryStreamParser({
       onMeta: ({ title, subtitle }) => {
         // A continuation repeats the title the page already shows; it is not sent again.
-        if (resumeAt !== null) return
+        if (resume) return
         shownTitle = { title, subtitle }
         channel.push({
           type: 'meta',
@@ -519,22 +542,33 @@ export async function runGeneration(
         })
       },
       onChapterStart: (index, heading) => {
+        if (resume && (resume.chaptersComplete || repeatsChapter(resume, { heading, text: '' }))) {
+          repeats.add(index)
+          return
+        }
         chapterSent = true
         shown[at(index)] = { heading, text: '', shout_line: null, complete: false }
-        channel.push({ type: 'chapter_start', index: at(index), heading })
+        // An empty heading is the page's "Still writing…" signal (a cleared chapter), so a
+        // chapter the writer left without one is sent with the reader's own fallback.
+        channel.push({ type: 'chapter_start', index: at(index), heading: heading || `Chapter ${at(index) + 1}` })
       },
       onChapterDelta: (index, text) => {
+        if (repeats.has(index)) return
         const chapter = shown[at(index)]
         if (chapter) chapter.text += text
         channel.push({ type: 'chapter_delta', index: at(index), text })
       },
       onChapterEnd: (index, shoutLine) => {
+        if (repeats.has(index)) return
         const chapter = shown[at(index)]
         if (chapter) Object.assign(chapter, { shout_line: shoutLine, complete: true })
         channel.push({ type: 'chapter_end', index: at(index), shout_line: shoutLine })
         if (forcedDrop && shown.filter((c) => c?.complete).length >= (deps.forceDropAfterChapters ?? 0)) {
           forcedDrop.abort()
         }
+      },
+      onChaptersEnd: () => {
+        chaptersDone = true
       },
     })
   }
@@ -546,7 +580,7 @@ export async function runGeneration(
       if (!c?.complete) break
       chapters.push({ heading: c.heading, text: c.text, shout_line: c.shout_line })
     }
-    return { ...shownTitle, chapters }
+    return { ...shownTitle, chapters, chaptersComplete: chaptersDone || chapters.length >= STORY_MAX_CHAPTERS }
   }
 
   try {
@@ -593,17 +627,20 @@ export async function runGeneration(
       new ModelCallError('write stream failed: terminated (forced by the eval)', {
         purpose: 'write', model: deps.writingModel ?? 'writer', attempts: 1, retryable: false, dropped: true,
       })
-    const firstWrite = () =>
-      write(structured, forcedDrop?.signal).then((result) => {
+    const cutIfForced = (s: boolean) =>
+      write(s, forcedDrop?.signal).then((result) => {
         if (forcedDrop?.signal.aborted) throw forcedCut()
         return result
       }, (err: unknown) => {
-        if (forcedDrop?.signal.aborted) throw forcedCut()
+        throw forcedDrop?.signal.aborted ? forcedCut() : err
+      })
+    const firstWrite = () =>
+      cutIfForced(structured).catch((err: unknown) => {
         // A rejected request fails before any text is streamed, so nothing reached the parent.
         if (!structured || !structuredOutputRejected(err)) throw err
         console.warn(`[generate] structured outputs rejected, writing without: ${(err as Error).message}`)
         structured = false
-        return write(false)
+        return cutIfForced(false)
       })
     // Issue #74: once a chapter is showing, a new story would contradict the page. So the
     // chapters that arrived whole stay, the one cut partway is cleared, and the writer is asked
@@ -612,8 +649,9 @@ export async function runGeneration(
       shown.length = soFar.chapters.length
       // The chapter cut partway is cleared, or the next one opened, empty: the page shows
       // "Still writing…" there until the rest arrives (the owner's decision, 2026-10-19).
-      channel.push({ type: 'chapter_start', index: soFar.chapters.length, heading: '' })
-      parser = emitMetaAndChapters(soFar.chapters.length)
+      // Not when every chapter is already showing: only the ending is left to write.
+      if (!soFar.chaptersComplete) channel.push({ type: 'chapter_start', index: soFar.chapters.length, heading: '' })
+      parser = emitMetaAndChapters(soFar)
       const rest = buildContinuationPrompt({ request, bible: bibleAtStart, factPack: pack, soFar })
       return writeWith(rest, structured, signal).then((result) => ({ ...result, text: stitchContinuation(result.text, soFar) }))
     }
