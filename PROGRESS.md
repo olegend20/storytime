@@ -888,6 +888,14 @@ safety review with a retired rule-7 report and a soft concern stays unsafe; the 
 constants sit below the comment that describes them. **Gates:** lint ✅ · typecheck ✅ ·
 unit+int 1340 ✅ · guardrails 32 ✅ · e2e mock 196 ✅ · e2e real 6 ✅.
 
+### 2026-10-19 — a dropped connection no longer loses a story (issue #72, DECISIONS #209)
+
+In the 10-19 live eval, the gateway cut 12 of 67 writing calls before any text arrived, and 3
+stories were lost (dinosaurs C, space race C, volcanoes B). A rewrite that never arrives now
+falls back to attempt 1's story: flagged, or down the mend/cut ladder if it holds a breach.
+A drop is retried up to 3 times while time allows. **Drop bench** (the 9 runs that dropped on
+10-19, from fixtures, free): **6/9 → 9/9** saved. The live eval before/after is in the PR.
+
 ### 2026-10-19 — a retry near the deadline keeps time to write (DECISIONS #208)
 
 `RETRY_MIN_MS` follows `AFTER_WRITE_MS` (+90 s): 150 → 180 s, from the #63 review.

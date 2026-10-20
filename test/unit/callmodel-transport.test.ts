@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { ModelCallError } from '@/lib/ai/types'
 
 /**
  * Every live call streams (issue #41).
@@ -237,7 +238,7 @@ function terminated(): Error {
   return new TypeError('terminated', { cause: Object.assign(new Error('other side closed'), { code: 'UND_ERR_SOCKET' }) })
 }
 
-const rewrite = (opts: { maxRetries?: number; deadlineAt?: number; minRetryMs?: number; timeoutMs?: number; signal?: AbortSignal } = {}) => {
+const rewrite = (opts: { maxRetries?: number; maxDrops?: number; deadlineAt?: number; minRetryMs?: number; timeoutMs?: number; signal?: AbortSignal } = {}) => {
   process.env.LIVE_API = '1'
   const sink = new MemoryLogSink()
   return callModel({
@@ -271,7 +272,7 @@ describe('issue #50: a stream the gateway drops partway is tried once more', () 
     expect(calls.stream).toBe(2)
   })
 
-  it('VT-R2 at most one retry for a dropped stream, whatever maxRetries says', async () => {
+  it('VT-R2 by default at most one retry for a dropped stream, whatever maxRetries says', async () => {
     calls.drop = [terminated(), terminated(), terminated()]
     const { error, sink } = await rewrite({ maxRetries: 5 })
     expect(calls.stream).toBe(2)
@@ -282,6 +283,21 @@ describe('issue #50: a stream the gateway drops partway is tried once more', () 
     calls.drop = [terminated()]
     await rewrite({ maxRetries: 0 })
     expect(calls.stream).toBe(1)
+  })
+
+  it('VT-R2 (#72) maxDrops retries that many drops, still within maxRetries', async () => {
+    calls.drop = [terminated(), terminated(), terminated()]
+    expect((await rewrite({ maxDrops: 3, maxRetries: 3 })).result!.text).toBe('ok')
+    expect(calls.stream).toBe(4)
+
+    // maxRetries still caps it: three attempts, then the drop is the error.
+    calls.stream = 0
+    calls.drop = [terminated(), terminated(), terminated(), terminated()]
+    const { error } = await rewrite({ maxDrops: 3, maxRetries: 2 })
+    expect(calls.stream).toBe(3)
+    expect(error!.message).toMatch(/failed after 3 attempt\(s\): terminated/)
+    // The pipeline tells a lost rewrite's cause by this flag, not the message (#73 review).
+    expect((error as ModelCallError).detail.dropped).toBe(true)
   })
 
   it('VT-R3 no retry without minRetryMs left, and no attempt runs past deadlineAt', async () => {
@@ -351,6 +367,12 @@ describe('issue #50: a stream the gateway drops partway is tried once more', () 
     expect(rewriteCall.slice(0, 1200)).toMatch(
       /deadlineAt: deps\.deadlineMs - AFTER_WRITE_MS, minRetryMs: RETRY_MIN_MS - AFTER_WRITE_MS/,
     )
+  })
+
+  it('VT-R6 (#72) the pipeline\'s rewrite retries up to MAX_DROP_RETRIES drops', () => {
+    const source = readFileSync(join(process.cwd(), 'lib/generate/pipeline.ts'), 'utf8')
+    const rewriteCall = source.slice(source.indexOf("purpose: 'rewrite',\n          role: 'writer',\n          ...(deps.writingModel ? { model: deps.writingModel } : {}),\n          system: rewritePrompt.system"))
+    expect(rewriteCall.slice(0, 1400)).toMatch(/maxDrops: MAX_DROP_RETRIES, maxRetries: MAX_DROP_RETRIES/)
   })
 })
 
