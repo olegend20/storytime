@@ -2,6 +2,7 @@ import Anthropic, { APIConnectionError, APIError } from '@anthropic-ai/sdk'
 import type { z } from 'zod'
 import type { CallPurpose } from '@/lib/schemas/common'
 import { capabilities, computeCost, modelForRole } from './pricing'
+import { servedByOtherModel, understudyHeaders, workloadFor } from './workload'
 import {
   MissingFixtureError,
   fixtureKey,
@@ -381,7 +382,11 @@ export async function callModel<T = string>(
     // This attempt's budget: `timeoutMs`, capped at what is left before `deadlineAt`.
     const attemptMs = Math.max(1, Math.min(opts.timeoutMs ?? DEFAULT_TIMEOUT_MS, timeLeft()))
     try {
-      const reqOpts = { signal: opts.signal, ...(opts.timeoutMs ? { timeout: opts.timeoutMs } : {}) }
+      const reqOpts = {
+        signal: opts.signal,
+        headers: understudyHeaders(workloadFor(opts.purpose)),
+        ...(opts.timeoutMs ? { timeout: opts.timeoutMs } : {}),
+      }
       const params = request as unknown as Anthropic.MessageCreateParamsNonStreaming
       // Every call streams (issue #41). A non-streaming response sends nothing until it is
       // complete, and two things cut that silence short: Node's fetch (undici) gives up on
@@ -401,6 +406,19 @@ export async function callModel<T = string>(
       const latencyMs = Date.now() - started
       const usage = normalizeUsage(response.usage)
       const stopReason = (response.stop_reason as string | null) ?? null
+
+      // A reply from another model than the one asked for is never used (#76).
+      const other = servedByOtherModel(model, stream.response?.headers)
+      if (other) {
+        await logRow(sink, opts, model, usage, latencyMs, false, `served_by_other_model:${other}`)
+        throw new ModelCallError(`${opts.purpose} call to ${model} was served by ${other}`, {
+          purpose: opts.purpose,
+          model,
+          attempts: attempt,
+          retryable: false,
+          servedBy: other,
+        })
+      }
 
       // A refusal is a successful HTTP call with a declined result. Log it, then raise.
       if (stopReason === 'refusal') {
@@ -443,7 +461,8 @@ export async function callModel<T = string>(
         replayed: false,
       })
     } catch (err) {
-      if (err instanceof ModelRefusalError) throw err
+      // Both are logged where they are raised.
+      if (err instanceof ModelRefusalError || err instanceof ModelCallError) throw err
       // Hitting our own deadline on a call that ASKED for more than five minutes is not
       // retried: a second full-length attempt doubles the cost of a call that has already run
       // long. Any other call that times out is retried, as it was before every call streamed

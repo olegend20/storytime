@@ -8,6 +8,8 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 const drops = vi.hoisted(() => ({
   queue: [] as { partial: string; dropped?: boolean; hang?: boolean }[],
   signals: [] as (AbortSignal | undefined)[],
+  /** Issue #76: whether each streamed write was marked as a continuation. */
+  continuations: [] as boolean[],
   /**
    * Issue #72: how many times the gateway drops the rewrite. The rewrite goes through
    * callModel, whose own drop loop (VT-R1/R2) is stood in for here: it makes
@@ -43,6 +45,7 @@ vi.mock('@/lib/ai', async (orig) => {
       return actual.callModel(opts)
     },
     streamModel: async (opts: Parameters<typeof actual.streamModel>[0]) => {
+      drops.continuations.push(opts.continuation === true)
       const next = drops.queue.shift()
       if (!next) return actual.streamModel(opts)
       drops.signals.push(opts.signal)
@@ -1075,6 +1078,18 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       expect(sink.rows.filter((r) => r.purpose === 'write')).toHaveLength(1)
       expect(quota.calls).toEqual(['consumeQuota'])
       expect(events.at(-1)?.type).toBe('done')
+      if (result.bibleUpdate) await result.bibleUpdate
+    })
+
+    it('VT-UW2 (#76): the continuation is tagged as its own workload, the first write is not', async () => {
+      const run = await prepared()
+      const { story } = stubResponsesFor(run)
+      stubContinuation(run, story, 1)
+      drops.queue.push({ partial: cutAfter(story, 1, 'Half') })
+      drops.continuations.length = 0
+      const { result } = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
+      expect(result.status).toBe('ready')
+      expect(drops.continuations).toEqual([false, true])
       if (result.bibleUpdate) await result.bibleUpdate
     })
 

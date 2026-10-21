@@ -888,6 +888,13 @@ safety review with a retired rule-7 report and a soft concern stays unsafe; the 
 constants sit below the comment that describes them. **Gates:** lint ✅ · typecheck ✅ ·
 unit+int 1340 ✅ · guardrails 32 ✅ · e2e mock 196 ✅ · e2e real 6 ✅.
 
+### 2026-10-21 — every model call has its own Understudy workload (issue #76, DECISIONS #211)
+
+Understudy saw all our calls as one pile under its default workload. Each call now names its
+workload (14: one per call purpose plus the continuation after a drop), so the writer's drops
+and latency can be read apart from the helpers'. A reply from another model than the one asked
+for is never used. Evals stay in the `rehearsal` project; production's project is the owner's.
+
 ### 2026-10-19 — a write dropped after chapters were shown is finished, not lost (issue #74, DECISIONS #210)
 
 The #73 eval recovered 5 of 7 drops. The 2 it lost were cut after chapter 1 was on the page,

@@ -55,6 +55,8 @@ export class ModelCallError extends Error {
        * `streamModel` never retries itself; the caller decides whether it safely can (#52).
        */
       dropped?: boolean
+      /** The gateway answered with another model than the one requested (#76); never used. */
+      servedBy?: string
     },
   ) {
     super(message)

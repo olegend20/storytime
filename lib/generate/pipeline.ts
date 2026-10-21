@@ -602,9 +602,11 @@ export async function runGeneration(
       factPack: pack,
     })
     writeCalls += 1
-    const writeWith = (p: BuiltPrompt, structured: boolean, signal?: AbortSignal) =>
+    const writeWith = (p: BuiltPrompt, structured: boolean, signal?: AbortSignal, continuation = false) =>
       streamModel({
         purpose: 'write',
+        // Its own Understudy workload (#76): a different prompt from the first write.
+        ...(continuation ? { continuation } : {}),
         role: 'writer',
         ...(deps.writingModel ? { model: deps.writingModel } : {}),
         system: p.system,
@@ -655,7 +657,7 @@ export async function runGeneration(
       if (!soFar.chaptersComplete) channel.push({ type: 'chapter_start', index: soFar.chapters.length, heading: '' })
       parser = emitMetaAndChapters(soFar)
       const rest = buildContinuationPrompt({ request, bible: bibleAtStart, factPack: pack, soFar })
-      return writeWith(rest, structured, signal).then((result) => ({ ...result, text: stitchContinuation(result.text, soFar) }))
+      return writeWith(rest, structured, signal, true).then((result) => ({ ...result, text: stitchContinuation(result.text, soFar) }))
     }
     // Issue #52: the gateway can cut a stream partway, even seconds in. If no chapter has
     // reached the parent yet, nothing on the page would contradict another write - so it is

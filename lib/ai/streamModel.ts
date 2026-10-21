@@ -4,6 +4,7 @@ import { capabilities, computeCost, modelForRole } from './pricing'
 import { MissingFixtureError, fixtureKey, readFixture, writeFixture } from './fixtures'
 import { getDefaultLogSink, isDroppedStream, isUpstreamStreamError, normalizeUsage, type CacheableBlock, type CallModelResult } from './callModel'
 import { ModelCallError, ModelRefusalError, type GenerationLogSink } from './types'
+import { servedByOtherModel, understudyHeaders, workloadFor } from './workload'
 
 /**
  * Streaming variant of the wrapper, for F6's SSE route. Kickoff rule 1 means lane 2
@@ -35,6 +36,8 @@ export interface StreamModelOptions {
   onText?: (delta: string) => void
   /** Replay-only: chunk size for simulated deltas. */
   replayChunkSize?: number
+  /** The rest of a story after a drop (#74): tagged as its own Understudy workload (#76). */
+  continuation?: boolean
 }
 
 const DEFAULT_STREAM_MAX_TOKENS = 64_000
@@ -156,7 +159,7 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
         ...(thinking ? { thinking } : {}),
         ...(outputConfig ? { output_config: outputConfig } : {}),
       } as unknown as Anthropic.MessageStreamParams,
-      { signal: opts.signal },
+      { signal: opts.signal, headers: understudyHeaders(workloadFor(opts.purpose, { continuation: opts.continuation })) },
     )
 
     if (opts.onText) stream.on('text', (delta: string) => opts.onText?.(delta))
@@ -187,6 +190,33 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
       cacheWrite: usage.cache_write_tokens,
       output: usage.output_tokens,
     })
+
+    // A reply from another model than the one asked for is never used (#76).
+    const other = servedByOtherModel(model, stream.response?.headers)
+    if (other) {
+      await sink.write({
+        family_id: opts.familyId ?? null,
+        story_id: opts.storyId ?? null,
+        fact_pack_id: null,
+        purpose: opts.purpose,
+        model,
+        input_tokens: usage.input_tokens,
+        cache_read_tokens: usage.cache_read_tokens,
+        cache_write_tokens: usage.cache_write_tokens,
+        output_tokens: usage.output_tokens,
+        cost_usd: costUsd,
+        latency_ms: latencyMs,
+        ok: false,
+        error: `served_by_other_model:${other}`.slice(0, 500),
+      })
+      throw new ModelCallError(`${opts.purpose} stream to ${model} was served by ${other}`, {
+        purpose: opts.purpose,
+        model,
+        attempts: 1,
+        retryable: false,
+        servedBy: other,
+      })
+    }
 
     await sink.write({
       family_id: opts.familyId ?? null,
@@ -231,7 +261,8 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
 
     return { text, data: null, usage, costUsd, latencyMs, model, stopReason, replayed: false, raw: finalMessage }
   } catch (err) {
-    if (err instanceof ModelRefusalError) throw err
+    // Both are logged where they are raised.
+    if (err instanceof ModelRefusalError || err instanceof ModelCallError) throw err
     const latencyMs = Date.now() - started
     // A stream cut partway has already used tokens - the thinking before the cut is billed.
     // Log what it reported so far, a LOWER BOUND, as callModel does (#50), not $0: since #52
