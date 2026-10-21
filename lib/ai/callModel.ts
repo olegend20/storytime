@@ -279,6 +279,18 @@ export function isDroppedStream(err: unknown): boolean {
   return false
 }
 
+/**
+ * An `event: error` the upstream sent partway through a stream - the SDK raises it as an
+ * `APIError` with no status. Only the kinds that mean the upstream lost the stream, not a
+ * request we got wrong: on 2026-10-21 a story's continuation (issue #74) died on the gateway's
+ * `upstream_response_error` and, not counted as a drop, was never written again.
+ */
+const UPSTREAM_STREAM_ERRORS = new Set(['upstream_response_error', 'overloaded_error', 'api_error'])
+
+export function isUpstreamStreamError(err: unknown): boolean {
+  return err instanceof APIError && err.status === undefined && UPSTREAM_STREAM_ERRORS.has(String(err.type))
+}
+
 /** Retry on transport failures and the transient HTTP statuses; never on a 4xx we caused. */
 function isRetryable(err: unknown): { retryable: boolean; status?: number } {
   if (err instanceof APIConnectionError) return { retryable: true }

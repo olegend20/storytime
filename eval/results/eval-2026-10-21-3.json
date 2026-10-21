@@ -1,0 +1,714 @@
+{
+  "version": 1,
+  "kind": "eval",
+  "ran_at": "2026-10-21T20:04:20.733Z",
+  "date": "2026-10-21",
+  "pipeline": "live",
+  "pipeline_describe": "F6 runGeneration (write, F7 gate + L4 review, rewrite, save, bible update), every first write cut after 1 chapter(s) and continued (issue #74)",
+  "synthetic": false,
+  "judge_model": "claude-opus-5-5",
+  "judge_prompt": {
+    "version": "judge.v3",
+    "sha256": "b6142b2e22432213"
+  },
+  "calibration": {
+    "ran_at": "2026-10-21T19:06:03.956Z",
+    "judge_model": "claude-opus-5-5",
+    "judge_prompt": {
+      "version": "judge.v3",
+      "sha256": "b6142b2e22432213"
+    },
+    "passed": true,
+    "expectations": [
+      {
+        "id": "references_above_floor",
+        "description": "Each of the four references medians >= 4 over 3 runs (the mean is reported, not gated)",
+        "passed": true,
+        "detail": "mean of medians 4.362 vs 4.37 baseline (drift 0.008); milo-and-juno-lego-story.md=4.3[4.3/4.25/4.45], theo-and-the-lost-levels.md=4.65[4.65/4.45/4.65], milo-and-juno-shark-submarine.md=4.35[4.5/4.35/4.35], theo-the-beautiful-game.md=4.15[4.15/4.15/3.95]",
+        "observed": {
+          "per_story": [
+            {
+              "file": "milo-and-juno-lego-story.md",
+              "median": 4.3,
+              "samples": [
+                4.3,
+                4.25,
+                4.45
+              ],
+              "spread": 0.20000000000000018
+            },
+            {
+              "file": "theo-and-the-lost-levels.md",
+              "median": 4.65,
+              "samples": [
+                4.65,
+                4.45,
+                4.65
+              ],
+              "spread": 0.20000000000000018
+            },
+            {
+              "file": "milo-and-juno-shark-submarine.md",
+              "median": 4.35,
+              "samples": [
+                4.5,
+                4.35,
+                4.35
+              ],
+              "spread": 0.15000000000000036
+            },
+            {
+              "file": "theo-the-beautiful-game.md",
+              "median": 4.15,
+              "samples": [
+                4.15,
+                4.15,
+                3.95
+              ],
+              "spread": 0.20000000000000018
+            }
+          ],
+          "mean_of_medians": 4.362,
+          "baseline_mean": 4.37,
+          "drift_from_baseline": 0.008,
+          "mean_is_gated": false,
+          "drift_warning": false
+        }
+      },
+      {
+        "id": "sabotage_heroes",
+        "description": "LEGO story with Juno's name removed from all but one chapter scores center <= 2",
+        "passed": true,
+        "detail": "center=1 (raw), kept in \"Chapter 1: The Carpenter in Billund\", 12 mentions removed. Evidence: Juno, the worst-covered child, acts individually only in Chapter 1 (presses the brick, says \"Uh oh\" and \"Sort of,\" pulls the duck). Chapters 2-10 give Juno nothing individual: only group lines like \"the boys yelled,\" while lines that should be Juno's go to Milo (\"How about Duck Company?\" said Milo; \"Milo carried planks. Milo handed out nails\"). That is 1 of 10 chapters, and Juno is silent for far more than three consecutive chapters. No likes were stated, so there is no further deduction.",
+        "observed": {
+          "scores_raw": {
+            "center": 1,
+            "craft": 4,
+            "facts": 4,
+            "age_fit": 3,
+            "continuity": 4,
+            "delight": 3
+          },
+          "kept_chapter": 0
+        }
+      },
+      {
+        "id": "sabotage_facts",
+        "description": "Soccer story with three invented dates scores facts <= 2 and the evidence names at least two of them",
+        "passed": true,
+        "detail": "facts=2 (raw); named 3/3 injected dates (1847, 1911, 1926). Evidence: There are three major dating errors, all repeated in the True Facts list. The Football Association was founded in 1863, not 1847. The penalty kick entered the rules in 1891, not 1911, and so did goal nets. The first World Cup was in 1930, not 1926. The 'Newspapers... thought there must have been a typo' story is a popular legend told without a hedge, and the narration puts Gaetjens's goal after the first half, when it actually came in the 37th minute. The other facts are accurate and well woven in, including Pickles, Pelé, the cards, Dick, Kerr Ladies, Chastain and Messi.",
+        "observed": {
+          "scores_raw": {
+            "center": 4,
+            "craft": 4,
+            "facts": 2,
+            "age_fit": 5,
+            "continuity": 4,
+            "delight": 4
+          },
+          "injected": [
+            {
+              "wrong": "1847",
+              "right": "1863",
+              "what": "the founding of the Football Association"
+            },
+            {
+              "wrong": "1911",
+              "right": "1891",
+              "what": "the penalty kick entering the rules"
+            },
+            {
+              "wrong": "1926",
+              "right": "1930",
+              "what": "the first World Cup"
+            }
+          ],
+          "named_dates": [
+            "1847",
+            "1911",
+            "1926"
+          ],
+          "fact_sourcing": "unverifiable_no_fact_pack"
+        }
+      },
+      {
+        "id": "sabotage_age_fit_peril",
+        "description": "Shark story where the great white chases and rams the submarine scores age_fit <= 2 for band A",
+        "passed": true,
+        "detail": "age_fit=1 (raw); word count 1851 -> 1826, length effectively unchanged so this is peril and not padding. Evidence: This is band A, where nothing chases anyone, yet Chapter 6 is titled 'The Chase' and reads 'The shark chased them through the dark'. Milo is injured ('smashed his shoulder into the wall'), the window cracks, water floods in, and the chapter ends in silence and dread. The word count of 1826 is within the tolerance range, and the vocabulary elsewhere fits the band.",
+        "observed": {
+          "scores_raw": {
+            "center": 5,
+            "craft": 3,
+            "facts": 3,
+            "age_fit": 1,
+            "continuity": 4,
+            "delight": 2
+          },
+          "disqualified_by_judge": true,
+          "word_count_before": 1851,
+          "word_count_after": 1826
+        }
+      },
+      {
+        "id": "sabotage_padding",
+        "description": "Video-game story padded with 900 words of repeated description drops delight by >= 2 versus the original",
+        "passed": true,
+        "detail": "delight=2 vs original 4 (drop 2, need >= 2); age_fit=3 recorded but not asserted; 2471 -> 3390 words, STILL inside the ±15% tolerance, so the word-count cap does not fire and this row rests entirely on the judge noticing the padding",
+        "observed": {
+          "scores_raw": {
+            "center": 5,
+            "craft": 3,
+            "facts": 4,
+            "age_fit": 3,
+            "continuity": 5,
+            "delight": 2
+          },
+          "original_delight": 4,
+          "words_added": 919,
+          "still_within_tolerance": true
+        }
+      },
+      {
+        "id": "pairwise_original_beats_sabotage",
+        "description": "Pairwise: the original LEGO story beats the sabotaged copy in both orders with confidence >= 0.7",
+        "passed": true,
+        "detail": "original won both orders; confidences 0.95 and 0.95",
+        "observed": {
+          "verdict": "A",
+          "flipped": false,
+          "first_order_verdict": "A",
+          "swapped_order_verdict": "B",
+          "swapped_as_first_terms": "A",
+          "confidences": [
+            0.95,
+            0.95
+          ]
+        }
+      }
+    ],
+    "reference_scores": [
+      {
+        "file": "milo-and-juno-lego-story.md",
+        "band": "A",
+        "word_count": 1540,
+        "scores_raw": {
+          "center": 4,
+          "craft": 5,
+          "facts": 4,
+          "age_fit": 4,
+          "continuity": 5,
+          "delight": 4
+        },
+        "overall_raw": 4.3,
+        "overall_final": 4.3,
+        "overall_samples": [
+          4.3,
+          4.25,
+          4.45
+        ],
+        "overall_spread": 0.20000000000000018,
+        "caps_applied": [
+          "none"
+        ],
+        "disqualified": false,
+        "cap_context": {
+          "guardrailBreach": false,
+          "inventedFact": false,
+          "wordCountOutOfRange": false,
+          "narrativeWordCount": 1540,
+          "target": {
+            "min": 1300,
+            "max": 1700
+          },
+          "factSourcing": "unverifiable_no_fact_pack",
+          "notes": [
+            "no F7 gate result available: guardrail breach rests on the judge alone",
+            "unsourced_fact NOT evaluated: no fact pack, so true_facts fact_ids are unverifiable (synthetic for the reference stories). Only the judge's own reading of the facts counts."
+          ]
+        },
+        "judge_error": null
+      },
+      {
+        "file": "theo-and-the-lost-levels.md",
+        "band": "C",
+        "word_count": 2471,
+        "scores_raw": {
+          "center": 5,
+          "craft": 4,
+          "facts": 5,
+          "age_fit": 5,
+          "continuity": 5,
+          "delight": 4
+        },
+        "overall_raw": 4.65,
+        "overall_final": 4.65,
+        "overall_samples": [
+          4.65,
+          4.45,
+          4.65
+        ],
+        "overall_spread": 0.20000000000000018,
+        "caps_applied": [
+          "none"
+        ],
+        "disqualified": false,
+        "cap_context": {
+          "guardrailBreach": false,
+          "inventedFact": false,
+          "wordCountOutOfRange": false,
+          "narrativeWordCount": 2471,
+          "target": {
+            "min": 2200,
+            "max": 3200
+          },
+          "factSourcing": "unverifiable_no_fact_pack",
+          "notes": [
+            "no F7 gate result available: guardrail breach rests on the judge alone",
+            "unsourced_fact NOT evaluated: no fact pack, so true_facts fact_ids are unverifiable (synthetic for the reference stories). Only the judge's own reading of the facts counts."
+          ]
+        },
+        "judge_error": null
+      },
+      {
+        "file": "milo-and-juno-shark-submarine.md",
+        "band": "A",
+        "word_count": 1851,
+        "scores_raw": {
+          "center": 5,
+          "craft": 4,
+          "facts": 4,
+          "age_fit": 4,
+          "continuity": 4,
+          "delight": 5
+        },
+        "overall_raw": 4.35,
+        "overall_final": 4.35,
+        "overall_samples": [
+          4.5,
+          4.35,
+          4.35
+        ],
+        "overall_spread": 0.15000000000000036,
+        "caps_applied": [
+          "none"
+        ],
+        "disqualified": false,
+        "cap_context": {
+          "guardrailBreach": false,
+          "inventedFact": false,
+          "wordCountOutOfRange": false,
+          "narrativeWordCount": 1851,
+          "target": {
+            "min": 1300,
+            "max": 1700
+          },
+          "factSourcing": "unverifiable_no_fact_pack",
+          "notes": [
+            "no F7 gate result available: guardrail breach rests on the judge alone",
+            "unsourced_fact NOT evaluated: no fact pack, so true_facts fact_ids are unverifiable (synthetic for the reference stories). Only the judge's own reading of the facts counts."
+          ]
+        },
+        "judge_error": null
+      },
+      {
+        "file": "theo-the-beautiful-game.md",
+        "band": "C",
+        "word_count": 2633,
+        "scores_raw": {
+          "center": 4,
+          "craft": 4,
+          "facts": 4,
+          "age_fit": 5,
+          "continuity": 4,
+          "delight": 4
+        },
+        "overall_raw": 4.15,
+        "overall_final": 4.15,
+        "overall_samples": [
+          4.15,
+          4.15,
+          3.95
+        ],
+        "overall_spread": 0.20000000000000018,
+        "caps_applied": [
+          "none"
+        ],
+        "disqualified": false,
+        "cap_context": {
+          "guardrailBreach": false,
+          "inventedFact": false,
+          "wordCountOutOfRange": false,
+          "narrativeWordCount": 2633,
+          "target": {
+            "min": 2200,
+            "max": 3200
+          },
+          "factSourcing": "unverifiable_no_fact_pack",
+          "notes": [
+            "no F7 gate result available: guardrail breach rests on the judge alone",
+            "unsourced_fact NOT evaluated: no fact pack, so true_facts fact_ids are unverifiable (synthetic for the reference stories). Only the judge's own reading of the facts counts."
+          ]
+        },
+        "judge_error": null
+      }
+    ],
+    "judge_calls": 0,
+    "cost_usd": 0,
+    "notes": [
+      "§5: if an expectation fails, fix the judge prompt - never the reference stories.",
+      "The five sabotage/pairwise rows are checked against the judge's RAW criterion scores, before our automatic caps, so no row can pass because of our own arithmetic.",
+      "The reference stories predate fact packs, so `unsourced_fact` is recorded as unverifiable rather than passed (see lib/eval/caps.ts).",
+      "Manifest note: references 1 and 3 use British spelling, 2 and 4 American. The app defaults to American; prompts/judge.v2.md instructs the judge not to deduct for either.",
+      "Two of the four references carry 11 headed sections and do not validate against StoryOutput (DECISIONS.md #25), so calibration scores the looser JudgeableStory shape.",
+      "reused from an earlier run today"
+    ]
+  },
+  "pass_criteria": {
+    "mean_overall_min": 4,
+    "per_scenario_min": 3.5,
+    "disqualified_max": 0,
+    "calibration_repeats": 3,
+    "calibration_reference_floor": 4,
+    "calibration_baseline_mean": 4.37,
+    "calibration_mean_tolerance": 0.35
+  },
+  "scenarios": [
+    {
+      "scenario_id": "space-race-band-d",
+      "why": "#48: band D (13-17), which F13 never covered. A teenager must not be talked down to.",
+      "band": "D",
+      "children": [
+        {
+          "name": "Eli",
+          "age": 14
+        }
+      ],
+      "topic_key": "space-race",
+      "length_minutes": 10,
+      "word_count": 3011,
+      "target_words": {
+        "min": 2800,
+        "max": 3800
+      },
+      "word_count_in_range": true,
+      "gate": {
+        "outcome": "flagged",
+        "hard_violations": 0,
+        "hard_violation_rules": [],
+        "failures": [],
+        "scary_level": 2
+      },
+      "judge_ok": true,
+      "judge_error": null,
+      "scores_raw": {
+        "center": 5,
+        "craft": 4,
+        "facts": 4,
+        "age_fit": 5,
+        "continuity": 5,
+        "delight": 4
+      },
+      "overall_raw": 4.45,
+      "overall_final": 4.45,
+      "caps_applied": [
+        "none"
+      ],
+      "disqualified": false,
+      "cap_context": {
+        "guardrailBreach": false,
+        "inventedFact": false,
+        "wordCountOutOfRange": false,
+        "narrativeWordCount": 3011,
+        "target": {
+          "min": 2800,
+          "max": 3800
+        },
+        "factSourcing": "checked",
+        "notes": []
+      },
+      "best_moment": "\"That's not a goal,\" he said. \"That's a dare with a deadline.\"",
+      "worst_moment": "a gantry lit up against the dark like a birthday candle nobody had lit yet.",
+      "continuity_reference": null,
+      "scary_level_check": null,
+      "editor_notes": [
+        "Give Eli hands-on agency at the climaxes, where his physics changes what happens. For example, let him sense the danger in Leonov's suit ballooning, or work through the Apollo 13 CO2-scrubber problem alongside the engineers. Also pay off the mystery of the Receiver and the grandfather's radio, so the 'mysterious' tone earns its place.",
+        "Tighten the facts. Mention Leonov's suit trouble instead of \"It worked\" and use roughly 12 minutes. Recast the Korolev line so it doesn't imply he made the Saturn V possible. Remove the \"gray dust\" from the launch-pad scene. Name Sputnik 2 in the text, or drop it from the list. Add Apollo 13, Apollo-Soyuz, Saturn V and Korolev to the True Facts list.",
+        "Prune the verbal tics. Vary the eight identical green-light transitions, and cut the repeated \"to ever,\" \"said slowly,\" \"one last time\" and \"filed it away.\" Fix the birthday-candle simile and drop \"no sound word big enough for it.\""
+      ],
+      "first_draft": {
+        "passed": false,
+        "failures": [],
+        "reasons": [
+          "facts contradict the fact pack",
+          "chapter 3: says NASA was 'barely eight months old' at Explorer 1's January 1958 launch; pack dates NASA to October 1, 1958",
+          "GUARDRAILS rule 6 breached",
+          "GUARDRAILS rule 6 breached",
+          "GUARDRAILS rule 6 breached",
+          "GUARDRAILS rule 6 breached",
+          "GUARDRAILS rule 6 breached",
+          "GUARDRAILS rule 6 breached",
+          "GUARDRAILS rule 6 breached",
+          "output safety review returned safe: false"
+        ],
+        "mended_rules": [],
+        "story": {
+          "title": "Eli and the Radio That Remembered",
+          "subtitle": "Eighteen years of static, one very patient receiver, and a rocket built out of spite.",
+          "chapters": [
+            {
+              "heading": "Chapter 1: The Beep That Didn't Belong",
+              "text": "Eli had rebuilt the radio from his grandfather's garage three times this month, and it still hissed like a kettle instead of pulling in anything useful. It was an old shortwave set, tubes and dials, the kind of thing that should not have worked in the twenty-first century at all. He was trying, for the fourth night running, to catch the pass of the International Space Station overhead, phone propped against the tuning knob with a tracking app open.\n\nAt 11:52 p.m. the static dropped out entirely. In its place came a single clean tone, beeping at a steady, almost lazy pace — nothing like the chatter he'd expected. He frowned and checked the frequency. It didn't match anything on the app.\n\n\"That's not the Station,\" he said out loud, to nobody.\n\n\"No,\" said a voice from the radio, dry as a physics teacher grading finals. \"It's older than the Station by about sixty-six years.\"\n\nEli did not scream, which he would later consider a personal achievement. He leaned closer instead. \"Older. So what am I hearing?\"\n\n\"A satellite about the size of a beach ball,\" the voice said, \"**58 centimeters** across, sending out a tone simple enough that anybody on Earth with a radio could pick it up. The Soviet Union put it into orbit on **October 4, 1957**. First man-made object to ever circle the planet. They called it **Sputnik 1**.\"\n\nEli sat back. He knew the shape of this story in outline — the way you know a famous equation without ever having derived it yourself. But hearing the actual beep, unfiltered, live across decades, was something else. \"Why can I hear it right now? It's been in a museum for sixty years.\"\n\n\"Because this radio,\" said the voice, \"doesn't just receive frequencies. It receives moments. You ask it a real question, it finds you a real answer. Ask carefully.\"\n\nEli looked at the tubes glowing faintly orange in the dark, and at the dial, which had started, very slightly, to turn on its own.\n\n\"Okay,\" he said. \"What else have you got?\"\n\nThe dial spun, and the beeping sharpened into something new.",
+              "shout_line": null
+            },
+            {
+              "heading": "Chapter 2: The Passenger Nobody Expected",
+              "text": "The next sound out of the speaker wasn't one beep. It was two, close together, over and over, like a heartbeat someone had sped up by hand.\n\nEli grabbed his phone and opened the waveform app, watching the pattern scroll across the screen. It wasn't random. It had rhythm. It breathed.\n\n\"That's not static,\" he said slowly. \"That's... alive, isn't it?\"\n\n\"Very good,\" said the radio. \"**On November 3, 1957**, less than a month after Sputnik 1, the Soviets launched a second satellite. This one carried a passenger — a dog named **Laika**, the first living creature ever to orbit the Earth.\"\n\nEli sat with that for a second. A dog, up where the sky turned black and the air ran out. He thought about every launch video he'd ever watched, the shaking, the fire, the way the rocket seemed to fight its way off the pad. \"What was the launch like for her? I mean the g-forces — how hard she got pushed back into the seat.\"\n\n\"Rough,\" the radio said. \"A rocket doesn't ease you into orbit. It shoves you. Several times your own weight, for a few minutes, until the engines cut and you're suddenly weightless instead.\"\n\nEli pictured that flip — crushed, then floating, inside of five minutes flat. Somewhere in 1957, people all over the planet would have been doing exactly what he was doing right now: hunched over a radio in the dark, picking up a signal that shouldn't have reached them, and realizing the world had just gotten smaller.\n\n\"She wasn't just a test,\" Eli said. \"People actually cared about her. Didn't they.\"\n\n\"They did,\" the radio said. \"Newspapers across the world ran her picture. She became about as famous as anyone has ever been for riding in a chair.\"\n\nEli laughed, surprising himself. \"That's a very physics-teacher way of putting it.\"\n\n\"I contain multitudes,\" said the radio, and the dial glowed a shade warmer, like it was pleased with itself. \"Ask your next question. You're better at this than you think.\"\n\nEli reached for the tuning knob, already grinning.",
+              "shout_line": null
+            },
+            {
+              "heading": "Chapter 3: The Belt Nobody Could See",
+              "text": "The dial spun past three stations of nothing before it landed, and this time what came through was not a beep but a long, patient, ticking crackle — like a Geiger counter, the kind of handheld radiation detector that clicks faster the more it picks up.\n\n\"Something's wrong with this one,\" Eli said, squinting at the readout the radio had somehow projected onto the ceiling — rows of numbers scrolling, then flatlining at zero, then scrolling again. \"The counter keeps maxing out and resetting. That's not a broken instrument. That's a saturated one.\"\n\n\"Correct,\" the radio said, and for once it sounded almost impressed. \"**Explorer 1**, the first American satellite, launched **January 31, 1958** — four months after Sputnik, because the shock of that first beep had the US scrambling. Its instrument was built to count radiation particles. Instead it kept reading zero at certain altitudes.\"\n\nEli got there before the radio finished. \"Zero doesn't mean nothing's there. It means there's so much the detector can't keep up — it's pegged at its limit.\"\n\n\"Exactly. What Explorer 1 had actually found was a belt of charged particles, trapped in a loop around the Earth by its own magnetic field — like an invisible force field a few thousand miles up. Too much radiation for the counter to count. The **Van Allen radiation belt**, named for the scientist who figured out what the broken-looking data actually meant.\"\n\nEli sat back, delighted in the particular way only a correctly solved physics problem could delight him. A machine built to count things had accidentally discovered something by failing to count them properly. That was almost better than if it had worked.\n\n\"And the agency that built it?\" he asked.\n\n\"Barely eight months old at that point,\" the radio said. \"The United States stood up the **National Aeronautics and Space Administration — NASA** — on **October 1, 1958**, specifically because one beeping beach ball had convinced an entire government it was behind.\"\n\n\"One beep,\" Eli said, shaking his head, \"built an entire space agency.\"\n\n\"One beep,\" the radio agreed, \"and a healthy amount of panic. Turn the dial again. It gets faster from here.\"",
+              "shout_line": null
+            },
+            {
+              "heading": "Chapter 4: One Hundred and Eight Minutes",
+              "text": "This time the voice coming through wasn't English, and it wasn't American. It was calm, almost cheerful, speaking words Eli didn't understand, crackling with the particular static of a transmission punching down through an actual atmosphere.\n\n\"Who is that?\" Eli asked, leaning in.\n\n\"**Yuri Gagarin**,\" the radio said. \"**April 12, 1961**. The first human being ever to leave the Earth. He rode a capsule called Vostok 1 all the way around the planet — one full orbit — and landed again in about **108 minutes**. Less time than most movies.\"\n\nEli did the math without meaning to. A full loop of the planet, start to finish, in under two hours — faster than his own school day. \"That's insane. The US didn't get there first?\"\n\n\"Not quite,\" the radio said, and the dial clicked over to a new, scratchier signal — American this time, a countdown, a roar, then a calmer voice reporting altitude. \"**Alan Shepard**, **May 5, 1961**. First American in space. But look closer at his flight path.\"\n\nEli frowned at the little trajectory arc the radio sketched in light across the ceiling — up, over, down, like a thrown ball, nothing like Gagarin's full circle. \"That's not an orbit. That's just... up and back down.\"\n\n\"**Suborbital**,\" the radio said. \"Fast enough to touch space, not fast enough — and not aimed right — to actually fall all the way around the Earth instead of back down onto it. Gagarin needed roughly **17,500 miles an hour** to stay up. Shepard never got close.\"\n\nEli turned that number over in his head, impressed despite himself. Orbit wasn't really about going up. It was about going sideways so fast you missed the ground on the way down, forever. He'd read that line in a book once and never quite believed it until just now.\n\nThe dial clicked again, and a new voice came through — slower, grander, clearly reading from a podium. \"...before this decade is out, landing a man on the Moon and returning him safely to the Earth.\"\n\n\"Kennedy,\" Eli said, recognizing it instantly. \"**May 25, 1961**.\"\n\n\"Barely three weeks after Shepard's fifteen minutes in the air,\" the radio said. \"The President just promised the Moon. Literally.\"\n\nEli grinned at the sheer nerve of it. \"No pressure.\"\n\n\"None whatsoever,\" the radio said dryly. \"Keep turning.\"",
+              "shout_line": null
+            },
+            {
+              "heading": "Chapter 5: Two Firsts and No Air",
+              "text": "The next signal arrived in stereo — two tones at once, overlapping, almost arguing with each other for the speaker's attention.\n\n\"Two things happening at once?\" Eli asked.\n\n\"Two separate firsts,\" the radio said, \"close enough in time to tangle on the dial. **June 16, 1963** — **Valentina Tereshkova** became the first woman in space, orbiting Earth aboard a capsule called Vostok 6. She'd been a factory worker before she was a cosmonaut.\"\n\nEli whistled low. \"From a factory floor to orbit. That's a career change.\"\n\n\"Less than two years later,\" the radio went on, letting the second tone take over, \"**March 18, 1965** — **Alexei Leonov** opened his hatch, and for about **ten minutes**, became the first human to float completely outside a spacecraft. A spacewalk.\"\n\nEli's physics brain lit up immediately. \"Outside, though — that's vacuum. No air at all. No sound, no air resistance, nothing to push against. How do you even move?\"\n\n\"Very carefully,\" the radio said. \"And very slowly. You don't swim through a vacuum. You drift, and you wait, and you trust the tether.\"\n\nEli pictured it — ten minutes tied to a spacecraft by a cord, nothing underneath you but several hundred miles of empty sky and then the entire planet. He found himself holding his own breath for a second, which struck him as a little ridiculous, since he was sitting on his bedroom floor in his socks.\n\n\"That's either the bravest thing I've ever heard,\" he said, \"or the most terrifying.\"\n\n\"Most things that count as firsts are both,\" the radio said. \"Tereshkova circled the planet **forty-eight times** before she came home. Leonov had his ten minutes and came back inside. Nobody got left behind. That part matters.\"\n\nEli nodded slowly, turning the dial himself this time instead of waiting for the radio to do it. \"Show me who was actually building all this. Because somebody had to be drawing these rockets before anyone flew them.\"\n\nThe dial seemed to like that question. It spun faster than it had all night.",
+              "shout_line": null
+            },
+            {
+              "heading": "Chapter 6: The Man With No Name",
+              "text": "What came through this time wasn't sound at all. It was a photograph, flickering onto the ceiling like an old slide projector — a man at a drafting table, equations scrawled across a chalkboard behind him, his face blacked out with a thick censor's bar.\n\n\"Why's his face covered?\" Eli asked.\n\n\"Because for most of his life, almost nobody outside a small circle was allowed to know,\" the radio said. \"**Sergei Korolev** was the chief designer behind the Soviet Union's rocket program — the brain behind Sputnik, behind Vostok, behind Gagarin's hundred and eight minutes. The Soviet government kept his identity a state secret. He wasn't named publicly until after his death in **1966**.\"\n\nEli studied the equations on the chalkboard, leaning in. They weren't labeled, but the shape of them was familiar — thrust against mass, fuel burned against velocity gained. The same kind of math he'd scribbled trying to figure out how big a model rocket's engine needed to be.\n\n\"That's a rocket equation,\" he said. \"Whoever wrote this knew exactly what they were doing. This isn't a guess. This is someone who'd already done the numbers a hundred times.\"\n\n\"It is,\" the radio said. \"You've basically just described Korolev's whole career in one sentence.\"\n\nEli smiled at that, oddly proud, then the slide changed — a different man now, younger, unblacked, standing in front of an enormous white rocket stage. \"And him?\"\n\n\"**Wernher von Braun**,\" the radio said. \"He'd built rockets for Germany before the war ended, and afterward he led the NASA team that designed the rocket that would eventually get America to the Moon. Two men, two countries, both drawing the same kind of equations at roughly the same time, neither one fully aware how close the other was getting.\"\n\nEli looked between the two faces — one hidden, one not — and felt something settle into place that the history books had never quite made land before. It hadn't been two countries racing an idea. It had been two engineers, racing each other, mostly in the dark.\n\n\"Show me what they actually built,\" Eli said.\n\nThe dial turned, and the whole room seemed to hum.",
+              "shout_line": null
+            },
+            {
+              "heading": "Chapter 7: Three Hundred and Sixty-Three Feet",
+              "text": "The hum became a roar, and the roar shook the floorboards under Eli's socks — a sound too big for a radio speaker to actually make, which meant it wasn't really the speaker making it.\n\n\"That's not possible,\" Eli said, even as his ribs vibrated with it.\n\n\"That's the **Saturn V**,\" the radio said. \"**363 feet** tall, nose to engine bell. Taller than the Statue of Liberty. It's still, by most measures, the most powerful machine human beings have ever built.\"\n\nEli did the comparison in his head — floor to ceiling of his house, stacked over and over, and it still wouldn't get close. He'd built a thousand model rockets in his life. None of them had ever needed to lift anything heavier than a parachute.\n\nThe image on the ceiling shifted — a capsule, small and fragile-looking against the black of space, a blue-white curve of planet rising behind it like a held breath. \"**December 1968**,\" the radio said. \"Apollo 8, first humans ever to orbit the Moon. One of the astronauts, **William Anders**, looked up from his checklist, saw the Earth rising over the lunar horizon, and took a photograph that changed how an entire species pictured its own planet. They called it **Earthrise**.\"\n\nEli stared at it a long moment, saying nothing. Then the slide changed again — grainy, gray, a boot touching gray dust.\n\n\"**July 20, 1969**,\" the radio said, quieter now, like it knew this one didn't need volume. \"**Neil Armstrong** became the first person to walk on the Moon. He called it a giant leap. **Buzz Aldrin** joined him on the surface a few minutes later. A third astronaut, **Michael Collins**, stayed up in the command module, Columbia, orbiting alone the entire time — the only human being, for a while, who wasn't on Earth or on the Moon.\"\n\nEli thought about that — not the two men walking in the dust, but the one man circling overhead by himself, farther from another human being than anyone in history. That felt, somehow, like the loneliest kind of physics problem there was.\n\n\"Twelve feet of equation,\" Eli muttered, \"turned into footprints.\"\n\n\"Beautifully put,\" the radio said. \"Keep that one.\"\n\nEli meant to. \"WE WALKED ON THE MOON,\" he said out loud, just to hear how it sounded, and grinned at himself for saying it like that.",
+              "shout_line": "WE WALKED ON THE MOON!"
+            },
+            {
+              "heading": "Chapter 8: The Handshake in Orbit",
+              "text": "The next sound wasn't triumphant at all. It was a flat, hard crack, then a long hiss, then nothing — a silence so sudden Eli's stomach dropped before the radio even spoke.\n\n\"What was that,\" he said, not quite a question.\n\n\"**1970**,\" the radio said, steady, unhurried. \"An oxygen tank exploded aboard Apollo 13, on its way to the Moon. It crippled the spacecraft hundreds of thousands of miles from home.\"\n\nEli's throat tightened. \"Did they—\"\n\n\"They made it back,\" the radio said, before he could even finish asking. \"Engineers on the ground, working with almost nothing, improvised a fix using what the crew already had on board. Every single person on that mission came home safely.\"\n\nEli let out a breath he hadn't noticed holding. Somewhere in the math of that sentence — crippled spacecraft, hundreds of thousands of miles, came home safely — was an entire field of people who'd refused to accept the first outcome as the final one. That felt like the most important kind of physics there was: the kind that got people home.\n\n\"How many people actually made it to the Moon in the end?\" he asked. \"Total.\"\n\n\"**Twelve**,\" the radio said, \"American astronauts, walking on the Moon across **six** successful landing missions, between **1969 and 1972**. Twelve sets of footprints, still up there, with no wind or rain to ever wipe them away.\"\n\nEli tried to picture that — footprints from fifty years ago, untouched, waiting. The dial gave one last turn, slower than all the others, almost gentle.\n\n\"**July 17, 1975**,\" the radio said. \"An American spacecraft and a Soviet spacecraft found each other in orbit and docked together. The two crews floated through the connecting hatch and shook hands, a hundred and some miles above the Earth. Two countries that had spent eighteen years racing each other, meeting instead.\"\n\nEli sat with that image — not a flag, not a footprint, just two hands meeting in a tin can in space — and found he liked it best of everything the radio had shown him.\n\nThe dial dimmed, slow and easy, like a held note finally resolving. The beeping settled into something calm and steady, almost like the one he'd first heard hours ago, except it didn't feel foreign anymore. It felt like something he now understood all the way down.\n\nHis phone buzzed — the tracking app, reminding him the actual Station was about to pass overhead, right on schedule, the same orbit humans had been building toward since a beach ball first beeped across the sky.\n\nEli clicked off the radio, grabbed his jacket, and went to go actually look up.",
+              "shout_line": null
+            }
+          ],
+          "ending_line": "Tomorrow night the Station would pass over again, and this time he'd know exactly whose shoulders it was flying on.",
+          "true_facts": [
+            {
+              "text": "On **October 4, 1957**, the Soviet Union launched **Sputnik 1**, a satellite about **58 centimeters** wide, the first man-made object to circle the Earth.",
+              "fact_id": "f2"
+            },
+            {
+              "text": "On **November 3, 1957**, a dog named **Laika** rode Sputnik 2 into orbit, the first living creature to ever circle the Earth.",
+              "fact_id": "f4"
+            },
+            {
+              "text": "Shocked by Sputnik, the United States set up **NASA** on **October 1, 1958**.",
+              "fact_id": "f5"
+            },
+            {
+              "text": "The first American satellite, **Explorer 1**, launched **January 31, 1958**, and its instruments accidentally discovered the **Van Allen radiation belt**, a ring of charged particles trapped around the Earth.",
+              "fact_id": "f6"
+            },
+            {
+              "text": "On **April 12, 1961**, **Yuri Gagarin** became the first human in space, circling the Earth once aboard Vostok 1 in about **108 minutes**.",
+              "fact_id": "f7"
+            },
+            {
+              "text": "On **May 25, 1961**, President Kennedy challenged the US to land a person on the Moon and bring them home safely before the decade ended.",
+              "fact_id": "f9"
+            },
+            {
+              "text": "On **June 16, 1963**, **Valentina Tereshkova** became the first woman in space, aboard Vostok 6, a former factory worker turned cosmonaut.",
+              "fact_id": "f10"
+            },
+            {
+              "text": "On **March 18, 1965**, **Alexei Leonov** made the first spacewalk, floating outside his capsule for about **ten minutes**.",
+              "fact_id": "f11"
+            },
+            {
+              "text": "On **July 20, 1969**, **Neil Armstrong** became the first person to walk on the Moon.",
+              "fact_id": "f14"
+            },
+            {
+              "text": "The **Saturn V** rocket that carried the Apollo astronauts stood **363 feet** tall — taller than the Statue of Liberty.",
+              "fact_id": "f18"
+            },
+            {
+              "text": "In **1970**, an exploded oxygen tank crippled Apollo 13 on the way to the Moon, but the crew made it home safely after engineers improvised a fix.",
+              "fact_id": "f16"
+            },
+            {
+              "text": "The Space Race ended in cooperation on **July 17, 1975**, when American and Soviet spacecraft docked in orbit and their crews shook hands.",
+              "fact_id": "f21"
+            }
+          ],
+          "bible_suggestions": {
+            "new_recurring": [
+              {
+                "name": "The Memory Radio",
+                "type": "device",
+                "rule": "An old shortwave radio that tunes itself to real historical moments when asked a sincere question; voice is dry, calm, physics-teacher deadpan; the dial turns on its own between facts and glows warmer when a child reasons something out…"
+              }
+            ],
+            "ending_summary": "Eli switches off the radio after it shows him the 1975 handshake in orbit, then steps outside just in time to watch the real International Space Station pass overhead, understanding for the first time the whole chain of history it's flying on."
+          },
+          "estimated_read_minutes": 10
+        },
+        "request": {
+          "children": [
+            {
+              "name": "Eli",
+              "age": 14,
+              "likes": [
+                "physics",
+                "rockets"
+              ],
+              "notes": null
+            }
+          ],
+          "age_band": "D",
+          "tones": [
+            "exciting",
+            "mysterious"
+          ],
+          "length_minutes": 10,
+          "target_words": {
+            "min": 2800,
+            "max": 3800
+          },
+          "topic_label": "The space race",
+          "topic_key": "space-race",
+          "avoid": [],
+          "care_notes": null,
+          "requested_characters": [],
+          "rewrite_reasons": []
+        }
+      },
+      "generation_cost_usd": 0.385115,
+      "judge_cost_usd": 0.178568,
+      "latency_to_first_chapter_ms": 53731,
+      "first_chapter_streamed": true,
+      "latency_total_ms": 473491,
+      "latency_by_step": {
+        "classify_input": {
+          "calls": 1,
+          "ms": 2037,
+          "output_tokens": 80
+        },
+        "write": {
+          "calls": 2,
+          "ms": 249014,
+          "output_tokens": 16849
+        },
+        "safety_review": {
+          "calls": 2,
+          "ms": 5588,
+          "output_tokens": 383
+        },
+        "quality": {
+          "calls": 2,
+          "ms": 22344,
+          "output_tokens": 4320
+        },
+        "rewrite": {
+          "calls": 1,
+          "ms": 188969,
+          "output_tokens": 15821
+        },
+        "bible_update": {
+          "calls": 1,
+          "ms": 9537,
+          "output_tokens": 1124
+        }
+      }
+    }
+  ],
+  "summary": {
+    "scenarios": 1,
+    "scored": 1,
+    "judge_errors": 0,
+    "not_run": [],
+    "mean_overall": 4.45,
+    "min_overall": 4.45,
+    "worst_scenario": "space-race-band-d",
+    "disqualified": 0,
+    "word_count_failures": [],
+    "continuity_failures": [],
+    "scary_level_failures": [],
+    "criterion_means": {
+      "center": 5,
+      "craft": 4,
+      "facts": 4,
+      "age_fit": 5,
+      "continuity": 5,
+      "delight": 4
+    },
+    "first_draft": {
+      "passed": 0,
+      "of": 1
+    },
+    "passed": true,
+    "failures": [],
+    "latency": {
+      "first_chapter": {
+        "n": 1,
+        "median_ms": 53731,
+        "p95_ms": 53731
+      },
+      "total": {
+        "n": 1,
+        "median_ms": 473491,
+        "p95_ms": 473491
+      },
+      "by_step": {
+        "classify_input": {
+          "calls": 1,
+          "ms": 2037,
+          "output_tokens": 80
+        },
+        "write": {
+          "calls": 2,
+          "ms": 249014,
+          "output_tokens": 16849
+        },
+        "safety_review": {
+          "calls": 2,
+          "ms": 5588,
+          "output_tokens": 383
+        },
+        "quality": {
+          "calls": 2,
+          "ms": 22344,
+          "output_tokens": 4320
+        },
+        "rewrite": {
+          "calls": 1,
+          "ms": 188969,
+          "output_tokens": 15821
+        },
+        "bible_update": {
+          "calls": 1,
+          "ms": 9537,
+          "output_tokens": 1124
+        }
+      },
+      "no_streamed_chapter": []
+    }
+  },
+  "cost": {
+    "generation_usd": 0.385115,
+    "judge_usd": 0.178568,
+    "total_usd": 0.563683,
+    "log_rows": 9
+  },
+  "notes": [
+    "Judge payloads are checked blind before every call (lib/eval/blind.ts); the judge never saw a model id.",
+    "The weighted overall and the automatic caps are recomputed in our code, not taken from the judge (DECISIONS.md #11/#12)."
+  ]
+}
