@@ -1192,6 +1192,22 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       if (result.bibleUpdate) await result.bibleUpdate
     })
 
+    it('VT-RS8: an ending-only continuation that drops is continued as ending-only again', async () => {
+      const run = await prepared()
+      const { story } = stubResponsesFor(run)
+      stubContinuation(run, story, story.chapters.length, { chaptersComplete: true })
+      const whole = JSON.stringify({ title: story.title, subtitle: story.subtitle, chapters: story.chapters })
+      // The second drop comes before the continuation's own `"chapters":[]` closes.
+      drops.queue.push({ partial: `${whole.slice(0, -1)},"ending_line":"And so` }, { partial: '' })
+      const { events, result } = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
+      expect(result.status).toBe('ready')
+      expect(result.writeCalls).toBe(3)
+      expect(result.story).toEqual(story)
+      expect(events.filter((e) => e.type === 'chapter_start' && e.heading === '')).toHaveLength(0)
+      expect(events.filter((e) => e.type === 'chapter_start')).toHaveLength(story.chapters.length)
+      if (result.bibleUpdate) await result.bibleUpdate
+    })
+
     it('VT-RS9: a continuation that repeats chapters already shown is neither shown nor saved twice', async () => {
       const run = await prepared()
       const { story } = stubResponsesFor(run)

@@ -520,7 +520,9 @@ export async function runGeneration(
    * then stream on from where the page stopped, and any it repeats are not shown again.
    */
   const emitMetaAndChapters = (resume: StorySoFar | null = null): StoryStreamParser => {
-    chaptersDone = false
+    // An ending-only continuation starts with every chapter written: if it drops before its
+    // empty `chapters` closes, the next one is ending-only too (reviewer agent, #75).
+    chaptersDone = resume?.chaptersComplete ?? false
     // Continuation chapters that repeat one the page has, by their index in the reply.
     const repeats = new Set<number>()
     const at = (index: number) => (resume?.chapters.length ?? 0) + index - [...repeats].filter((r) => r < index).length
