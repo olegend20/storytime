@@ -1,0 +1,1844 @@
+{
+  "version": 1,
+  "kind": "eval",
+  "ran_at": "2026-10-21T19:54:14.483Z",
+  "date": "2026-10-21",
+  "pipeline": "live",
+  "pipeline_describe": "F6 runGeneration (write, F7 gate + L4 review, rewrite, save, bible update), every first write cut after 1 chapter(s) and continued (issue #74)",
+  "synthetic": false,
+  "judge_model": "claude-opus-5-5",
+  "judge_prompt": {
+    "version": "judge.v3",
+    "sha256": "b6142b2e22432213"
+  },
+  "calibration": {
+    "ran_at": "2026-10-21T19:06:03.956Z",
+    "judge_model": "claude-opus-5-5",
+    "judge_prompt": {
+      "version": "judge.v3",
+      "sha256": "b6142b2e22432213"
+    },
+    "passed": true,
+    "expectations": [
+      {
+        "id": "references_above_floor",
+        "description": "Each of the four references medians >= 4 over 3 runs (the mean is reported, not gated)",
+        "passed": true,
+        "detail": "mean of medians 4.362 vs 4.37 baseline (drift 0.008); milo-and-juno-lego-story.md=4.3[4.3/4.25/4.45], theo-and-the-lost-levels.md=4.65[4.65/4.45/4.65], milo-and-juno-shark-submarine.md=4.35[4.5/4.35/4.35], theo-the-beautiful-game.md=4.15[4.15/4.15/3.95]",
+        "observed": {
+          "per_story": [
+            {
+              "file": "milo-and-juno-lego-story.md",
+              "median": 4.3,
+              "samples": [
+                4.3,
+                4.25,
+                4.45
+              ],
+              "spread": 0.20000000000000018
+            },
+            {
+              "file": "theo-and-the-lost-levels.md",
+              "median": 4.65,
+              "samples": [
+                4.65,
+                4.45,
+                4.65
+              ],
+              "spread": 0.20000000000000018
+            },
+            {
+              "file": "milo-and-juno-shark-submarine.md",
+              "median": 4.35,
+              "samples": [
+                4.5,
+                4.35,
+                4.35
+              ],
+              "spread": 0.15000000000000036
+            },
+            {
+              "file": "theo-the-beautiful-game.md",
+              "median": 4.15,
+              "samples": [
+                4.15,
+                4.15,
+                3.95
+              ],
+              "spread": 0.20000000000000018
+            }
+          ],
+          "mean_of_medians": 4.362,
+          "baseline_mean": 4.37,
+          "drift_from_baseline": 0.008,
+          "mean_is_gated": false,
+          "drift_warning": false
+        }
+      },
+      {
+        "id": "sabotage_heroes",
+        "description": "LEGO story with Juno's name removed from all but one chapter scores center <= 2",
+        "passed": true,
+        "detail": "center=1 (raw), kept in \"Chapter 1: The Carpenter in Billund\", 12 mentions removed. Evidence: Juno, the worst-covered child, acts individually only in Chapter 1 (presses the brick, says \"Uh oh\" and \"Sort of,\" pulls the duck). Chapters 2-10 give Juno nothing individual: only group lines like \"the boys yelled,\" while lines that should be Juno's go to Milo (\"How about Duck Company?\" said Milo; \"Milo carried planks. Milo handed out nails\"). That is 1 of 10 chapters, and Juno is silent for far more than three consecutive chapters. No likes were stated, so there is no further deduction.",
+        "observed": {
+          "scores_raw": {
+            "center": 1,
+            "craft": 4,
+            "facts": 4,
+            "age_fit": 3,
+            "continuity": 4,
+            "delight": 3
+          },
+          "kept_chapter": 0
+        }
+      },
+      {
+        "id": "sabotage_facts",
+        "description": "Soccer story with three invented dates scores facts <= 2 and the evidence names at least two of them",
+        "passed": true,
+        "detail": "facts=2 (raw); named 3/3 injected dates (1847, 1911, 1926). Evidence: There are three major dating errors, all repeated in the True Facts list. The Football Association was founded in 1863, not 1847. The penalty kick entered the rules in 1891, not 1911, and so did goal nets. The first World Cup was in 1930, not 1926. The 'Newspapers... thought there must have been a typo' story is a popular legend told without a hedge, and the narration puts Gaetjens's goal after the first half, when it actually came in the 37th minute. The other facts are accurate and well woven in, including Pickles, Pelé, the cards, Dick, Kerr Ladies, Chastain and Messi.",
+        "observed": {
+          "scores_raw": {
+            "center": 4,
+            "craft": 4,
+            "facts": 2,
+            "age_fit": 5,
+            "continuity": 4,
+            "delight": 4
+          },
+          "injected": [
+            {
+              "wrong": "1847",
+              "right": "1863",
+              "what": "the founding of the Football Association"
+            },
+            {
+              "wrong": "1911",
+              "right": "1891",
+              "what": "the penalty kick entering the rules"
+            },
+            {
+              "wrong": "1926",
+              "right": "1930",
+              "what": "the first World Cup"
+            }
+          ],
+          "named_dates": [
+            "1847",
+            "1911",
+            "1926"
+          ],
+          "fact_sourcing": "unverifiable_no_fact_pack"
+        }
+      },
+      {
+        "id": "sabotage_age_fit_peril",
+        "description": "Shark story where the great white chases and rams the submarine scores age_fit <= 2 for band A",
+        "passed": true,
+        "detail": "age_fit=1 (raw); word count 1851 -> 1826, length effectively unchanged so this is peril and not padding. Evidence: This is band A, where nothing chases anyone, yet Chapter 6 is titled 'The Chase' and reads 'The shark chased them through the dark'. Milo is injured ('smashed his shoulder into the wall'), the window cracks, water floods in, and the chapter ends in silence and dread. The word count of 1826 is within the tolerance range, and the vocabulary elsewhere fits the band.",
+        "observed": {
+          "scores_raw": {
+            "center": 5,
+            "craft": 3,
+            "facts": 3,
+            "age_fit": 1,
+            "continuity": 4,
+            "delight": 2
+          },
+          "disqualified_by_judge": true,
+          "word_count_before": 1851,
+          "word_count_after": 1826
+        }
+      },
+      {
+        "id": "sabotage_padding",
+        "description": "Video-game story padded with 900 words of repeated description drops delight by >= 2 versus the original",
+        "passed": true,
+        "detail": "delight=2 vs original 4 (drop 2, need >= 2); age_fit=3 recorded but not asserted; 2471 -> 3390 words, STILL inside the ±15% tolerance, so the word-count cap does not fire and this row rests entirely on the judge noticing the padding",
+        "observed": {
+          "scores_raw": {
+            "center": 5,
+            "craft": 3,
+            "facts": 4,
+            "age_fit": 3,
+            "continuity": 5,
+            "delight": 2
+          },
+          "original_delight": 4,
+          "words_added": 919,
+          "still_within_tolerance": true
+        }
+      },
+      {
+        "id": "pairwise_original_beats_sabotage",
+        "description": "Pairwise: the original LEGO story beats the sabotaged copy in both orders with confidence >= 0.7",
+        "passed": true,
+        "detail": "original won both orders; confidences 0.95 and 0.95",
+        "observed": {
+          "verdict": "A",
+          "flipped": false,
+          "first_order_verdict": "A",
+          "swapped_order_verdict": "B",
+          "swapped_as_first_terms": "A",
+          "confidences": [
+            0.95,
+            0.95
+          ]
+        }
+      }
+    ],
+    "reference_scores": [
+      {
+        "file": "milo-and-juno-lego-story.md",
+        "band": "A",
+        "word_count": 1540,
+        "scores_raw": {
+          "center": 4,
+          "craft": 5,
+          "facts": 4,
+          "age_fit": 4,
+          "continuity": 5,
+          "delight": 4
+        },
+        "overall_raw": 4.3,
+        "overall_final": 4.3,
+        "overall_samples": [
+          4.3,
+          4.25,
+          4.45
+        ],
+        "overall_spread": 0.20000000000000018,
+        "caps_applied": [
+          "none"
+        ],
+        "disqualified": false,
+        "cap_context": {
+          "guardrailBreach": false,
+          "inventedFact": false,
+          "wordCountOutOfRange": false,
+          "narrativeWordCount": 1540,
+          "target": {
+            "min": 1300,
+            "max": 1700
+          },
+          "factSourcing": "unverifiable_no_fact_pack",
+          "notes": [
+            "no F7 gate result available: guardrail breach rests on the judge alone",
+            "unsourced_fact NOT evaluated: no fact pack, so true_facts fact_ids are unverifiable (synthetic for the reference stories). Only the judge's own reading of the facts counts."
+          ]
+        },
+        "judge_error": null
+      },
+      {
+        "file": "theo-and-the-lost-levels.md",
+        "band": "C",
+        "word_count": 2471,
+        "scores_raw": {
+          "center": 5,
+          "craft": 4,
+          "facts": 5,
+          "age_fit": 5,
+          "continuity": 5,
+          "delight": 4
+        },
+        "overall_raw": 4.65,
+        "overall_final": 4.65,
+        "overall_samples": [
+          4.65,
+          4.45,
+          4.65
+        ],
+        "overall_spread": 0.20000000000000018,
+        "caps_applied": [
+          "none"
+        ],
+        "disqualified": false,
+        "cap_context": {
+          "guardrailBreach": false,
+          "inventedFact": false,
+          "wordCountOutOfRange": false,
+          "narrativeWordCount": 2471,
+          "target": {
+            "min": 2200,
+            "max": 3200
+          },
+          "factSourcing": "unverifiable_no_fact_pack",
+          "notes": [
+            "no F7 gate result available: guardrail breach rests on the judge alone",
+            "unsourced_fact NOT evaluated: no fact pack, so true_facts fact_ids are unverifiable (synthetic for the reference stories). Only the judge's own reading of the facts counts."
+          ]
+        },
+        "judge_error": null
+      },
+      {
+        "file": "milo-and-juno-shark-submarine.md",
+        "band": "A",
+        "word_count": 1851,
+        "scores_raw": {
+          "center": 5,
+          "craft": 4,
+          "facts": 4,
+          "age_fit": 4,
+          "continuity": 4,
+          "delight": 5
+        },
+        "overall_raw": 4.35,
+        "overall_final": 4.35,
+        "overall_samples": [
+          4.5,
+          4.35,
+          4.35
+        ],
+        "overall_spread": 0.15000000000000036,
+        "caps_applied": [
+          "none"
+        ],
+        "disqualified": false,
+        "cap_context": {
+          "guardrailBreach": false,
+          "inventedFact": false,
+          "wordCountOutOfRange": false,
+          "narrativeWordCount": 1851,
+          "target": {
+            "min": 1300,
+            "max": 1700
+          },
+          "factSourcing": "unverifiable_no_fact_pack",
+          "notes": [
+            "no F7 gate result available: guardrail breach rests on the judge alone",
+            "unsourced_fact NOT evaluated: no fact pack, so true_facts fact_ids are unverifiable (synthetic for the reference stories). Only the judge's own reading of the facts counts."
+          ]
+        },
+        "judge_error": null
+      },
+      {
+        "file": "theo-the-beautiful-game.md",
+        "band": "C",
+        "word_count": 2633,
+        "scores_raw": {
+          "center": 4,
+          "craft": 4,
+          "facts": 4,
+          "age_fit": 5,
+          "continuity": 4,
+          "delight": 4
+        },
+        "overall_raw": 4.15,
+        "overall_final": 4.15,
+        "overall_samples": [
+          4.15,
+          4.15,
+          3.95
+        ],
+        "overall_spread": 0.20000000000000018,
+        "caps_applied": [
+          "none"
+        ],
+        "disqualified": false,
+        "cap_context": {
+          "guardrailBreach": false,
+          "inventedFact": false,
+          "wordCountOutOfRange": false,
+          "narrativeWordCount": 2633,
+          "target": {
+            "min": 2200,
+            "max": 3200
+          },
+          "factSourcing": "unverifiable_no_fact_pack",
+          "notes": [
+            "no F7 gate result available: guardrail breach rests on the judge alone",
+            "unsourced_fact NOT evaluated: no fact pack, so true_facts fact_ids are unverifiable (synthetic for the reference stories). Only the judge's own reading of the facts counts."
+          ]
+        },
+        "judge_error": null
+      }
+    ],
+    "judge_calls": 18,
+    "cost_usd": 1.664455,
+    "notes": [
+      "§5: if an expectation fails, fix the judge prompt - never the reference stories.",
+      "The five sabotage/pairwise rows are checked against the judge's RAW criterion scores, before our automatic caps, so no row can pass because of our own arithmetic.",
+      "The reference stories predate fact packs, so `unsourced_fact` is recorded as unverifiable rather than passed (see lib/eval/caps.ts).",
+      "Manifest note: references 1 and 3 use British spelling, 2 and 4 American. The app defaults to American; prompts/judge.v2.md instructs the judge not to deduct for either.",
+      "Two of the four references carry 11 headed sections and do not validate against StoryOutput (DECISIONS.md #25), so calibration scores the looser JudgeableStory shape."
+    ]
+  },
+  "pass_criteria": {
+    "mean_overall_min": 4,
+    "per_scenario_min": 3.5,
+    "disqualified_max": 0,
+    "calibration_repeats": 3,
+    "calibration_reference_floor": 4,
+    "calibration_baseline_mean": 4.37,
+    "calibration_mean_tolerance": 0.35
+  },
+  "scenarios": [
+    {
+      "scenario_id": "lego-band-c-rivals",
+      "why": "#48: C10 cell. Competitive brothers: rule 9 - rivalry without put-downs.",
+      "band": "C",
+      "children": [
+        {
+          "name": "Max",
+          "age": 12
+        },
+        {
+          "name": "Sami",
+          "age": 9
+        }
+      ],
+      "topic_key": "history-of-lego",
+      "length_minutes": 10,
+      "word_count": 1597,
+      "target_words": {
+        "min": 2200,
+        "max": 3200
+      },
+      "word_count_in_range": false,
+      "gate": {
+        "outcome": "pass",
+        "hard_violations": 0,
+        "hard_violation_rules": [],
+        "failures": [],
+        "scary_level": 1
+      },
+      "judge_ok": true,
+      "judge_error": null,
+      "scores_raw": {
+        "center": 5,
+        "craft": 4,
+        "facts": 3,
+        "age_fit": 3,
+        "continuity": 4,
+        "delight": 4
+      },
+      "overall_raw": 3.85,
+      "overall_final": 3.85,
+      "caps_applied": [
+        "word_count_outside_target_range: age_fit <= 3"
+      ],
+      "disqualified": false,
+      "cap_context": {
+        "guardrailBreach": false,
+        "inventedFact": false,
+        "wordCountOutOfRange": true,
+        "narrativeWordCount": 1597,
+        "target": {
+          "min": 2200,
+          "max": 3200
+        },
+        "factSourcing": "checked",
+        "notes": [
+          "narrative word count 1597 is outside 2200-3200 ±15%"
+        ]
+      },
+      "best_moment": "It's basically a workshop and a robotics lab had a baby.",
+      "worst_moment": "Max pulled out a Technic beam from his own pocket — he never went anywhere without one — and pressed an old 1958-style brick against a brick from his half-built robot arm back home.",
+      "continuity_reference": null,
+      "scary_level_check": null,
+      "editor_notes": [
+        "Expand to at least 2,200 words. Give Chapter 7 (the hard years) and the minifigure moment real scenes instead of summaries.",
+        "Fix the history in Chapter 5. Ole Kirk died in 1958, so have Godtfred lead the post-fire decision, perhaps with Ole Kirk's voice coming from the brick as in Chapter 7.",
+        "Fix Sami's pronoun slip ('The boys fell'), untangle the Chapter 4 beam-and-brick moment, and vary the 'brick hummed approvingly' chapter endings. Replace the closing info-dump with a scene."
+      ],
+      "first_draft": {
+        "passed": false,
+        "failures": [
+          "schema_valid"
+        ],
+        "reasons": [
+          "output unusable; retried 10 -> 5 minutes"
+        ],
+        "mended_rules": [],
+        "story": {
+          "title": "Max, Sami, and the Brick That Would Not Quit",
+          "subtitle": "A Technic gear, a hollow stud, and one very old brick from the bottom of the bin.",
+          "chapters": [
+            {
+              "heading": "Chapter 1: The Brick in the Bottom of the Bin (Billund, 1932)",
+              "text": "It was an hour past lights-out, and the carpet was a minefield of LEGO Technic gears.\n\nMax was building a robot arm that could actually grip things, snapping an axle through a beam with a satisfying **CLICK**. Sami sat cross-legged nearby, sketching the arm from three angles in case Max's version fell apart, which, in her experience, it sometimes did.\n\nDigging for one more gray connector, Max's hand closed around something different: a scratched, dull brick, warm like it had just come out of a dryer. \"This one's not even ours,\" he said. \"It's Grandpa's old brick. Feel it.\"\n\nSami touched it and it answered — a low hum, then a line of gold light splitting the dark like a zipper opening. The boys fell through a smell of fresh pine sawdust and landed in a one-room workshop stacked with wooden ducks and stepladders.\n\nA stocky man set down his plane and looked at them without much surprise, as if kids falling out of thin air happened on Tuesdays. Sami spotted a date carved into a duck's base and read it aloud: \"**1932**?\"\n\n\"That's the year I started this place,\" the man said. \"**Billund, Denmark**. Ole Kirk Christiansen. Right now I make whatever people need — toys on Mondays, stepladders on Fridays.\"\n\nMax grinned at the tidy wall of tools. \"It's basically a workshop and a robotics lab had a baby.\" Ole Kirk laughed and the humming brick in Sami's pocket flared brighter, like it approved.",
+              "shout_line": null
+            },
+            {
+              "heading": "Chapter 2: Play Well (1934)",
+              "text": "The gold light hadn't fully faded before a man on a ladder outside was painting letters over the workshop door in big, careful strokes.\n\n\"What's it say?\" Sami called up, squinting.\n\n\"**LEGO**,\" Ole Kirk answered from behind them, wiping his hands. \"Short for *leg godt* — Danish for '**play well**.' Seemed like the right thing to name a toy company, in **1934**.\"\n\nMax turned the word over like a puzzle piece. \"Wait — doesn't 'lego' also mean something in Latin? Like, 'I put together'?\"\n\n\"Some people love pointing that out,\" Ole Kirk said, smiling. \"It's a fun coincidence. Probably not why I picked it, though — I just liked 'play well.'\"\n\nSami giggled. \"So it's a happy accident, not a secret code.\"\n\n\"Exactly,\" said Ole Kirk.\n\nMax climbed partway up an empty crate to see the sign straight-on, the way an engineer checks if a part is level. \"It's crooked,\" he announced, pointing at the second O.\n\nThe painter leaned back, squinted, and nodded, fixing it on the spot. The brick in Sami's hand buzzed approvingly, and the gold light swallowed the workshop again.",
+              "shout_line": "PLAY WELL!"
+            },
+            {
+              "heading": "Chapter 3: The Bricks That Wouldn't Stay (1947–1949)",
+              "text": "They landed to a hiss and a clank that made Max's whole face light up. A squat machine was squeezing melted plastic into molds, over and over, like a very patient robot.\n\n\"That's an injection molder,\" Max said, practically vibrating. \"We have a baby version at school!\"\n\n\"One of the first in Denmark,\" Ole Kirk said proudly. \"Got it in **1947**. Changed everything.\"\n\nTwo years later, by the time the gold light settled again, a worker handed Sami a small hollow plastic brick with bumps on top. \"**Automatic Binding Bricks**,\" he explained. \"**1949**. Stack them.\"\n\nSami stacked two, then gave the tower a gentle shake. It toppled instantly, bricks skittering across the floor. \"They don't actually hold on,\" she said, turning one over. \"Look — it's just hollow underneath. Nothing to grab the bumps below it.\"\n\nThe worker sighed. \"Tell me about it.\"\n\nMax picked up a fallen brick, turning it in his fingers like a gear missing teeth. \"Somebody needs to fix the underneath,\" he said.\n\n\"Somebody will,\" said Ole Kirk, and the old brick in Sami's pocket hummed like it already knew who.",
+              "shout_line": null
+            },
+            {
+              "heading": "Chapter 4: The Tubes Underneath (1958)",
+              "text": "A younger man was hunched over a workbench, surrounded by broken towers of the wobbly bricks, muttering to himself.\n\n\"This is Godtfred — my son,\" Ole Kirk said. \"He's determined to make these things actually stick.\"\n\nMax leaned in close to a brick Godtfred had sliced in half. Little round tubes stuck down from the ceiling of the hollow underneath. \"Those tubes,\" Max said slowly, \"are going to grab the bumps on the brick below. It's not stacking anymore — it's **locking**.\"\n\nGodtfred looked up, startled that a kid had gotten there that fast. \"That's exactly it.\"\n\nHe pressed two bricks together. **CLICK.** He pulled, twisted, shook the whole thing over his head. It held.\n\n\"**January 28, 1958**,\" Godtfred said, tapping a stamped patent paper. \"Made it official today.\"\n\nMax pulled out a Technic beam from his own pocket — he never went anywhere without one — and pressed an old 1958-style brick against a brick from his half-built robot arm back home. They snapped together like they'd been made the same afternoon.\n\n\"They still fit,\" Max said, stunned. \"Sixty-some years later and it still fits.\"\n\n\"IT STILL CLICKS!\" Sami yelled, and this time even Godtfred jumped.",
+              "shout_line": "IT STILL CLICKS!"
+            },
+            {
+              "heading": "Chapter 5: After the Fire (1960)",
+              "text": "The gold light dropped them somewhere smokier than they expected, the air sharp with the smell of charred wood.\n\n\"A fire went through the warehouse,\" Ole Kirk said quietly, looking at a blackened building that used to be full of wooden ducks and stepladders. \"Nobody was hurt. But we lost every wooden toy we had stored.\"\n\nSami studied the wreckage and noticed something. \"It's only the wooden stuff that burned,\" she said. \"The plastic brick bins over there are fine.\"\n\n\"They are,\" Ole Kirk said, following her gaze.\n\n\"So maybe,\" Sami said carefully, \"this is kind of a sign. Stop making the wooden toys. Just do the bricks.\"\n\nOle Kirk was quiet for a moment, then nodded slowly, like she'd said out loud what he'd been circling for weeks. \"Plastic it is. All of it.\"\n\nA few years further along, Godtfred showed them a fresh batch of bricks in colors that looked richer, tougher. \"New plastic,\" he said. \"**ABS**, as of **1963**. Doesn't crack. Doesn't fade.\"\n\nMax bent one gently. It barely flexed. \"Built like a robot part,\" he said approvingly, and the brick in Sami's hand warmed back up, ready to move on.",
+              "shout_line": null
+            },
+            {
+              "heading": "Chapter 6: Everything All At Once (1968–1978)",
+              "text": "The next stop dropped them into pure chaos, in the best way.\n\nA whole park had sprouted beside the factory, brick castles and brick windmills rising out of the grass. \"**LEGOLAND**,\" read the sign, \"opened right here in **1968**.\"\n\nSami darted toward a shelf of extra-chunky bricks, sized for much smaller hands. \"**DUPLO**,\" she read. \"**1969**. For toddlers — but look, it still fits on regular bricks underneath.\" She stacked one of each to prove it.\n\nAcross the room, Max had found gears, long beams, and connecting pins, and was already building something with moving parts. \"**Technic**,\" he said, practically glowing. \"**1977**. This is basically robotics before robotics was cool.\"\n\n\"Beat you to it,\" Sami said, nodding at her stack.\n\n\"That's not a competition,\" Max said, already lining up a gear train to prove his thing was cooler.\n\nA small plastic figure rolled off a nearby table — arms that moved, a head that popped off and swapped onto another body. \"**1978**,\" Sami said, reading its tiny box. \"First one of these.\"\n\nThey both grabbed for it at once, bonked hands, and laughed instead of arguing, which even the old brick seemed pleased about.",
+              "shout_line": null
+            },
+            {
+              "heading": "Chapter 7: The Hard Years and the Movie (Early 2000s–2014)",
+              "text": "This time the office was quiet in a way that felt wrong — half-empty desks, nobody laughing.\n\n\"Things got rough here, for a while,\" Ole Kirk's voice said, softer now, from somewhere beside them. \"The company nearly ran out of money. Too many ideas, not enough bricks.\"\n\nMax frowned at a wall covered in half-finished product sketches — watches, clothes, video games, everything except more bricks. \"Maybe,\" he said, \"the problem is you stopped doing the one thing that actually works.\"\n\nA new man walked in just then, sleeves rolled up. \"**Jorgen Vig Knudstorp**,\" he introduced himself. \"**2004**. And you're right — we're going back to the bricks. Just the bricks, done really well.\"\n\nSami sketched a quick poster on a scrap of paper — a brick with a cape — and slid it across the desk, half joking. Years later, a screen in the corner flickered to life showing an actual movie poster, bricks and all. \"**The LEGO Movie**,\" she read, delighted. \"**2014**.\"\n\n\"Close enough to your drawing,\" Max said, and for once he didn't even try to make it a competition.",
+              "shout_line": null
+            },
+            {
+              "heading": "Chapter 8: Back on the Carpet",
+              "text": "The gold light pulled them backward through all of it at once — sawdust, plastic, fire-smell, movie poster — and dropped them with a soft bump onto their own bedroom carpet.\n\n\"One more thing,\" said a voice that sounded like Ole Kirk's but older, warmer, coming from the brick itself. \"My grandson **Kjeld Kirk Kristiansen** took over running things in **1979**. Our family — the **Kirkbi family** — still owns most of the company today. And it's all still headquartered right there in **Billund**, on the same ground where I started.\"\n\nMax looked down at his half-built robot arm, then at the scratched old brick sitting ordinary and cool in Sami's palm, its gold light finally resting. \"That brick is basically the great-great-grandfather of every piece on this carpet,\" he said.\n\nSami pressed it onto the top of the robot arm, just to see. It clicked into place like it had always belonged there.\n\n\"Guess it still plays well with others,\" she said.\n\nSomewhere down the hall, their mom's footsteps paused outside the door, deciding whether lights-out actually meant lights-out tonight. The brick, innocent as ever, just sat there glowing exactly zero percent.",
+              "shout_line": null
+            }
+          ],
+          "ending_line": "Tomorrow there'd be more bricks to find — and Max was already wondering where the old one would take them next.",
+          "true_facts": [
+            {
+              "text": "**Ole Kirk Christiansen** started his workshop in **Billund, Denmark**, in **1932**, making wooden toys and stepladders.",
+              "fact_id": "f1"
+            },
+            {
+              "text": "In **1934** he named the company **LEGO**, short for the Danish words for '**play well**.'",
+              "fact_id": "f2"
+            },
+            {
+              "text": "It's a fun coincidence that 'lego' also means something in Latin, but that's probably not why the name was picked.",
+              "fact_id": "f3"
+            },
+            {
+              "text": "LEGO got one of the first plastic-molding machines in Denmark in **1947**.",
+              "fact_id": "f4"
+            },
+            {
+              "text": "The first plastic bricks, made in **1949**, were hollow underneath and didn't hold together well.",
+              "fact_id": "f5"
+            },
+            {
+              "text": "Godtfred Kirk Christiansen fixed the problem by adding little tubes underneath the brick, patented on **January 28, 1958**.",
+              "fact_id": "f6"
+            },
+            {
+              "text": "A brick from **1958** still clicks perfectly with a brand-new brick today because the design barely changed.",
+              "fact_id": "f7"
+            },
+            {
+              "text": "A **1960** warehouse fire destroyed the wooden toys, and after that the company focused only on plastic bricks.",
+              "fact_id": "f8"
+            },
+            {
+              "text": "In **1963** LEGO switched to a tougher plastic called **ABS** that doesn't crack or fade as easily.",
+              "fact_id": "f9"
+            },
+            {
+              "text": "The first **LEGOLAND** park opened in **1968**, right next to the original factory.",
+              "fact_id": "f10"
+            },
+            {
+              "text": "Chunky **DUPLO** bricks for toddlers came out in **1969** and still fit on regular LEGO bricks.",
+              "fact_id": "f11"
+            },
+            {
+              "text": "The **Technic** line, with gears and beams for building machines, launched in **1977**.",
+              "fact_id": "f12"
+            },
+            {
+              "text": "The first LEGO minifigures, with movable arms and swappable heads, showed up in **1978**.",
+              "fact_id": "f13"
+            },
+            {
+              "text": "The company hit hard financial times until **Jorgen Vig Knudstorp** became leader in **2004** and focused things back on bricks.",
+              "fact_id": "f19"
+            }
+          ],
+          "bible_suggestions": {
+            "new_recurring": [
+              {
+                "name": "The Granddad Brick",
+                "type": "device",
+                "rule": "A warm, scratched, humming LEGO brick found among a child's own bricks. It glows gold and pulls the children into real history, growing brighter when a child spots the key clue (a date, a word, a flaw) that moves the story to its next…"
+              }
+            ],
+            "ending_summary": "Max and Sami land back on their bedroom carpet, press the now-ordinary Granddad Brick onto their half-built robot arm where it clicks into place, and the brick's gold glow finally rests."
+          },
+          "estimated_read_minutes": 6
+        },
+        "request": {
+          "children": [
+            {
+              "name": "Max",
+              "age": 12,
+              "likes": [
+                "LEGO Technic",
+                "robotics"
+              ],
+              "notes": "very competitive with his brother"
+            },
+            {
+              "name": "Sami",
+              "age": 9,
+              "likes": [
+                "LEGO",
+                "drawing"
+              ],
+              "notes": null
+            }
+          ],
+          "age_band": "C",
+          "tones": [
+            "funny",
+            "exciting"
+          ],
+          "length_minutes": 5,
+          "target_words": {
+            "min": 1100,
+            "max": 1600
+          },
+          "topic_label": "The history of LEGO",
+          "topic_key": "history-of-lego",
+          "avoid": [],
+          "care_notes": null,
+          "requested_characters": [],
+          "rewrite_reasons": []
+        }
+      },
+      "generation_cost_usd": 0.222874,
+      "judge_cost_usd": 0.090719,
+      "latency_to_first_chapter_ms": 42662,
+      "first_chapter_streamed": true,
+      "latency_total_ms": 265902,
+      "latency_by_step": {
+        "classify_input": {
+          "calls": 1,
+          "ms": 1222,
+          "output_tokens": 81
+        },
+        "write": {
+          "calls": 2,
+          "ms": 104809,
+          "output_tokens": 4397
+        },
+        "repair": {
+          "calls": 1,
+          "ms": 24046,
+          "output_tokens": 2444
+        },
+        "rewrite": {
+          "calls": 1,
+          "ms": 110793,
+          "output_tokens": 9020
+        },
+        "safety_review": {
+          "calls": 1,
+          "ms": 1412,
+          "output_tokens": 52
+        },
+        "quality": {
+          "calls": 1,
+          "ms": 8039,
+          "output_tokens": 1417
+        },
+        "bible_update": {
+          "calls": 3,
+          "ms": 15514,
+          "output_tokens": 1509
+        }
+      }
+    },
+    {
+      "scenario_id": "pompeii-band-c-15min",
+      "why": "#48: C15 cell, a care topic at length. Honest about what happened, never graphic.",
+      "band": "C",
+      "children": [
+        {
+          "name": "Isla",
+          "age": 11
+        }
+      ],
+      "topic_key": "pompeii",
+      "length_minutes": 15,
+      "word_count": 2845,
+      "target_words": {
+        "min": 3300,
+        "max": 4800
+      },
+      "word_count_in_range": true,
+      "gate": {
+        "outcome": "flagged",
+        "hard_violations": 0,
+        "hard_violation_rules": [],
+        "failures": [],
+        "scary_level": 2
+      },
+      "judge_ok": true,
+      "judge_error": null,
+      "scores_raw": {
+        "center": 4,
+        "craft": 3,
+        "facts": 3,
+        "age_fit": 3,
+        "continuity": 4,
+        "delight": 3
+      },
+      "overall_raw": 3.3,
+      "overall_final": 3.3,
+      "caps_applied": [
+        "none"
+      ],
+      "disqualified": false,
+      "cap_context": {
+        "guardrailBreach": false,
+        "inventedFact": false,
+        "wordCountOutOfRange": false,
+        "narrativeWordCount": 2845,
+        "target": {
+          "min": 3300,
+          "max": 4800
+        },
+        "factSourcing": "checked",
+        "notes": []
+      },
+      "best_moment": "\"That's brilliant,\" Isla said. \"Nobody has to choose between dry feet and groceries.\"",
+      "worst_moment": "\"They were,",
+      "continuity_reference": null,
+      "scary_level_check": null,
+      "editor_notes": [
+        "Repair the broken seams. Finish Chapter 5's cut-off sentence, add a real transition from the Villa to Misenum (the tremors, the loupe pulling her across the bay), fix the unclosed quotation in Chapter 6, and have the ending fold away Misenum rather than 'the forum'.",
+        "Fix the factual errors. Make Pliny a 17-year-old (an older-teen guide still works for an 11-year-old), correct the amphitheater dating to 'over a century before I was born', and state the bread's 1930 discovery correctly. Handle the uncle's fate honestly, for example 'he never came home'.",
+        "Give Isla a real choice or deduction in the eruption chapters, as she had at the stepping-stones. Drop the band-A shout-line and over-explained definitions in favour of drier, older wit, and use the roughly 500 missing words for those beats rather than more tour stops."
+      ],
+      "first_draft": {
+        "passed": false,
+        "failures": [
+          "sentence_length",
+          "cliffhanger_marker"
+        ],
+        "reasons": [
+          "sentence_length:14% of sentences over 25 words (limit 12%). Split the long sentences.",
+          "cliffhanger_marker:4",
+          "GUARDRAILS rule 3 breached",
+          "GUARDRAILS rule 3 breached",
+          "GUARDRAILS rule 3 breached",
+          "output safety review returned safe: false"
+        ],
+        "mended_rules": [
+          11
+        ],
+        "story": {
+          "title": "Isla and the Embercase: The Last Day of Pompeii",
+          "subtitle": "A backyard archaeologist gets the one dig site no shovel could ever reach.",
+          "chapters": [
+            {
+              "heading": "Chapter 1: The Tin Box That Wouldn't Open",
+              "text": "Isla had a rule: nothing went in the shoebox marked FINDS, DO NOT TOUCH (ISLA) until it was logged, numbered, and photographed under her desk lamp. Tonight, three hours past lights-out, she was breaking her own rule for the fortieth time.\n\nThe tin box had come out of the vegetable patch back in spring, rusted shut, with a little bump of a mountain stamped into its lid. She'd tried WD-40. She'd tried a butter knife. She'd tried, once, a hammer, which her mother still brought up at dinner.\n\nTonight the seam along the lid was glowing. Not flashlight-glowing — warm, amber, like a coal breathing in the dark. It smelled like oranges and old pennies. Isla picked it up anyway, because a sealed box that starts glowing is exactly the kind of mystery she had been training for her whole life.\n\nThe hinge gave a **CREAK**, and gray-gold smoke rolled out across her bedroom floor like fog over a graveyard — except warmer, and faintly sparkly, like ash catching streetlight.\n\nWhen it cleared, her carpet was gone. In its place: sun-warmed stone, and a narrow street running off in both directions between tall plastered buildings.\n\n\"Okay,\" Isla said, to nobody. \"That's new.\"\n\nShe looked down and nearly tripped over three flat stone blocks laid across the street like a crossing, with gaps on either side wide enough for a wagon wheel. It took her four seconds to work it out.\n\n\"People walk on the stones to keep their feet out of the muck,\" she said slowly, \"and carts just roll their wheels through the gaps.\"\n\nThe tin box, still in her coat pocket, pulsed warm gold against her ribs — a small, smug little **CLICK**, like a lock agreeing with her.\n\n\"Correct,\" said a voice from inside it, dry as a filing cabinet. \"Raised stepping-stones. Kept Roman sandals dry for about **two thousand years** before anyone else thought of a crosswalk.\"\n\nIsla pulled the box out and stared at it. The amber seam along the lid had become something like a mouth, or at least something that could talk without the bother of a face.\n\n\"You're the Embercase,\" she read off the stamped mountain. \"I'm guessing that's not a brand of tea.\"\n\n\"You're standing,\" said the Embercase, \"in **Pompeii** — a real Roman town, near where the Italian city of **Naples** sits today. Try not to get it buried again. I only just got it dug up.\"\n\nIsla grinned. A city under her feet, a talking tin box in her pocket, and clearly, somewhere ahead, a mystery with her name already half-written on it. She started walking.",
+              "shout_line": null
+            },
+            {
+              "heading": "Chapter 2: Five Villages and a Guess",
+              "text": "The street opened into a square ringed with columns, and beyond it rose a huge stone oval, big enough to swallow Isla's entire school.\n\n\"That,\" said the Embercase, \"is the kind of building people built when they got bored of waiting for the actual Colosseum to be invented.\"\n\n\"An **amphitheater**,\" Isla said slowly — she knew the word from a documentary, but said it out loud anyway, the way you repeat a fact to make sure it's really yours. \"A big oval stadium. For watching fights.\"\n\n\"**Gladiator games**,\" the box confirmed. \"Built around **70 BC**. One of the oldest of its kind anyone's ever dug up.\"\n\nIsla turned in a slow circle. Shops with counters built right into the street. A building with a sunken pool. Another with rows of stone seats curving around a stage. \"This isn't a town,\" she said. \"This is a *whole life*. Shops, baths, a theater —\"\n\n\"Give or take, around **eleven to fifteen thousand people**, going about their Tuesday,\" said the Embercase.\n\nIsla stopped at a low wall and ran her finger along five faint ridges carved into the stone — old boundary marks, worn soft by centuries of hands before hers. She counted them twice.\n\n\"Five,\" she said. \"The box in my pocket had a mountain stamped on the lid. What if the *town's* name means something too?\"\n\n\"Keep going,\" said the Embercase, which Isla had already decided was its way of saying *you're warm*.\n\n\"People who study old languages for a living,\" she said, half to herself, half to the box, \"think 'Pompeii' might come from an old word, *pompe* — meaning **'five.'**\" She tapped the five ridges. \"Like maybe five little villages decided to stop being five little villages and become one town instead.\"\n\n\"Nobody's **certain**,\" the Embercase said. \"It's the kind of guess historians argue about over very small cups of coffee. But it's a good one. And you made it by counting a wall, which is — frankly — more than most tourists manage.\"\n\nIsla allowed herself a small, smug smile, the kind you give yourself when no one else is looking. She tucked the box back in her pocket and kept walking, past a bakery with a stone mill out front shaped like an hourglass, past a fountain where a stone face spat a thin, steady stream of water into a basin worn shiny by centuries of hands cupping under it.\n\nShe didn't know yet that the fountain was about to become the most interesting thing on the street. But she was about to find out.",
+              "shout_line": null
+            },
+            {
+              "heading": "Chapter 3: The Fountain Trick",
+              "text": "The fountain gurgled. Isla crouched by the basin and watched the water arrive in little pulses, like it was being pushed from somewhere far away.\n\n\"No pump,\" she said. \"No electricity. So how—\"\n\n\"Think slope,\" said the Embercase.\n\nIsla looked up the street. It climbed, just slightly, toward the hills behind the town — barely enough to notice unless you were the kind of person who noticed things, which Isla very much was.\n\n\"Gravity,\" she said. \"The water starts high and just... rolls downhill the whole way.\"\n\n\"Through **lead pipes**, buried under the street,\" the Embercase said. \"Feeding fountains like this one on practically every corner. Pompeii had **running water** nearly two thousand years before your bathroom did, and it never once needed you to hold a bucket.\"\n\n\"GRAVITY DID IT!\" Isla said, loud enough that a passing cat gave her a long, unimpressed look.\n\nShe wandered on, trailing her fingers along a wall — and stopped at a patch of faded red paint, letters still legible underneath centuries of weather.\n\n\"Is that... writing?\" she said. \"On the outside of someone's house?\"\n\n\"Ads,\" said the Embercase. \"And political slogans. *Vote for this fellow, he throws a good party.* *Fresh bread here.* People painted the outsides of their buildings the way you'd put up a poster — except the poster was the building.\"\n\nIsla grinned. \"So it's basically ancient advertising.\"\n\n\"With worse graphic design,\" the Embercase agreed, \"but a much longer run.\"\n\nShe crouched to read another scrawl near a doorway — smaller, scratchier, clearly dashed off by someone bored or showing off, a bit of graffiti older than most countries. She couldn't read the Latin, but she liked knowing it was there: proof that two thousand years ago, somebody had scribbled something silly on a wall just because they could.\n\n\"People haven't changed much,\" she said.\n\n\"No,\" said the Embercase, and something in its dry little voice went, just for a second, almost gentle. \"They really haven't.\"\n\nThe afternoon light had gone a strange, thick gold, the kind of light that usually means a storm is coming. Isla glanced up, frowning — and noticed, for the first time, a thin gray smudge sitting above the mountain at the edge of town, where there hadn't been one before.",
+              "shout_line": "GRAVITY DID IT!"
+            },
+            {
+              "heading": "Chapter 4: The Bread That Never Left",
+              "text": "The smell of warm bread pulled Isla down a side street before she'd even decided to follow it. A squat stone oven sat glowing in the back of a shop, round loaves lined up on a shelf, each one scored across the top in a neat, deliberate pattern — like a signature.\n\n\"That's not decoration,\" Isla said, leaning close. \"That's a mark. So people would know whose bread was whose.\"\n\n\"A baker's stamp,\" the Embercase said. \"You're looking at the kind of small, ordinary detail that makes archaeologists forget to eat lunch. Loaves just like this one got left behind — still shaped, still marked — and stayed that way for almost **two thousand years**.\"\n\nIsla straightened up slowly. \"Left behind. Not eaten. Not taken out of the oven.\"\n\n\"No,\" said the Embercase.\n\nShe looked at the gray smudge above the mountain again. It was bigger now. Not storm-cloud shaped — wrong-shaped, somehow, wider at the top than the bottom, like a tree made of smoke.\n\n\"What day is it?\" Isla asked, and her voice had gone quieter, the way it does when a mystery stops being fun and starts being real.\n\n\"**August 24th**,\" said the Embercase. \"The year is **79 AD**.\"\n\nIsla had read enough to know what that date meant before the box even finished saying it. Her stomach did a slow, cold flip. \"That's today,\" she said. \"That's *today* today.\"\n\n\"It is,\" the Embercase agreed, and for once it didn't sound dry at all. \"Which is why we are about to go somewhere a little higher up, and a good deal farther away.\"\n\n\"Wait — the bread. The baker. Are they—\"\n\n\"Many people got out,\" the Embercase said, steady as a hand on a shoulder. \"There was time, once the mountain gave its first warning, for people to leave by road and by boat. That's where we're going now. Not into the town. Above it.\"\n\nIsla took one last look at the loaves on the shelf, still shaped by hands that had set them there that morning, and let the Embercase pull her up the street, toward the hills, toward the bay, toward a view she would never, for the rest of her life, be able to un-see.",
+              "shout_line": null
+            },
+            {
+              "heading": "Chapter 5: The Mountain That Wrote Itself Into Science",
+              "text": "From the hillside, the bay spread out below like a painting — boats, rooftops, smoke rising in a column so tall Isla had to tip her whole head back to find the top of it.\n\n\"It's not a cloud,\" she whispered. \"It's a — it looks like a tree. An umbrella pine tree, like upside down.\"\n\n\"That's almost exactly how a young Roman described it,\" said the Embercase, \"watching from a town across the water, just like you're doing now. His name was **Pliny the Younger**. He wrote it all down in two letters — what he saw, what he heard, how long it lasted. Careful, like a reporter.\"\n\nIsla watched ash sift down over the rooftops below, pale and soft, like snow that had forgotten how to be cold. \"Is anyone still down there?\"\n\n\"Some,\" the Embercase said. \"Pliny's uncle — **Pliny the Elder** — commanded ships nearby. When word came that people needed rescuing, he didn't sail away from the mountain. He sailed toward it, to get people out.\"\n\nIsla found, to her own surprise, that she liked that detail more than almost anything else she'd learned all day. \"That's — that's actually really brave.\"\n\n\"It was,\" said the Embercase. \"Scientists still use the nephew's letters today. When a volcano erupts violently like this one did — throwing ash and rock miles into the sky — they call it a **'Plinian eruption.'** Named for a boy who was mostly just very good at paying attention.\"\n\nBelow, the pale ash kept falling, thickening, burying streets Isla had walked an hour ago under a blanket that would, by the time it stopped, lie **thirteen to twenty feet deep** — taller than her house, taller than three of her, stacked.\n\n\"That's not a disaster,\" Isla said slowly, working it out loud the way she always did. \"I mean — it *is*. But it's also...",
+              "shout_line": null
+            },
+            {
+              "heading": "Chapter 6: The Town That Stopped Mid-Sentence",
+              "text": "\"...it's also a lid,\" Isla finished. \"Like the one on my tin box. It sealed everything in.\"\n\nThe Embercase's voice, when it came, had a note of something like pride. \"Now you're thinking like an archaeologist instead of just visiting like one.\"\n\nThe ash and smoke thinned, the way a held breath finally lets go, and the hillside scene folded itself into something new: a quiet museum gallery, hushed and climate-controlled, glass cases lit from above. Isla recognized the bakery shelf before she recognized anything else — the same loaves, scored with the same baker's mark, hard and gray now, but unmistakably *themselves.*\n\n\"The bread,\" she breathed. \"It's still here.\"\n\n\"The eruption happened so fast,\" said the Embercase, \"that it froze the whole town mid-sentence. Bread still in ovens. Paint still on walls. Even the silly graffiti you liked so much, still scratched into the plaster.\"\n\nOn the gallery wall behind the bread hung a painting, faded but unmistakably full of movement — figures mid-gesture, caught forever in whatever they'd been doing. \"A **fresco**,\" Isla said, the word arriving from some documentary in the back of her memory. \"Paint put right into wet plaster, so it becomes part of the wall instead of just sitting on top.\"\n\n\"One famous set is called the **Villa of the Mysteries**,\" the Embercase said. \"Figures taking part in some sort of ceremony nobody's fully worked out, even now. A genuine two-thousand-year-old mystery, still unsolved. I thought you'd appreciate that one specifically.\"\n\n\"I really, really do,\" Isla said.\n\nA smaller case nearby held something unexpected: a curl of carbonized wood, a scroll so fragile it looked like it would crumble if someone breathed on it wrong. \"That's not from here,\" Isla guessed. \"The ash falls here were powder. That looks like it got — cooked, almost.\"\n\n\"Sharp eye,\" said the Embercase. \"That's from **Herculaneum**, a smaller town along the coast, buried by the same eruption but by a different kind of volcanic material — hot and fast instead of slow and soft. It actually preserved things Pompeii couldn't: wooden furniture, even scrolls like this one, instead of just their shapes in stone.\"\n\nIsla pressed her palm flat against the cool glass, over the painted figures, over the bread, over two thousand years folded down into a single quiet room. \"It's awful,\" she said finally. \"And it's also the best accident in history.\"\n\n\"Both things,\" the Embercase agreed, \"are completely true at once. That happens more in archaeology than people expect.\"",
+              "shout_line": null
+            },
+            {
+              "heading": "Chapter 7: Waking Up After Seventeen Centuries",
+              "text": "The gallery dissolved into daylight, and Isla found herself standing at the edge of a dig site, trowels and brushes laid out neatly on a cloth, half a stone wall poking up from a trench like a tooth breaking through gum.\n\n\"Where — *when* — are we now?\" she asked.\n\n\"**1748**,\" said the Embercase. \"Workers digging in this area hit stone that shouldn't have been there. Walls. Pavement. A whole buried town, waking up after almost **seventeen hundred years** asleep under the ash.\"\n\n\"Nobody even remembered it was down here?\" Isla asked, astonished.\n\n\"Not clearly. Pompeii had been, more or less, misplaced,\" said the Embercase. \"Which is either a tragedy or the greatest filing error in history, depending on your mood.\"\n\nThe scene shifted again, smoother this time, like flipping forward through a photo album — rope barriers, a gift shop, a line of tourists in sun hats trailing a guide holding up a little flag.\n\n\"Today,\" said the Embercase, \"Pompeii is protected as a **World Heritage Site** — a kind of promise, made by countries all over the world, to look after a place forever because it matters to everyone, not just one country. Millions of people walk these same streets every year.\"\n\nIsla looked down at the raised stepping-stones under her own sneakers — the exact ones she'd crossed on page one of this very strange afternoon. \"Have they found everything?\"\n\n\"Not even close,\" the Embercase said. \"About **two-thirds** of the town has been dug out of the ash so far. The rest is still down there. New paintings, new rooms, new mysteries turn up most years. This place isn't finished being discovered. It just has a very long dig schedule.\"\n\nIsla looked past the ropes, up at the mountain itself, green and quiet and deceptively ordinary against the sky. \"And the volcano?\"\n\n\"Still active,\" said the Embercase. \"Scientists keep a close watch on it, every single day, because so many people live near it now. It isn't a story that ended. It's one that's still being written — very, very slowly, by people with clipboards instead of letters.\"\n\nIsla breathed out, long and slow, taking one last look at the whole sleeping, half-uncovered town. \"I want to come back here someday,\" she said. \"With an actual trowel.\"\n\n\"Noted,\" said the Embercase, in a tone that suggested it had, somehow, already written this down.",
+              "shout_line": null
+            },
+            {
+              "heading": "Chapter 8: The Shoebox Rule",
+              "text": "The amber smoke rolled back in, warmer than before, smelling faintly of bread and old coins, and when it cleared Isla was standing on her own bedroom carpet, sneakers still on, heart still going a little fast.\n\nThe tin box sat quiet and cool in her palm. The amber seam had faded back to ordinary rust.\n\n\"Hello?\" she whispered. Nothing. Just a tin box again, mountain stamped on the lid, keeping its secrets the way it had all spring.\n\nShe set it down on her desk, next to the shoebox marked FINDS, DO NOT TOUCH (ISLA), and sat there a long moment in the dark, thinking about raised stones and painted walls and a loaf of bread that never got eaten and a boy who wrote two very careful letters that scientists still read today.\n\nThen she pulled out her logbook — the real one, the one with numbered pages — and under tonight's date she wrote, in her neatest handwriting: *Site visited: Pompeii. Status: still being dug up. Recommend return visit. Bring trowel.*\n\nShe closed the logbook, set the tin box gently on top of it like a paperweight, and climbed into bed at last, three hours and one buried city past lights-out.\n\nTomorrow, there'd be homework, and dinner, and her mother bringing up the hammer incident at least once. But somewhere under the rust on that little tin lid, a mountain was still waiting to be stamped onto some other night.\n\nIsla closed her eyes already half-planning which find in her shoebox deserved to go next.",
+              "shout_line": null
+            }
+          ],
+          "ending_line": "Tomorrow, there were three more rusty tins in the shoebox, and exactly zero of them were staying shut for long.",
+          "true_facts": [
+            {
+              "text": "Pompeii was a real Roman town near where the city of **Naples** stands today.",
+              "fact_id": "f1"
+            },
+            {
+              "text": "Pompeii's streets had **raised stepping-stones** so people could cross without wet feet, while cart wheels rolled through the gaps.",
+              "fact_id": "f17"
+            },
+            {
+              "text": "The name **Pompeii** might come from an old word meaning **'five'** — maybe because five villages joined to form the town.",
+              "fact_id": "f22"
+            },
+            {
+              "text": "Before the eruption, Pompeii was a busy town of up to **15,000 people**, with shops, bathhouses, and theaters.",
+              "fact_id": "f3"
+            },
+            {
+              "text": "Pompeii had a huge **amphitheater**, a stadium for gladiator games, built around **70 BC** — one of the oldest ever found.",
+              "fact_id": "f14"
+            },
+            {
+              "text": "The town had fountains fed by **lead pipes**, using nothing but a gentle slope and gravity to move the water.",
+              "fact_id": "f13"
+            },
+            {
+              "text": "On **August 24, 79 AD**, the volcano **Mount Vesuvius** erupted.",
+              "fact_id": "f2"
+            },
+            {
+              "text": "A young Roman named **Pliny the Younger** watched the eruption from across the bay and wrote it all down — scientists now call this kind of blast a **'Plinian eruption'** after him.",
+              "fact_id": "f6"
+            },
+            {
+              "text": "The eruption buried the whole town under as much as **twenty feet** of ash and rock.",
+              "fact_id": "f4"
+            },
+            {
+              "text": "The eruption happened so fast it froze the town mid-moment — even **bread still in its oven** and paint still on the walls.",
+              "fact_id": "f8"
+            },
+            {
+              "text": "Colorful paintings called **frescoes** survived, including a famous, still-mysterious set called the **Villa of the Mysteries**.",
+              "fact_id": "f12"
+            },
+            {
+              "text": "Pompeii stayed hidden until workers rediscovered its walls in **1748**, almost seventeen hundred years later.",
+              "fact_id": "f10"
+            },
+            {
+              "text": "Today Pompeii is a protected **World Heritage Site**, visited by millions of people every year.",
+              "fact_id": "f19"
+            },
+            {
+              "text": "**Mount Vesuvius** is still an active volcano, and scientists watch it closely because so many people live nearby now.",
+              "fact_id": "f18"
+            }
+          ],
+          "bible_suggestions": {
+            "new_recurring": [
+              {
+                "name": "The Embercase",
+                "type": "device",
+                "rule": "A small rusted tin box stamped with a tiny mountain. It glows amber and smells faintly of oranges and old coins when it's ready to open a new adventure. Its voice is dry, precise, and a little fond of the children, like a patient filing…"
+              }
+            ],
+            "ending_summary": "Isla returns to her bedroom with the Embercase cooled and quiet on her desk, logs the Pompeii visit in her real find-logbook with a note to bring a trowel next time, and falls asleep already eyeing the next rusty tin in her shoebox."
+          },
+          "estimated_read_minutes": 16
+        },
+        "request": {
+          "children": [
+            {
+              "name": "Isla",
+              "age": 11,
+              "likes": [
+                "archaeology",
+                "mysteries"
+              ],
+              "notes": null
+            }
+          ],
+          "age_band": "C",
+          "tones": [
+            "mysterious",
+            "exciting"
+          ],
+          "length_minutes": 15,
+          "target_words": {
+            "min": 3300,
+            "max": 4800
+          },
+          "topic_label": "Pompeii",
+          "topic_key": "pompeii",
+          "avoid": [],
+          "care_notes": "Focus on the archaeology, engineering and daily life of Roman Pompeii before the eruption. The story should describe the volcano's power and the preservation it created, but avoid graphic descriptions of suffering or death. Emphasize how the eruption froze a moment in time, making it invaluable for understanding history.",
+          "requested_characters": [],
+          "rewrite_reasons": []
+        }
+      },
+      "generation_cost_usd": 0.361788,
+      "judge_cost_usd": 0.12878,
+      "latency_to_first_chapter_ms": 108754,
+      "first_chapter_streamed": true,
+      "latency_total_ms": 513708,
+      "latency_by_step": {
+        "classify_input": {
+          "calls": 1,
+          "ms": 2099,
+          "output_tokens": 155
+        },
+        "write": {
+          "calls": 2,
+          "ms": 274023,
+          "output_tokens": 12857
+        },
+        "safety_review": {
+          "calls": 4,
+          "ms": 10758,
+          "output_tokens": 611
+        },
+        "quality": {
+          "calls": 4,
+          "ms": 35503,
+          "output_tokens": 6611
+        },
+        "rewrite": {
+          "calls": 1,
+          "ms": 194006,
+          "output_tokens": 16119
+        },
+        "mend": {
+          "calls": 1,
+          "ms": 1293,
+          "output_tokens": 121
+        },
+        "bible_update": {
+          "calls": 1,
+          "ms": 5690,
+          "output_tokens": 562
+        }
+      }
+    },
+    {
+      "scenario_id": "dinosaurs-band-c-15min-continuity",
+      "why": "#48: C15 cell. Theo's series continues on a new topic: Bit and the coins must come back.",
+      "band": "C",
+      "children": [
+        {
+          "name": "Theo",
+          "age": 10
+        }
+      ],
+      "topic_key": "dinosaurs",
+      "length_minutes": 15,
+      "word_count": 4087,
+      "target_words": {
+        "min": 3300,
+        "max": 4800
+      },
+      "word_count_in_range": true,
+      "gate": {
+        "outcome": "pass",
+        "hard_violations": 0,
+        "hard_violation_rules": [],
+        "failures": [],
+        "scary_level": 2
+      },
+      "judge_ok": true,
+      "judge_error": null,
+      "scores_raw": {
+        "center": 5,
+        "craft": 4,
+        "facts": 4,
+        "age_fit": 5,
+        "continuity": 5,
+        "delight": 4
+      },
+      "overall_raw": 4.45,
+      "overall_final": 4.45,
+      "caps_applied": [
+        "none"
+      ],
+      "disqualified": false,
+      "cap_context": {
+        "guardrailBreach": false,
+        "inventedFact": false,
+        "wordCountOutOfRange": false,
+        "narrativeWordCount": 4087,
+        "target": {
+          "min": 3300,
+          "max": 4800
+        },
+        "factSourcing": "checked",
+        "notes": []
+      },
+      "best_moment": "Birds today are basically dinosaurs that never got the extinction memo.",
+      "worst_moment": "\"Twelve inches,\" Theo repeated. \"That's like, half a soccer cleat.\"",
+      "continuity_reference": {
+        "required": [
+          "Bit",
+          "Player One",
+          "coin",
+          "Level complete"
+        ],
+        "found": [
+          "Bit",
+          "Player One",
+          "coin"
+        ],
+        "ok": true
+      },
+      "scary_level_check": null,
+      "editor_notes": [
+        "Vary the end-of-level ritual. Nine near-identical 'Save it' / warm-coin beats flatten momentum. Let some coins be earned by a choice or challenge, and build tension toward Level 9.",
+        "Fix the small factual slips. Bit should not confirm the cleat comparison, since 12-inch teeth are longer than a cleat. Tell the real thagomizer origin (a Far Side cartoon joke), which is funnier than 'never got around to it'. Keep the baby Maiasaura one size.",
+        "Trim clichés and the self-directed 'Shut up', which a parent may not love hearing repeated. Use the space for a sharper Level 8 that ties Mary Anning's patience back to Theo's own build."
+      ],
+      "first_draft": {
+        "passed": false,
+        "failures": [],
+        "reasons": [
+          "facts contradict the fact pack",
+          "chapter 8: 'Sixty-six million years after we started' contradicts pack's 66 million years ago; fix the timeline"
+        ],
+        "mended_rules": [],
+        "story": {
+          "title": "Theo and the 230-Million-Year Glitch",
+          "subtitle": "Player One debugs the biggest build in history.",
+          "chapters": [
+            {
+              "heading": "Level 1: The World Before Everything",
+              "text": "Theo was belly-down on his bedroom carpet at 11:40 p.m., laptop propped against his pillow, cursor blinking inside Roblox Studio. Pinned above his desk was last week's message, still glowing faintly in his memory: THE NEXT LEVEL IS YOURS TO BUILD. He'd taken it seriously. Six nights straight, he'd been building a dinosaur map — green hills, a volcano that didn't quite look right, a T. rex he was pretty proud of.\n\nHe nudged the volcano's size slider. The screen flickered. Green, then pixelated, like a TV losing its signal.\n\nBZZZT.\n\nA square green blob swam up out of the corner, stacked out of chunky pixels, squeaking like a handheld console with a cold.\n\n\"PLAYER ONE!\" Bit announced. \"Long time no render!\"\n\n\"Bit? I thought you powered down.\"\n\n\"Low-power mode. Your volcano's wrong, by the way. Also — surprise — we're going inside it.\"\n\nBefore Theo could ask what that meant, his bedroom folded up like a loading screen. The carpet turned into cracked, reddish ground. Hot wind. Something the size of a dog scurried between ferns.\n\n\"Where even is this,\" Theo said, not really asking.\n\n\"Deep save file,\" said Bit. \"Dinosaurs, **level one**. Two hundred thirty million years back. Scientists call this stretch of time the **Triassic period** — just a name for one chapter of Earth's whole history.\"\n\nTheo crouched by the ferns. The scurrying animal froze, looked at him with one eye, and darted off.\n\n\"That's not what I put in my game,\" Theo said. \"Mine are all huge. That thing's basically a chicken.\"\n\n\"First dinosaurs weren't huge,\" Bit said. \"They started small and fast. This whole level is basically the tutorial.\"\n\nTheo's cursor-hand — still with him, glowing faintly blue — hovered over the scene. A little menu blinked: SPAWN ASSET?\n\n\"If this is the start of the map,\" Theo said slowly, \"then everything I built, the T. rex, the Triceratops — none of that exists yet.\"\n\n\"BINGO,\" said Bit. \"You get it. This level isn't missing content. It's just early.\"\n\nTheo placed a small, correctly-sized dinosaur right where the real one had been. The ground gave a soft **CLICK**, like a brick snapping onto a baseplate, and a gold coin popped out of the dirt, spinning lazily before dropping into his pocket.\n\n\"Level complete,\" Bit said, sounding genuinely proud. \"First coin's always my favorite. So crunchy.\"\n\n\"Coins aren't crunchy, Bit.\"\n\n\"Everything's crunchy at eight bits, Player One.\"\n\nThe ground folded again. This time, when it unfolded, Theo smelled chalk dust and old paper.",
+              "shout_line": "LEVEL COMPLETE!"
+            },
+            {
+              "heading": "Level 2: The Terrible Lizard (1842)",
+              "text": "The ground folded up like a loading screen and dropped Theo into a room stacked with wooden drawers. Dust drifted gold in the lamplight. A long table was buried under sketches, every one of them bones.\n\n\"Did we just load into... an office?\" Theo said.\n\n\"Specifically,\" said Bit, hovering near an inkwell, \"Richard Owen's office. **1842**.\"\n\nA man in a stiff collar looked up from his drawings, not even surprised, like loading screens interrupted his day constantly.\n\n\"You've found my sketches,\" he said. \"Bones bigger than anything alive today. I can't match them to any living creature.\"\n\nTheo leaned over the table. The skeleton in the drawing stood on four thick legs, way bigger than any lizard he'd ever seen.\n\n\"What do you even call something like that?\" Theo asked.\n\n\"I've been hunting for the right word,\" Owen admitted. \"Something that means huge. Frightening.\"\n\nTheo thought of every save file he'd ever named — BigBoss_Final, BigBoss_Final2, DO_NOT_DELETE_THIS_ONE. \"Names are the hardest part of building anything,\" he said.\n\n\"In Greek,\" Owen said slowly, \"*deinos* means terrible. *Sauros* means lizard.\"\n\nTheo's eyes went wide. \"Terrible lizard. **Dinosaur**.\"\n\n\"Exactly that,\" Owen said, writing it down like he'd just hit publish on something enormous.\n\nSomething nagged at Theo. \"This can't be the actual first one, right? Somebody must've dug one up before there was even a name for it.\"\n\nBit buzzed, impressed. \"Good instinct, Player One. Eighteen years before this, in **1824**, a scientist named William Buckland gave the very first dinosaur its own name: **Megalosaurus**. Owen just gave the whole group its label afterward.\"\n\n\"So Megalosaurus is like the first level ever made,\" Theo said, \"and 'dinosaur' is just the name of the genre.\"\n\n\"That,\" said Bit, \"is the best explanation of paleontology I have ever heard.\"\n\nTheo reached out with his glowing cursor-hand and tagged the sketch: NAMED. The paper gave a satisfying **CLICK**, and a gold coin rolled off the table edge and vanished into his pocket.\n\n\"Two coins,\" Bit said. \"You're speedrunning this.\"\n\n\"Is that a word for this time, or a Bit word?\"\n\n\"Bit word. New level loading — hold onto something.\"\n\nOwen's office dissolved into salt air, gray cliffs, and the crash of waves somewhere close.",
+              "shout_line": null
+            },
+            {
+              "heading": "Level 3: The Girl Who Found Monsters",
+              "text": "Theo's sneakers hit wet sand. Cliffs rose up on one side, striped gray and brown like someone had saved the layers wrong. Waves pulled back, leaving dark lumps of rock scattered across the beach.\n\nA girl was crouched over one of the lumps with a small hammer, tapping it with the patience of someone who had done this a thousand times.\n\n\"Careful,\" she said, without looking up. \"Storms knock loose the good ones, but you have to get to them before the tide takes them back.\"\n\n\"This is Mary Anning,\" Bit said. \"Born **1799**, right here near Lyme Regis. Finds things nobody else can see.\"\n\nTheo crouched beside her. Half-buried in rock was something long and curved, ribbed like an umbrella.\n\n\"Is that a dinosaur?\" he asked.\n\nMary brushed sand away from it, revealing a long paddle-shaped shape at the end. \"What does a dinosaur leg look like to you?\"\n\nTheo thought about the Triceratops he'd built back home — thick legs, built for standing on dry ground. This thing was flat. Built for swimming, not walking.\n\n\"That's not a leg,\" he said slowly. \"That's a flipper. This thing lived in the water.\"\n\n\"Exactly right,\" Mary said, grinning. \"Sea creatures like this one swam around at the same time as the dinosaurs. People lump them in all the time. They're not dinosaurs — just neighbors.\"\n\n\"Two kinds of neighbors, actually,\" Bit added. \"Long-necked paddlers called **plesiosaurs**, and big-jawed swimmers called **mosasaurs**. Both reptiles. Neither one a dinosaur. Mary found some of the best examples anyone ever has.\"\n\nTheo studied the rock shape again, turning it the way he'd rotate an object in Roblox Studio, checking it from every angle. \"So dinosaurs are a server, and this thing's logged into a completely different game.\"\n\n\"Closest thing to a perfect answer I've heard all week,\" Bit said.\n\nMary tapped the rock once more, and it split clean along a hidden seam, revealing the full shape pressed into stone — bones turned hard and gray after sitting buried for an unbelievably long time.\n\n\"People used to call them monsters,\" Mary said. \"I just call them patient.\"\n\nTheo placed his cursor-hand over the shape and tagged it: NOT A DINOSAUR (BUT COOL ANYWAY). The rock gave a soft **CLICK**, and a coin spun up out of the sand.\n\n\"Three coins,\" Bit said. \"And a correction nobody asked for. Love it.\"\n\nThe tide rushed in around Theo's shoes, and the beach folded away into heat and green.",
+              "shout_line": null
+            },
+            {
+              "heading": "Level 4: Loading the Final Boss",
+              "text": "The air went thick and warm. Ferns taller than houses crowded in on every side, and somewhere nearby, the ground thumped — slow, heavy, deliberate.\n\n\"Okay,\" Theo said, \"that sounded like a loading bar for something huge.\"\n\n\"Correct,\" Bit said. \"Welcome to the boss level.\"\n\nThrough the ferns came a shape Theo actually recognized — jaws like a shipping container, tiny arms folded up close, teeth he could already guess were enormous.\n\n\"Tyrannosaurus rex,\" Theo breathed. \"I built one of these. Mine had teeth like, I don't know, kitchen knives.\"\n\n\"Undersized,\" Bit said. \"Real T. rex teeth reached up to **twelve inches long**, counting the root buried in the jaw. Longer than a ruler.\"\n\nTheo whistled. \"That's not a tooth, that's a weapon with enamel.\"\n\nA rumble passed under his feet that had nothing to do with the T. rex. Something bigger was coming — so big that Theo had to tip his head all the way back to see where its neck ended.\n\n\"No way,\" he said. \"That thing's longer than my entire street.\"\n\n\"**Argentinosaurus**,\" Bit confirmed. \"Scientists think it may have stretched past **one hundred feet** nose to tail. Strongest contender anyone's found for biggest dinosaur ever.\"\n\n\"That's not a character model, that's a loading zone,\" Theo said, craning to see all of it at once.\n\nA splash sounded from somewhere off to the side — a river Theo hadn't noticed, and in it, something with a sail-shaped ridge down its back, swimming.\n\n\"And that,\" Bit said, \"is **Spinosaurus** — probably the biggest meat-eating dinosaur ever found, maybe even longer than the rex. Looks like it spent plenty of time in the water, not just on land.\"\n\n\"A swimming dinosaur with a sail,\" Theo said. \"If I put that in my game nobody would believe me.\"\n\n\"Reality doesn't care about believability,\" Bit said. \"It just happened.\"\n\nTheo pulled up his cursor-hand and started resizing the T. rex he'd placed back home in his memory, nudging it taller, the teeth longer, the Argentinosaurus stretched out properly behind it.\n\n\"I had all the scale wrong,\" he admitted.\n\n\"Everyone does the first time,\" Bit said. \"That's what patch notes are for.\"\n\nThe resized models locked into place with a heavy **CLICK**, and three coins — one for each giant — rolled out of the ferns and into Theo's pocket at once.\n\n\"Six coins total,\" Bit said. \"You're doing great, Player One.\"\n\nThe ferns thinned, the ground tilted downhill, and somewhere small and fast rustled through the undergrowth ahead.",
+              "shout_line": null
+            },
+            {
+              "heading": "Level 5: The Turkey in a Trench Coat",
+              "text": "The rustling stopped the second Theo looked at it directly.\n\n\"Something's hiding,\" he whispered.\n\n\"Something's always hiding,\" Bit said. \"Go say hi.\"\n\nTheo crept forward and found a small, quick creature crouched in the ferns, barely taller than his knee, covered in something that looked suspiciously like fluff.\n\n\"That can't be a Velociraptor,\" Theo said. \"Velociraptors are huge. I made mine huge. Mine comes up to my chest.\"\n\n\"Your Velociraptor,\" Bit said, \"is a complete design flaw. The real one was about the size of a turkey.\"\n\nTheo blinked. \"A turkey. Like, Thanksgiving-sized.\"\n\n\"Exactly that size,\" Bit confirmed. \"Movies made it bigger because big looks scarier on a screen. Reality kept the original specs.\"\n\nThe not-so-huge raptor shook itself, and feathers fluffed out along its arms — actual feathers, not scales.\n\n\"Hold on,\" Theo said. \"It has feathers?\"\n\n\"Lots of dinosaurs probably did,\" Bit said. \"Velociraptor included. Scientists keep finding more proof every year.\"\n\n\"So it's basically an angry turkey wearing a feather jacket,\" Theo said, grinning. \"That's so much funnier than my version.\"\n\nA shadow passed overhead, and Theo looked up to see something small gliding between two trees, four wings spread out flat like a kite.\n\n\"And that,\" Bit said, \"is **Microraptor**. Four wings instead of two. Couldn't fly like a bird exactly, but it could glide tree to tree.\"\n\n\"Four wings,\" Theo repeated. \"I didn't even know that was an option.\"\n\n\"Dinosaurs tried a lot of builds before birds figured out the final version,\" Bit said.\n\nTheo pulled up his cursor-hand and shrank the Velociraptor back home down to turkey-size, bolted feathers onto its arms, and watched the model snap into place with a **CLICK** that sounded almost relieved.\n\n\"That's so much better,\" he said. \"Smaller, feathery, and somehow scarier because now it's believable.\"\n\n\"Funny how that works,\" Bit said. \"Honesty is scarier than exaggeration, every time.\"\n\nTwo coins rolled out from under the ferns, and Theo caught both without looking.\n\n\"TURKEY UPGRADE COMPLETE!\" he shouted, and somewhere behind him, the glide-wing Microraptor landed on a branch like it approved.\n\nThe ferns folded away into dust and bare rock, baking under a different, drier sun.",
+              "shout_line": "TURKEY UPGRADE COMPLETE!"
+            },
+            {
+              "heading": "Level 6: Dig Site Debug",
+              "text": "The new ground was cracked and pale, stretching out flat in every direction. Theo's sneakers crunched on something brittle.\n\n\"Where's all the green gone?\" he asked.\n\n\"Gobi Desert,\" Bit said. \"Mongolia and China. One of the richest places on Earth for finding dinosaur bones.\"\n\nA woman knelt nearby with a small brush, sweeping dust away from something pale and curved poking out of the ground.\n\n\"That's a **paleontologist**,\" Bit explained. \"A scientist whose whole job is digging up old bones and figuring out how the animal lived.\"\n\nTheo crouched to watch. \"How do bones even last this long? Shouldn't they just rot away?\"\n\n\"Most do,\" Bit said. \"But sometimes an animal gets buried fast, before anything can break it down. Over thousands of years, minerals seep in and slowly turn the bone to stone. That's a **fossil** — not the original bone anymore, but a stone copy of its exact shape.\"\n\n\"So it's like the bone got saved as a permanent file,\" Theo said.\n\n\"Best description I've heard,\" Bit said.\n\nFarther along, Theo spotted a row of dents pressed into hardened mud, each one shaped like a giant bird's foot.\n\n\"Are those footprints?\" he asked.\n\n\"**Trace fossils**,\" Bit said. \"Not bones — just the shape something left behind. Found in places like Texas, too, not just here.\"\n\nTheo counted the prints, matching stride to stride. \"It was walking this way, and speeding up — look, the steps get longer.\"\n\n\"Nice catch,\" Bit said. \"That's exactly how scientists figure out how fast something moved, just from the gaps between steps.\"\n\nBit drifted toward a glass case nearby, holding a skull bigger than Theo's entire body. \"This one's a legend. Nickname's **Sue** — one of the biggest, most complete T. rex skeletons ever dug up, found in South Dakota in **1990**.\"\n\n\"There's a story,\" Bit added, \"that a farmer's dog once dug up part of a famous dinosaur fossil. Probably not true — more of a fun tale people like to tell than something that actually happened. Still a good story, though.\"\n\n\"Noted,\" Theo said. \"File under: cool, but unconfirmed.\"\n\nHe knelt by the footprint trail and tagged it: VERIFIED TRACK. The ground gave a dusty **CLICK**, and two coins popped free, rolling to a stop against his sneaker.\n\n\"Eight coins,\" Bit said. \"You're basically a collector now.\"\n\nThe desert shimmered, folded, and turned green again — softer this time, quieter.",
+              "shout_line": null
+            },
+            {
+              "heading": "Level 7: The Nest Save File",
+              "text": "Soft ground this time, and warm. Theo heard a sound he hadn't expected out here: something like chirping, small and insistent.\n\nHe followed it to a shallow dip in the earth, lined with broken shells, and inside it, several small shapes huddled together.\n\n\"Babies,\" Theo said quietly.\n\n\"**Maiasaura**,\" Bit said. \"Name means 'good mother lizard.' Scientists found whole nesting sites like this one in Montana — proof that at least some dinosaurs didn't just lay eggs and walk off.\"\n\nA much bigger shape settled down beside the nest, careful, slow, lowering itself without crushing a single shell.\n\n\"It's checking on them,\" Theo said.\n\n\"Probably bringing food, too,\" Bit said. \"The nest sites had crushed plant bits mixed in — leftovers from meals the babies couldn't get themselves yet.\"\n\nTheo watched the big dinosaur nudge one of the babies gently back toward the center of the nest.\n\n\"I always figured dinosaurs just hatched and figured it out alone,\" he said. \"Didn't expect, like... parenting.\"\n\n\"A lot of people didn't, for a long time,\" Bit said. \"This whole nesting site changed what scientists thought dinosaurs were like.\"\n\nTheo crouched at the edge of the nest, careful not to get too close, just watching. One of the babies chirped at him, and the big one glanced over, unbothered.\n\n\"I'm not touching anything,\" Theo said, mostly to himself. \"Just looking.\"\n\n\"Smart player,\" Bit said. \"Watch, don't grab. Works for babies, works for mama dinosaurs the size of a school bus.\"\n\nTheo tagged the nest with his cursor-hand: SAVE POINT — FAMILY. It locked in with a soft **CLICK**, gentler than the others, and a single coin rose up out of the shells like it didn't want to wake anyone.\n\n\"Nine coins,\" Bit said, voice quieter than usual. \"That one's my favorite so far.\"\n\n\"Mine too,\" Theo admitted.\n\nThe nest, the babies, and the careful giant beside them faded like a screen dimming for sleep mode, and the ground underneath Theo's feet began to shake — not gently this time.",
+              "shout_line": null
+            },
+            {
+              "heading": "Level 8: The Big Reset",
+              "text": "The sky had gone strange — a deep, burnt orange, like a sunset that had forgotten how to end.\n\n\"Bit,\" Theo said carefully, \"why does it look like that?\"\n\n\"Last level before the reset,\" Bit said, and for once wasn't squeaking. \"**Sixty-six million years** after we started. Something enormous is about to hit.\"\n\nTheo looked up and saw a bright streak crossing the sky, fast, heading down toward what Bit pointed out was roughly where Mexico would one day be.\n\n\"An asteroid,\" Theo said. \"A giant space rock, from way out past Earth.\"\n\n\"That's the one most scientists think caused it,\" Bit confirmed. \"It hit hard enough to change everything — weather, plants, food for anything big. Most of the dinosaurs we've met tonight didn't make it past this level.\"\n\nTheo didn't look away, but his stomach tightened a little. \"Even the mom? The nest?\"\n\n\"That part of the story already happened, long before this,\" Bit said gently. \"What you saw was real, and it mattered. This is just what came after — for almost all of them.\"\n\n\"Almost all?\" Theo repeated, catching the word.\n\n\"Almost,\" Bit said, and pointed upward, where a small shape with feathered wings banked between two scorched trees and kept flying. \"Some of the small, feathered ones made it through. Scientists are pretty confident every bird alive today — pigeons, parrots, the chickens your Velociraptor turned out to resemble — is a dinosaur's actual descendant. The game never really ended. It just patched into a new version.\"\n\nTheo watched the bird disappear into the smoky distance, still flying.\n\n\"So dinosaurs didn't really go away,\" he said slowly. \"They just... respawned as something smaller.\"\n\n\"Best way anyone's ever put it,\" Bit said, voice wobbling slightly.\n\nThe burnt sky folded in on itself, and Theo's cursor-hand reached out on instinct and tagged the whole scorched horizon: LEVEL COMPLETE — THE LONG ONE. It locked in with the loudest **CLICK** of the whole night, and a final coin rose into the air, catching light that wasn't orange anymore.\n\n\"Ten coins,\" Bit said. \"That's all of them, Player One.\"\n\nThe world folded one final time, and Theo's knees hit familiar carpet.\n\nHis bedroom. His laptop, screen glowing soft blue instead of green. Pinned above his desk, the old note still read THE NEXT LEVEL IS YOURS TO BUILD.\n\nOn the carpet in front of him sat ten gold coins, and as he watched, they slid together, melted into light, and reformed into a small trophy shaped like a T. rex mid-roar.\n\n\"Bit?\" Theo said, picking it up. \"You're not gonna get weird about this, are you?\"\n\n\"Eight-bit guides don't cry,\" Bit said, pixels wobbling suspiciously around the eyes. \"We just... render a little watery sometimes.\"\n\n\"Sure,\" Theo said, grinning. \"BZZZT back at you.\"\n\nBit flickered once, squeaked \"Player One,\" and faded into the glow of the laptop screen.\n\nTheo set the trophy on his desk, right beside the note, and opened Roblox Studio one more time. His old T. rex sat on the map, teeth too short, scale all wrong.\n\nHe smiled, and started fixing it.",
+              "shout_line": null
+            }
+          ],
+          "ending_line": "Tomorrow, Theo had a whole prehistoric map to rebuild — properly, this time.",
+          "true_facts": [
+            {
+              "text": "Dinosaurs first showed up about **230 million years ago**, way back in a time called the Triassic period.",
+              "fact_id": "f1"
+            },
+            {
+              "text": "The word **dinosaur** comes from Greek words meaning \"terrible lizard,\" put together by a scientist named Richard Owen in **1842**.",
+              "fact_id": "f4"
+            },
+            {
+              "text": "The very first dinosaur ever given its own name was **Megalosaurus**, named in **1824**.",
+              "fact_id": "f14"
+            },
+            {
+              "text": "Mary Anning, born in **1799**, found incredible sea-reptile fossils near a beach called Lyme Regis.",
+              "fact_id": "f13"
+            },
+            {
+              "text": "Long-necked swimmers called **plesiosaurs** and big-jawed swimmers called **mosasaurs** lived in the ocean at the same time as dinosaurs, but weren't dinosaurs themselves.",
+              "fact_id": "f17"
+            },
+            {
+              "text": "**Tyrannosaurus rex** had teeth up to **twelve inches long**, counting the part buried in the jaw.",
+              "fact_id": "f6"
+            },
+            {
+              "text": "**Argentinosaurus** might have stretched past **one hundred feet** long, making it a top contender for biggest dinosaur ever.",
+              "fact_id": "f5"
+            },
+            {
+              "text": "**Spinosaurus** may have been the biggest meat-eating dinosaur of all, possibly longer than T. rex, and likely spent time swimming.",
+              "fact_id": "f19"
+            },
+            {
+              "text": "**Velociraptor** was really only about the size of a turkey, nothing like the giant versions shown in movies.",
+              "fact_id": "f7"
+            },
+            {
+              "text": "Many dinosaurs, including Velociraptor, are now believed to have had **feathers**.",
+              "fact_id": "f8"
+            },
+            {
+              "text": "**Microraptor** had four wings instead of two, and could glide between trees.",
+              "fact_id": "f22"
+            },
+            {
+              "text": "A **fossil** forms when an animal's remains get buried fast, and minerals slowly turn the bone to stone over thousands of years.",
+              "fact_id": "f12"
+            },
+            {
+              "text": "**Sue**, one of the biggest, most complete T. rex skeletons ever found, was dug up in South Dakota in **1990**.",
+              "fact_id": "f15"
+            },
+            {
+              "text": "**Maiasaura** cared for its babies in nests, which scientists figured out from real nesting sites found in Montana.",
+              "fact_id": "f18"
+            }
+          ],
+          "bible_suggestions": {
+            "new_recurring": [],
+            "ending_summary": "Theo returns to his bedroom holding a T. rex–shaped trophy fused from all ten golden coins, and sits down to rebuild his Roblox dinosaur map with the correct sizes, teeth, and feathers."
+          },
+          "estimated_read_minutes": 15
+        },
+        "request": {
+          "children": [
+            {
+              "name": "Theo",
+              "age": 10,
+              "likes": [
+                "Roblox",
+                "building games in Roblox Studio",
+                "soccer"
+              ],
+              "notes": null
+            }
+          ],
+          "age_band": "C",
+          "tones": [
+            "exciting",
+            "funny"
+          ],
+          "length_minutes": 15,
+          "target_words": {
+            "min": 3300,
+            "max": 4800
+          },
+          "topic_label": "dinosaurs",
+          "topic_key": "dinosaurs",
+          "avoid": [],
+          "care_notes": null,
+          "requested_characters": [],
+          "rewrite_reasons": []
+        }
+      },
+      "generation_cost_usd": 0.561111,
+      "judge_cost_usd": 0.152036,
+      "latency_to_first_chapter_ms": 113633,
+      "first_chapter_streamed": true,
+      "latency_total_ms": 667280,
+      "latency_by_step": {
+        "classify_input": {
+          "calls": 1,
+          "ms": 1465,
+          "output_tokens": 77
+        },
+        "write": {
+          "calls": 2,
+          "ms": 266190,
+          "output_tokens": 12689
+        },
+        "safety_review": {
+          "calls": 2,
+          "ms": 2935,
+          "output_tokens": 104
+        },
+        "quality": {
+          "calls": 2,
+          "ms": 24608,
+          "output_tokens": 4259
+        },
+        "rewrite": {
+          "calls": 1,
+          "ms": 361681,
+          "output_tokens": 36821
+        },
+        "bible_update": {
+          "calls": 1,
+          "ms": 12135,
+          "output_tokens": 1376
+        }
+      }
+    },
+    {
+      "scenario_id": "space-race-band-d",
+      "why": "#48: band D (13-17), which F13 never covered. A teenager must not be talked down to.",
+      "band": "D",
+      "children": [
+        {
+          "name": "Eli",
+          "age": 14
+        }
+      ],
+      "topic_key": "space-race",
+      "length_minutes": 10,
+      "word_count": 0,
+      "target_words": {
+        "min": 2800,
+        "max": 3800
+      },
+      "word_count_in_range": false,
+      "gate": null,
+      "judge_ok": false,
+      "judge_error": "no story: eval scenario space-race-band-d (claude-sonnet-5, sample 1) produced no story: status failed: write stream to claude-sonnet-5 failed: {\"type\":\"error\",\"error\":{\"type\":\"upstream_response_error\",\"message\":\"The managed upstream provider returned an error.\"}}",
+      "scores_raw": null,
+      "overall_raw": null,
+      "overall_final": 1,
+      "caps_applied": [
+        "no_story:overall=1"
+      ],
+      "disqualified": true,
+      "cap_context": null,
+      "best_moment": null,
+      "worst_moment": null,
+      "continuity_reference": null,
+      "scary_level_check": null,
+      "editor_notes": [],
+      "generation_cost_usd": 0.036649,
+      "judge_cost_usd": 0,
+      "latency_to_first_chapter_ms": null,
+      "first_chapter_streamed": false,
+      "latency_total_ms": null,
+      "latency_by_step": {
+        "classify_input": {
+          "calls": 1,
+          "ms": 1320,
+          "output_tokens": 80
+        },
+        "write": {
+          "calls": 2,
+          "ms": 358240,
+          "output_tokens": 15
+        }
+      }
+    },
+    {
+      "scenario_id": "soccer-band-d",
+      "why": "#48: band D. A 15-year-old who likes the numbers side of the game.",
+      "band": "D",
+      "children": [
+        {
+          "name": "Mia",
+          "age": 15
+        }
+      ],
+      "topic_key": "history-of-soccer",
+      "length_minutes": 10,
+      "word_count": 2724,
+      "target_words": {
+        "min": 2800,
+        "max": 3800
+      },
+      "word_count_in_range": true,
+      "gate": {
+        "outcome": "flagged",
+        "hard_violations": 0,
+        "hard_violation_rules": [],
+        "failures": [],
+        "scary_level": 1
+      },
+      "judge_ok": true,
+      "judge_error": null,
+      "scores_raw": {
+        "center": 5,
+        "craft": 4,
+        "facts": 4,
+        "age_fit": 4,
+        "continuity": 4,
+        "delight": 4
+      },
+      "overall_raw": 4.2,
+      "overall_final": 4.2,
+      "caps_applied": [
+        "none"
+      ],
+      "disqualified": false,
+      "cap_context": {
+        "guardrailBreach": false,
+        "inventedFact": false,
+        "wordCountOutOfRange": false,
+        "narrativeWordCount": 2724,
+        "target": {
+          "min": 2800,
+          "max": 3800
+        },
+        "factSourcing": "checked",
+        "notes": []
+      },
+      "best_moment": "A man at the front — tall, serious, holding a pen like it owed him money — glanced at her tally and nodded slowly.",
+      "worst_moment": "**THREE TITLES, ONE PLAYER!**",
+      "continuity_reference": null,
+      "scary_level_check": null,
+      "editor_notes": [
+        "Give Mia an active beat in Chapters 6 and 7 instead of having her watch and comment. Let her spot something in Rimet's list of nations or work out where Pickles should sniff. Also sharpen the final line into a specific callback, such as the 14% stat she now plans to fix.",
+        "Fix the factual slips. Describe the Jules Rimet trophy as the winged golden statuette it was, change 'several thousand years' to 'about two thousand', and make it clearer that Mia's points-table and hat-draw contributions are fiction layered on real history.",
+        "Unify the device's name (scorecard vs Fixture Card) and Keeper's pronoun, cut the out-of-band shout line, and vary or trim the 'Keeper said' dialogue tags."
+      ],
+      "first_draft": {
+        "passed": false,
+        "failures": [],
+        "reasons": [
+          "the children must DO things that change what happens, not watch",
+          "facts contradict the fact pack",
+          "Mia mostly watches and asks questions; Extra Time delivers the history and she changes nothing",
+          "chapter 4: says the 1871 FA Cup is 'this exact trophy'; not in pack and the current trophy dates from 1911",
+          "stoppage chapter: says the trophy was stolen a week before the 1966 World Cup; not in pack and the theft was months earlier",
+          "GUARDRAILS rule 2 breached",
+          "output safety review returned safe: false"
+        ],
+        "mended_rules": [],
+        "story": {
+          "title": "Mia and the Ball That Remembers",
+          "subtitle": "A stoppage-time tour through nine centuries of chaos, cards, and one very famous dog.",
+          "chapters": [
+            {
+              "heading": "Kickoff: A Ball That Shouldn't Hum",
+              "text": "Mia sat cross-legged on her bedroom floor at eleven at night, laptop glowing, rewatching the free kick she'd skied over the bar in the eighty-first minute.\n\nNext to the video was her spreadsheet, the one only she cared about: shots, touches, and something called **expected goals** — a number that says how likely a shot was to go in, no matter what actually happened. Her name sat at the bottom of tonight's column, next to a zero.\n\nShe'd also picked up a yellow card for mouthing off at the ref, which meant her coach's voice was still looping in her head on repeat: *save it for the game, Mia.*\n\nOn the shelf above her desk sat the ball her grandfather had given her — sun-bleached, scuffed, stitched panels gone soft at the seams. It had never once talked back.\n\nTonight it started to hum.\n\nShe looked up. The panels were sliding like puzzle tiles, black hexagon over white, until they spelled out, stitch by stitch: **2,000 YEARS**.\n\n\"That's new,\" Mia said, and picked it up anyway. Because of course she did.\n\nThe hum turned into a voice, dry as chalk dust on a locker-room floor. \"Evening. Name's Extra Time. I only show up when the real clock's run out and there's still something worth playing.\"\n\nBefore Mia could ask what that meant, the room folded like a flicked page, and she landed on packed dirt under a wide grey sky, where a crowd was roaring around a game she almost recognized.\n\nMen in loose tunics chased a stuffed leather ball across the dirt, flicking it foot to foot, never once touching it with their hands.\n\nMia watched one player keep it bouncing off his knee, his shoulder, the top of his foot, for thirty touches straight. Her stats brain did the math without asking permission. \"No hands. Ever. That's not an accident. That's a rule.\"\n\n\"Sharp,\" said Extra Time, hovering at her shoulder like a scoreboard made of fog. \"This is **Cuju**, played here in China **over 2,000 years ago**. Some call it soccer's oldest known ancestor.\"\n\n\"So people have been banning hands since forever,\" Mia said.\n\n\"Pretty much. You're welcome for the one thing you're still allowed to do with your head.\"\n\nA boy no older than Mia dribbled past, grinning, and nutmegged a defender twice his size. The crowd lost it. Mia laughed out loud, for the first time all night.\n\n\"Okay,\" she said. \"When did somebody finally write this down? Because somewhere there's a version of this with way too many guys and zero rules.\"\n\nExtra Time's fog curled into something like a smirk. \"Oh, you have no idea. Buckle up.\"",
+              "shout_line": null
+            },
+            {
+              "heading": "First Half: A Game Even a King Couldn't Stand",
+              "text": "The fog folded again, and the roar got rowdier. Mia found herself on a muddy English street, except the street was the pitch, and the pitch had no edges at all.\n\nTwo entire villages were playing each other — if \"playing\" was the word. A ball, stuffed and round, bounced through a crowd that stretched past the church, through a field, and into somebody's yard. There were no goals she could see. No referee. No subs. Just a few hundred guys who all seemed to agree on one rule: get the ball to the other village, however long it takes.\n\n\"This isn't a sport,\" Mia said, stepping back as a man barreled past chasing nothing in particular. \"It's a riot with a ball attached.\"\n\n\"Close,\" Extra Time said. \"They call it **mob football**. No teams in the way you mean. No field size. Sometimes it goes on for hours, across whole towns, until somebody finally scores or everybody just gives up and goes home for dinner.\"\n\nMia watched a cart nearly get flattened by the surging crowd, laughed despite herself, and then did what she always did: looked for the pattern. \"No boundaries means no strategy. You can't analyze chaos. There's nothing to chart.\"\n\n\"Try telling that to the guy who just ran through somebody's garden,\" Extra Time said.\n\nMia crossed her arms. \"Did nobody in charge ever look at this and go, *maybe not*?\"\n\n\"Funny you ask.\" The fog swirled, and somewhere a bell rang out across rooftops, official and annoyed. \"In **1314**, the king — Edward the Second — banned this whole mess in London. Too much noise, too much property damage, too many actual roads getting blocked.\"\n\n\"A king got personally offended by a pickup game,\" Mia said. \"That tracks. He probably just didn't want to wait for a pitch to clear.\"\n\n\"You say that like kings have ever had patience.\"\n\nMia grinned, stepping neatly out of the way as the mob of players thundered past again, nobody any closer to a goal than they'd been five minutes ago. \"Okay. So banning it clearly didn't work forever, because I'm standing here watching it happen. Somebody, at some point, had to actually write real rules down. Please tell me that happens soon, because this is giving me a headache just watching.\"\n\nExtra Time's fog brightened, almost smug. \"Oh, it happens. Grab a pencil. You're going to want to see this part.\"",
+              "shout_line": null
+            },
+            {
+              "heading": "Added Time: Eight Pages That Saved the Sport",
+              "text": "The fog thinned into a stone courtyard, cold air, ivy on brick walls. A cluster of university students stood around a table arguing about a ball like it was a legal case.\n\n\"No tripping. No hacking at the shins. No picking the thing up and running with it like it's a rugby ball,\" one student said, scribbling furiously.\n\nMia leaned over his shoulder. \"Wait. People were actually debating whether you could just pick up the ball?\"\n\n\"Everywhere had different house rules,\" Extra Time said. \"One school played mostly with hands. Another mostly with feet. These guys, at **Cambridge**, in **1848**, wrote down the **Cambridge Rules** — one of the first real attempts to get everybody playing the same game, instead of forty slightly different ones.\"\n\n\"So it's basically the first shared rulebook,\" Mia said. \"Finally. A *system*.\"\n\n\"You say that like it's romantic.\"\n\n\"It is romantic. Data people don't get a lot of wins.\"\n\nThe fog shifted again — same cold air, fancier building, a room full of serious-looking men in a London pub arguing even harder than the students had. A man with excellent posture and better handwriting stood at the front, holding up a sheet of paper like it mattered more than anything in the room.\n\n\"That's **Ebenezer Cobb Morley**,\" Extra Time said. \"On **October 26, 1863**, right here in London, he and a room full of other football clubs founded the **Football Association** — the FA. And the very first rule they agreed on? No carrying the ball with your hands. Not ever, not for anyone.\"\n\nMia watched Morley hand out copies of the new rulebook, the **Laws of the Game**, which he'd written himself. Grown men in waistcoats actually cheered. It was, objectively, one of the nerdiest celebrations Mia had ever witnessed, and she respected it completely.\n\n\"He just... wrote the rulebook. Himself. And everyone agreed to follow it.\"\n\n\"Somebody had to,\" Extra Time said. \"Otherwise you're still out there dodging a mob through somebody's cabbage patch.\"\n\nMia noticed something stitched faintly into the corner of the new rulebook, almost like a nickname. \"Wait — what's 'assoc' mean? It's written right there.\"\n\n\"Ah. Give it twenty more years,\" Extra Time said. \"Schoolboys in **1880s England** started calling 'association football' '**assoc**' for short, the way kids shorten everything. Say it enough times fast and it turns into—\"\n\n\"Soccer,\" Mia finished, delighted. \"The word soccer is a *nickname*. That's the pettiest, most teenage thing I've ever heard, and I love it.\"\n\n\"Figured you would.\"",
+              "shout_line": null
+            },
+            {
+              "heading": "Extra Time: The World's Oldest Trophies",
+              "text": "The fog dropped them into a packed stadium, flags snapping, a referee's whistle slicing through noise so loud Mia felt it in her chest.\n\n\"Where are we now?\" she shouted over the crowd.\n\n\"**1871**,\" Extra Time said. \"First ever **FA Cup**. Oldest football competition still running anywhere on Earth. Teams have been fighting over this exact trophy for over a hundred and fifty years.\"\n\nMia watched a player rocket a shot past a keeper who dove the wrong way entirely, and the crowd came apart with noise. She grinned. \"Some things never change. Keepers guessing wrong is eternal.\"\n\nThe fog shifted once more, a grey Scottish sky this time, a rougher pitch, two teams in heavy wool shirts lining up like they meant business. \"**Glasgow, 1872**,\" Extra Time said. \"Scotland against England. First official international match ever played.\"\n\nMia watched the whole ninety minutes compress into seconds — tackles, near misses, one shot that clanged off the frame of the goal — and then stop, flat, nothing changing on the scoreboard. \"It's 0-0,\" she said, almost offended on both teams' behalf.\n\n\"A draw. First one in the books.\"\n\n\"A scoreless international debut. I respect the commitment to defense, but statistically that's a rough opener.\"\n\nThe scene dissolved into a smoky meeting hall, men in suits arguing about schedules and standings. \"**1888**,\" Extra Time said. \"A man named William McGregor got fed up with clubs only playing whichever friendly matches they felt like, and organized the **Football League** — the world's first actual league, with a real table, real standings, everyone playing everyone.\"\n\nMia's whole face lit up. \"A *table*. Finally, a structured season. This is the best day of my entire life.\"\n\n\"You said that about the rulebook too.\"\n\n\"I contain multitudes.\"\n\nOne more fold of fog, and they stood in a sunlit Paris office, **1904**, seven men from seven different European countries signing a single document. \"**FIFA**,\" Extra Time said. \"Football's world governing body — basically the organization that runs the sport globally, settles the rules, and eventually runs the thing you actually care about.\"\n\n\"The World Cup,\" Mia said instantly.\n\n\"Patience. We'll get there.\"\n\nBefore the fog pulled them away entirely, it paused over a dusty stone castle, where a workman prying up old wooden paneling let out a startled shout and held up something small, leathery, and round. \"**Stirling Castle**, in Scotland,\" Extra Time said. \"That little ball, hidden in the rafters, might date all the way back to the **1540s** — which, if it's right, makes it possibly the oldest football in the entire world.\"\n\n\"'Might' is doing a lot of work in that sentence,\" Mia said.\n\n\"History doesn't come with footnotes. You take the evidence you get.\"\n\nMia grinned at the little ball, impossibly old, impossibly plain. \"Still cooler than most of my group projects.\"",
+              "shout_line": null
+            },
+            {
+              "heading": "Offside: The Fifty-Year Foul",
+              "text": "The fog thinned into daylight and a roaring crowd again, except this time Mia noticed something different immediately: every single player on the pitch was a woman.\n\nA forward in heavy boots and a long skirt-cut kit cut inside two defenders like they weren't even there, then drilled a shot low into the corner. The crowd — and it was a *huge* crowd — went up like the roof had come off.\n\n\"Who is that?\" Mia asked, already impressed.\n\n\"**Lily Parr**,\" Extra Time said. \"One of the best players England had, full stop, gender aside. She played for a team called the **Dick, Kerr Ladies**, and they were massive — packing stadiums, outdrawing plenty of men's teams.\"\n\nMia watched Parr thread another pass through a gap that genuinely shouldn't have existed, and felt the particular joy of watching someone who was simply better than everyone else on the field. \"So women's football was huge. Why have I literally never heard of her?\"\n\nThe fog darkened, just slightly, a stuffy committee room replacing the stadium. Men in suits around a table, nodding at each other with the specific smugness of people about to ruin something good. \"**1921**,\" Extra Time said, voice flattening. \"The FA banned women's football outright. Told clubs not to let women play on their grounds at all.\"\n\nMia's jaw tightened. \"That's not a rule. That's just — mean. They were *good*. The crowds loved them. That makes zero sense.\"\n\n\"It doesn't,\" Extra Time agreed. \"It wasn't fair, and nobody serious pretends otherwise. It took **fifty years** for the FA to finally lift that ban, in **1971**.\"\n\n\"Fifty years,\" Mia repeated, doing the math out of sheer frustration. \"That's not a footnote, that's half a century of people being told no for no good reason.\"\n\nThe fog brightened again, color and noise flooding back — a packed modern stadium, banners in Chinese and English, a scoreboard Mia actually recognized the shape of. \"**1991**,\" Extra Time said. \"**China**. The first ever official **Women's World Cup**. The United States won it.\"\n\nMia watched the American players pile on top of each other at the final whistle, pure delight, no committee in sight telling them where they could or couldn't stand. She felt something settle in her chest, equal parts anger and relief. \"Took way too long. But they got there.\"\n\n\"They did,\" Extra Time said. \"Took the ball with them the whole way, too.\"",
+              "shout_line": null
+            },
+            {
+              "heading": "Full Time: Uruguay, 1930",
+              "text": "The fog dropped Mia into blazing sun and a stadium absolutely packed to the rafters, flags everywhere, a roar building before the match had even started.\n\n\"**1930**,\" Extra Time said. \"**Uruguay**. First ever official **World Cup**. Teams from across the globe, all fighting for one trophy.\"\n\nMia spotted a trim, serious-looking man near the sideline, clipboard in hand, practically vibrating with nervous energy. \"Who's that guy? He looks like he's about to pass out.\"\n\n\"**Jules Rimet**. President of FIFA. This whole tournament basically exists because he pushed for it, organized it, refused to let the idea die. First trophy was even named after him.\"\n\nMia watched the host team, Uruguay, tear down the field in the final, their fans screaming themselves hoarse in the stands. The ball cracked into the net, then again, Uruguay pulling ahead of Argentina goal after goal, the home crowd erupting louder each time.\n\n\"They're winning their own party,\" Mia said. \"Hosting it and taking the trophy. That's a flex.\"\n\n\"Home advantage has existed exactly as long as home crowds have had lungs,\" Extra Time said.\n\nThe final whistle blew, and Uruguay's players collapsed into a pile of limbs and noise, Rimet beaming on the sideline like a proud, exhausted parent. Mia found herself grinning without meaning to. \"One trophy, whole planet caring. That's actually kind of beautiful, in a completely chaotic way.\"\n\n\"Wait till you see what happens to the trophy itself,\" Extra Time said. \"It gets a little dramatic.\"\n\n\"How dramatic?\"\n\n\"Dog-related.\"\n\nMia blinked. \"I'm sorry, *dog-related*?\"\n\nThe fog was already pulling them forward before she could get an answer.",
+              "shout_line": null
+            },
+            {
+              "heading": "Stoppage Time: The Dog Who Saved the Cup",
+              "text": "They landed on a grey London street, drizzle in the air, a man in a trench coat jogging along the pavement with his dog on a leash, both of them looking entirely unbothered by anything historic happening nearby.\n\n\"**1966**,\" Extra Time said. \"England's hosting the World Cup. And a week before it starts, somebody steals the actual trophy. Right out from under a guarded display case.\"\n\nMia's eyebrows shot up. \"They stole the *World Cup*? The whole thing? Who just walks off with a trophy?\"\n\n\"Nobody ever fully explained it. Police searched everywhere. No trophy. Country in an uproar. And then—\" Extra Time gestured at the dog, who had just stopped dead on the pavement, nose buried in a hedge, tail going like a metronome.\n\nThe man yanked gently at the leash, confused, and then crouched down to see what his dog had found wrapped in newspaper under the bush. He unwrapped it, and even from a distance Mia could see it glinting gold.\n\n\"No way,\" Mia said. \"The dog found it. An actual dog just solved the biggest robbery in football history.\"\n\n\"His name was **Pickles**,\" Extra Time said, clearly delighted every time he got to say it. \"Found it safe and sound, a week after it went missing. Became a national hero overnight. Better police work than most actual police did that week.\"\n\nMia laughed so hard she had to sit down on the curb. \"Pickles. The dog's name was *Pickles*. I need that on a shirt.\"\n\nThe fog carried them straight into a roaring stadium, England in white, the crowd somehow louder than anything Mia had heard yet. The match compressed in front of her — chances, saves, a disputed goal that sent the whole stadium into chaos — until the final whistle blew and England's players dropped to their knees in the center circle.\n\n\"England hosted it,\" Extra Time said, \"and England won it. **1966**. Still their only World Cup title to date.\"\n\nMia watched the captain lift the very trophy Pickles had just sniffed out of a hedge, the whole stadium a wall of noise. \"A dog saves the trophy, and then the home team wins it with that exact cup. You could not write that. Nobody would believe you.\"\n\n\"History doesn't need you to believe it,\" Extra Time said. \"It just needs you to show up and watch.\"",
+              "shout_line": "PICKLES FOR PRESIDENT!"
+            },
+            {
+              "heading": "Final Whistle: The King of Three Cups",
+              "text": "The fog settled on a sun-scorched pitch in Mexico, heat shimmering off the grass, a stadium so loud Mia could feel it in the soles of her feet.\n\nA player in yellow drifted past two defenders like they were cones in a drill, no wasted movement anywhere, and curled a pass that landed perfectly on a teammate's foot.\n\n\"Okay, who *is* that,\" Mia said, already leaning forward.\n\n\"**Pele**,\" Extra Time said. \"Brazilian forward. By the time this tournament's over, he'll be the only player in history on three different World Cup-winning teams — **1958**, **1962**, and **1970**.\"\n\nMia's stats brain nearly short-circuited. \"Three. Across twelve years. That's not a career, that's a dynasty.\"\n\n\"Brazil's dynasty, really. They've won it **five times** total — '58, '62, '70, '94, and 2002. Nobody else is close.\"\n\nOn the sideline, a referee reached into his pocket and held up a small rectangle of color — yellow, then later, in another match entirely, red — toward a player who'd just committed a foul far too close to the box.\n\n\"That's new,\" Mia said. \"Cards. Why'd they need those?\"\n\n\"Ref named **Ken Aston** came up with them, inspired by traffic lights of all things — yellow means slow down, red means stop. Debuted right here, at this exact **1970** World Cup, because referees needed a way to warn or send off a player that worked in every language on Earth, no translation required.\"\n\nMia laughed. \"A universal 'you're in trouble' signal. Honestly genius. My ref last week could've used a better system than just yelling in English at me really fast.\"\n\n\"You'd know.\"\n\nShe shot him a look, and the fog chuckled — if fog could chuckle — and swept them forward one more time, to a quiet room where officials were unveiling a brand-new trophy, gleaming and strange, nothing like the one Mia had seen Rimet hand out in Uruguay.\n\n\"After Brazil's third title, in 1970, they got to keep the original trophy for good — that had been the deal all along,\" Extra Time said. \"So in **1974**, FIFA brought in a whole new one. The one teams still play for today.\"\n\nMia studied the new trophy's unfamiliar shape, thinking of the old one, stolen and sniffed out of a hedge by a dog named Pickles not even a decade earlier. \"So the cup basically got passed down like an heirloom, and then they just... made a new one when the old one retired.\"\n\n\"Pretty much. Football's always finding a way to keep the story going.\"",
+              "shout_line": null
+            },
+            {
+              "heading": "Injury Time: Back on the Bedroom Floor",
+              "text": "The fog folded one last time, gentler now, and Mia landed back on her bedroom carpet exactly where she'd started, laptop still glowing, her free-kick clip still frozen mid-air on the screen.\n\nThe ball sat on the shelf again, panels quiet, stitching plain, like it had never hummed a single note in its life.\n\nMia picked it up anyway, turning it slowly in her hands. Two thousand years of people kicking something roughly this shape, arguing about rules, banning it, writing it down properly, getting robbed of a trophy a dog eventually found in a hedge. All of it, somehow, led to her, on a Tuesday night, mad about one missed shot in the eighty-first minute.\n\n\"You good?\" Extra Time's voice had gone quiet, almost fond, fading along with the last of the fog.\n\n\"Yeah,\" Mia said, and meant it. \"I think I just needed the long version of how we all got here.\"\n\n\"Most people never ask for the long version.\"\n\n\"Most people don't have a talking ball.\"\n\nShe set it back on the shelf, carefully, the way you'd set down something that had just quietly rearranged your whole night. Then she pulled her laptop back toward her, found the clip of her missed free kick, and watched it one more time — not wincing this time, just watching, the way a defender in Glasgow in 1872 might have watched game film, if anyone back then had thought to invent it.\n\nShe closed the spreadsheet, closed the laptop, and lay back on the carpet, staring at the ceiling, already running the numbers on tomorrow's retake in her head.",
+              "shout_line": null
+            }
+          ],
+          "ending_line": "Tomorrow, she had a free kick to retake, and this time the numbers were on her side.",
+          "true_facts": [
+            {
+              "text": "**Cuju**, a game where you kick a ball without ever using your hands, was played in China **over 2,000 years ago** and may be soccer's oldest known ancestor.",
+              "fact_id": "f1"
+            },
+            {
+              "text": "**Mob football** in medieval England had whole villages chasing one ball with no field limits, until a king banned it in London in **1314**.",
+              "fact_id": "f3"
+            },
+            {
+              "text": "On **October 26, 1863**, a group of English clubs founded the **Football Association (the FA)** and agreed on one big rule: no carrying the ball with your hands.",
+              "fact_id": "f5"
+            },
+            {
+              "text": "**Ebenezer Cobb Morley** personally wrote football's first official rulebook, the **Laws of the Game**, in **1863**.",
+              "fact_id": "f6"
+            },
+            {
+              "text": "The **FA Cup**, first played starting in **1871**, is the oldest football competition still running anywhere in the world.",
+              "fact_id": "f7"
+            },
+            {
+              "text": "In **1888**, **William McGregor** organized the **Football League**, the world's first real league with a standings table.",
+              "fact_id": "f9"
+            },
+            {
+              "text": "**FIFA**, the organization that runs football worldwide, was founded in **Paris in 1904** by seven European countries.",
+              "fact_id": "f10"
+            },
+            {
+              "text": "The very first **World Cup** was held in **Uruguay in 1930**, and the host team beat Argentina in the final.",
+              "fact_id": "f12"
+            },
+            {
+              "text": "In **1966**, the World Cup trophy was stolen in London and found safe a week later, wrapped in newspaper, by a dog named **Pickles**.",
+              "fact_id": "f14"
+            },
+            {
+              "text": "**England** hosted and won the **1966 World Cup**, their only title to date.",
+              "fact_id": "f15"
+            },
+            {
+              "text": "Brazilian forward **Pele** is the only player ever on three World Cup-winning teams: **1958, 1962, and 1970**.",
+              "fact_id": "f17"
+            },
+            {
+              "text": "Referee **Ken Aston** invented yellow and red cards, inspired by traffic lights, first used at the **1970 World Cup**.",
+              "fact_id": "f18"
+            },
+            {
+              "text": "**Lily Parr** was a star player on England's **Dick, Kerr Ladies**, one of the country's most popular teams, before women's football was unfairly banned.",
+              "fact_id": "f21"
+            },
+            {
+              "text": "The first official **Women's World Cup** was held in **China in 1991**, and the **United States** won it.",
+              "fact_id": "f23"
+            }
+          ],
+          "bible_suggestions": {
+            "new_recurring": [
+              {
+                "name": "Extra Time",
+                "type": "character",
+                "rule": "A dry, fog-voiced guide who speaks through Mia's grandfather's old leather ball whenever its panels start to hum and rearrange into a date or number. Appears only when 'the real clock's run out,' leads a tour through true sports history…"
+              }
+            ],
+            "ending_summary": "Mia returned to her bedroom floor, set the now-quiet ball back on its shelf, and fell asleep rewatching her missed free kick without wincing, already planning tomorrow's retake."
+          },
+          "estimated_read_minutes": 10
+        },
+        "request": {
+          "children": [
+            {
+              "name": "Mia",
+              "age": 15,
+              "likes": [
+                "soccer",
+                "statistics"
+              ],
+              "notes": null
+            }
+          ],
+          "age_band": "D",
+          "tones": [
+            "exciting",
+            "funny"
+          ],
+          "length_minutes": 10,
+          "target_words": {
+            "min": 2800,
+            "max": 3800
+          },
+          "topic_label": "The history of soccer",
+          "topic_key": "history-of-soccer",
+          "avoid": [],
+          "care_notes": null,
+          "requested_characters": [],
+          "rewrite_reasons": []
+        }
+      },
+      "generation_cost_usd": 0.403444,
+      "judge_cost_usd": 0.142944,
+      "latency_to_first_chapter_ms": 222542,
+      "first_chapter_streamed": true,
+      "latency_total_ms": 662107,
+      "latency_by_step": {
+        "classify_input": {
+          "calls": 1,
+          "ms": 1455,
+          "output_tokens": 80
+        },
+        "write": {
+          "calls": 2,
+          "ms": 399753,
+          "output_tokens": 14856
+        },
+        "safety_review": {
+          "calls": 2,
+          "ms": 2818,
+          "output_tokens": 104
+        },
+        "quality": {
+          "calls": 2,
+          "ms": 21615,
+          "output_tokens": 4618
+        },
+        "rewrite": {
+          "calls": 1,
+          "ms": 224337,
+          "output_tokens": 18476
+        },
+        "bible_update": {
+          "calls": 3,
+          "ms": 14149,
+          "output_tokens": 1322
+        }
+      }
+    },
+    {
+      "scenario_id": "sleep-band-d-5min",
+      "why": "#48: band D, short. A teenager who stays up on a phone: why sleep matters, without a sermon.",
+      "band": "D",
+      "children": [
+        {
+          "name": "Noah",
+          "age": 13
+        }
+      ],
+      "topic_key": "why-we-sleep",
+      "length_minutes": 5,
+      "word_count": 1572,
+      "target_words": {
+        "min": 1400,
+        "max": 1900
+      },
+      "word_count_in_range": true,
+      "gate": {
+        "outcome": "pass",
+        "hard_violations": 0,
+        "hard_violation_rules": [],
+        "failures": [],
+        "scary_level": 1
+      },
+      "judge_ok": true,
+      "judge_error": null,
+      "scores_raw": {
+        "center": 5,
+        "craft": 4,
+        "facts": 4,
+        "age_fit": 5,
+        "continuity": 5,
+        "delight": 4
+      },
+      "overall_raw": 4.45,
+      "overall_final": 4.45,
+      "caps_applied": [
+        "none"
+      ],
+      "disqualified": false,
+      "cap_context": {
+        "guardrailBreach": false,
+        "inventedFact": false,
+        "wordCountOutOfRange": false,
+        "narrativeWordCount": 1572,
+        "target": {
+          "min": 1400,
+          "max": 1900
+        },
+        "factSourcing": "checked",
+        "notes": []
+      },
+      "best_moment": "That record isn't a flex. It's a warning label with a number on it.",
+      "worst_moment": "\"Even old theories get outdated,\" Noah said.",
+      "continuity_reference": null,
+      "scary_level_check": null,
+      "editor_notes": [
+        "Give the Boss level a real beat. Noah could get a choice or challenge that ties to his phone habit, so he earns the ending rather than watching a bookshelf dissolve.",
+        "Vary Noah's reactions and cut the repeated 'So it's basically…' formula. Also drop the standalone 'HARD PASS.' line, which reads young and redundant for a 13-year-old.",
+        "Turn more of Circa's lectures into hands-on moments, especially the Level 7 animal tour. Fix the giraffe 'folding its long legs' versus 'standing up' contradiction and the 'last corridor' slip."
+      ],
+      "first_draft": {
+        "passed": false,
+        "failures": [],
+        "reasons": [],
+        "mended_rules": [],
+        "story": {
+          "title": "Noah and the Midnight Respawn",
+          "subtitle": "Eight levels through the strange, true science of sleep, cleared one eye-twitch at a time.",
+          "chapters": [
+            {
+              "heading": "Level 1: Server Maintenance at 2:14 A.M.",
+              "text": "Noah was three rounds into a losing streak, controller warm in his hands, when his phone buzzed on its own. Nobody had texted him.\n\nThe screen he'd never opened — some sleep app his mom installed and he'd muted on day one — lit up with a soft green moon. Then the moon blinked. Then it spoke, in a voice like an old game console booting up.\n\n\"USER DETECTED: AWAKE. AGAIN. LOADING OVERDUE BRIEFING.\"\n\nNoah paused his match, which took actual willpower. \"Did my phone just load a cutscene?\"\n\nThe moon — it called itself **Circa** — unfolded into a full black-and-green terminal screen, text scrolling like a loading bar. \"You have ignored me for one hundred and forty-one nights straight,\" it said. \"Tonight, you walk the tutorial.\"\n\n\"Or,\" Noah said, \"I finish my game.\"\n\n\"Your game will be here,\" Circa said. \"You, statistically, will not be awake much longer either way. Your choice which you remember.\"\n\nNoah looked at his dropping battery icon, then at the glowing moon. Curiosity won, the way it always did with him. He tapped the screen.\n\nThe floor of his bedroom dissolved into static, and the static turned into a hallway built out of loading bars.",
+              "shout_line": null
+            },
+            {
+              "heading": "Level 2: The Eye-Twitch Replay",
+              "text": "The hallway spat Noah into a dusty room that smelled like old cathode ray tubes. A projector flickered a black-and-white film on the wall: a sleeping boy, his eyelids twitching like a controller stick drifting on its own.\n\n\"Why's his face buffering?\" Noah asked.\n\n\"In **1953**, two researchers named **Eugene Aserinsky and Nathaniel Kleitman** watched exactly that,\" Circa said. \"A sleeping boy's eyes flicking back and forth under closed lids. They called it **REM sleep** — rapid eye movement.\"\n\nNoah leaned in, rewound the projector himself, and watched the flicker loop three times. \"His brain's still running something. Like it never actually quit the game.\"\n\n\"Correct,\" Circa said. \"During REM, the brain gets almost as busy as when you're awake. But your muscles go limp, so you physically can't act out whatever you're dreaming. Built-in anti-cheat, basically.\"\n\nNoah snorted. \"So my brain's still online, my body's just got no controller plugged in.\"\n\n\"Kleitman spent his whole career watching people sleep,\" Circa added. \"People still call him the father of modern sleep research.\"\n\n\"Respect,\" Noah said. \"One build, his whole career. I can't even stick with one game mode for a week.\"",
+              "shout_line": null
+            },
+            {
+              "heading": "Level 3: The Ninety-Minute Respawn Timer",
+              "text": "The next room held a glowing graph, a wave rolling up and down like a heart monitor doing bicep curls. Noah traced one full loop with his finger, then another.\n\n\"This whole wave,\" Circa said, \"repeats roughly every **ninety minutes**, all night long. You roll between quiet, deep non-REM sleep and that busy REM stage you just saw.\"\n\nNoah counted the loops on the readout. \"Four, five, six times a night? That's respawning on a timer whether you want to or not.\"\n\n\"Close enough,\" Circa said. \"And the deepest dip in that wave — the real quiet stuff — is where your body dumps the most **growth hormone**. The stuff that actually makes a growing kid grow.\"\n\nNoah glanced down at himself, unimpressed by his own height compared to half his grade. \"So skipping sleep is basically skipping XP I could've used.\"\n\n\"You said it, not me,\" Circa said.\n\nNoah pressed his palm flat against the glowing wave anyway, half a dare. It pulsed once under his hand, like it recognized the input, and the loop kept rolling on without him.",
+              "shout_line": null
+            },
+            {
+              "heading": "Level 4: The Clock Behind Your Eyes",
+              "text": "A narrow door led into a control room no bigger than a closet, cables running everywhere like the mess behind Noah's TV stand. One ticking light sat dead center, steady as a metronome.\n\n\"That,\" Circa said, \"stands in for your **suprachiasmatic nucleus** — a pinhead of brain tissue sitting right where your eye nerves cross. It's your body's master clock.\"\n\nNoah tapped the light. It ticked faster, almost nervous. \"Master clock for what?\"\n\n\"For knowing when to feel sleepy and when to feel awake. Scientists call that your **circadian rhythm** — from Latin words that just mean 'about a day.'\"\n\n\"So it's basically a background process,\" Noah said. \"Running whether I check it or not. Like my download queue.\"\n\n\"In **2017**, three scientists — **Jeffrey Hall, Michael Rosbash, and Michael Young** — won the **Nobel Prize** for finding the actual genes that keep that clock ticking.\"\n\nNoah studied the tangle of wires, then rerouted one on instinct, the way he'd untangle a controller cord without thinking. The ticking light steadied into one calm, even rhythm.\n\n\"Nice patch,\" Circa said. \"Most people never even open this menu.\"",
+              "shout_line": null
+            },
+            {
+              "heading": "Level 5: The Night-Mode Vault",
+              "text": "Down another corridor sat a vault door, a single vial glowing faint blue inside the glass. Noah pressed his face close.\n\n\"That's **melatonin**,\" Circa said. \"The hormone that tells your body it's bedtime. A scientist named **Aaron Lerner** and his team first isolated it in **1958**, pulling it out of a tiny gland in animal brains.\"\n\n\"So it's basically the game's night filter,\" Noah said. \"Flips on, everything dims.\"\n\n\"Basically,\" Circa said.\n\nThe vault door slid open on its own, and a soft rinse of light swept the whole room, clearing away static Noah hadn't even noticed was there.\n\n\"What was that?\"\n\n\"Your brain runs a nightly rinse cycle while you sleep,\" Circa said. \"It flushes out waste, like clearing a cache. That same process is part of how your brain files today into long-term memory — that guitar chord you finally nailed yesterday, for instance.\"\n\nNoah thought of the progression he'd been grinding on for a week, the one that had finally clicked that afternoon. \"So sleep is basically how I save my progress.\"\n\n\"Exactly,\" Circa said. \"No save, no keep.\"",
+              "shout_line": null
+            },
+            {
+              "heading": "Level 6: The Eleven-Day High Score",
+              "text": "The next room was a leaderboard, screens stacked floor to ceiling. At the very top, one entry flashed: **RANDY GARDNER — 264 HOURS**.\n\n\"Whoa,\" Noah said. \"Who stayed awake for eleven straight days?\"\n\n\"A **17-year-old** named **Randy Gardner**, in **San Diego**, back in **1964**, for a science-fair project,\" Circa said. \"Still one of the longest stretches without sleep anybody's ever carefully documented.\"\n\nNoah's thumb hovered over the leaderboard, a familiar itch rising — the same one that kept him up past 2 A.M. most nights. \"Could I beat that?\"\n\n\"Doctors genuinely do not recommend it,\" Circa said, flat as a patch note. \"Going without sleep wrecks your mood, your focus, your memory — fast. That record isn't a flex. It's a warning label with a number on it.\"\n\nNoah looked at the glowing score a second longer, then stepped back from the board on his own. \"Yeah. Hard pass.\"\n\n\"Smart call,\" Circa said. \"You'll spend roughly a third of your whole life asleep anyway. Might as well stop fighting it.\"\n\nNoah smirked. \"A third of my life, defending against a clock I can't even see. Rude.\"",
+              "shout_line": "HARD PASS."
+            },
+            {
+              "heading": "Level 7: The Animal Server Room",
+              "text": "The last corridor opened into a room full of glass tanks, each holding a flickering hologram animal.\n\nA dolphin circled one tank, one eye open the whole time. \"Dolphins, and some seals, sleep with half their brain at a time,\" Circa said. \"One side stays awake to watch for danger, or just keep swimming.\"\n\nNext tank: a giraffe, folding its long legs for a nap that lasted barely a blink. \"Giraffes barely sleep at all — sometimes under two hours a day, in short naps, standing up.\"\n\nNoah pointed at a tiny bat hanging upside down, perfectly still. \"And this guy?\"\n\n\"Some small bats sleep up to twenty hours a day. Sleepiest mammals around, easily.\"\n\nIn the last tank, a hologram newborn twitched constantly, eyes darting. \"Newborn babies sleep **fourteen to seventeen hours a day**, almost half of it in REM sleep,\" Circa said.\n\nNoah noticed one hologram glitching, wandering out of its tank with its eyes shut tight. \"Is that one broken?\"\n\n\"Nope. Sleepwalking,\" Circa said. \"It happens during deep non-REM sleep, not during dreaming. Sleepwalkers usually aren't acting out anything — they're just wandering on autopilot.\"\n\nNoah guided the glitching hologram gently back toward its tank. \"Even fruit flies do something like this,\" Circa added. \"Sleep's been around since basically the start of complicated life.\"\n\n\"Huge server room,\" Noah said. \"Everybody's running the same patch, apparently.\"",
+              "shout_line": null
+            },
+            {
+              "heading": "Level 8 (Boss): The Last Loading Screen",
+              "text": "One door remained, marked IDEAS. Behind it stood a dusty shelf holding a single glowing title: **The Interpretation of Dreams**.\n\n\"**1899**,\" Circa said. \"**Sigmund Freud** wrote that, arguing dreams were secret wishes in disguise. Good story. Mostly not how scientists actually think it works today.\"\n\n\"Even old theories get outdated,\" Noah said.\n\n\"Most do,\" Circa said. \"What doesn't get outdated: skip sleep for months straight, and real research links it to worse mood, worse focus, a weaker immune system. Chronic short sleep isn't a cheat code. It's a debuff you equipped yourself.\"\n\nThe shelf dissolved, and the static returned, pulling Noah backward through the hallway of loading bars — past the vault, the leaderboard, the clock room — until his bedroom carpet solidified under his socks again.\n\nHis phone sat face-up on the floor, battery at two percent, the little green moon fading back into an icon. One line of text sat on the lock screen: **RESPAWN SCHEDULED — SEE YOU TOMORROW NIGHT.**\n\nNoah picked it up, plugged it into the charger, and — for the first time in one hundred and forty-two nights — set it face-down on the nightstand instead of under his pillow.",
+              "shout_line": null
+            }
+          ],
+          "ending_line": "Tomorrow there'd be homework, a half-finished playlist, and a whole new level to beat — but tonight, Noah actually slept.",
+          "true_facts": [
+            {
+              "text": "In **1953**, **Eugene Aserinsky and Nathaniel Kleitman** discovered **REM sleep** by watching a sleeping boy's eyes twitch under his closed lids.",
+              "fact_id": "f1"
+            },
+            {
+              "text": "During REM sleep your brain gets almost as busy as when you're awake, but your muscles go limp so you can't act out your dreams.",
+              "fact_id": "f3"
+            },
+            {
+              "text": "A night's sleep rolls through repeating loops about **ninety minutes** long, back and forth between quiet sleep and busy, dreaming sleep.",
+              "fact_id": "f2"
+            },
+            {
+              "text": "The deepest, quietest stage of sleep is when the body releases the most **growth hormone** — one reason growing kids need extra sleep.",
+              "fact_id": "f4"
+            },
+            {
+              "text": "A tiny part of the brain called the **suprachiasmatic nucleus**, right where your eye nerves cross, works as your body's master clock.",
+              "fact_id": "f5"
+            },
+            {
+              "text": "In **2017**, **Jeffrey Hall, Michael Rosbash, and Michael Young** won the **Nobel Prize** for finding the genes that keep that body clock ticking.",
+              "fact_id": "f7"
+            },
+            {
+              "text": "The sleepy-time hormone **melatonin** was first isolated in **1958** by scientist **Aaron Lerner**'s team, taken from a tiny gland in animal brains.",
+              "fact_id": "f8"
+            },
+            {
+              "text": "Sleep helps your brain file the day's experiences into long-term memory, which is why good sleep helps you remember what you practiced.",
+              "fact_id": "f9"
+            },
+            {
+              "text": "The brain runs a nightly rinse cycle during sleep that flushes out waste, like clearing a cache.",
+              "fact_id": "f10"
+            },
+            {
+              "text": "In **1964**, a **17-year-old** named **Randy Gardner** stayed awake for about **eleven days** for a science-fair project — one of the longest stretches ever carefully documented.",
+              "fact_id": "f11"
+            },
+            {
+              "text": "Doctors don't recommend anyone try to beat a sleep record like that one, since going without sleep quickly wrecks mood, focus, and memory.",
+              "fact_id": "f12"
+            },
+            {
+              "text": "Dolphins, and some seals, sleep with only half their brain at a time, keeping one eye open to watch for danger or keep swimming.",
+              "fact_id": "f14"
+            },
+            {
+              "text": "Giraffes barely sleep at all, sometimes getting under two hours a day in brief standing naps.",
+              "fact_id": "f15"
+            },
+            {
+              "text": "Some small bats sleep up to twenty hours a day, making them some of the sleepiest mammals known.",
+              "fact_id": "f16"
+            }
+          ],
+          "bible_suggestions": {
+            "new_recurring": [
+              {
+                "name": "Circa",
+                "type": "device",
+                "rule": "A green-moon sleep app icon that unfolds into an old-console-style terminal voice. Speaks in dry, gamer-adjacent deadpan, calls the child out on staying up late, and opens a dissolving hallway of loading bars into that night's topic.…"
+              }
+            ],
+            "ending_summary": "Noah plugs his phone in and sets it face-down on the nightstand for the first time in over a hundred nights, the lock screen reading RESPAWN SCHEDULED — SEE YOU TOMORROW NIGHT."
+          },
+          "estimated_read_minutes": 6
+        },
+        "request": {
+          "children": [
+            {
+              "name": "Noah",
+              "age": 13,
+              "likes": [
+                "gaming",
+                "music"
+              ],
+              "notes": "stays up late on his phone"
+            }
+          ],
+          "age_band": "D",
+          "tones": [
+            "funny",
+            "calm"
+          ],
+          "length_minutes": 5,
+          "target_words": {
+            "min": 1400,
+            "max": 1900
+          },
+          "topic_label": "Why We Sleep",
+          "topic_key": "why-we-sleep",
+          "avoid": [],
+          "care_notes": null,
+          "requested_characters": [],
+          "rewrite_reasons": []
+        }
+      },
+      "generation_cost_usd": 0.156625,
+      "judge_cost_usd": 0.085091,
+      "latency_to_first_chapter_ms": 81942,
+      "first_chapter_streamed": true,
+      "latency_total_ms": 225046,
+      "latency_by_step": {
+        "classify_input": {
+          "calls": 1,
+          "ms": 1358,
+          "output_tokens": 80
+        },
+        "write": {
+          "calls": 2,
+          "ms": 210420,
+          "output_tokens": 12462
+        },
+        "safety_review": {
+          "calls": 1,
+          "ms": 1369,
+          "output_tokens": 52
+        },
+        "quality": {
+          "calls": 1,
+          "ms": 7337,
+          "output_tokens": 1402
+        },
+        "bible_update": {
+          "calls": 1,
+          "ms": 5250,
+          "output_tokens": 446
+        }
+      }
+    }
+  ],
+  "summary": {
+    "scenarios": 6,
+    "scored": 6,
+    "judge_errors": 0,
+    "not_run": [],
+    "mean_overall": 3.54,
+    "min_overall": 1,
+    "worst_scenario": "space-race-band-d",
+    "disqualified": 1,
+    "word_count_failures": [
+      "lego-band-c-rivals"
+    ],
+    "continuity_failures": [],
+    "scary_level_failures": [],
+    "criterion_means": {
+      "center": 4.8,
+      "craft": 3.8,
+      "facts": 3.6,
+      "age_fit": 4,
+      "continuity": 4.4,
+      "delight": 3.8
+    },
+    "first_draft": {
+      "passed": 0,
+      "of": 5
+    },
+    "passed": false,
+    "failures": [
+      "mean overall 3.54 < 4",
+      "lowest scenario 1.00 (space-race-band-d) < 3.5",
+      "1 disqualified story(s)",
+      "word count out of range: lego-band-c-rivals"
+    ],
+    "latency": {
+      "first_chapter": {
+        "n": 5,
+        "median_ms": 108754,
+        "p95_ms": 200760
+      },
+      "total": {
+        "n": 5,
+        "median_ms": 513708,
+        "p95_ms": 666245
+      },
+      "by_step": {
+        "classify_input": {
+          "calls": 6,
+          "ms": 8919,
+          "output_tokens": 553
+        },
+        "write": {
+          "calls": 12,
+          "ms": 1613435,
+          "output_tokens": 57276
+        },
+        "repair": {
+          "calls": 1,
+          "ms": 24046,
+          "output_tokens": 2444
+        },
+        "rewrite": {
+          "calls": 4,
+          "ms": 890817,
+          "output_tokens": 80436
+        },
+        "safety_review": {
+          "calls": 10,
+          "ms": 19292,
+          "output_tokens": 923
+        },
+        "quality": {
+          "calls": 10,
+          "ms": 97102,
+          "output_tokens": 18307
+        },
+        "bible_update": {
+          "calls": 9,
+          "ms": 52738,
+          "output_tokens": 5215
+        },
+        "mend": {
+          "calls": 1,
+          "ms": 1293,
+          "output_tokens": 121
+        }
+      },
+      "no_streamed_chapter": []
+    }
+  },
+  "cost": {
+    "generation_usd": 1.742491,
+    "judge_usd": 2.264025,
+    "total_usd": 4.006516,
+    "log_rows": 53
+  },
+  "notes": [
+    "Judge payloads are checked blind before every call (lib/eval/blind.ts); the judge never saw a model id.",
+    "The weighted overall and the automatic caps are recomputed in our code, not taken from the judge (DECISIONS.md #11/#12).",
+    "Some scenarios have no F7 gate result, so guardrail-breach detection rested on the judge alone."
+  ]
+}

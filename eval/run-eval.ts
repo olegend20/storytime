@@ -1,6 +1,7 @@
 #!/usr/bin/env tsx
 import { MeteredLogSink } from '@/lib/ai'
 import { estimateEvalCost, formatEstimate } from '@/lib/eval/estimate'
+import { parseForceDropAfterChapters } from '@/lib/eval/pipeline'
 import { compareEvalRuns, formatEval, runEval, sameScenarios, type EvalResult } from '@/lib/eval/harness'
 import { evalScenarios, selectScenarios } from '@/lib/eval/scenarios'
 import { runCalibration, formatCalibration, type CalibrationResult } from '@/lib/eval/calibration'
@@ -30,6 +31,8 @@ import { readyFactPackTopics } from '@/lib/topics/factpack'
  *   --budget=N           approve up to $N for this run (also EVAL_BUDGET_APPROVED_USD)
  *   --calibration=PATH   reuse a calibration result that passed today with the same judge
  *                        prompt (≈ $1.70 saved); otherwise calibration runs first
+ *   --force-drop-after=N cut every first write once N chapters are whole, as the gateway does,
+ *                        and measure the continued stories (issue #74; also EVAL_FORCE_DROP_AFTER_CHAPTERS)
  */
 
 const DEFAULT_BUDGET_CEILING_USD = 20
@@ -60,7 +63,22 @@ async function main(): Promise<void> {
   const live = process.env.LIVE_API === '1' || process.env.LIVE_API === 'true'
   const scenarios = selectScenarios(evalScenarios(), scenarioSpec)
 
-  const estimate = estimateEvalCost({ scenarios, builtTopics: await readyFactPackTopics() })
+  // Issue #74: cut every first write after N whole chapters, to measure continued stories.
+  const forceDrop = value('force-drop-after')
+  if (forceDrop !== undefined) process.env.EVAL_FORCE_DROP_AFTER_CHAPTERS = forceDrop
+  let forceDropAfterChapters: number | undefined
+  try {
+    forceDropAfterChapters = parseForceDropAfterChapters(process.env.EVAL_FORCE_DROP_AFTER_CHAPTERS)
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : String(err))
+    process.exitCode = 1
+    return
+  }
+  const estimate = estimateEvalCost({
+    scenarios,
+    builtTopics: await readyFactPackTopics(),
+    ...(forceDropAfterChapters !== undefined ? { forceDropAfterChapters } : {}),
+  })
   console.log(formatEstimate(`pnpm eval (${scenarios.length} scenarios)`, estimate))
   console.log('')
 

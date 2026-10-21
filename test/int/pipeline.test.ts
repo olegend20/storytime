@@ -79,6 +79,7 @@ import {
   type QuotaService,
 } from '@/lib/generate'
 import { MemoryLogSink } from '@/lib/ai'
+import { initialStreamState, streamReducer } from '@/lib/client/generate'
 import { getOrCreateSeries, loadBible, reloadBible, writeBible } from '@/lib/bible'
 import {
   DAILY_STORY_LIMIT,
@@ -102,7 +103,7 @@ import {
   stubStory,
   STUB_PASSING_REVIEW,
 } from '../helpers/fixtures'
-import { buildPrompt } from '@/lib/generate/prompt'
+import { buildContinuationPrompt, buildPrompt, type StorySoFar } from '@/lib/generate/prompt'
 import { buildQualityReviewMessage, measuredForReview, QUALITY_REVIEW_THINKING_MAX_TOKENS } from '@/lib/quality/review'
 import { AFTER_WRITE_MS, MAX_DROP_RETRIES, RETRY_MIN_MS, WRITER_MAX_TOKENS } from '@/lib/generate/pipeline'
 import { MEND_MAX_TOKENS, cutViolations, mendUserMessage, passagesFor } from '@/lib/generate/mend'
@@ -926,7 +927,6 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
 
   describe('issue #52: a first write cut off partway', () => {
     const META_ONLY = '{"title":"The Lost Signal","subtitle":null,"chapters":['
-    const WITH_CHAPTER = META_ONLY + '{"heading":"Chapter 1: Static","text":"Once upon a'
     afterEach(() => {
       drops.queue.length = 0
       drops.signals.length = 0
@@ -954,19 +954,8 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       if (result.bibleUpdate) await result.bibleUpdate
     })
 
-    it('VT-W3: dropped after a chapter was sent, it is not written again - a clean error', async () => {
-      const run = await prepared()
-      stubResponsesFor(run)
-      drops.queue.push({ partial: WITH_CHAPTER })
-      const quota = new RecordingQuota()
-      const { events, result } = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota, now: () => FIXED_NOW })
-      expect(result.status).toBe('failed')
-      expect(result.writeCalls).toBe(1)
-      expect(drops.queue).toHaveLength(0)
-      expect(events.some((e) => e.type === 'chapter_start')).toBe(true)
-      expect(events.at(-1)).toMatchObject({ type: 'error', code: 'generation_failed', quota_consumed: false })
-      expect(quota.calls).toEqual([])
-    })
+    // VT-W3 (a drop after a chapter was sent fails cleanly) is superseded by #74 below: the
+    // rest of the story is written instead.
 
     it('VT-W4: with less than RETRY_MIN_MS before the deadline, no second write starts', async () => {
       const run = await prepared()
@@ -1014,6 +1003,250 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       expect(result.status).toBe('failed')
       expect(result.writeCalls).toBe(2)
       expect(events.at(-1)).toMatchObject({ type: 'error', code: 'generation_failed', quota_consumed: false })
+    })
+  })
+
+  describe('issue #74: a write dropped after chapters were shown is finished, not lost', () => {
+    afterEach(() => {
+      drops.queue.length = 0
+      drops.signals.length = 0
+      vi.restoreAllMocks()
+    })
+
+    /** The story's JSON up to `whole` complete chapters, then `half` of the next chapter's text. */
+    function cutAfter(story: StoryOutput, whole: number, half = ''): string {
+      const head = JSON.stringify({ title: story.title, subtitle: story.subtitle, chapters: story.chapters.slice(0, whole) })
+      const open = head.slice(0, -2) // drop the closing "]}"
+      if (half === '' && whole === 0) return open
+      const next = story.chapters[whole]!
+      const cut = `{"heading":${JSON.stringify(next.heading)},"text":${JSON.stringify(half).slice(0, -1)}`
+      return half === '' ? open : `${open}${whole > 0 ? ',' : ''}${cut}`
+    }
+
+    /** What the parent had whole when the write dropped. */
+    function soFar(story: StoryOutput, whole: number, chaptersComplete = false): StorySoFar {
+      return {
+        title: story.title,
+        subtitle: story.subtitle,
+        chapters: story.chapters.slice(0, whole).map((c) => ({ heading: c.heading, text: c.text, shout_line: c.shout_line })),
+        chaptersComplete,
+      }
+    }
+
+    /** The writer's reply to the continuation: by default the rest of the same story. */
+    function stubContinuation(
+      run: PreparedGeneration,
+      story: StoryOutput,
+      whole: number,
+      opts: { chaptersComplete?: boolean; reply?: StoryOutput['chapters'] } = {},
+    ): void {
+      const rest = buildContinuationPrompt({
+        request: run.request, bible: BIBLE_AT_START, factPack: FIXTURE_FACT_PACK, soFar: soFar(story, whole, opts.chaptersComplete),
+      })
+      stubFixture(
+        'write',
+        streamFixtureKey({
+          model: modelForRole('writer'),
+          system: rest.system,
+          messages: rest.messages,
+          maxTokens: WRITER_MAX_TOKENS,
+          thinking: 'adaptive',
+          outputFormat: STORY_OUTPUT_FORMAT,
+        }),
+        JSON.stringify({ ...story, chapters: opts.reply ?? story.chapters.slice(whole) }),
+        { input_tokens: 1_900, cache_read_tokens: 4_200, output_tokens: 3_900 },
+      )
+    }
+
+    it('VT-RS1: dropped halfway through chapter 2, the rest is written and the whole story saved', async () => {
+      const run = await prepared()
+      const { story } = stubResponsesFor(run)
+      stubContinuation(run, story, 1)
+      drops.queue.push({ partial: cutAfter(story, 1, 'Half of chapter two, then the line') })
+      const sink = new MemoryLogSink()
+      const quota = new RecordingQuota()
+      const { events, result } = await collect(run, { db: family.db, sink, quota, now: () => FIXED_NOW })
+
+      expect(result.status).toBe('ready')
+      expect(result.writeCalls).toBe(2)
+      expect(result.story).toEqual(story)
+      // One title: the story was continued, never started over.
+      expect(events.filter((e) => e.type === 'meta')).toHaveLength(1)
+      expect(sink.rows.filter((r) => r.purpose === 'write')).toHaveLength(1)
+      expect(quota.calls).toEqual(['consumeQuota'])
+      expect(events.at(-1)?.type).toBe('done')
+      if (result.bibleUpdate) await result.bibleUpdate
+    })
+
+    it('VT-RS2: the half chapter is cleared on the page, then written again - never duplicated', async () => {
+      const run = await prepared()
+      const { story } = stubResponsesFor(run)
+      stubContinuation(run, story, 1)
+      drops.queue.push({ partial: cutAfter(story, 1, 'Half of chapter two') })
+      const { events, result } = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
+      expect(result.status).toBe('ready')
+
+      const starts = events.filter((e): e is Extract<SseEvent, { type: 'chapter_start' }> => e.type === 'chapter_start')
+      expect(starts.map((e) => [e.index, e.heading])).toEqual([
+        [0, story.chapters[0]!.heading],
+        [1, story.chapters[1]!.heading],
+        [1, ''], // cleared: the page shows "Still writing…"
+        ...story.chapters.slice(1).map((c, i) => [i + 1, c.heading]),
+      ])
+      // Played through the page's own reducer, every chapter reads exactly as saved.
+      const page = events.reduce((state, event) => streamReducer(state, { kind: 'event', event }), initialStreamState)
+      const streamed = events
+        .slice(0, events.findIndex((e) => e.type === 'done'))
+        .reduce((state, event) => streamReducer(state, { kind: 'event', event }), initialStreamState)
+      expect(streamed.chapters.map((c) => c.text)).toEqual(story.chapters.map((c) => c.text))
+      expect(page.phase).toBe('done')
+      if (result.bibleUpdate) await result.bibleUpdate
+    })
+
+    it('VT-RS3: a continuation that drops is continued again, up to MAX_DROP_RETRIES drops in all', async () => {
+      const run = await prepared()
+      const { story } = stubResponsesFor(run)
+      stubContinuation(run, story, 1)
+      drops.queue.push({ partial: cutAfter(story, 1, 'Half') }, { partial: '' })
+      const ok = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
+      expect(ok.result.status).toBe('ready')
+      expect(ok.result.writeCalls).toBe(3)
+      expect(ok.result.story).toEqual(story)
+      if (ok.result.bibleUpdate) await ok.result.bibleUpdate
+
+      const again = await prepared()
+      stubResponsesFor(again)
+      drops.queue.push({ partial: cutAfter(story, 1, 'Half') }, ...Array.from({ length: MAX_DROP_RETRIES }, () => ({ partial: '' })))
+      const lost = await collect(again, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
+      expect(lost.result.status).toBe('failed')
+      expect(lost.result.writeCalls).toBe(MAX_DROP_RETRIES + 1)
+      expect(lost.events.at(-1)).toMatchObject({ type: 'error', code: 'generation_failed', quota_consumed: false })
+    })
+
+    it('VT-RS4: without RETRY_MIN_MS left, nothing more is written - a clean error, no partial save', async () => {
+      const run = await prepared()
+      stubResponsesFor(run)
+      drops.queue.push({ partial: cutAfter(stubStory(), 1, 'Half') })
+      const quota = new RecordingQuota()
+      const { events, result } = await collect(run, {
+        db: family.db, sink: new MemoryLogSink(), quota, now: () => FIXED_NOW,
+        deadlineMs: Date.now() + RETRY_MIN_MS - 1_000,
+      })
+      expect(result.status).toBe('failed')
+      expect(result.writeCalls).toBe(1)
+      expect(result.story).toBeNull()
+      expect(quota.calls).toEqual([])
+      expect(events.at(-1)).toMatchObject({ type: 'error', code: 'generation_failed', quota_consumed: false })
+    })
+
+    it('VT-RS5: dropped before any chapter, it is still written again from the start (#72), not continued', async () => {
+      const run = await prepared()
+      const { story } = stubResponsesFor(run)
+      drops.queue.push({ partial: cutAfter(story, 0) })
+      const { events, result } = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
+      expect(result.status).toBe('ready')
+      expect(result.writeCalls).toBe(2)
+      expect(events.filter((e) => e.type === 'chapter_start' && e.heading === '')).toHaveLength(0)
+      if (result.bibleUpdate) await result.bibleUpdate
+    })
+
+    it('VT-RS5: dropped while chapter 1 is half shown, the whole story is continued from chapter 1', async () => {
+      const run = await prepared()
+      const { story } = stubResponsesFor(run)
+      stubContinuation(run, story, 0)
+      drops.queue.push({ partial: cutAfter(story, 0, 'Half of the first') })
+      const { events, result } = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
+      expect(result.status).toBe('ready')
+      expect(result.story).toEqual(story)
+      expect(events.filter((e) => e.type === 'meta')).toHaveLength(1)
+      if (result.bibleUpdate) await result.bibleUpdate
+    })
+
+    it('VT-RS6: the continuation holds only this story\'s whole chapters - not the half one, never another story', async () => {
+      const run = await prepared()
+      const { story } = stubResponsesFor(run)
+      stubContinuation(run, story, 2)
+      drops.queue.push({ partial: cutAfter(story, 2, 'UNFINISHED-HALF-CHAPTER') })
+      const { result } = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
+      expect(result.status).toBe('ready')
+      // Matching the recorded continuation key proves the exact prompt: whole chapters 1-2 only.
+      const rest = buildContinuationPrompt({ request: run.request, bible: BIBLE_AT_START, factPack: FIXTURE_FACT_PACK, soFar: soFar(story, 2) })
+      const user = JSON.stringify(rest.messages)
+      expect(user).not.toContain('UNFINISHED-HALF-CHAPTER')
+      expect(user).not.toContain(story.chapters[2]!.text.slice(0, 40))
+      if (result.bibleUpdate) await result.bibleUpdate
+    })
+
+    it('VT-RS8: cut after the last chapter, only the ending is asked for - no "Still writing…", no extra chapter', async () => {
+      const run = await prepared()
+      const { story } = stubResponsesFor(run)
+      // Even a reply that adds a chapter is held to the chapters the page already has.
+      stubContinuation(run, story, story.chapters.length, { chaptersComplete: true, reply: [story.chapters[0]!] })
+      const whole = JSON.stringify({ title: story.title, subtitle: story.subtitle, chapters: story.chapters })
+      drops.queue.push({ partial: `${whole.slice(0, -1)},"ending_line":"And so` })
+      const { events, result } = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
+      expect(result.status).toBe('ready')
+      expect(result.story).toEqual(story)
+      expect(events.filter((e) => e.type === 'chapter_start' && e.heading === '')).toHaveLength(0)
+      expect(events.filter((e) => e.type === 'chapter_start')).toHaveLength(story.chapters.length)
+      if (result.bibleUpdate) await result.bibleUpdate
+    })
+
+    it('VT-RS8: an ending-only continuation that drops is continued as ending-only again', async () => {
+      const run = await prepared()
+      const { story } = stubResponsesFor(run)
+      stubContinuation(run, story, story.chapters.length, { chaptersComplete: true })
+      const whole = JSON.stringify({ title: story.title, subtitle: story.subtitle, chapters: story.chapters })
+      // The second drop comes before the continuation's own `"chapters":[]` closes.
+      drops.queue.push({ partial: `${whole.slice(0, -1)},"ending_line":"And so` }, { partial: '' })
+      const { events, result } = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
+      expect(result.status).toBe('ready')
+      expect(result.writeCalls).toBe(3)
+      expect(result.story).toEqual(story)
+      expect(events.filter((e) => e.type === 'chapter_start' && e.heading === '')).toHaveLength(0)
+      expect(events.filter((e) => e.type === 'chapter_start')).toHaveLength(story.chapters.length)
+      if (result.bibleUpdate) await result.bibleUpdate
+    })
+
+    it('VT-RS9: a continuation that repeats chapters already shown is neither shown nor saved twice', async () => {
+      const run = await prepared()
+      const { story } = stubResponsesFor(run)
+      // The writer starts the story over instead of continuing it.
+      stubContinuation(run, story, 2, { reply: story.chapters })
+      drops.queue.push({ partial: cutAfter(story, 2, 'Half') })
+      const { events, result } = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
+      expect(result.status).toBe('ready')
+      expect(result.story).toEqual(story)
+      const starts = events.filter((e): e is Extract<SseEvent, { type: 'chapter_start' }> => e.type === 'chapter_start' && e.heading !== '')
+      // Chapters 1-2 and the half chapter 3 from the first write; then 3 onwards, once each.
+      expect(starts.map((e) => e.index)).toEqual([0, 1, 2, ...story.chapters.slice(2).map((_, i) => i + 2)])
+      if (result.bibleUpdate) await result.bibleUpdate
+    })
+
+    it('VT-RS10: a chapter the writer leaves without a heading never looks like a cleared one on the page', async () => {
+      const run = await prepared()
+      const story = stubStory()
+      story.chapters[1] = { ...story.chapters[1]!, heading: '' }
+      stubResponsesFor(run, { story })
+      const { events, result } = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
+      expect(events.filter((e) => e.type === 'chapter_start' && e.heading === '')).toHaveLength(0)
+      expect(events).toContainEqual({ type: 'chapter_start', index: 1, heading: 'Chapter 2' })
+      if (result.bibleUpdate) await result.bibleUpdate
+    })
+
+    it('VT-RS7: the forced-drop eval cuts the first write after N whole chapters and the story is continued', async () => {
+      const run = await prepared()
+      const { story } = stubResponsesFor(run)
+      stubContinuation(run, story, 1)
+      const { events, result } = await collect(run, {
+        db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW,
+        forceDropAfterChapters: 1,
+      })
+      expect(result.status).toBe('ready')
+      expect(result.writeCalls).toBe(2)
+      expect(result.story).toEqual(story)
+      expect(events.filter((e) => e.type === 'chapter_start' && e.heading === '')).toHaveLength(1)
+      if (result.bibleUpdate) await result.bibleUpdate
     })
   })
 

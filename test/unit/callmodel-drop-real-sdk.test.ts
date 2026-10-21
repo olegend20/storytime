@@ -13,7 +13,7 @@ import { MemoryLogSink, ModelCallError } from '@/lib/ai/types'
 
 let server: Server
 let connections = 0
-let mode: 'drop' | 'error500' | 'refuse' = 'drop'
+let mode: 'drop' | 'error500' | 'refuse' | 'upstream' | 'invalid' = 'drop'
 const env = { ...process.env }
 
 beforeAll(async () => {
@@ -38,6 +38,12 @@ beforeAll(async () => {
       },
     }
     res.write(`event: message_start\ndata: ${JSON.stringify(start)}\n\n`)
+    if (mode === 'upstream' || mode === 'invalid') {
+      // The gateway's way of losing the upstream partway (2026-10-21): an error event, then the end.
+      const type = mode === 'upstream' ? 'upstream_response_error' : 'invalid_request_error'
+      res.end(`event: error\ndata: ${JSON.stringify({ type: 'error', error: { type, message: 'upstream' } })}\n\n`)
+      return
+    }
     setTimeout(() => res.socket?.destroy(), 30)
   })
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
@@ -110,6 +116,27 @@ describe('issue #50: a real dropped stream, through the real SDK', () => {
     const failed = await write()
     expect(failed).toBeInstanceOf(ModelCallError)
     expect((failed as ModelCallError).detail).toMatchObject({ dropped: false, status: 500 })
+    mode = 'drop'
+  })
+
+  it('VT-RS11 (#74): an upstream error event partway through counts as a drop; a request error does not', async () => {
+    const write = () =>
+      streamModel({ purpose: 'write', model: 'claude-sonnet-5', messages: [{ role: 'user', content: 'write' }], sink: new MemoryLogSink() }).then(
+        () => null,
+        (e: unknown) => e,
+      )
+    mode = 'upstream'
+    connections = 0
+    const lost = await write()
+    expect(lost).toBeInstanceOf(ModelCallError)
+    expect((lost as ModelCallError).message).toMatch(/upstream_response_error/)
+    expect((lost as ModelCallError).detail).toMatchObject({ dropped: true, retryable: false })
+    expect(connections).toBe(1)
+
+    mode = 'invalid'
+    const wrong = await write()
+    expect(wrong).toBeInstanceOf(ModelCallError)
+    expect((wrong as ModelCallError).detail).toMatchObject({ dropped: false })
     mode = 'drop'
   })
 })

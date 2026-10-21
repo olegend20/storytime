@@ -114,6 +114,15 @@ export function generationEvents(story: LibraryStory, opts: StreamOptions): unkn
       events.push(midstreamErrorEvent())
       return events
     }
+    if (opts.scenario === 'writer_resumed' && index === 1) {
+      // Half of chapter 2, then the server clears it ("Still writing…") and writes it again.
+      const chunks = chunkText(chapter.text)
+      events.push({ type: 'chapter_start', index, heading: chapter.heading })
+      for (const text of chunks.slice(0, Math.ceil(chunks.length / 2))) {
+        events.push({ type: 'chapter_delta', index, text })
+      }
+      events.push({ type: 'chapter_start', index, heading: '' })
+    }
     events.push({ type: 'chapter_start', index, heading: chapter.heading })
     for (const text of chunkText(chapter.text)) {
       events.push({ type: 'chapter_delta', index, text })
@@ -147,6 +156,10 @@ export function generationStream(story: LibraryStory, opts: StreamOptions): Read
       if (opts.delayMs > 0) await sleep(opts.delayMs)
       // The real writer thinks for ~2 minutes between the facts and chapter 1.
       if (opts.scenario === 'thinking' && (event as { type?: string }).type === 'meta') {
+        await sleep(MOCK_THINKING_MS)
+      }
+      // The continuation thinks before its first chapter: the "Still writing…" moment.
+      if (opts.scenario === 'writer_resumed' && (events[i - 2] as { heading?: string } | undefined)?.heading === '') {
         await sleep(MOCK_THINKING_MS)
       }
       controller.enqueue(encoder.encode(sseFrame(event)))

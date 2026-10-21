@@ -888,6 +888,21 @@ safety review with a retired rule-7 report and a soft concern stays unsafe; the 
 constants sit below the comment that describes them. **Gates:** lint ✅ · typecheck ✅ ·
 unit+int 1340 ✅ · guardrails 32 ✅ · e2e mock 196 ✅ · e2e real 6 ✅.
 
+### 2026-10-19 — a write dropped after chapters were shown is finished, not lost (issue #74, DECISIONS #210)
+
+The #73 eval recovered 5 of 7 drops. The 2 it lost were cut after chapter 1 was on the page,
+where writing the story again would contradict it. Now the whole chapters stay, the one cut
+partway is cleared ("Still writing the rest of your story…" holds its place) and the writer
+is asked for the rest of the same story (prompts/continue.v1). Retries are bounded as in #72.
+The owner's decisions are on #74. The forced-drop eval (`--force-drop-after=1`) is in the PR.
+
+Forced-drop eval (2026-10-21, every first write cut after chapter 1): 32/32 delivered, mean
+4.15, 0 disqualified (2026-10-20: 30/32, 3.90; 2026-10-17: 32/32, 4.02). Nine stories went out
+as the continued draft itself (mean 4.32). Three files: the main run, where the laptop slept
+with the lid closed and the last 6 stories died on dead connections (`-2` re-ran them awake),
+and `-3`, space-race band D again after its continuation died on the gateway's
+`upstream_response_error` event, which `streamModel` now counts as a drop. $16.45 in all.
+
 ### 2026-10-19 — a dropped connection no longer loses a story (issue #72, DECISIONS #209)
 
 In the 10-19 live eval, the gateway cut 12 of 67 writing calls before any text arrived, and 3

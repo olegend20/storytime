@@ -99,6 +99,20 @@ export class PipelineUnavailableError extends Error {
 }
 
 /**
+ * The forced-drop eval's setting (issue #74, `--force-drop-after=N`, or
+ * EVAL_FORCE_DROP_AFTER_CHAPTERS): undefined when unset, an error for anything but a whole
+ * number of chapters from 1 - an empty or mistyped value must not quietly turn it off.
+ */
+export function parseForceDropAfterChapters(raw: string | undefined): number | undefined {
+  if (raw === undefined) return undefined
+  const n = Number(raw)
+  if (raw.trim() === '' || !Number.isInteger(n) || n < 1) {
+    throw new Error(`--force-drop-after=${raw}: expected a whole number of chapters, 1 or more`)
+  }
+  return n
+}
+
+/**
  * The live adapter over lane 2's pipeline. Loaded dynamically so fixture mode never pulls in
  * Supabase or the SDK. It lives in lib/eval, not lib/generate: the request path must not
  * import the eval harness (test/unit/judge-not-in-runtime.test.ts).
