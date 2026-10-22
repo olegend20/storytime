@@ -8,6 +8,9 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 const drops = vi.hoisted(() => ({
   queue: [] as { partial: string; dropped?: boolean; hang?: boolean }[],
   signals: [] as (AbortSignal | undefined)[],
+  /** Issue #76: whether each streamed write was marked as a continuation, and each rewrite call's variant. */
+  continuations: [] as boolean[],
+  rewriteVariants: [] as (string | undefined)[],
   /**
    * Issue #72: how many times the gateway drops the rewrite. The rewrite goes through
    * callModel, whose own drop loop (VT-R1/R2) is stood in for here: it makes
@@ -23,6 +26,7 @@ vi.mock('@/lib/ai', async (orig) => {
   return {
     ...actual,
     callModel: async (opts: Parameters<typeof actual.callModel>[0]) => {
+      if (opts.purpose === 'rewrite') drops.rewriteVariants.push(opts.variant)
       if (opts.purpose === 'rewrite' && drops.rewriteRefuses) throw new actual.ModelRefusalError('stub', 'stub', null)
       if (opts.purpose === 'rewrite' && drops.rewriteStatus) {
         throw new actual.ModelCallError(`rewrite call to stub failed after 1 attempt(s): ${drops.rewriteStatus}`, {
@@ -43,6 +47,7 @@ vi.mock('@/lib/ai', async (orig) => {
       return actual.callModel(opts)
     },
     streamModel: async (opts: Parameters<typeof actual.streamModel>[0]) => {
+      drops.continuations.push(opts.variant === 'continuation')
       const next = drops.queue.shift()
       if (!next) return actual.streamModel(opts)
       drops.signals.push(opts.signal)
@@ -883,6 +888,8 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     expect(sink.rows.filter((r) => r.purpose === 'rewrite')).toHaveLength(1)
     expect(result.story?.title).toBe(retried.title)
     expect(result.quality?.first_attempt?.reasons).toEqual(['output unusable; retried 10 -> 5 minutes'])
+    // The first-write prompt again: its own Understudy workload, not the rewrite's (#76).
+    expect(drops.rewriteVariants.at(-1)).toBe('shorter')
     expect(result.quality?.first_attempt?.failures[0]?.detail).toMatch(/story output unusable: repair_failed/)
     // The book is the shorter one, saved as such, delivered in `done`, and it counts.
     const { data: row } = await family.db.from('stories').select('length_minutes, title').eq('id', run.storyId).single()
@@ -1075,6 +1082,18 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       expect(sink.rows.filter((r) => r.purpose === 'write')).toHaveLength(1)
       expect(quota.calls).toEqual(['consumeQuota'])
       expect(events.at(-1)?.type).toBe('done')
+      if (result.bibleUpdate) await result.bibleUpdate
+    })
+
+    it('VT-UW2 (#76): the continuation is tagged as its own workload, the first write is not', async () => {
+      const run = await prepared()
+      const { story } = stubResponsesFor(run)
+      stubContinuation(run, story, 1)
+      drops.queue.push({ partial: cutAfter(story, 1, 'Half') })
+      drops.continuations.length = 0
+      const { result } = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW })
+      expect(result.status).toBe('ready')
+      expect(drops.continuations).toEqual([false, true])
       if (result.bibleUpdate) await result.bibleUpdate
     })
 

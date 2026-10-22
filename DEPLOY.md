@@ -41,6 +41,7 @@ RUN_SCHEMA_TESTS=1 SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… SUPABASE_ANON_
 | `SUPABASE_SERVICE_ROLE_KEY` | Server only. Bypasses RLS; never `NEXT_PUBLIC_` |
 | `ANTHROPIC_API_KEY` | The production key: an Understudy `sk_` key (issue #41). **A placeholder until the owner sets it** |
 | `ANTHROPIC_BASE_URL` | `https://api.understudylabs.com` (no trailing `/v1`): model calls go through the Understudy gateway to the same Claude models. Unset = Anthropic directly |
+| `UNDERSTUDY_PROJECT` | `storytime`: the Understudy project production's calls are tagged with (issue #76). The project must exist with its workloads (`pnpm understudy:workloads --project storytime`). Unset = the eval project `rehearsal`, and the server logs a warning |
 | `LIVE_API` | Must be `1` in production for real model calls (unset means fixture replay) |
 | `GENERATION_ENABLED` | The kill switch. `false` pauses new stories; saved ones still read |
 | `NEXT_PUBLIC_API_MOCK`, `UI_MOCK_API` | **Must be unset in production.** Test-only: the first is inlined at build time and points the whole UI at `/api/mock/*` |
@@ -62,7 +63,8 @@ the Vercel production URL. To change them, edit a config with only those keys an
 ## Not done yet — each one matters before telling families about it
 
 1. **The production model key.** Until `ANTHROPIC_API_KEY` (Understudy) with `ANTHROPIC_BASE_URL`, `LIVE_API=1` and
-   `GENERATION_ENABLED=true` are set and redeployed, the creator says new stories are paused.
+   `GENERATION_ENABLED=true` are set and redeployed, the creator says new stories are paused. Set `UNDERSTUDY_PROJECT=storytime`
+   at the same time, after creating that project and registering its workloads, so parent traffic does not mix with the evals.
 2. **Sign-in email for the public.** Supabase's built-in mailer only delivers to members of
    the Supabase organisation and is rate-limited. Real families need custom SMTP (Resend) on
    lastten.org: SPF, DKIM and return-path DNS records, then Auth → SMTP settings.

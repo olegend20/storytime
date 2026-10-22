@@ -4,6 +4,7 @@ import { capabilities, computeCost, modelForRole } from './pricing'
 import { MissingFixtureError, fixtureKey, readFixture, writeFixture } from './fixtures'
 import { getDefaultLogSink, isDroppedStream, isUpstreamStreamError, normalizeUsage, type CacheableBlock, type CallModelResult } from './callModel'
 import { ModelCallError, ModelRefusalError, type GenerationLogSink } from './types'
+import { servedByOtherModel, understudyHeaders, workloadFor, type WorkloadVariant } from './workload'
 
 /**
  * Streaming variant of the wrapper, for F6's SSE route. Kickoff rule 1 means lane 2
@@ -35,6 +36,8 @@ export interface StreamModelOptions {
   onText?: (delta: string) => void
   /** Replay-only: chunk size for simulated deltas. */
   replayChunkSize?: number
+  /** A write that is not the first write - the continuation after a drop - for its Understudy workload (#76). */
+  variant?: WorkloadVariant
 }
 
 const DEFAULT_STREAM_MAX_TOKENS = 64_000
@@ -146,6 +149,8 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
   // ---- Live stream. ----
   const started = Date.now()
   let stream: ReturnType<ReturnType<typeof anthropic>['messages']['stream']> | null = null
+  // The model the gateway says served the call, when it is not the one asked for (#76).
+  let other: string | null = null
   try {
     stream = anthropic().messages.stream(
       {
@@ -156,10 +161,19 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
         ...(thinking ? { thinking } : {}),
         ...(outputConfig ? { output_config: outputConfig } : {}),
       } as unknown as Anthropic.MessageStreamParams,
-      { signal: opts.signal },
+      { signal: opts.signal, headers: understudyHeaders(workloadFor(opts.purpose, opts.variant)) },
     )
 
-    if (opts.onText) stream.on('text', (delta: string) => opts.onText?.(delta))
+    // The headers arrive before any text: a reply from another model is stopped there, so none
+    // of it reaches the page and it is not paid for to the end.
+    const live = stream
+    live.on('connect', () => {
+      other = servedByOtherModel(model, live.response?.headers)
+      if (other) live.abort()
+    })
+    if (opts.onText) stream.on('text', (delta: string) => {
+      if (!other) opts.onText?.(delta)
+    })
 
     const finalMessage = (await stream.finalMessage()) as unknown as Record<string, unknown>
     const latencyMs = Date.now() - started
@@ -238,7 +252,7 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
     // retries the write, the cut attempt belongs to a story that is saved.
     const partial = stream?.currentMessage?.usage
     const used = partial ? normalizeUsage(partial) : null
-    const message = err instanceof Error ? err.message : String(err)
+    const message = other ? `served_by_other_model:${other}` : err instanceof Error ? err.message : String(err)
     await sink.write({
       family_id: opts.familyId ?? null,
       story_id: opts.storyId ?? null,
@@ -254,8 +268,17 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
         : 0,
       latency_ms: latencyMs,
       ok: false,
-      error: `${used ? '[partial usage, lower bound] ' : ''}${message}`.slice(0, 500),
+      error: `${used ? '[partial usage, lower bound] ' : other ? '[usage unknown] ' : ''}${message}`.slice(0, 500),
     })
+    if (other) {
+      throw new ModelCallError(`${opts.purpose} stream to ${model} was served by ${other}`, {
+        purpose: opts.purpose,
+        model,
+        attempts: 1,
+        retryable: false,
+        servedBy: other,
+      })
+    }
     throw new ModelCallError(
       `${opts.purpose} stream to ${model} failed: ${err instanceof Error ? err.message : String(err)}`,
       {

@@ -60,13 +60,16 @@ vi.mock('@anthropic-ai/sdk', async () => {
               ? drop
               : Object.assign(new actual.AnthropicError(drop.message), { cause: drop })
           return {
+            on: () => undefined,
             currentMessage: { ...message, usage: { ...message.usage, output_tokens: 7 } },
             finalMessage: () => Promise.reject(surfaced),
           }
         }
-        if (!calls.hang) return { finalMessage: async () => message, currentMessage: message }
+        // `on`: callModel listens for `connect` to read the gateway's headers (#76); a stub never connects.
+        if (!calls.hang) return { on: () => undefined, finalMessage: async () => message, currentMessage: message }
         // A stream that has started (message_start carried usage) and then never finishes.
         return {
+          on: () => undefined,
           currentMessage: { ...message, usage: { ...message.usage, output_tokens: 700 } },
           finalMessage: () =>
             new Promise((_, reject) =>

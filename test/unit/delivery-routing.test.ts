@@ -66,6 +66,11 @@ describe('issue #72: which lost rewrites fall back to attempt 1', () => {
       purpose: 'rewrite', model: 'claude-sonnet-5', attempts: 4, retryable: false, dropped: true,
     })
     expect(rewriteLost(reset)).toBe('rewrite_failed:dropped')
+    // A rewrite another model answered (#76): stopped at the headers, attempt 1 still stands.
+    const served = new ModelCallError('rewrite call to claude-sonnet-5 was served by gemma-4-12b', {
+      purpose: 'rewrite', model: 'claude-sonnet-5', attempts: 1, retryable: false, servedBy: 'gemma-4-12b',
+    })
+    expect(rewriteLost(served)).toBe('rewrite_failed:served_by_other_model')
   })
 
   it('VT-F6 a 4xx of our own making, a refusal or any other error is not', () => {
