@@ -1,5 +1,5 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
-import { APIConnectionError, APIError } from '@anthropic-ai/sdk'
+import { APIConnectionError, APIConnectionTimeoutError, APIError } from '@anthropic-ai/sdk'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { callModel } from '@/lib/ai/callModel'
 import { streamModel } from '@/lib/ai/streamModel'
@@ -7,7 +7,7 @@ import { closeKind, failedRowError, isTruncatedStream, newTrace, summarize } fro
 import { MemoryLogSink, ModelCallError } from '@/lib/ai/types'
 import { SupabaseLogSink } from '@/lib/costs/sink'
 import { dropsLine, stepLatency } from '@/lib/eval/harness'
-import { parseThinkingDisplay } from '@/lib/eval/pipeline'
+import { assertThinkingDisplaySupported, parseThinkingDisplay } from '@/lib/eval/pipeline'
 
 /**
  * Issue #78: who closed the stream, and what came over the wire first. The wire tests run the
@@ -15,7 +15,7 @@ import { parseThinkingDisplay } from '@/lib/eval/pipeline'
  * only a real socket shows what a real cut looks like.
  */
 
-type Mode = 'cut_thinking' | 'hold' | 'empty' | 'thinking_then_text'
+type Mode = 'cut_thinking' | 'hold' | 'empty' | 'partial_end' | 'thinking_then_text'
 let server: Server
 let mode: Mode = 'cut_thinking'
 let connections = 0
@@ -44,12 +44,21 @@ beforeAll(async () => {
         'request-id': `req_cc${connections}`,
         'x-understudy-request-id': `01a1-cc${connections}`,
       })
+      // Send the headers now, as the gateway does, not with the first byte of body.
+      res.flushHeaders()
       if (mode === 'empty') {
-        // A 200, then a clean end with no event (space-race-band-d, 2026-10-22).
-        res.end()
+        // A 200, then silence, then a clean end with no event (space-race-band-d, 2026-10-22 UTC).
+        setTimeout(() => res.end(), 90)
         return
       }
       start(res)
+      if (mode === 'partial_end') {
+        // Text had started, then a clean end with no message_stop.
+        send(res, 'content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } })
+        send(res, 'content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'Once upon' } })
+        res.end()
+        return
+      }
       if (mode === 'hold') return // never ends: only our abort stops it
       if (mode === 'thinking_then_text') {
         send(res, 'content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'thinking', thinking: '', signature: '' } })
@@ -123,6 +132,8 @@ describe('issue #78: who closed the stream, through the real SDK', () => {
     expect((err as ModelCallError).detail).toMatchObject({ close: 'own_abort' })
     expect((err as ModelCallError).detail.dropped).toBe(false)
     expect(sink.rows[0]!.error).toMatch(/\[close=own_abort /)
+    // Our abort ends the call, not the wire: the wait before it is not reported as silence.
+    expect(sink.rows[0]!.stream!.max_gap_ms).toBeLessThan(40)
 
     // callModel's own deadline (timeoutMs) is ours too, and a long call's is not retried.
     const sink2 = new MemoryLogSink()
@@ -137,6 +148,20 @@ describe('issue #78: who closed the stream, through the real SDK', () => {
     const err = await fails(streamModel({ purpose: 'write', model: 'claude-sonnet-5', messages: msgs, sink }))
     expect((err as ModelCallError).detail).toMatchObject({ dropped: true, close: 'peer_end' })
     expect(sink.rows[0]!.stream).toMatchObject({ close: 'peer_end', bytes: 0, request_id: 'req_cc1' })
+    // No byte at all: the silence runs from the headers to the end (code review on #79).
+    expect(sink.rows[0]!.stream!.max_gap_ms).toBeGreaterThanOrEqual(70)
+    expect(sink.rows[0]!.error).not.toMatch(/gap=0\.0s/)
+
+    // Text had started and the stream ended cleanly with no message_stop: the SDK adds a
+    // Message only on message_stop, so this is a drop too, not a short story returned as done.
+    mode = 'partial_end'
+    const sink3 = new MemoryLogSink()
+    const shown: string[] = []
+    const err3 = await fails(streamModel({ purpose: 'write', model: 'claude-sonnet-5', messages: msgs, sink: sink3, onText: (t) => shown.push(t) }))
+    expect((err3 as ModelCallError).detail).toMatchObject({ dropped: true, close: 'peer_end' })
+    expect(sink3.rows[0]).toMatchObject({ ok: false })
+    expect(shown.join('')).toBe('Once upon')
+    mode = 'empty'
 
     connections = 0
     const sink2 = new MemoryLogSink()
@@ -195,6 +220,8 @@ describe('issue #78: the close kinds and the report', () => {
     expect(closeKind(new APIConnectionError({ cause: coded('ECONNREFUSED') }), false, t)).toBe('connect_failed')
     expect(closeKind(new APIError(undefined, { error: { type: 'upstream_response_error' } }, undefined, undefined, 'upstream_response_error' as never), false, t)).toBe('upstream_error')
     expect(closeKind(new APIError(529, {}, 'overloaded', undefined), false, t)).toBe('http_error')
+    // The SDK's own headers timeout is ours (code review on #79).
+    expect(closeKind(new APIConnectionTimeoutError(), false, t)).toBe('local_timeout')
     expect(closeKind(terminated(coded('UND_ERR_SOCKET')), true, t)).toBe('own_abort')
     expect(closeKind(new Error('who knows'), false, t)).toBe('unknown')
   })
@@ -232,5 +259,8 @@ describe('issue #78: the close kinds and the report', () => {
     expect(parseThinkingDisplay('summarized')).toBe('summarized')
     expect(() => parseThinkingDisplay('summarised')).toThrow(/expected "summarized"/)
     expect(() => parseThinkingDisplay('')).toThrow()
+    // A writer that takes no display is refused, not measured as if it had one (code review on #79).
+    expect(() => assertThinkingDisplaySupported('claude-sonnet-5')).not.toThrow()
+    expect(() => assertThinkingDisplaySupported('claude-fable-5-1')).toThrow(/takes no thinking display/)
   })
 })

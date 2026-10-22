@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { capabilities } from '@/lib/ai/pricing'
 import type { GenerationLogSink } from '@/lib/ai'
 import type { GenerationRequest, StoryOutput } from '@/lib/schemas'
 import type { FactPackLike, GateSummary } from './caps'
@@ -107,6 +108,19 @@ export function parseThinkingDisplay(raw: string | undefined): 'summarized' | un
   if (raw === undefined) return undefined
   if (raw !== 'summarized') throw new Error(`--thinking-display=${raw}: expected "summarized"`)
   return raw
+}
+
+/**
+ * The wrappers send `display` only with an adaptive thinking config; a writer whose thinking
+ * is always on with no parameter (Fable 5.1) or set by budget never gets it. Measuring such a
+ * writer under `--thinking-display` would compare the default against itself while the run
+ * says otherwise, so it is refused (code review on #79).
+ */
+export function assertThinkingDisplaySupported(model: string): void {
+  const mode = capabilities(model).thinking
+  if (mode === 'always_on_omit_param' || mode === 'extended_budget_tokens') {
+    throw new Error(`--thinking-display: ${model} takes no thinking display (thinking: ${String(mode)})`)
+  }
 }
 
 /**

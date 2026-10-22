@@ -10,7 +10,7 @@ import {
   writeFixture,
   type FixturePayload,
 } from './fixtures'
-import { causeOf, closeKind, failedRowError, isTruncatedStream, newTrace, summarize, traceMiddleware } from './streamTrace'
+import { causeOf, closeKind, failedRowError, isDroppedStream, isUpstreamStreamError, newTrace, summarize, traceMiddleware } from './streamTrace'
 import {
   MemoryLogSink,
   ModelCallError,
@@ -266,42 +266,13 @@ export function structuredOutputRejected(err: unknown): boolean {
   )
 }
 
-/**
- * A stream that was cut off partway: undici's `TypeError('terminated')` (its cause a socket
- * "other side closed"), or a reset socket. The SDK's MessageStream rewraps any non-SDK error
- * as a plain `AnthropicError` with the original as `cause` (SDK 0.128 MessageStream.js), so
- * the socket code is two levels down - the cause chain is walked, not just the top error.
- * Not an `APIConnectionError`, so before issue #50 it was never retried: 2 of ~10 rewrites
- * through the gateway died this way on 2026-10-14.
- */
-export function isDroppedStream(err: unknown): boolean {
-  if (err instanceof APIError) return false
-  let e: unknown = err
-  for (let depth = 0; depth < 4 && typeof e === 'object' && e !== null; depth += 1) {
-    if (e instanceof Error && e.name === 'TypeError' && e.message === 'terminated') return true
-    const code = (e as { code?: unknown }).code
-    if (code === 'UND_ERR_SOCKET' || code === 'ECONNRESET') return true
-    e = (e as { cause?: unknown }).cause
-  }
-  return false
-}
-
-/**
- * An `event: error` the upstream sent partway through a stream - the SDK raises it as an
- * `APIError` with no status. Only the kinds that mean the upstream lost the stream, not a
- * request we got wrong: on 2026-10-21 a story's continuation (issue #74) died on the gateway's
- * `upstream_response_error` and, not counted as a drop, was never written again.
- */
-const UPSTREAM_STREAM_ERRORS = new Set(['upstream_response_error', 'overloaded_error', 'api_error'])
-
-export function isUpstreamStreamError(err: unknown): boolean {
-  return err instanceof APIError && err.status === undefined && UPSTREAM_STREAM_ERRORS.has(String(err.type))
-}
+// The drop predicates live with the stream trace (#78); re-exported for the callers that import them here.
+export { isDroppedStream, isUpstreamStreamError }
 
 /** Retry on transport failures and the transient HTTP statuses; never on a 4xx we caused. */
 function isRetryable(err: unknown): { retryable: boolean; status?: number } {
   if (err instanceof APIConnectionError) return { retryable: true }
-  if (isDroppedStream(err) || isTruncatedStream(err)) return { retryable: true }
+  if (isDroppedStream(err)) return { retryable: true }
   if (err instanceof APIError) {
     const status = typeof err.status === 'number' ? err.status : undefined
     if (status === undefined) return { retryable: true }
@@ -496,8 +467,7 @@ export async function callModel<T = string>(
       const { retryable: retryableKind, status } = timedOut
         ? { retryable: (opts.timeoutMs ?? 0) <= LONG_CALL_MS, status: undefined }
         : isRetryable(err)
-      // A stream that ends cleanly with no message is the same loss as a cut one (#78).
-      const dropped = !timedOut && (isDroppedStream(err) || isTruncatedStream(err))
+      const dropped = !timedOut && isDroppedStream(err)
       if (dropped) drops += 1
       // A caller that gave up (the parent closed the page) is never retried: before issue #50
       // its abort read as a status-less APIError, and so as a transport failure worth retrying.

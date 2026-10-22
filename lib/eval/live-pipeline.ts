@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabaseService } from '@/lib/supabase/service'
-import { getDefaultLogSink, MeteredLogSink } from '@/lib/ai'
+import { getDefaultLogSink, MeteredLogSink, modelForRole } from '@/lib/ai'
 import {
   bandForChildren,
   getOrCreateSeries,
@@ -22,7 +22,7 @@ import {
   type RunGenerationResult,
 } from '@/lib/generate'
 import type { GateSummary } from './caps'
-import { parseForceDropAfterChapters, parseThinkingDisplay, type FirstDraft, type GenerateInput, type PipelineStoryResult, type StoryPipeline } from './pipeline'
+import { assertThinkingDisplaySupported, parseForceDropAfterChapters, parseThinkingDisplay, type FirstDraft, type GenerateInput, type PipelineStoryResult, type StoryPipeline } from './pipeline'
 
 /**
  * F13/F14: the live pipeline behind `pnpm eval` and `pnpm bakeoff` - the function
@@ -56,6 +56,7 @@ export function createEvalPipeline(db: SupabaseClient = supabaseService()): Stor
       (forced === undefined ? '' : `, every first write cut after ${forced} chapter(s) and continued (issue #74)`) +
       (thinkingDisplay === undefined ? '' : `, writer thinking display ${thinkingDisplay} (issue #78)`),
     generate: async (input) => {
+      if (thinkingDisplay) assertThinkingDisplaySupported(input.writingModel ?? modelForRole('writer'))
       const result = await generateOne(input, db, undefined, forced, thinkingDisplay)
       // Null only in first-draft mode, which this pipeline never asks for.
       if (!result) throw new Error(`eval scenario ${input.scenario.id} returned no result`)

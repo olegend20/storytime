@@ -2,8 +2,8 @@ import Anthropic, { APIConnectionError, APIError } from '@anthropic-ai/sdk'
 import type { CallPurpose } from '@/lib/schemas/common'
 import { capabilities, computeCost, modelForRole } from './pricing'
 import { MissingFixtureError, fixtureKey, readFixture, writeFixture } from './fixtures'
-import { getDefaultLogSink, isDroppedStream, isUpstreamStreamError, normalizeUsage, type CacheableBlock, type CallModelResult } from './callModel'
-import { causeOf, closeKind, failedRowError, isTruncatedStream, newTrace, summarize, traceMiddleware } from './streamTrace'
+import { getDefaultLogSink, normalizeUsage, type CacheableBlock, type CallModelResult } from './callModel'
+import { causeOf, closeKind, failedRowError, isDroppedStream, isUpstreamStreamError, newTrace, summarize, traceMiddleware } from './streamTrace'
 import { ModelCallError, ModelRefusalError, type GenerationLogSink } from './types'
 import { servedByOtherModel, understudyHeaders, workloadFor, type WorkloadVariant } from './workload'
 
@@ -308,8 +308,7 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
         // failure seen before the first byte: two first writes in the v5 eval died one each way.
         // An upstream error event mid-stream is the same loss, told rather than cut (#74), and so
         // is a stream that ends cleanly with no message (#78).
-        dropped:
-          isDroppedStream(err) || err instanceof APIConnectionError || isUpstreamStreamError(err) || isTruncatedStream(err),
+        dropped: isDroppedStream(err) || err instanceof APIConnectionError || isUpstreamStreamError(err),
         close,
         ...(err instanceof APIError && typeof err.status === 'number' ? { status: err.status } : {}),
       },

@@ -1,4 +1,4 @@
-import { AnthropicError, APIError } from '@anthropic-ai/sdk'
+import { AnthropicError, APIConnectionTimeoutError, APIError } from '@anthropic-ai/sdk'
 import type { Middleware } from '@anthropic-ai/sdk/core/middleware'
 import type { CloseKind, StreamSummary } from './types'
 
@@ -83,9 +83,10 @@ export function traceMiddleware(trace: StreamTrace): Middleware {
 }
 
 /**
- * The stream ended cleanly before its message did: no `message_stop`, so the SDK has no Message.
- * On 2026-10-22 a write got a 200 with headers in 1.3 s, then nothing, then a clean end 42 s
- * later. Not a request we got wrong, so it is a drop like `terminated`, and written again.
+ * The stream ended cleanly before its message did: no `message_stop`, so the SDK has no Message
+ * (it adds one only on `message_stop`, whether or not `message_start` came). On 2026-10-22 UTC a
+ * write got a 200 with headers in 1.3 s, then nothing, then a clean end 42 s later. Not a request
+ * we got wrong, so it is a drop like `terminated`, and written again.
  */
 export function isTruncatedStream(err: unknown): boolean {
   return (
@@ -95,21 +96,59 @@ export function isTruncatedStream(err: unknown): boolean {
   )
 }
 
+/** The `code`s down an error's cause chain, outermost first, and the deepest coded cause. */
+function causeChain(err: unknown): { codes: string[]; deepest: string | null; terminated: boolean } {
+  const codes: string[] = []
+  let deepest: string | null = null
+  let terminated = false
+  let e: unknown = err
+  for (let depth = 0; depth < 6 && typeof e === 'object' && e !== null; depth += 1) {
+    if (e instanceof Error && e.name === 'TypeError' && e.message === 'terminated') terminated = true
+    const code = (e as { code?: unknown }).code
+    if (typeof code === 'string') {
+      codes.push(code)
+      deepest = `${code}:${(e as { message?: unknown }).message ?? ''}`
+    }
+    e = (e as { cause?: unknown }).cause
+  }
+  return { codes, deepest, terminated }
+}
+
+/**
+ * A stream that was cut off partway: undici's `TypeError('terminated')` (its cause a socket
+ * "other side closed"), or a reset socket. The SDK's MessageStream rewraps any non-SDK error
+ * as a plain `AnthropicError` with the original as `cause` (SDK 0.128 MessageStream.js), so
+ * the socket code is two levels down - the cause chain is walked, not just the top error.
+ * Not an `APIConnectionError`, so before issue #50 it was never retried: 2 of ~10 rewrites
+ * through the gateway died this way on 2026-10-14. A stream that ends with no message is the
+ * same loss (#78).
+ */
+export function isDroppedStream(err: unknown): boolean {
+  if (err instanceof APIError) return false
+  if (isTruncatedStream(err)) return true
+  const { codes, terminated } = causeChain(err)
+  return terminated || codes.includes('UND_ERR_SOCKET') || codes.includes('ECONNRESET')
+}
+
+/**
+ * An `event: error` the upstream sent partway through a stream - the SDK raises it as an
+ * `APIError` with no status. Only the kinds that mean the upstream lost the stream, not a
+ * request we got wrong: on 2026-10-21 a story's continuation (issue #74) died on the gateway's
+ * `upstream_response_error` and, not counted as a drop, was never written again.
+ */
+const UPSTREAM_STREAM_ERRORS = new Set(['upstream_response_error', 'overloaded_error', 'api_error'])
+
+export function isUpstreamStreamError(err: unknown): boolean {
+  return err instanceof APIError && err.status === undefined && UPSTREAM_STREAM_ERRORS.has(String(err.type))
+}
+
 const PEER_CODES = new Set(['UND_ERR_SOCKET', 'ECONNRESET', 'EPIPE'])
 const CONNECT_CODES = new Set(['ENOTFOUND', 'ECONNREFUSED', 'ETIMEDOUT', 'EAI_AGAIN', 'ENETUNREACH', 'EHOSTUNREACH', 'UND_ERR_CONNECT_TIMEOUT'])
 const TIMEOUT_CODES = new Set(['UND_ERR_BODY_TIMEOUT', 'UND_ERR_HEADERS_TIMEOUT'])
-const UPSTREAM_TYPES = new Set(['upstream_response_error', 'overloaded_error', 'api_error'])
 
 /** The deepest cause with a code, as `CODE:message` - `UND_ERR_SOCKET:other side closed`. */
 export function causeOf(err: unknown): string | null {
-  let found: string | null = null
-  let e: unknown = err
-  for (let depth = 0; depth < 6 && typeof e === 'object' && e !== null; depth += 1) {
-    const code = (e as { code?: unknown }).code
-    if (typeof code === 'string') found = `${code}:${(e as { message?: unknown }).message ?? ''}`
-    e = (e as { cause?: unknown }).cause
-  }
-  return found
+  return causeChain(err).deepest
 }
 
 /**
@@ -120,22 +159,24 @@ export function causeOf(err: unknown): string | null {
 export function closeKind(err: unknown, ownAbort: boolean, trace: StreamTrace): CloseKind {
   if (ownAbort) return 'own_abort'
   if (isTruncatedStream(err)) return 'peer_end'
-  if (err instanceof APIError && err.status === undefined && UPSTREAM_TYPES.has(String(err.type))) return 'upstream_error'
-  const codes: string[] = []
-  let e: unknown = err
-  for (let depth = 0; depth < 6 && typeof e === 'object' && e !== null; depth += 1) {
-    const code = (e as { code?: unknown }).code
-    if (typeof code === 'string') codes.push(code)
-    e = (e as { cause?: unknown }).cause
-  }
+  if (isUpstreamStreamError(err)) return 'upstream_error'
+  // The SDK's own `timeout` (the wait for headers) is ours, like undici's (code review on #79).
+  if (err instanceof APIConnectionTimeoutError) return 'local_timeout'
+  const { codes } = causeChain(err)
   if (codes.some((c) => TIMEOUT_CODES.has(c))) return 'local_timeout'
   if (codes.some((c) => PEER_CODES.has(c))) return 'peer_reset'
   if (trace.headersAt === null && codes.some((c) => CONNECT_CODES.has(c))) return 'connect_failed'
   if (err instanceof APIError && typeof err.status === 'number') return 'http_error'
+  // undici `terminated` with no coded cause: a drop, but no proof of which side closed it.
   return 'unknown'
 }
 
 export function summarize(trace: StreamTrace, close: CloseKind | null, cause: string | null, now = Date.now()): StreamSummary {
+  // Silence is measured on the wire from the headers on: with no byte at all (the 42 s empty
+  // stream), from the headers to the close. Our own abort ends the call, not the wire, so its
+  // last stretch is not counted as silence (code review on #79).
+  const from = trace.lastByteAt ?? trace.headersAt
+  const tail = close && close !== 'own_abort' && from !== null ? now - from : 0
   return {
     close,
     cause,
@@ -143,8 +184,8 @@ export function summarize(trace: StreamTrace, close: CloseKind | null, cause: st
     headers_ms: trace.headersAt === null ? null : trace.headersAt - trace.startedAt,
     bytes: trace.bytes,
     events: { ...trace.events },
-    max_gap_ms: trace.lastByteAt === null ? 0 : Math.max(trace.maxGapMs, close ? now - trace.lastByteAt : 0),
-    last_byte_ago_ms: trace.lastByteAt === null ? null : now - trace.lastByteAt,
+    max_gap_ms: Math.max(trace.maxGapMs, tail),
+    last_byte_ago_ms: from === null ? null : now - from,
     request_id: trace.requestId,
     understudy_id: trace.understudyId,
   }
