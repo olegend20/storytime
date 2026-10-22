@@ -38,7 +38,7 @@ vi.mock('@anthropic-ai/sdk', async () => {
     messages = {
       create: respond,
       // callModel streams every call (issue #41); the stream ends in the same Message.
-      stream: () => ({ finalMessage: respond, currentMessage: undefined }),
+      stream: () => ({ on: () => undefined, finalMessage: respond, currentMessage: undefined }),
     }
   }
   return { ...actual, default: StubAnthropic }

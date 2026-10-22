@@ -344,6 +344,7 @@ export function rewriteLost(err: unknown): string | null {
   if (status !== undefined) {
     return status >= 500 || status === 408 || status === 409 || status === 429 ? `rewrite_failed:status_${status}` : null
   }
+  if (err.detail.servedBy) return 'rewrite_failed:served_by_other_model'
   if (err.detail.dropped === true) return 'rewrite_failed:dropped'
   if (/deadline: exceeded/.test(err.message)) return 'rewrite_failed:deadline'
   if (/terminated|Connection error/i.test(err.message)) return 'rewrite_failed:dropped'
@@ -606,7 +607,7 @@ export async function runGeneration(
       streamModel({
         purpose: 'write',
         // Its own Understudy workload (#76): a different prompt from the first write.
-        ...(continuation ? { continuation } : {}),
+        ...(continuation ? { variant: 'continuation' as const } : {}),
         role: 'writer',
         ...(deps.writingModel ? { model: deps.writingModel } : {}),
         system: p.system,
@@ -722,6 +723,8 @@ export async function runGeneration(
       const retry = (withFormat: boolean) =>
         callModel({
           purpose: 'rewrite',
+          // The first-write prompt again, not a rewrite: its own Understudy workload (#76).
+          variant: 'shorter',
           role: 'writer',
           ...(deps.writingModel ? { model: deps.writingModel } : {}),
           system: retryPrompt.system,

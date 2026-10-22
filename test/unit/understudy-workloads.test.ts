@@ -5,14 +5,14 @@ import { callModel } from '@/lib/ai/callModel'
 import { streamModel } from '@/lib/ai/streamModel'
 import { MemoryLogSink, ModelCallError } from '@/lib/ai/types'
 import {
-  CONTINUATION_WORKLOAD,
+  VARIANT_WORKLOADS,
   WORKLOADS,
   servedByOtherModel,
   understudyHeaders,
   viaUnderstudy,
   workloadFor,
 } from '@/lib/ai/workload'
-import { missingWorkloads } from '@/scripts/understudy-workloads'
+import { arg, missingWorkloads } from '@/scripts/understudy-workloads'
 
 /**
  * Issue #76: every model call is tagged with its own Understudy workload. The wire tests run
@@ -26,13 +26,15 @@ afterEach(() => {
 })
 
 describe('issue #76: the workload map', () => {
-  it('VT-UW1: each CallPurpose and the continuation has its own workload, none of them main', () => {
+  it('VT-UW1: each CallPurpose, the continuation and the shorter retry has its own workload, none of them main', () => {
     const names = CallPurpose.options.map((p) => workloadFor(p))
     expect(new Set(names).size).toBe(CallPurpose.options.length)
-    expect(workloadFor('write', { continuation: true })).toBe(CONTINUATION_WORKLOAD)
-    // Only a write can be a continuation.
-    expect(workloadFor('rewrite', { continuation: true })).toBe('rewrite')
-    expect(WORKLOADS).toHaveLength(CallPurpose.options.length + 1)
+    expect(workloadFor('write', 'continuation')).toBe('write-continue')
+    expect(workloadFor('rewrite', 'shorter')).toBe('write-shorter')
+    // A variant only applies to its own purpose.
+    expect(workloadFor('rewrite', 'continuation')).toBe('rewrite')
+    expect(workloadFor('write', 'shorter')).toBe('write')
+    expect(WORKLOADS).toHaveLength(CallPurpose.options.length + Object.keys(VARIANT_WORKLOADS).length)
     expect(new Set(WORKLOADS).size).toBe(WORKLOADS.length)
     expect(WORKLOADS).not.toContain('main')
     for (const w of WORKLOADS) expect(w).toMatch(/^[a-z]+(-[a-z]+)*$/)
@@ -63,11 +65,20 @@ describe('issue #76: the workload map', () => {
     expect(servedByOtherModel('claude-sonnet-5', h('azure/claude-sonnet-5'))).toBeNull()
     expect(servedByOtherModel('claude-sonnet-5', h('gemma-4-12b'))).toBe('gemma-4-12b')
     expect(servedByOtherModel('claude-sonnet-5', h('claude-sonnet-5-mini'))).toBe('claude-sonnet-5-mini')
+    // A dated snapshot and its alias are one model, either way round (code review on #77).
+    expect(servedByOtherModel('claude-haiku-4-5-20251001', h('claude-haiku-4-5'))).toBeNull()
+    expect(servedByOtherModel('claude-haiku-4-5-20251001', h('anthropic/claude-haiku-4-5'))).toBeNull()
+    expect(servedByOtherModel('claude-haiku-4-5', h('claude-haiku-4-5-20251001'))).toBeNull()
+    expect(servedByOtherModel('claude-haiku-4-5-20251001', h('claude-haiku-5-5'))).toBe('claude-haiku-5-5')
   })
 
   it('VT-UW5: the registration script creates exactly the workloads the code sends', () => {
     expect(missingWorkloads([])).toEqual([...WORKLOADS])
     expect(missingWorkloads([...WORKLOADS, 'main'])).toEqual([])
+    // `--project storytime` and `--project=storytime` both name the project (code review on #77).
+    expect(arg('project', ['node', 's', '--project', 'storytime'])).toBe('storytime')
+    expect(arg('project', ['node', 's', '--project=storytime'])).toBe('storytime')
+    expect(arg('project', ['node', 's', '--dry-run'])).toBeUndefined()
   })
 })
 
@@ -119,10 +130,11 @@ describe('issue #76: the headers on the wire, through the real SDK', () => {
   }
   const ask = (sink = new MemoryLogSink()) =>
     callModel({ purpose: 'classify_input', model: 'claude-sonnet-5', messages: [{ role: 'user', content: 'hi' }], sink })
-  const stream = (continuation = false, sink = new MemoryLogSink()) =>
+  const stream = (continuation = false, sink = new MemoryLogSink(), onText?: (t: string) => void) =>
     streamModel({
       purpose: 'write', model: 'claude-sonnet-5', messages: [{ role: 'user', content: 'hi' }], sink,
-      ...(continuation ? { continuation } : {}),
+      ...(continuation ? { variant: 'continuation' as const } : {}),
+      ...(onText ? { onText } : {}),
     })
 
   it('VT-UW2: callModel and streamModel send the project and the workload; the continuation is its own', async () => {
@@ -130,10 +142,12 @@ describe('issue #76: the headers on the wire, through the real SDK', () => {
     await ask()
     await stream()
     await stream(true)
+    await callModel({ purpose: 'rewrite', variant: 'shorter', model: 'claude-sonnet-5', messages: [{ role: 'user', content: 'hi' }], sink: new MemoryLogSink() })
     expect(seen.map((h) => [h['x-understudy-project'], h['x-understudy-workload']])).toEqual([
       ['rehearsal', 'classify-input'],
       ['rehearsal', 'write'],
       ['rehearsal', 'write-continue'],
+      ['rehearsal', 'write-shorter'],
     ])
   })
 
@@ -145,10 +159,11 @@ describe('issue #76: the headers on the wire, through the real SDK', () => {
     for (const h of seen) expect(Object.keys(h).filter((k) => k.startsWith('x-understudy'))).toEqual([])
   })
 
-  it('VT-UW4: a reply from another model is logged as failed and never returned', async () => {
+  it('VT-UW4: a reply from another model is stopped at the headers: logged as failed, none of it shown or returned', async () => {
     live(true)
     effective = 'gemma-4-12b'
-    for (const call of [ask, (sink: MemoryLogSink) => stream(false, sink)]) {
+    const shown: string[] = []
+    for (const call of [ask, (sink: MemoryLogSink) => stream(false, sink, (t) => shown.push(t))]) {
       const sink = new MemoryLogSink()
       const err = await call(sink).then(
         () => null,
@@ -158,8 +173,10 @@ describe('issue #76: the headers on the wire, through the real SDK', () => {
       expect((err as ModelCallError).detail).toMatchObject({ servedBy: 'gemma-4-12b', retryable: false })
       // One row, with the usage that was billed, not a second one from the error path.
       expect(sink.rows).toHaveLength(1)
-      expect(sink.rows[0]).toMatchObject({ ok: false, error: 'served_by_other_model:gemma-4-12b', output_tokens: 2 })
+      expect(sink.rows[0]).toMatchObject({ ok: false, error: 'served_by_other_model:gemma-4-12b' })
     }
+    // Not one delta of the other model's text reached the page.
+    expect(shown).toEqual([])
     // Not retried: one request each.
     expect(seen).toHaveLength(2)
 

@@ -3,7 +3,7 @@
  * capture on and no route. Safe to run again: a workload already there is left alone.
  *
  *   pnpm understudy:workloads                     # the project in UNDERSTUDY_PROJECT, or rehearsal
- *   pnpm understudy:workloads --project=storytime
+ *   pnpm understudy:workloads --project storytime
  *   pnpm understudy:workloads --dry-run           # print what would be created
  *
  * Needs the `understudy` CLI signed in. It changes gateway configuration only - no model call.
@@ -11,8 +11,11 @@
 import { execFileSync } from 'node:child_process'
 import { DEFAULT_UNDERSTUDY_PROJECT, WORKLOADS } from '@/lib/ai/workload'
 
-function arg(name: string): string | undefined {
-  return process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3)
+/** `--name=value` or `--name value`. */
+export function arg(name: string, argv: readonly string[] = process.argv): string | undefined {
+  const i = argv.findIndex((a) => a === `--${name}` || a.startsWith(`--${name}=`))
+  if (i < 0) return undefined
+  return argv[i]!.includes('=') ? argv[i]!.slice(name.length + 3) : argv[i + 1]
 }
 
 export function missingWorkloads(existing: readonly string[]): string[] {

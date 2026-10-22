@@ -5,8 +5,10 @@ import type { CallPurpose } from '@/lib/schemas/common'
  * request's workload from two headers; without them every call lands in the org's default
  * workload, `main`, and calls of every kind can only be looked at as one pile.
  *
- * One workload per `CallPurpose`, plus the continuation after a drop (#74): it is a `write`
- * call with its own prompt, so it is looked at on its own. Names are the gateway's, kebab-case.
+ * One workload per `CallPurpose`, plus two writing calls that are not what their purpose
+ * usually is, so they are looked at on their own (the code review on #77): the continuation
+ * after a drop (#74), a `write` with its own prompt, and the shorter retry of an unusable first
+ * write (#32 rung 3), a `rewrite` call that sends the first-write prompt. Kebab-case names.
  * `scripts/understudy-workloads.ts` registers exactly this list.
  */
 export const WORKLOAD_FOR_PURPOSE = {
@@ -25,19 +27,27 @@ export const WORKLOAD_FOR_PURPOSE = {
   judge_pairwise: 'judge-pairwise',
 } as const satisfies Record<CallPurpose, string>
 
-export const CONTINUATION_WORKLOAD = 'write-continue'
+export const VARIANT_WORKLOADS = {
+  continuation: { purpose: 'write', workload: 'write-continue' },
+  shorter: { purpose: 'rewrite', workload: 'write-shorter' },
+} as const satisfies Record<string, { purpose: CallPurpose; workload: string }>
 
-export type Workload = (typeof WORKLOAD_FOR_PURPOSE)[CallPurpose] | typeof CONTINUATION_WORKLOAD
+export type WorkloadVariant = keyof typeof VARIANT_WORKLOADS
+
+export type Workload =
+  | (typeof WORKLOAD_FOR_PURPOSE)[CallPurpose]
+  | (typeof VARIANT_WORKLOADS)[WorkloadVariant]['workload']
 
 /** Every workload, in the order the registration script creates them. */
 export const WORKLOADS: readonly Workload[] = [
   ...Object.values(WORKLOAD_FOR_PURPOSE),
-  CONTINUATION_WORKLOAD,
+  ...Object.values(VARIANT_WORKLOADS).map((v) => v.workload),
 ]
 
-export function workloadFor(purpose: CallPurpose, opts: { continuation?: boolean } = {}): Workload {
-  if (opts.continuation && purpose === 'write') return CONTINUATION_WORKLOAD
-  return WORKLOAD_FOR_PURPOSE[purpose]
+/** A variant only applies to the purpose it belongs to; anything else keeps its purpose's. */
+export function workloadFor(purpose: CallPurpose, variant?: WorkloadVariant): Workload {
+  const v = variant ? VARIANT_WORKLOADS[variant] : undefined
+  return v && v.purpose === purpose ? v.workload : WORKLOAD_FOR_PURPOSE[purpose]
 }
 
 /** Evals run in `rehearsal` (the owner, 2026-10-21); production sets its own project. */
@@ -75,7 +85,14 @@ export function understudyHeaders(workload: Workload): Record<string, string> {
 export function servedByOtherModel(requested: string, headers: Headers | null | undefined): string | null {
   const served = headers?.get('x-understudy-effective-model')?.trim()
   if (!served) return null
-  // The gateway may prefix the supplier, e.g. `azure/claude-sonnet-5`.
-  if (served === requested || served.endsWith(`/${requested}`)) return null
-  return served
+  return sameModel(requested, served) ? null : served
+}
+
+/**
+ * One model under two ids: a supplier prefix (`azure/claude-sonnet-5`) and a dated snapshot
+ * against its alias (`claude-haiku-4-5-20251001` / `claude-haiku-4-5`) are the same model.
+ */
+function sameModel(a: string, b: string): boolean {
+  const base = (id: string) => id.toLowerCase().replace(/^.*\//, '').replace(/-\d{8}$/, '')
+  return base(a) === base(b)
 }

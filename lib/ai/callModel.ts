@@ -2,7 +2,7 @@ import Anthropic, { APIConnectionError, APIError } from '@anthropic-ai/sdk'
 import type { z } from 'zod'
 import type { CallPurpose } from '@/lib/schemas/common'
 import { capabilities, computeCost, modelForRole } from './pricing'
-import { servedByOtherModel, understudyHeaders, workloadFor } from './workload'
+import { servedByOtherModel, understudyHeaders, workloadFor, type WorkloadVariant } from './workload'
 import {
   MissingFixtureError,
   fixtureKey,
@@ -42,6 +42,8 @@ export interface CallModelOptions<T = string> {
   system?: CacheableBlock[]
   messages: Anthropic.MessageParam[]
   maxTokens?: number
+  /** A writing call that is not what its purpose usually is - the shorter retry - for its Understudy workload (#76). */
+  variant?: WorkloadVariant
   tools?: Anthropic.ToolUnion[]
   /** Passed through untyped so a lane can opt into structured outputs. */
   outputConfig?: Record<string, unknown>
@@ -379,12 +381,13 @@ export async function callModel<T = string>(
     const started = Date.now()
     let stream: ReturnType<Anthropic['messages']['stream']> | null = null
     let deadline: AbortSignal | null = null
+    let other: string | null = null
     // This attempt's budget: `timeoutMs`, capped at what is left before `deadlineAt`.
     const attemptMs = Math.max(1, Math.min(opts.timeoutMs ?? DEFAULT_TIMEOUT_MS, timeLeft()))
     try {
       const reqOpts = {
         signal: opts.signal,
-        headers: understudyHeaders(workloadFor(opts.purpose)),
+        headers: understudyHeaders(workloadFor(opts.purpose, opts.variant)),
         ...(opts.timeoutMs ? { timeout: opts.timeoutMs } : {}),
       }
       const params = request as unknown as Anthropic.MessageCreateParamsNonStreaming
@@ -401,24 +404,17 @@ export async function callModel<T = string>(
       deadline = AbortSignal.timeout(attemptMs)
       const signal = opts.signal ? AbortSignal.any([opts.signal, deadline]) : deadline
       stream = anthropic().messages.stream(params, { ...reqOpts, signal })
+      // A reply from another model than the one asked for is stopped at the headers (#76).
+      const live = stream
+      live.on('connect', () => {
+        other = servedByOtherModel(model, live.response?.headers)
+        if (other) live.abort()
+      })
       const response = (await stream.finalMessage()) as unknown as Record<string, unknown>
 
       const latencyMs = Date.now() - started
       const usage = normalizeUsage(response.usage)
       const stopReason = (response.stop_reason as string | null) ?? null
-
-      // A reply from another model than the one asked for is never used (#76).
-      const other = servedByOtherModel(model, stream.response?.headers)
-      if (other) {
-        await logRow(sink, opts, model, usage, latencyMs, false, `served_by_other_model:${other}`)
-        throw new ModelCallError(`${opts.purpose} call to ${model} was served by ${other}`, {
-          purpose: opts.purpose,
-          model,
-          attempts: attempt,
-          retryable: false,
-          servedBy: other,
-        })
-      }
 
       // A refusal is a successful HTTP call with a declined result. Log it, then raise.
       if (stopReason === 'refusal') {
@@ -461,8 +457,20 @@ export async function callModel<T = string>(
         replayed: false,
       })
     } catch (err) {
-      // Both are logged where they are raised.
-      if (err instanceof ModelRefusalError || err instanceof ModelCallError) throw err
+      if (err instanceof ModelRefusalError) throw err
+      if (other) {
+        const partial = stream?.currentMessage?.usage
+        await logRow(
+          sink, opts, model,
+          partial
+            ? normalizeUsage(partial)
+            : { input_tokens: 0, cache_read_tokens: 0, cache_write_tokens: 0, output_tokens: 0, web_searches: 0 },
+          Date.now() - started, false, `served_by_other_model:${other}`,
+        )
+        throw new ModelCallError(`${opts.purpose} call to ${model} was served by ${other}`, {
+          purpose: opts.purpose, model, attempts: attempt, retryable: false, servedBy: other,
+        })
+      }
       // Hitting our own deadline on a call that ASKED for more than five minutes is not
       // retried: a second full-length attempt doubles the cost of a call that has already run
       // long. Any other call that times out is retried, as it was before every call streamed
