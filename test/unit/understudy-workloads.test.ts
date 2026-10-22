@@ -1,5 +1,5 @@
 import { createServer, type IncomingHttpHeaders, type Server } from 'node:http'
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { CallPurpose } from '@/lib/schemas/common'
 import { callModel } from '@/lib/ai/callModel'
 import { streamModel } from '@/lib/ai/streamModel'
@@ -55,6 +55,19 @@ describe('issue #76: the workload map', () => {
     expect(understudyHeaders('quality')).toEqual({ 'x-understudy-project': 'rehearsal', 'x-understudy-workload': 'quality' })
     process.env.UNDERSTUDY_PROJECT = 'storytime'
     expect(understudyHeaders('quality')['x-understudy-project']).toBe('storytime')
+  })
+
+  it('VT-UW3: production on the gateway without UNDERSTUDY_PROJECT warns, once', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    process.env.ANTHROPIC_BASE_URL = 'https://api.understudylabs.com'
+    delete process.env.UNDERSTUDY_PROJECT
+    vi.stubEnv('NODE_ENV', 'production')
+    understudyHeaders('write')
+    understudyHeaders('write')
+    vi.unstubAllEnvs()
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]![0])).toContain('UNDERSTUDY_PROJECT')
+    warn.mockRestore()
   })
 
   it('VT-UW4: a reply from another model is caught; a supplier prefix is not another model', () => {
@@ -173,7 +186,8 @@ describe('issue #76: the headers on the wire, through the real SDK', () => {
       expect((err as ModelCallError).detail).toMatchObject({ servedBy: 'gemma-4-12b', retryable: false })
       // One row, with the usage that was billed, not a second one from the error path.
       expect(sink.rows).toHaveLength(1)
-      expect(sink.rows[0]).toMatchObject({ ok: false, error: 'served_by_other_model:gemma-4-12b' })
+      // Aborted before message_start: the row says its cost is unknown, not that it was free.
+      expect(sink.rows[0]).toMatchObject({ ok: false, cost_usd: 0, error: '[usage unknown] served_by_other_model:gemma-4-12b' })
     }
     // Not one delta of the other model's text reached the page.
     expect(shown).toEqual([])

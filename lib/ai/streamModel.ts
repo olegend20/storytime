@@ -268,7 +268,7 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
         : 0,
       latency_ms: latencyMs,
       ok: false,
-      error: `${used ? '[partial usage, lower bound] ' : ''}${message}`.slice(0, 500),
+      error: `${used ? '[partial usage, lower bound] ' : other ? '[usage unknown] ' : ''}${message}`.slice(0, 500),
     })
     if (other) {
       throw new ModelCallError(`${opts.purpose} stream to ${model} was served by ${other}`, {

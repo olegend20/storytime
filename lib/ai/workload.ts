@@ -68,9 +68,16 @@ export function viaUnderstudy(baseUrl: string | undefined = process.env.ANTHROPI
   }
 }
 
+let warnedNoProject = false
+
 /** The request headers that tag a call with its workload, or none when not on the gateway. */
 export function understudyHeaders(workload: Workload): Record<string, string> {
   if (!viaUnderstudy()) return {}
+  // Parent traffic must not mix with the evals' numbers in `rehearsal` (the review on #77).
+  if (process.env.NODE_ENV === 'production' && !process.env.UNDERSTUDY_PROJECT && !warnedNoProject) {
+    warnedNoProject = true
+    console.warn(`[understudy] UNDERSTUDY_PROJECT is unset in production: calls are tagged with the eval project '${DEFAULT_UNDERSTUDY_PROJECT}'`)
+  }
   return {
     'x-understudy-project': process.env.UNDERSTUDY_PROJECT || DEFAULT_UNDERSTUDY_PROJECT,
     'x-understudy-workload': workload,

@@ -465,7 +465,9 @@ export async function callModel<T = string>(
           partial
             ? normalizeUsage(partial)
             : { input_tokens: 0, cache_read_tokens: 0, cache_write_tokens: 0, output_tokens: 0, web_searches: 0 },
-          Date.now() - started, false, `served_by_other_model:${other}`,
+          // Aborted on connect, before message_start: nothing reported what was billed, so the
+          // row says its $0 is unknown rather than free (the review on #77).
+          Date.now() - started, false, `${partial ? '[partial usage, lower bound] ' : '[usage unknown] '}served_by_other_model:${other}`,
         )
         throw new ModelCallError(`${opts.purpose} call to ${model} was served by ${other}`, {
           purpose: opts.purpose, model, attempts: attempt, retryable: false, servedBy: other,
