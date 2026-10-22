@@ -16,6 +16,7 @@ import { narrativeWordCount } from './render'
 import { evalScenarios, scenarioBand, selectScenarios, type EvalScenario } from './scenarios'
 import { fmt, mean, median, min, p95 } from './stats'
 import type { CapContext, JudgeContext } from './types'
+import type { CloseKind } from '@/lib/ai/types'
 
 /**
  * F13 - the quality evaluation harness behind `pnpm eval`.
@@ -90,6 +91,16 @@ export interface StepLatency {
   ms: number
   /** Thinking included: the writer's thinking is most of the wait before chapter 1. */
   output_tokens: number
+  /**
+   * Issue #78, from each live call's stream trace. Failed calls by who ended them; our own
+   * aborts (`own_abort`: the deadline, the forced-drop eval) are counted apart from real drops.
+   */
+  failed?: Partial<Record<CloseKind, number>>
+  /** The longest silence between bytes on any one call. */
+  max_gap_ms?: number
+  /** `ping` events, and the streamed time they came in, for pings per minute. */
+  pings?: number
+  streamed_ms?: number
 }
 
 export interface LatencyStats {
@@ -273,8 +284,37 @@ export function stepLatency(rows: readonly GenerationLogRow[]): Record<string, S
     step.calls += 1
     step.ms += r.latency_ms
     step.output_tokens += r.output_tokens
+    if (r.stream) addTrace(step, r.stream)
   }
   return steps
+}
+
+function addTrace(step: StepLatency, t: { close: CloseKind | null; max_gap_ms: number; events: Record<string, number>; elapsed_ms: number }): void {
+  if (t.close) {
+    const failed = (step.failed ??= {})
+    failed[t.close] = (failed[t.close] ?? 0) + 1
+  }
+  step.max_gap_ms = Math.max(step.max_gap_ms ?? 0, t.max_gap_ms)
+  step.pings = (step.pings ?? 0) + (t.events.ping ?? 0)
+  step.streamed_ms = (step.streamed_ms ?? 0) + t.elapsed_ms
+}
+
+/** Issue #78: real drops (not our own aborts) by who ended them, and the longest silence, per purpose. */
+export function dropsLine(byStep: Record<string, StepLatency>): string | null {
+  const parts: string[] = []
+  for (const [purpose, st] of Object.entries(byStep).sort(([a], [b]) => a.localeCompare(b))) {
+    if (st.max_gap_ms === undefined) continue
+    const failed = Object.entries(st.failed ?? {}) as [CloseKind, number][]
+    const real = failed.filter(([k]) => k !== 'own_abort').reduce((n, [, v]) => n + v, 0)
+    const own = st.failed?.own_abort ?? 0
+    const kinds = failed.filter(([k]) => k !== 'own_abort').map(([k, v]) => `${k} ${v}`).join(', ')
+    const perMin = st.streamed_ms ? ((st.pings ?? 0) / (st.streamed_ms / 60_000)).toFixed(1) : '0.0'
+    parts.push(
+      `${purpose} ${real}/${st.calls} dropped${kinds ? ` (${kinds})` : ''}${own ? `, ${own} own abort(s)` : ''}, ` +
+        `longest silence ${(st.max_gap_ms / 1000).toFixed(1)}s, ${perMin} pings/min`,
+    )
+  }
+  return parts.length > 0 ? `  drops (issue #78): ${parts.join('; ')}` : null
 }
 
 function judgeContextFor(scenario: EvalScenario): JudgeContext {
@@ -540,6 +580,15 @@ export function summarizeLatency(records: EvalScenarioRecord[]): EvalLatencySumm
       sum.calls += step.calls
       sum.ms += step.ms
       sum.output_tokens += step.output_tokens
+      if (step.max_gap_ms !== undefined) {
+        for (const [k, v] of Object.entries(step.failed ?? {}) as [CloseKind, number][]) {
+          const failed = (sum.failed ??= {})
+          failed[k] = (failed[k] ?? 0) + v
+        }
+        sum.max_gap_ms = Math.max(sum.max_gap_ms ?? 0, step.max_gap_ms)
+        sum.pings = (sum.pings ?? 0) + (step.pings ?? 0)
+        sum.streamed_ms = (sum.streamed_ms ?? 0) + (step.streamed_ms ?? 0)
+      }
     }
   }
   return {
@@ -800,6 +849,8 @@ export function formatEval(result: EvalResult): string {
             .join(', '),
       )
     }
+    const drops = dropsLine(latency.by_step)
+    if (drops) lines.push(drops)
     lines.push('')
   }
   if (result.summary.failures.length > 0) {

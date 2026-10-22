@@ -888,6 +888,17 @@ safety review with a retired rule-7 report and a soft concern stays unsafe; the 
 constants sit below the comment that describes them. **Gates:** lint ✅ · typecheck ✅ ·
 unit+int 1340 ✅ · guardrails 32 ✅ · e2e mock 196 ✅ · e2e real 6 ✅.
 
+### 2026-10-22 — every dropped stream says who closed it (issue #78, DECISIONS #212)
+
+Understudy saw our cut streams as "client disconnected"; we saw `terminated`. Every live call
+now records what came over the wire (bytes, SSE events with pings, the longest silence, the
+gateway's ids), and a failed one says who ended it (`peer_reset`, `peer_end`, `own_abort`, ...)
+in its log row. A stream that ends with no message is now a drop, written again like a cut
+one: on 10-22 one lost a story. The writer's thinking summary (`display: "summarized"`; Sonnet 5
+hides it by default, so the stream is silent while it thinks) can be switched on in the eval
+only; production is unchanged until the owner decides. The 19 cuts in the 10-19/20 report were
+not laptop sleep: the laptop was awake for every one.
+
 ### 2026-10-21 — every model call has its own Understudy workload (issue #76, DECISIONS #211)
 
 Understudy saw all our calls as one pile under its default workload. Each call now names its

@@ -22,7 +22,7 @@ import {
   type RunGenerationResult,
 } from '@/lib/generate'
 import type { GateSummary } from './caps'
-import { parseForceDropAfterChapters, type FirstDraft, type GenerateInput, type PipelineStoryResult, type StoryPipeline } from './pipeline'
+import { parseForceDropAfterChapters, parseThinkingDisplay, type FirstDraft, type GenerateInput, type PipelineStoryResult, type StoryPipeline } from './pipeline'
 
 /**
  * F13/F14: the live pipeline behind `pnpm eval` and `pnpm bakeoff` - the function
@@ -48,13 +48,15 @@ import { parseForceDropAfterChapters, type FirstDraft, type GenerateInput, type 
  */
 export function createEvalPipeline(db: SupabaseClient = supabaseService()): StoryPipeline {
   const forced = parseForceDropAfterChapters(process.env.EVAL_FORCE_DROP_AFTER_CHAPTERS)
+  const thinkingDisplay = parseThinkingDisplay(process.env.EVAL_THINKING_DISPLAY)
   return {
     kind: 'live',
     describe:
       'F6 runGeneration (write, F7 gate + L4 review, rewrite, save, bible update)' +
-      (forced === undefined ? '' : `, every first write cut after ${forced} chapter(s) and continued (issue #74)`),
+      (forced === undefined ? '' : `, every first write cut after ${forced} chapter(s) and continued (issue #74)`) +
+      (thinkingDisplay === undefined ? '' : `, writer thinking display ${thinkingDisplay} (issue #78)`),
     generate: async (input) => {
-      const result = await generateOne(input, db, undefined, forced)
+      const result = await generateOne(input, db, undefined, forced, thinkingDisplay)
       // Null only in first-draft mode, which this pipeline never asks for.
       if (!result) throw new Error(`eval scenario ${input.scenario.id} returned no result`)
       return result
@@ -93,6 +95,7 @@ async function generateOne(
   db: SupabaseClient,
   firstDraftOnly?: (result: RunGenerationResult, pack: FactPack, costUsd: number) => void,
   forceDropAfterChapters?: number,
+  thinkingDisplay?: 'summarized',
 ): Promise<PipelineStoryResult | null> {
   const { scenario } = input
   const sink = new MeteredLogSink(input.sink ?? getDefaultLogSink())
@@ -181,6 +184,7 @@ async function generateOne(
       writingModel: input.writingModel,
       ...(firstDraftOnly ? { firstDraftOnly: true } : {}),
       ...(forceDropAfterChapters !== undefined ? { forceDropAfterChapters } : {}),
+      ...(thinkingDisplay ? { thinkingDisplay } : {}),
     })
     await drained
     if (firstDraftOnly) {

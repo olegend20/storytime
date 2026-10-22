@@ -99,6 +99,17 @@ export class PipelineUnavailableError extends Error {
 }
 
 /**
+ * The thinking-display eval's setting (issue #78, `--thinking-display=summarized`, or
+ * EVAL_THINKING_DISPLAY): undefined when unset; any other value is an error, so a typo cannot
+ * quietly measure the default.
+ */
+export function parseThinkingDisplay(raw: string | undefined): 'summarized' | undefined {
+  if (raw === undefined) return undefined
+  if (raw !== 'summarized') throw new Error(`--thinking-display=${raw}: expected "summarized"`)
+  return raw
+}
+
+/**
  * The forced-drop eval's setting (issue #74, `--force-drop-after=N`, or
  * EVAL_FORCE_DROP_AFTER_CHAPTERS): undefined when unset, an error for anything but a whole
  * number of chapters from 1 - an empty or mistyped value must not quietly turn it off.

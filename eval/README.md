@@ -68,6 +68,11 @@ thinking is in its output tokens). The summary has median and p95, and the compa
 the last run marks any story whose first chapter moved by 20% or more. Latency is reported,
 never a pass criterion: one sample per scenario through a remote API is too noisy to gate on.
 
+A live run also prints a `drops (issue #78):` line: per call purpose, the calls that failed by
+who ended them (`peer_reset`, `peer_end`, `upstream_error`, ...), our own aborts counted apart,
+the longest silence on any one call, and pings per minute. `--thinking-display=summarized`
+streams the writer's thinking summary instead of Sonnet 5's silent default, to measure it.
+
 ## What is in here
 
 | Path | What |

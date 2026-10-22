@@ -614,6 +614,7 @@ export async function runGeneration(
         messages: p.messages,
         maxTokens: WRITER_MAX_TOKENS,
         thinking: 'adaptive',
+        ...(deps.thinkingDisplay ? { thinkingDisplay: deps.thinkingDisplay } : {}),
         ...(structured ? { outputFormat: STORY_OUTPUT_FORMAT } : {}),
         familyId: prepared.familyId,
         storyId: prepared.storyId,
@@ -740,6 +741,7 @@ export async function runGeneration(
             : {}),
           maxDrops: MAX_DROP_RETRIES, maxRetries: MAX_DROP_RETRIES,
           thinking: 'adaptive',
+          ...(deps.thinkingDisplay ? { thinkingDisplay: deps.thinkingDisplay } : {}),
           ...(withFormat ? { outputConfig: { format: STORY_OUTPUT_FORMAT } } : {}),
           familyId: prepared.familyId,
           storyId: prepared.storyId,
@@ -894,6 +896,7 @@ export async function runGeneration(
           // is still here to fall back on (below).
           maxDrops: MAX_DROP_RETRIES, maxRetries: MAX_DROP_RETRIES,
           thinking: 'adaptive',
+          ...(deps.thinkingDisplay ? { thinkingDisplay: deps.thinkingDisplay } : {}),
           ...(withFormat ? { outputConfig: { format: STORY_OUTPUT_FORMAT } } : {}),
           familyId: prepared.familyId,
           storyId: prepared.storyId,
