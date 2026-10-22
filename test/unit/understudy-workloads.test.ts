@@ -47,6 +47,13 @@ describe('issue #76: the workload map', () => {
     expect(viaUnderstudy('https://understudylabs.com.example.org')).toBe(false)
     expect(viaUnderstudy('not a url')).toBe(false)
     expect(viaUnderstudy('https://api.understudylabs.com')).toBe(true)
+    // The test-only switch does nothing in production.
+    process.env.UNDERSTUDY_HEADERS = '1'
+    expect(viaUnderstudy('https://api.anthropic.com')).toBe(true)
+    vi.stubEnv('NODE_ENV', 'production')
+    expect(viaUnderstudy('https://api.anthropic.com')).toBe(false)
+    vi.unstubAllEnvs()
+    delete process.env.UNDERSTUDY_HEADERS
 
     delete process.env.ANTHROPIC_BASE_URL
     expect(understudyHeaders('write')).toEqual({})

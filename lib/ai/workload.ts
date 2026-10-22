@@ -55,10 +55,11 @@ export const DEFAULT_UNDERSTUDY_PROJECT = 'rehearsal'
 
 /**
  * Whether calls go through the Understudy gateway: only then are its headers sent.
- * `UNDERSTUDY_HEADERS=1` sends them to any base URL - the real-SDK tests' local server.
+ * `UNDERSTUDY_HEADERS=1` sends them to any base URL - the real-SDK tests' local server. It is
+ * ignored in production, so a stray setting cannot send them to Anthropic (the review on #77).
  */
 export function viaUnderstudy(baseUrl: string | undefined = process.env.ANTHROPIC_BASE_URL): boolean {
-  if (process.env.UNDERSTUDY_HEADERS === '1') return true
+  if (process.env.UNDERSTUDY_HEADERS === '1' && process.env.NODE_ENV !== 'production') return true
   if (!baseUrl) return false
   try {
     const host = new URL(baseUrl).hostname
