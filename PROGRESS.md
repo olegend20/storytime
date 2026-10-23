@@ -888,6 +888,26 @@ safety review with a retired rule-7 report and a soft concern stays unsafe; the 
 constants sit below the comment that describes them. **Gates:** lint ✅ · typecheck ✅ ·
 unit+int 1340 ✅ · guardrails 32 ✅ · e2e mock 196 ✅ · e2e real 6 ✅.
 
+### 2026-10-22 — every dropped stream says who closed it (issue #78, DECISIONS #212)
+
+Understudy saw our cut streams as "client disconnected"; we saw `terminated`. Every live call
+now records what came over the wire (bytes, SSE events with pings, the longest silence, the
+gateway's ids), and a failed one says who ended it (`peer_reset`, `peer_end`, `own_abort`, ...)
+in its log row. A stream that ends with no message is now a drop, written again like a cut
+one: on 10-22 one lost a story. The writer's thinking summary (`display: "summarized"`; Sonnet 5
+hides it by default, so the stream is silent while it thinks) can be switched on in the eval
+only; production is unchanged until the owner decides. The 19 cuts in the 10-19/20 report were
+not laptop sleep: the laptop was awake for every one.
+
+Evals (2026-10-23, both via the gateway, same calibration): **A**, display as today
+(`eval-2026-10-23-2.json`): 32/32, mean 4.15, 0 disqualified, first chapter median 98.2 s,
+$12.37. **B**, thinking summary on (`eval-2026-10-23.json`): 32/32, mean 3.94, 1 disqualified
+(guardrail breach), first chapter 104.3 s, $14.32. No drop in either (0 failed rows of 561
+calls). The summary ends the silence: the writer's longest quiet stretch per call, median
+78 s in A (up to 180 s) against 5.9 s in B (at most 8.7 s). In A, 26 of 48 silences end on an
+exact multiple of 30 s (60.0, 90.0, 180.0 s): a timer in the path, not the model. Turning the
+summary on in production is the owner's decision.
+
 ### 2026-10-21 — every model call has its own Understudy workload (issue #76, DECISIONS #211)
 
 Understudy saw all our calls as one pile under its default workload. Each call now names its

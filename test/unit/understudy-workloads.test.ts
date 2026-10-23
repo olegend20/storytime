@@ -194,7 +194,9 @@ describe('issue #76: the headers on the wire, through the real SDK', () => {
       // One row, with the usage that was billed, not a second one from the error path.
       expect(sink.rows).toHaveLength(1)
       // Aborted before message_start: the row says its cost is unknown, not that it was free.
-      expect(sink.rows[0]).toMatchObject({ ok: false, cost_usd: 0, error: '[usage unknown] served_by_other_model:gemma-4-12b' })
+      expect(sink.rows[0]).toMatchObject({ ok: false, cost_usd: 0 })
+      // Our own abort, never the far side's (#78).
+      expect(sink.rows[0]!.error).toMatch(/^\[usage unknown\] served_by_other_model:gemma-4-12b \[close=own_abort /)
     }
     // Not one delta of the other model's text reached the page.
     expect(shown).toEqual([])

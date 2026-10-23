@@ -15,6 +15,49 @@ export interface GenerationLogRow {
   latency_ms: number
   ok: boolean
   error: string | null
+  /**
+   * What came over the wire on a live call (issue #78). In memory only - the eval reads it -
+   * and never stored: the Supabase sink writes the columns above. A failed row's `error`
+   * carries the same evidence as a suffix.
+   */
+  stream?: StreamSummary
+}
+
+/**
+ * Who ended a failed call (issue #78). Stable values.
+ * - `peer_reset`: the other side closed the socket (undici `other side closed`, ECONNRESET).
+ * - `peer_end`: the stream ended cleanly before its message did.
+ * - `upstream_error`: the upstream sent `event: error` partway.
+ * - `connect_failed`: no response at all.
+ * - `local_timeout`: undici's own body or headers timeout.
+ * - `own_abort`: our signal - the deadline, a parent leaving, the forced-drop eval, a wrong-model abort.
+ * - `http_error`: an HTTP status we were sent.
+ */
+export type CloseKind =
+  | 'peer_reset'
+  | 'peer_end'
+  | 'upstream_error'
+  | 'connect_failed'
+  | 'local_timeout'
+  | 'own_abort'
+  | 'http_error'
+  | 'unknown'
+
+export interface StreamSummary {
+  /** Null when the call completed. */
+  close: CloseKind | null
+  /** The deepest coded cause, `CODE:message`. */
+  cause: string | null
+  elapsed_ms: number
+  headers_ms: number | null
+  bytes: number
+  /** SSE events by name, pings included. */
+  events: Record<string, number>
+  /** The longest silence between chunks; for a failed call, to the close too. */
+  max_gap_ms: number
+  last_byte_ago_ms: number | null
+  request_id: string | null
+  understudy_id: string | null
 }
 
 /**
@@ -57,6 +100,8 @@ export class ModelCallError extends Error {
       dropped?: boolean
       /** The gateway answered with another model than the one requested (#76); never used. */
       servedBy?: string
+      /** Who ended the call (#78). */
+      close?: CloseKind
     },
   ) {
     super(message)

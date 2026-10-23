@@ -147,6 +147,12 @@ export interface GenerationDeps {
    * production.
    */
   forceDropAfterChapters?: number
+  /**
+   * Stream the writer's thinking summary on the writing calls (issue #78) - the first write, the
+   * continuation, the shorter retry and the rewrite. Unset keeps Sonnet 5's default, a silent
+   * stream while it thinks. Only the eval sets it, to measure it; production is the owner's call.
+   */
+  thinkingDisplay?: 'summarized'
 }
 
 export function resolveQuota(deps: GenerationDeps): QuotaService {

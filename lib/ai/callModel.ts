@@ -10,12 +10,14 @@ import {
   writeFixture,
   type FixturePayload,
 } from './fixtures'
+import { causeOf, closeKind, failedRowError, isDroppedStream, isUpstreamStreamError, newTrace, summarize, traceMiddleware } from './streamTrace'
 import {
   MemoryLogSink,
   ModelCallError,
   ModelRefusalError,
   type GenerationLogSink,
   type GenerationLogRow,
+  type StreamSummary,
 } from './types'
 
 /**
@@ -49,6 +51,8 @@ export interface CallModelOptions<T = string> {
   outputConfig?: Record<string, unknown>
   /** 'adaptive' where supported; silently dropped on models that reject it. */
   thinking?: 'adaptive' | 'off'
+  /** Stream a summary of the thinking (#78); see `StreamModelOptions.thinkingDisplay`. Unset changes nothing. */
+  thinkingDisplay?: 'summarized'
   effort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max'
   /** Validate and return typed JSON. Repair is the caller's job (s4.4). */
   schema?: z.ZodType<T>
@@ -200,7 +204,7 @@ function buildSystem(blocks: CacheableBlock[] | undefined): Anthropic.TextBlockP
  */
 function applyCapabilities(
   model: string,
-  opts: { thinking?: 'adaptive' | 'off'; effort?: string },
+  opts: { thinking?: 'adaptive' | 'off'; thinkingDisplay?: 'summarized'; effort?: string },
 ): { thinking?: Record<string, unknown>; output_config?: Record<string, unknown> } {
   const caps = capabilities(model)
   const out: { thinking?: Record<string, unknown>; output_config?: Record<string, unknown> } = {}
@@ -209,7 +213,7 @@ function applyCapabilities(
   if (opts.thinking === 'adaptive') {
     // Fable 5.1 has thinking always on and 400s on any explicit config: omit entirely.
     if (thinkingMode !== 'always_on_omit_param' && thinkingMode !== 'extended_budget_tokens') {
-      out.thinking = { type: 'adaptive' }
+      out.thinking = { type: 'adaptive', ...(opts.thinkingDisplay ? { display: opts.thinkingDisplay } : {}) }
     }
   }
   // Haiku 5.5 thinks unless told not to, so "off" has to be said. Every other model stays as it
@@ -262,37 +266,8 @@ export function structuredOutputRejected(err: unknown): boolean {
   )
 }
 
-/**
- * A stream that was cut off partway: undici's `TypeError('terminated')` (its cause a socket
- * "other side closed"), or a reset socket. The SDK's MessageStream rewraps any non-SDK error
- * as a plain `AnthropicError` with the original as `cause` (SDK 0.128 MessageStream.js), so
- * the socket code is two levels down - the cause chain is walked, not just the top error.
- * Not an `APIConnectionError`, so before issue #50 it was never retried: 2 of ~10 rewrites
- * through the gateway died this way on 2026-10-14.
- */
-export function isDroppedStream(err: unknown): boolean {
-  if (err instanceof APIError) return false
-  let e: unknown = err
-  for (let depth = 0; depth < 4 && typeof e === 'object' && e !== null; depth += 1) {
-    if (e instanceof Error && e.name === 'TypeError' && e.message === 'terminated') return true
-    const code = (e as { code?: unknown }).code
-    if (code === 'UND_ERR_SOCKET' || code === 'ECONNRESET') return true
-    e = (e as { cause?: unknown }).cause
-  }
-  return false
-}
-
-/**
- * An `event: error` the upstream sent partway through a stream - the SDK raises it as an
- * `APIError` with no status. Only the kinds that mean the upstream lost the stream, not a
- * request we got wrong: on 2026-10-21 a story's continuation (issue #74) died on the gateway's
- * `upstream_response_error` and, not counted as a drop, was never written again.
- */
-const UPSTREAM_STREAM_ERRORS = new Set(['upstream_response_error', 'overloaded_error', 'api_error'])
-
-export function isUpstreamStreamError(err: unknown): boolean {
-  return err instanceof APIError && err.status === undefined && UPSTREAM_STREAM_ERRORS.has(String(err.type))
-}
+// The drop predicates live with the stream trace (#78); re-exported for the callers that import them here.
+export { isDroppedStream, isUpstreamStreamError }
 
 /** Retry on transport failures and the transient HTTP statuses; never on a 4xx we caused. */
 function isRetryable(err: unknown): { retryable: boolean; status?: number } {
@@ -331,6 +306,7 @@ export async function callModel<T = string>(
   const system = buildSystem(opts.system)
   const capExtras = applyCapabilities(model, {
     thinking: opts.thinking,
+    ...(opts.thinkingDisplay ? { thinkingDisplay: opts.thinkingDisplay } : {}),
     effort: opts.effort,
   })
   const outputConfig = { ...(capExtras.output_config ?? {}), ...(opts.outputConfig ?? {}) }
@@ -382,12 +358,14 @@ export async function callModel<T = string>(
     let stream: ReturnType<Anthropic['messages']['stream']> | null = null
     let deadline: AbortSignal | null = null
     let other: string | null = null
+    const trace = newTrace(started)
     // This attempt's budget: `timeoutMs`, capped at what is left before `deadlineAt`.
     const attemptMs = Math.max(1, Math.min(opts.timeoutMs ?? DEFAULT_TIMEOUT_MS, timeLeft()))
     try {
       const reqOpts = {
         signal: opts.signal,
         headers: understudyHeaders(workloadFor(opts.purpose, opts.variant)),
+        middleware: [traceMiddleware(trace)],
         ...(opts.timeoutMs ? { timeout: opts.timeoutMs } : {}),
       }
       const params = request as unknown as Anthropic.MessageCreateParamsNonStreaming
@@ -419,7 +397,7 @@ export async function callModel<T = string>(
       // A refusal is a successful HTTP call with a declined result. Log it, then raise.
       if (stopReason === 'refusal') {
         const details = (response.stop_details ?? {}) as Record<string, unknown>
-        await logRow(sink, opts, model, usage, latencyMs, false, `refusal:${details.category ?? 'unknown'}`)
+        await logRow(sink, opts, model, usage, latencyMs, false, `refusal:${details.category ?? 'unknown'}`, summarize(trace, null, null))
         throw new ModelRefusalError(
           model,
           (details.category as string | null) ?? null,
@@ -455,9 +433,14 @@ export async function callModel<T = string>(
         raw: response,
         latencyMs,
         replayed: false,
+        stream: summarize(trace, null, null),
       })
     } catch (err) {
       if (err instanceof ModelRefusalError) throw err
+      // Who ended it (#78): our own signal - the caller, this attempt's deadline, a wrong-model
+      // abort - or the far side, and what came over the wire first.
+      const close = closeKind(err, opts.signal?.aborted === true || deadline?.aborted === true || other !== null, trace)
+      const sum = summarize(trace, close, causeOf(err))
       if (other) {
         const partial = stream?.currentMessage?.usage
         await logRow(
@@ -467,10 +450,12 @@ export async function callModel<T = string>(
             : { input_tokens: 0, cache_read_tokens: 0, cache_write_tokens: 0, output_tokens: 0, web_searches: 0 },
           // Aborted on connect, before message_start: nothing reported what was billed, so the
           // row says its $0 is unknown rather than free (the review on #77).
-          Date.now() - started, false, `${partial ? '[partial usage, lower bound] ' : '[usage unknown] '}served_by_other_model:${other}`,
+          Date.now() - started, false,
+          failedRowError(`${partial ? '[partial usage, lower bound] ' : '[usage unknown] '}served_by_other_model:${other}`, sum),
+          sum,
         )
         throw new ModelCallError(`${opts.purpose} call to ${model} was served by ${other}`, {
-          purpose: opts.purpose, model, attempts: attempt, retryable: false, servedBy: other,
+          purpose: opts.purpose, model, attempts: attempt, retryable: false, servedBy: other, close,
         })
       }
       // Hitting our own deadline on a call that ASKED for more than five minutes is not
@@ -511,13 +496,14 @@ export async function callModel<T = string>(
           : { input_tokens: 0, cache_read_tokens: 0, cache_write_tokens: 0, output_tokens: 0, web_searches: 0 },
         latencyMs,
         false,
-        `${partial ? '[partial usage, lower bound] ' : ''}${message}`.slice(0, 500),
+        failedRowError(`${partial ? '[partial usage, lower bound] ' : ''}${message}`, sum),
+        sum,
       )
 
       if (!retryable || attempt === maxRetries + 1) {
         throw new ModelCallError(
           `${opts.purpose} call to ${model} failed after ${attempt} attempt(s): ${message}`,
-          { purpose: opts.purpose, model, attempts: attempt, retryable, status, ...(dropped ? { dropped: true } : {}) },
+          { purpose: opts.purpose, model, attempts: attempt, retryable, status, close, ...(dropped ? { dropped: true } : {}) },
         )
       }
       await sleep(Math.min(2 ** attempt * 250, 4000), opts.signal)
@@ -540,6 +526,7 @@ async function logRow<T>(
   latencyMs: number,
   ok: boolean,
   error: string | null,
+  stream?: StreamSummary,
 ): Promise<void> {
   await sink.write({
     family_id: opts.familyId ?? null,
@@ -562,6 +549,7 @@ async function logRow<T>(
     latency_ms: latencyMs,
     ok,
     error,
+    ...(stream ? { stream } : {}),
   })
 }
 
@@ -575,8 +563,9 @@ async function finish<T>(args: {
   raw: unknown
   latencyMs: number
   replayed: boolean
+  stream?: StreamSummary
 }): Promise<CallModelResult<T>> {
-  const { opts, model, sink, usage, text, stopReason, raw, latencyMs, replayed } = args
+  const { opts, model, sink, usage, text, stopReason, raw, latencyMs, replayed, stream } = args
 
   const costUsd = computeCost({
     model,
@@ -587,7 +576,7 @@ async function finish<T>(args: {
     webSearches: usage.web_searches,
   })
 
-  await logRow(sink, opts, model, usage, latencyMs, true, null)
+  await logRow(sink, opts, model, usage, latencyMs, true, null, stream)
 
   let data: T | null = null
   if (opts.schema) {

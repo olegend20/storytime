@@ -11,6 +11,8 @@ const drops = vi.hoisted(() => ({
   /** Issue #76: whether each streamed write was marked as a continuation, and each rewrite call's variant. */
   continuations: [] as boolean[],
   rewriteVariants: [] as (string | undefined)[],
+  /** Issue #78: the thinking display each writing call asked for. */
+  displays: [] as [string, string | undefined][],
   /**
    * Issue #72: how many times the gateway drops the rewrite. The rewrite goes through
    * callModel, whose own drop loop (VT-R1/R2) is stood in for here: it makes
@@ -25,7 +27,10 @@ vi.mock('@/lib/ai', async (orig) => {
   const actual = await orig<typeof import('@/lib/ai')>()
   return {
     ...actual,
-    callModel: async (opts: Parameters<typeof actual.callModel>[0]) => {
+    callModel: async (given: Parameters<typeof actual.callModel>[0]) => {
+      // The fixtures were recorded without a display; the request shape is VT-SC4's (unit).
+      const { thinkingDisplay, ...opts } = given
+      if (opts.purpose === 'rewrite') drops.displays.push([opts.purpose, thinkingDisplay])
       if (opts.purpose === 'rewrite') drops.rewriteVariants.push(opts.variant)
       if (opts.purpose === 'rewrite' && drops.rewriteRefuses) throw new actual.ModelRefusalError('stub', 'stub', null)
       if (opts.purpose === 'rewrite' && drops.rewriteStatus) {
@@ -46,7 +51,9 @@ vi.mock('@/lib/ai', async (orig) => {
       drops.rewriteDrops = 0
       return actual.callModel(opts)
     },
-    streamModel: async (opts: Parameters<typeof actual.streamModel>[0]) => {
+    streamModel: async (given: Parameters<typeof actual.streamModel>[0]) => {
+      const { thinkingDisplay, ...opts } = given
+      drops.displays.push([opts.variant ?? opts.purpose, thinkingDisplay])
       drops.continuations.push(opts.variant === 'continuation')
       const next = drops.queue.shift()
       if (!next) return actual.streamModel(opts)
@@ -881,10 +888,13 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
 
     const sink = new MemoryLogSink()
     const quota = new RecordingQuota()
-    const { events, result } = await collect(run, { db: family.db, sink, quota, now: () => FIXED_NOW })
+    drops.displays.length = 0
+    const { events, result } = await collect(run, { db: family.db, sink, quota, now: () => FIXED_NOW, thinkingDisplay: 'summarized' })
 
     expect(['ready', 'flagged']).toContain(result.status)
     expect(result.writeCalls).toBe(2)
+    // #78: the shorter retry asks for the thinking display too.
+    expect(drops.displays.at(-1)).toEqual(['rewrite', 'summarized'])
     expect(sink.rows.filter((r) => r.purpose === 'rewrite')).toHaveLength(1)
     expect(result.story?.title).toBe(retried.title)
     expect(result.quality?.first_attempt?.reasons).toEqual(['output unusable; retried 10 -> 5 minutes'])
@@ -1097,6 +1107,21 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       if (result.bibleUpdate) await result.bibleUpdate
     })
 
+    it.each([undefined, 'summarized' as const])('VT-SC4 (#78): the eval\'s thinking display (%s) reaches the first write and the continuation', async (display) => {
+      const run = await prepared()
+      const { story } = stubResponsesFor(run)
+      stubContinuation(run, story, 1)
+      drops.queue.push({ partial: cutAfter(story, 1, 'Half') })
+      drops.displays.length = 0
+      const { result } = await collect(run, {
+        db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW,
+        ...(display ? { thinkingDisplay: display } : {}),
+      })
+      expect(result.status).toBe('ready')
+      expect(drops.displays).toEqual([['write', display], ['continuation', display]])
+      if (result.bibleUpdate) await result.bibleUpdate
+    })
+
     it('VT-RS2: the half chapter is cleared on the page, then written again - never duplicated', async () => {
       const run = await prepared()
       const { story } = stubResponsesFor(run)
@@ -1300,14 +1325,18 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       const run = await prepared()
       const { story } = stubResponsesFor(run, { story: tooShort() })
       drops.rewriteDrops = 99
+      drops.displays.length = 0
       const quota = new RecordingQuota()
       const { events, result } = await collect(run, {
         db: family.db, sink: new MemoryLogSink(), quota, safetyReviewer: alwaysClean, now: () => FIXED_NOW,
+        thinkingDisplay: 'summarized',
       })
 
       expect(result.status).toBe('flagged')
       expect(result.writeCalls).toBe(2)
       expect(drops.rewriteAttempts).toBe(MAX_DROP_RETRIES + 1)
+      // #78: the rewrite asks for the thinking display too.
+      expect(drops.displays).toEqual([['write', 'summarized'], ['rewrite', 'summarized']])
       expect(result.story?.title).toBe(story.title)
       expect(result.quality?.rewrite_reasons).toContain('rewrite output unusable: rewrite_failed:dropped')
       expect(result.quality?.first_attempt?.failures.map((f) => f.check)).toContain('word_count_in_range')
