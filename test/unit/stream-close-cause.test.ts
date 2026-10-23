@@ -3,7 +3,7 @@ import { APIConnectionError, APIConnectionTimeoutError, APIError } from '@anthro
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { callModel } from '@/lib/ai/callModel'
 import { streamModel } from '@/lib/ai/streamModel'
-import { closeKind, failedRowError, isTruncatedStream, newTrace, summarize } from '@/lib/ai/streamTrace'
+import { closeKind, failedRowError, isDroppedStream, isTruncatedStream, newTrace, summarize } from '@/lib/ai/streamTrace'
 import { MemoryLogSink, ModelCallError } from '@/lib/ai/types'
 import { SupabaseLogSink } from '@/lib/costs/sink'
 import { dropsLine, stepLatency } from '@/lib/eval/harness'
@@ -223,7 +223,11 @@ describe('issue #78: the close kinds and the report', () => {
     // The SDK's own headers timeout is ours (code review on #79).
     expect(closeKind(new APIConnectionTimeoutError(), false, t)).toBe('local_timeout')
     expect(closeKind(terminated(coded('UND_ERR_SOCKET')), true, t)).toBe('own_abort')
-    expect(closeKind(new Error('who knows'), false, t)).toBe('unknown')
+    expect(closeKind(new Error('who knows'), false, t)).toBe('unknown')    // Whatever is logged peer_reset is also a drop, and retried (review on #79).
+    for (const code of ['UND_ERR_SOCKET', 'ECONNRESET', 'EPIPE']) {
+      expect(closeKind(terminated(coded(code)), false, t)).toBe('peer_reset')
+      expect(isDroppedStream(Object.assign(new Error('write failed'), { cause: coded(code) }))).toBe(true)
+    }
   })
 
   it('VT-SC3: only the SDK\'s no-message end counts as a truncated stream', async () => {
@@ -239,6 +243,13 @@ describe('issue #78: the close kinds and the report', () => {
     const err = failedRowError('x'.repeat(2000), sum)
     expect(err.length).toBeLessThanOrEqual(500)
     expect(err).toMatch(/\[close=peer_reset cause=UND_ERR_SOCKET:other side closed .*\]$/)
+  })
+
+  it('the suffix keeps its closing bracket even with an outsized gateway id', () => {
+    const sum = { ...summarize(newTrace(Date.now() - 1000), 'peer_reset', 'UND_ERR_SOCKET:other side closed'), request_id: 'r'.repeat(400), understudy_id: 'u'.repeat(400) }
+    const err = failedRowError('terminated', sum)
+    expect(err.length).toBeLessThanOrEqual(500)
+    expect(err).toMatch(/^terminated \[close=peer_reset .* us=u{64}\]$/)
   })
 
   it('VT-SC5: the eval counts real drops apart from our own aborts, with the longest silence', () => {

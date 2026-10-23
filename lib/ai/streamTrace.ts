@@ -114,6 +114,9 @@ function causeChain(err: unknown): { codes: string[]; deepest: string | null; te
   return { codes, deepest, terminated }
 }
 
+/** A socket the far side closed or reset: a drop, and `peer_reset` (review on #79: one list for both). */
+const PEER_CODES = new Set(['UND_ERR_SOCKET', 'ECONNRESET', 'EPIPE'])
+
 /**
  * A stream that was cut off partway: undici's `TypeError('terminated')` (its cause a socket
  * "other side closed"), or a reset socket. The SDK's MessageStream rewraps any non-SDK error
@@ -127,7 +130,7 @@ export function isDroppedStream(err: unknown): boolean {
   if (err instanceof APIError) return false
   if (isTruncatedStream(err)) return true
   const { codes, terminated } = causeChain(err)
-  return terminated || codes.includes('UND_ERR_SOCKET') || codes.includes('ECONNRESET')
+  return terminated || codes.some((c) => PEER_CODES.has(c))
 }
 
 /**
@@ -142,7 +145,6 @@ export function isUpstreamStreamError(err: unknown): boolean {
   return err instanceof APIError && err.status === undefined && UPSTREAM_STREAM_ERRORS.has(String(err.type))
 }
 
-const PEER_CODES = new Set(['UND_ERR_SOCKET', 'ECONNRESET', 'EPIPE'])
 const CONNECT_CODES = new Set(['ENOTFOUND', 'ECONNREFUSED', 'ETIMEDOUT', 'EAI_AGAIN', 'ENETUNREACH', 'EHOSTUNREACH', 'UND_ERR_CONNECT_TIMEOUT'])
 const TIMEOUT_CODES = new Set(['UND_ERR_BODY_TIMEOUT', 'UND_ERR_HEADERS_TIMEOUT'])
 
@@ -205,8 +207,9 @@ export function closeSuffix(sum: StreamSummary): string {
     (sum.cause ? ` cause=${sum.cause.slice(0, 60)}` : '') +
     ` t=${s(sum.elapsed_ms)} hdr=${s(sum.headers_ms)} bytes=${sum.bytes} events=${events.slice(0, 120)}` +
     ` gap=${s(sum.max_gap_ms)} last=${s(sum.last_byte_ago_ms)}` +
-    (sum.request_id ? ` req=${sum.request_id}` : '') +
-    (sum.understudy_id ? ` us=${sum.understudy_id}` : '') +
+    // Ids are capped too, so the closing `]` always fits in the 500-char column (review on #79).
+    (sum.request_id ? ` req=${sum.request_id.slice(0, 64)}` : '') +
+    (sum.understudy_id ? ` us=${sum.understudy_id.slice(0, 64)}` : '') +
     ']'
   )
 }
