@@ -98,6 +98,10 @@ describe('VT-RC8: the route keeps the story so far (issue #82)', () => {
     expect(progressAt).toBeLessThan(finishedAt)
     // Old snapshots are pruned as the request starts.
     expect(db.calls.some((c) => c.table === 'generation_progress' && c.op === 'delete')).toBe(true)
+    // Refused, so never saved: its snapshot is deleted as it ends, after the request record.
+    const deletes = db.calls.flatMap((c, i) => (c.table === 'generation_progress' && c.op === 'delete' ? [i] : []))
+    expect(deletes.length).toBe(2)
+    expect(deletes[1]).toBeGreaterThan(finishedAt)
   })
 
   it('without a generation id (an older page): nothing is kept', async () => {
@@ -132,6 +136,8 @@ describe('VT-RC8: the route keeps the story so far (issue #82)', () => {
       const upserts = db.calls.filter((c) => c.table === 'generation_progress' && c.op === 'upsert')
       const last = upserts.at(-1)!.args[0] as { events: { type: string }[] }
       expect(last.events.at(-1)).toMatchObject({ type: 'done' })
+      // Saved: the snapshot stays for the page to finish from (only the start's prune deletes).
+      expect(db.calls.filter((c) => c.table === 'generation_progress' && c.op === 'delete')).toHaveLength(1)
     } finally {
       db.writing = false
     }

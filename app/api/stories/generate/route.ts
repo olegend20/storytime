@@ -17,7 +17,7 @@ import {
   noteGenerationStory,
   startGenerationRequest,
 } from '@/lib/generate/requests'
-import { ProgressRecorder, pruneGenerationProgress } from '@/lib/generate/progress'
+import { ProgressRecorder, discardGenerationProgress, pruneGenerationProgress } from '@/lib/generate/progress'
 
 /**
  * POST /api/stories/generate - the SSE endpoint in `lib/schemas/api.ts` (F6).
@@ -120,6 +120,10 @@ export async function POST(request: Request): Promise<Response> {
   const finish = async (outcome: Parameters<typeof finishGenerationRequest>[3]) => {
     await progress?.settled()
     if (generationId && records) await finishGenerationRequest(records, generationId, familyId, outcome)
+    // Not saved: its text is kept nowhere else, so the snapshot goes now, not in an hour.
+    if (progress && records && outcome.status !== 'ready' && outcome.status !== 'flagged') {
+      await discardGenerationProgress(records, generationId!, familyId)
+    }
   }
   const run = (async () => {
     const prepared = await prepareGeneration(familyId, body, deps)

@@ -7,8 +7,9 @@
 -- a compact list (facts, meta, each chapter whole, the terminal event).
 --
 -- No new field about a child: `events` is the story being written, the same text and first
--- names the `stories` row holds once saved. Temporary: rows older than an hour are deleted
--- whenever a request starts (lib/generate/progress.ts), long after the route's maxDuration.
+-- names the `stories` row holds once saved. Temporary: a story that was not saved has its row
+-- deleted as it ends; a saved story's row is deleted at the first request start more than an
+-- hour later (lib/generate/progress.ts), long after the route's maxDuration.
 -- Service role only: RLS on, no policies, like generation_requests; the route checks the family.
 create table generation_progress (
   generation_id uuid primary key references generation_requests (id) on delete cascade,

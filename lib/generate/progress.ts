@@ -17,7 +17,11 @@ import { readGenerationRequest, type GenerationRequestView } from './requests'
 /** At most one write this often while prose streams; a chapter is thousands of deltas. */
 export const PROGRESS_WRITE_MS = 1_500
 
-/** Rows older than this are deleted when a request starts: long after the route's maxDuration. */
+/**
+ * A saved story's snapshot is deleted at the first request start after this: long after the
+ * route's maxDuration. A story that was not saved has its snapshot deleted as it ends
+ * (`discardGenerationProgress`), since its text is kept nowhere else (code review on #83).
+ */
 export const PROGRESS_RETENTION_MS = 60 * 60_000
 
 /** Written at once: the page should see a new chapter, the title or the end without waiting. */
@@ -160,6 +164,19 @@ export class ProgressRecorder {
       this.stats.failures += 1
       console.warn('[generate] generation_progress write threw:', err)
     }
+  }
+}
+
+/**
+ * A story that ended without being saved (discarded, failed, refused): its snapshot goes at
+ * once. The page reads how it ended from the request record, and says so; it needs no text.
+ */
+export async function discardGenerationProgress(db: SupabaseClient, id: string, familyId: string): Promise<void> {
+  try {
+    const { error } = await db.from('generation_progress').delete().eq('generation_id', id).eq('family_id', familyId)
+    if (error) console.warn(`[generate] generation_progress discard: ${error.message}`)
+  } catch (err) {
+    console.warn('[generate] generation_progress discard threw:', err)
   }
 }
 
