@@ -66,6 +66,9 @@ function mockQuality(story: LibraryStory): QualityResult {
 /** How long the `thinking` scenario holds the stream between the facts and the first chapter. */
 export const MOCK_THINKING_MS = 4_000
 
+/** The dropped scenarios lose the page's stream once this many chapters have arrived. */
+export const DROPPED_AFTER_CHAPTERS = 2
+
 export interface StreamOptions {
   scenario: MockScenario
   delayMs: number
@@ -107,7 +110,7 @@ export function generationEvents(story: LibraryStory, opts: StreamOptions): unkn
   const failAfter = opts.scenario === 'midstream_failure' ? 2 : Number.POSITIVE_INFINITY
   for (const [index, chapter] of story.content.chapters.entries()) {
     // The stream simply ends: what a parent's browser sees when the connection drops.
-    if ((opts.scenario === 'connection_dropped' || opts.scenario === 'connection_dropped_discarded') && index >= 2) {
+    if ((opts.scenario === 'connection_dropped' || opts.scenario === 'connection_dropped_discarded') && index >= DROPPED_AFTER_CHAPTERS) {
       return events
     }
     if (index >= failAfter) {

@@ -10,6 +10,8 @@ import {
   writeBible,
 } from '@/lib/bible'
 import { findFactPack, getOrBuildFactPack } from '@/lib/topics'
+import { ProgressRecorder } from '@/lib/generate/progress'
+import { startGenerationRequest } from '@/lib/generate/requests'
 import { borrowsCharacter, requestedCharacters } from '@/lib/guardrails/classify'
 import { targetWords, type FactPack, type GenerationRequest, type QualityResult, type StoryOutput } from '@/lib/schemas'
 import {
@@ -183,6 +185,14 @@ async function generateOne(
     }
 
     const channel = new SseChannel()
+    // Issue #82: keep the story so far as the route does, so the eval measures the real write
+    // path alongside the story. The eval family's delete removes both rows.
+    const generationId = randomUUID()
+    if (!(await startGenerationRequest(db, generationId, family.familyId))) {
+      throw new Error(`eval scenario ${scenario.id}: generation_requests insert failed`)
+    }
+    const progress = new ProgressRecorder(db, generationId, family.familyId)
+    channel.onPush((event) => progress.observe(event))
     let firstChapterAt: number | null = null
     const drained = (async () => {
       for await (const event of channel.events()) {
@@ -201,6 +211,7 @@ async function generateOne(
       ...(thinkingDisplay ? { thinkingDisplay } : {}),
     })
     await drained
+    await progress.settled()
     if (firstDraftOnly) {
       firstDraftOnly(result, pack.content, sink.totalCostUsd)
       return null
@@ -229,6 +240,7 @@ async function generateOne(
       },
       attempts: result.writeCalls,
       firstDraft: firstDraftOf(result.quality, result.writeCalls, result.firstGated),
+      progress: { ...progress.stats },
     }
   } finally {
     await deleteEvalFamily(db, family)

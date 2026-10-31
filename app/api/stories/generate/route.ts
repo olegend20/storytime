@@ -17,6 +17,7 @@ import {
   noteGenerationStory,
   startGenerationRequest,
 } from '@/lib/generate/requests'
+import { ProgressRecorder, discardGenerationProgress, pruneGenerationProgress } from '@/lib/generate/progress'
 
 /**
  * POST /api/stories/generate - the SSE endpoint in `lib/schemas/api.ts` (F6).
@@ -105,11 +106,25 @@ export async function POST(request: Request): Promise<Response> {
   // Issue #59: accepted, so recorded - a page that loses the stream asks how it ended by this id.
   const generationId = generationIdFrom(request)
   const records = generationId ? supabaseService() : null
-  if (generationId && records) await startGenerationRequest(records, generationId, familyId)
-  const finish = (outcome: Parameters<typeof finishGenerationRequest>[3]) =>
-    generationId && records ? finishGenerationRequest(records, generationId, familyId, outcome) : Promise.resolve()
+  const recorded = generationId && records ? await startGenerationRequest(records, generationId, familyId) : false
 
   const channel = new SseChannel()
+  // Issue #82: the story so far, for this page if it loses the stream and comes back.
+  const progress = recorded && generationId && records ? new ProgressRecorder(records, generationId, familyId) : null
+  if (progress && records) {
+    channel.onPush((event) => progress.observe(event))
+    void pruneGenerationProgress(records)
+  }
+  // The story so far is written before the request says it ended, so a page that comes back
+  // finds the ending in the snapshot and finishes the story in place (issue #82).
+  const finish = async (outcome: Parameters<typeof finishGenerationRequest>[3]) => {
+    await progress?.settled()
+    if (generationId && records) await finishGenerationRequest(records, generationId, familyId, outcome)
+    // Not saved: its text is kept nowhere else, so the snapshot goes now, not in an hour.
+    if (progress && records && outcome.status !== 'ready' && outcome.status !== 'flagged') {
+      await discardGenerationProgress(records, generationId!, familyId)
+    }
+  }
   const run = (async () => {
     const prepared = await prepareGeneration(familyId, body, deps)
     if (!prepared.ok) {

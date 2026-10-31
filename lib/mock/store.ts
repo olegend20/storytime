@@ -36,7 +36,17 @@ export interface MockState {
   /** Stories streamed so far, so a second generation returns a different story. */
   generated: number
   /** How each request ended, by the page's `x-generation-id` (issue #59). */
-  generations: Map<string, { status: 'ready' | 'discarded' | 'failed'; story_id: string | null }>
+  generations: Map<string, MockGeneration>
+}
+
+export interface MockGeneration {
+  status: 'ready' | 'discarded' | 'failed'
+  story_id: string | null
+  /**
+   * Issue #82, for a dropped stream: what the server goes on writing after the page lost it,
+   * released a chapter at a time from `startedAt` by the mock progress route.
+   */
+  resume?: { events: unknown[]; startedAt: number; chaptersSent: number }
 }
 
 const sessions = new Map<string, MockState>()

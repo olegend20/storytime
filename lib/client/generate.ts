@@ -31,7 +31,7 @@ export interface StreamingChapter extends Chapter {
 export interface StreamState {
   /**
    * `finishing`: the stream dropped after the server accepted the request, and the page is
-   * waiting for the story to be saved (lib/client/finish.ts, issue #59).
+   * following the story the server is still writing (lib/client/resume.ts, issues #59, #82).
    */
   phase: 'idle' | 'connecting' | 'streaming' | 'finishing' | 'done' | 'error'
   /** The fact cards, sent before the writer starts. Null until then. */
@@ -73,6 +73,11 @@ export type StreamAction =
   | { kind: 'fail'; error: ErrorBody }
   /** The connection dropped mid-story; what arrived stays on screen while the page waits. */
   | { kind: 'finishing' }
+  /**
+   * The story so far, read back after the connection dropped (issue #82): the page is rebuilt
+   * from it through this same reducer, and keeps following the story until it ends.
+   */
+  | { kind: 'replay'; events: SseEvent[] }
 
 const EMPTY_CHAPTER: StreamingChapter = { heading: '', text: '', shout_line: null, complete: false }
 
@@ -100,6 +105,19 @@ export function streamReducer(state: StreamState, action: StreamAction): StreamS
       return { ...state, phase: 'error', error: action.error }
     case 'finishing':
       return { ...state, phase: 'finishing', error: null }
+    case 'replay': {
+      const rebuilt = action.events.reduce<StreamState>(
+        (s, event) => streamReducer(s, { kind: 'event', event }),
+        { ...initialStreamState, phase: 'streaming', unknownEvents: state.unknownEvents },
+      )
+      if (rebuilt.phase !== 'streaming') return rebuilt
+      // The snapshot is written at most every 1.5 s, so the first one read can be behind what
+      // the live stream already showed: the page never goes backwards for it, and the next,
+      // newer snapshot takes over (code review on #83).
+      if (isBehind(rebuilt, state)) return { ...state, phase: 'finishing' }
+      // Still being written: keep following it, so the form never offers a second story.
+      return { ...rebuilt, phase: 'finishing' }
+    }
     case 'event':
       break
   }
@@ -174,6 +192,21 @@ export function streamReducer(state: StreamState, action: StreamAction): StreamS
       // Unreachable for known types; an added event type arrives here as `unknown` instead.
       return state
   }
+}
+
+/**
+ * The snapshot is only an older view of what is on the page: the same chapters, each a prefix
+ * of what is shown, and less in all. A snapshot that differs - a chapter the writer restarted
+ * after a drop (#74), shorter than the cut draft - is newer, and replaces the page.
+ */
+function isBehind(snapshot: StreamState, shown: StreamState): boolean {
+  if (snapshot.chapters.length > shown.chapters.length) return false
+  const prefix = snapshot.chapters.every((c, i) => {
+    const s = shown.chapters[i]!
+    return c.heading === s.heading && s.text.startsWith(c.text)
+  })
+  const length = (st: StreamState) => st.chapters.reduce((n, c) => n + c.text.length, 0) + st.chapters.length
+  return prefix && length(snapshot) < length(shown)
 }
 
 /**

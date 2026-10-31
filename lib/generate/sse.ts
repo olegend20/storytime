@@ -37,6 +37,7 @@ export class SseChannel {
   private openReject: ((err: unknown) => void) | null = null
   private opened = false
   private readonly openPromise: Promise<void>
+  private readonly listeners: ((event: SseEvent) => void)[] = []
 
   constructor(private readonly validate = true) {
     this.openPromise = new Promise<void>((resolve, reject) => {
@@ -52,9 +53,30 @@ export class SseChannel {
     return this.opened
   }
 
+  /**
+   * Hear every event as it is queued, for the story-so-far a page reads after losing the
+   * stream (issue #82). A listener that throws is ignored: the stream to the page is never
+   * changed by one.
+   */
+  onPush(listener: (event: SseEvent) => void): void {
+    this.listeners.push(listener)
+  }
+
   push(event: SseEvent): void {
-    if (this.closed) return
+    // Listeners hear every event the pipeline sends, even after the page has gone (its
+    // `cancel` closes the channel): the story so far must carry on past a dropped phone, which
+    // is the whole point of keeping it (issue #82, code review on #83). Without one, an event
+    // after close is dropped unchecked, as before.
+    if (this.closed && this.listeners.length === 0) return
     if (this.validate) assertSseEvent(event)
+    for (const listener of this.listeners) {
+      try {
+        listener(event)
+      } catch (err) {
+        console.warn('[generate] stream listener threw:', err)
+      }
+    }
+    if (this.closed) return
     this.buffer.push(event)
     if (!this.opened) {
       this.opened = true

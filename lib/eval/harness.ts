@@ -14,7 +14,7 @@ import { loadJudgePrompt, scoreStory } from './judge'
 import { type FirstDraft, loadPipeline, type StoryPipeline, type StoryProvider } from './pipeline'
 import { narrativeWordCount } from './render'
 import { evalScenarios, scenarioBand, selectScenarios, type EvalScenario } from './scenarios'
-import { fmt, mean, median, min, p95 } from './stats'
+import { fmt, mean, median, min, p95, quantile } from './stats'
 import type { CapContext, JudgeContext } from './types'
 import type { CloseKind } from '@/lib/ai/types'
 
@@ -83,6 +83,8 @@ export interface EvalScenarioRecord {
   latency_total_ms: number | null
   /** Where the time went, by call purpose. Kept for a failed story too: it shows where it died. */
   latency_by_step: Record<string, StepLatency>
+  /** Issue #82: the story-so-far snapshots kept for a page that loses its stream. Live runs only. */
+  progress?: { writes: number; failures: number; lag_ms: number[] }
 }
 
 /** One call purpose's share of a story's time. */
@@ -317,6 +319,24 @@ export function dropsLine(byStep: Record<string, StepLatency>): string | null {
   return parts.length > 0 ? `  drops (issue #78): ${parts.join('; ')}` : null
 }
 
+/**
+ * Issue #82: did the story-so-far keep up with the story? Snapshots per story, the lag from an
+ * event to its snapshot being stored (what a returning page can be behind by), and failures.
+ */
+export function progressLine(records: readonly { progress?: { writes: number; failures: number; lag_ms: number[] } }[]): string | null {
+  const kept = records.flatMap((r) => (r.progress ? [r.progress] : []))
+  if (kept.length === 0) return null
+  const lags = kept.flatMap((p) => p.lag_ms)
+  const writes = kept.reduce((n, p) => n + p.writes, 0)
+  const failures = kept.reduce((n, p) => n + p.failures, 0)
+  const perStory = median(kept.map((p) => p.writes))
+  const ms = (q: number) => (lags.length > 0 ? `${Math.round(quantile(lags, q))} ms` : '-')
+  return (
+    `  progress (issue #82): ${kept.length} stories, ${writes} snapshots (median ${perStory} per story), ` +
+    `lag p50 ${ms(0.5)}, p95 ${ms(0.95)}, ${failures} write failure(s)`
+  )
+}
+
 function judgeContextFor(scenario: EvalScenario): JudgeContext {
   const band = scenarioBand(scenario)
   return {
@@ -498,6 +518,9 @@ export async function runEval(config: EvalConfig = {}): Promise<EvalResult> {
       first_chapter_streamed: generated.latency.toFirstChapterMs !== null,
       latency_total_ms: generated.latency.totalMs,
       latency_by_step: steps,
+      ...(generated.progress
+        ? { progress: { writes: generated.progress.writes, failures: generated.progress.failures, lag_ms: generated.progress.lagMs } }
+        : {}),
     })
   }
 
@@ -851,6 +874,8 @@ export function formatEval(result: EvalResult): string {
     }
     const drops = dropsLine(latency.by_step)
     if (drops) lines.push(drops)
+    const progress = progressLine(result.scenarios)
+    if (progress) lines.push(progress)
     lines.push('')
   }
   if (result.summary.failures.length > 0) {

@@ -28,12 +28,19 @@ export function generationIdFrom(request: Request): string | null {
   return id && UUID.test(id) ? id.toLowerCase() : null
 }
 
-export async function startGenerationRequest(db: SupabaseClient, id: string, familyId: string): Promise<void> {
+/**
+ * True when this request's record was created. Only then is the story so far kept for it (#82):
+ * an id the page chose that already exists - another request's - gets no snapshot, so it can
+ * never overwrite that request's (code review on #83).
+ */
+export async function startGenerationRequest(db: SupabaseClient, id: string, familyId: string): Promise<boolean> {
   try {
     const { error } = await db.from('generation_requests').insert({ id, family_id: familyId })
     if (error) console.warn(`[generate] generation_requests start: ${error.message}`)
+    return !error
   } catch (err) {
     console.warn('[generate] generation_requests start threw:', err)
+    return false
   }
 }
 

@@ -49,6 +49,11 @@ export interface PipelineStoryResult {
    * prompt gets it right up front. Null when the pipeline cannot tell (fixture stories).
    */
   firstDraft?: FirstDraft | null
+  /**
+   * Issue #82: the story so far, kept as production keeps it for a page that loses its stream:
+   * snapshots written, failures, and each write's lag from its first event. Live pipeline only.
+   */
+  progress?: { writes: number; failures: number; lagMs: number[] }
 }
 
 export interface FirstDraft {

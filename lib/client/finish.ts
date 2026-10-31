@@ -1,7 +1,8 @@
 import { z } from 'zod'
 
 /**
- * After the story stream drops, wait for the story the server is still making (issue #59).
+ * After the story stream drops: what the page tells the parent, and how it waits (issue #59).
+ * The waiting itself follows the story so far since #82 (lib/client/resume.ts).
  *
  * The route keeps running when the parent's connection goes (it is answered by `after()`), so
  * a dropped stream is usually a story that WILL be saved - in production, 5 of 7 requests
@@ -13,9 +14,6 @@ import { z } from 'zod'
  * request whatever the phone's clock says, and a discarded story (which has no `stories` row)
  * is told apart from one still being written.
  */
-
-/** How often to ask while the tab is open. One small row read; no model call. */
-export const FINISH_POLL_MS = 8_000
 
 /**
  * The page's own backstop. The server reports a request still "writing" past its
@@ -32,21 +30,11 @@ export const GenerationStatus = z.object({
 export type GenerationStatus = z.infer<typeof GenerationStatus>
 
 export interface FinishDeps {
-  /** How the request ended so far; null when it is not known (404 before the record exists). */
-  status: (generationId: string) => Promise<GenerationStatus | null>
   now: () => number
   /** Resolves after `ms`, or earlier when the parent comes back to the tab. */
   sleep: (ms: number) => Promise<void>
   signal?: AbortSignal
 }
-
-export type FinishResult =
-  | { kind: 'saved'; storyId: string }
-  /** The server said it ended without a story: nothing saved, no story used. */
-  | { kind: 'not_made' }
-  /** The page never got an answer it can trust (offline, signed out): it says it does not know. */
-  | { kind: 'unknown' }
-  | { kind: 'cancelled' }
 
 /**
  * A v4 uuid for `x-generation-id`, or null where the browser has no crypto (the route treats a
@@ -68,35 +56,9 @@ export function newGenerationId(
   }
 }
 
-/** Ask until the request has ended, then say how. */
-export async function waitForSavedStory(
-  target: { generationId: string; sentAt: number },
-  deps: FinishDeps,
-): Promise<FinishResult> {
-  const until = target.sentAt + FINISH_WAIT_MS
-  for (;;) {
-    if (deps.signal?.aborted) return { kind: 'cancelled' }
-    let answer: GenerationStatus | null = null
-    try {
-      answer = await deps.status(target.generationId)
-    } catch {
-      // Offline, signed out, a server error: not an answer. Ask again.
-    }
-    if (deps.signal?.aborted) return { kind: 'cancelled' }
-    if (answer && (answer.status === 'ready' || answer.status === 'flagged') && answer.story_id) {
-      return { kind: 'saved', storyId: answer.story_id }
-    }
-    if (answer && (answer.status === 'discarded' || answer.status === 'failed' || answer.status === 'refused')) {
-      return { kind: 'not_made' }
-    }
-    if (deps.now() >= until) return { kind: 'unknown' }
-    await deps.sleep(Math.min(FINISH_POLL_MS, Math.max(0, until - deps.now())))
-  }
-}
-
 /**
  * The browser's sleep: a timer, cut short when the tab becomes visible again - a parent who
- * locked the phone and comes back should not wait up to eight more seconds for the check.
+ * locked the phone and comes back should see the story move on at once, not after the next tick.
  */
 export function visibilityAwareSleep(signal?: AbortSignal): (ms: number) => Promise<void> {
   return (ms) =>
@@ -115,10 +77,6 @@ export function visibilityAwareSleep(signal?: AbortSignal): (ms: number) => Prom
       signal?.addEventListener('abort', done)
     })
 }
-
-/** Shown while the page waits. Not an error: nothing has gone wrong that the parent must fix. */
-export const FINISHING_MESSAGE =
-  "We lost the connection for a moment, but your story is still being written. Keep this page open — it'll open here as soon as it's ready."
 
 /** The server said so: nothing was saved, and no story was used. */
 export const NOT_FINISHED = {

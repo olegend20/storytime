@@ -7,7 +7,7 @@ import {
   type MockScenario,
 } from '@/lib/mock/scenarios'
 import { json, quotaLimit, resetsAt, streamSourceStory, withSession } from '@/lib/mock/store'
-import { generationStream, sseHeaders } from '@/lib/mock/stream'
+import { DROPPED_AFTER_CHAPTERS, generationEvents, generationStream, sseHeaders } from '@/lib/mock/stream'
 import { generationIdFrom } from '@/lib/generate/requests'
 
 export const dynamic = 'force-dynamic'
@@ -98,21 +98,30 @@ export async function POST(req: Request): Promise<Response> {
     }
     // Issue #59: how the request ended, for a page that lost the stream.
     const generationId = generationIdFrom(req)
+    const streamOpts = { scenario, delayMs: delayFor(scenario), quota: { used: state.quotaUsed, limit: quotaLimit() } }
     if (generationId) {
+      const dropped = scenario === 'connection_dropped' || scenario === 'connection_dropped_discarded'
       state.generations.set(generationId, {
         status: saved ? 'ready' : scenario === 'midstream_failure' ? 'failed' : 'discarded',
         story_id: saved ? story.id : null,
+        // Issue #82: after the drop the server goes on writing the whole story (or, for the
+        // discard, writes nothing more), and the page follows it.
+        ...(dropped
+          ? {
+              resume: {
+                events: generationEvents(story, { ...streamOpts, scenario: saved ? 'ok' : scenario }),
+                startedAt: Date.now(),
+                chaptersSent: DROPPED_AFTER_CHAPTERS,
+              },
+            }
+          : {}),
       })
     }
 
     return new Response(
       // `generationEvents` derives `meta.target_words` from the story's band and length, so
       // the progress indicator tracks the request rather than the fixture it replays.
-      generationStream(story, {
-        scenario,
-        delayMs: delayFor(scenario),
-        quota: { used: state.quotaUsed, limit: quotaLimit() },
-      }),
+      generationStream(story, streamOpts),
       { status: 200, headers: sseHeaders() },
     )
   })
