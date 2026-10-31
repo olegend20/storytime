@@ -7,6 +7,7 @@ import { closeKind, failedRowError, isDroppedStream, isTruncatedStream, newTrace
 import { MemoryLogSink, ModelCallError } from '@/lib/ai/types'
 import { SupabaseLogSink } from '@/lib/costs/sink'
 import { dropsLine, stepLatency } from '@/lib/eval/harness'
+import { evalThinkingDisplay } from '@/lib/eval/live-pipeline'
 import { assertThinkingDisplaySupported, parseThinkingDisplay } from '@/lib/eval/pipeline'
 
 /**
@@ -265,13 +266,22 @@ describe('issue #78: the close kinds and the report', () => {
     expect(dropsLine({ write: { calls: 1, ms: 1, output_tokens: 1 } })).toBeNull()
   })
 
-  it('VT-SC4: the eval flag takes only "summarized", so a typo cannot quietly measure the default', () => {
+  it('VT-SC4: the eval flag takes only "summarized" or "omitted", so a typo cannot quietly measure the default', () => {
     expect(parseThinkingDisplay(undefined)).toBeUndefined()
     expect(parseThinkingDisplay('summarized')).toBe('summarized')
-    expect(() => parseThinkingDisplay('summarised')).toThrow(/expected "summarized"/)
+    expect(parseThinkingDisplay('omitted')).toBe('omitted')
+    expect(() => parseThinkingDisplay('summarised')).toThrow(/expected "summarized" or "omitted"/)
     expect(() => parseThinkingDisplay('')).toThrow()
     // A writer that takes no display is refused, not measured as if it had one (code review on #79).
     expect(() => assertThinkingDisplaySupported('claude-sonnet-5')).not.toThrow()
     expect(() => assertThinkingDisplaySupported('claude-fable-5-1')).toThrow(/takes no thinking display/)
+  })
+
+  it('VT-TS3: the eval runs what production runs unless told otherwise (issue #80)', () => {
+    expect(evalThinkingDisplay(undefined, 'claude-sonnet-5')).toBe('summarized')
+    expect(evalThinkingDisplay(undefined, 'claude-fable-5-1')).toBeUndefined()
+    expect(evalThinkingDisplay('omitted', 'claude-sonnet-5')).toBeUndefined()
+    expect(evalThinkingDisplay('summarized', 'claude-sonnet-5')).toBe('summarized')
+    expect(() => evalThinkingDisplay('summarized', 'claude-fable-5-1')).toThrow(/takes no thinking display/)
   })
 })

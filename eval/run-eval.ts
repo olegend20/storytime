@@ -33,9 +33,10 @@ import { readyFactPackTopics } from '@/lib/topics/factpack'
  *                        prompt (≈ $1.70 saved); otherwise calibration runs first
  *   --force-drop-after=N cut every first write once N chapters are whole, as the gateway does,
  *                        and measure the continued stories (issue #74; also EVAL_FORCE_DROP_AFTER_CHAPTERS)
- *   --thinking-display=summarized
- *                        stream the writer's thinking summary instead of Sonnet 5's silent default
- *                        (issue #78; also EVAL_THINKING_DISPLAY)
+ *   --thinking-display=omitted|summarized
+ *                        unset runs what production runs: the writer's thinking summary (issue #80).
+ *                        `omitted` measures Sonnet 5's silent default, as before (issue #78; also
+ *                        EVAL_THINKING_DISPLAY)
  */
 
 const DEFAULT_BUDGET_CEILING_USD = 20
@@ -69,7 +70,7 @@ async function main(): Promise<void> {
   // Issue #74: cut every first write after N whole chapters, to measure continued stories.
   const forceDrop = value('force-drop-after')
   if (forceDrop !== undefined) process.env.EVAL_FORCE_DROP_AFTER_CHAPTERS = forceDrop
-  // Issue #78: stream the writer's thinking summary, to measure it against the silent default.
+  // Issue #78/#80: the writer's thinking display; unset is production's (the summary).
   const display = value('thinking-display')
   if (display !== undefined) process.env.EVAL_THINKING_DISPLAY = display
   let forceDropAfterChapters: number | undefined

@@ -100,13 +100,14 @@ export class PipelineUnavailableError extends Error {
 }
 
 /**
- * The thinking-display eval's setting (issue #78, `--thinking-display=summarized`, or
- * EVAL_THINKING_DISPLAY): undefined when unset; any other value is an error, so a typo cannot
- * quietly measure the default.
+ * The thinking-display eval's setting (`--thinking-display=…`, or EVAL_THINKING_DISPLAY):
+ * undefined when unset, which runs what production runs (issue #80: the summary, where the
+ * writer takes it). `omitted` measures Sonnet 5's silent default, as before #80; `summarized`
+ * forces the summary. Any other value is an error, so a typo cannot quietly measure the wrong one.
  */
-export function parseThinkingDisplay(raw: string | undefined): 'summarized' | undefined {
+export function parseThinkingDisplay(raw: string | undefined): 'summarized' | 'omitted' | undefined {
   if (raw === undefined) return undefined
-  if (raw !== 'summarized') throw new Error(`--thinking-display=${raw}: expected "summarized"`)
+  if (raw !== 'summarized' && raw !== 'omitted') throw new Error(`--thinking-display=${raw}: expected "summarized" or "omitted"`)
   return raw
 }
 

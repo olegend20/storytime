@@ -34,7 +34,7 @@ vi.mock('@/lib/guardrails', async (orig) => ({
 }))
 vi.mock('@/lib/supabase/service', () => ({ supabaseService: () => ({}) }))
 
-const { LimitsQuotaService, GuardrailsInputGuard, GuardrailsSafetyReviewer, productionDeps } =
+const { LimitsQuotaService, GuardrailsInputGuard, GuardrailsSafetyReviewer, productionDeps, writerThinkingDisplay } =
   await import('@/lib/generate/production-deps')
 
 const snapshot = {
@@ -168,6 +168,24 @@ describe('productionDeps', () => {
     for (const dep of [deps.quota, deps.inputGuard, deps.safetyReviewer]) {
       expect(dep).toBeDefined()
       expect((dep as { isStub?: boolean }).isStub).toBeUndefined()
+    }
+  })
+
+  // Issue #80: the owner turned the writer's thinking summary on after the #78 evals.
+  it('VT-TS1: the writer streams its thinking summary', () => {
+    expect(productionDeps({} as never).thinkingDisplay).toBe('summarized')
+    expect(writerThinkingDisplay('claude-sonnet-5')).toBe('summarized')
+  })
+
+  it('VT-TS2: a writer that takes no display keeps the plain request', () => {
+    expect(writerThinkingDisplay('claude-fable-5-1')).toBeUndefined()
+    const before = process.env.WRITING_MODEL
+    process.env.WRITING_MODEL = 'claude-fable-5-1'
+    try {
+      expect(productionDeps({} as never)).not.toHaveProperty('thinkingDisplay')
+    } finally {
+      if (before === undefined) delete process.env.WRITING_MODEL
+      else process.env.WRITING_MODEL = before
     }
   })
 })

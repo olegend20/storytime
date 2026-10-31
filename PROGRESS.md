@@ -888,6 +888,14 @@ safety review with a retired rule-7 report and a soft concern stays unsafe; the 
 constants sit below the comment that describes them. **Gates:** lint ✅ · typecheck ✅ ·
 unit+int 1340 ✅ · guardrails 32 ✅ · e2e mock 196 ✅ · e2e real 6 ✅.
 
+### 2026-10-31 — the writer streams its thinking summary in production (issue #80, DECISIONS #213)
+
+The owner turned it on after the #78 evals: the writer's stream no longer sits silent for up
+to 3 minutes while it thinks (longest silence 8.7 s against 180 s), at the same cost. Parents
+see nothing new. The eval now runs the same; `--thinking-display=omitted` measures the old way.
+Production read the same day: 7 of 7 accepted stories saved since 10-20; one rewrite dropped
+on 10-28 and was recovered by the retry.
+
 ### 2026-10-22 — every dropped stream says who closed it (issue #78, DECISIONS #212)
 
 Understudy saw our cut streams as "client disconnected"; we saw `terminated`. Every live call
