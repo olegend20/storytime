@@ -188,7 +188,9 @@ async function generateOne(
     // Issue #82: keep the story so far as the route does, so the eval measures the real write
     // path alongside the story. The eval family's delete removes both rows.
     const generationId = randomUUID()
-    await startGenerationRequest(db, generationId, family.familyId)
+    if (!(await startGenerationRequest(db, generationId, family.familyId))) {
+      throw new Error(`eval scenario ${scenario.id}: generation_requests insert failed`)
+    }
     const progress = new ProgressRecorder(db, generationId, family.familyId)
     channel.onPush((event) => progress.observe(event))
     let firstChapterAt: number | null = null

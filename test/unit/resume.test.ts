@@ -178,6 +178,13 @@ describe('the replay action (issue #82)', () => {
     expect(after.chapters.map((c) => c.text)).toEqual(['One.', 'Written again.'])
   })
 
+  it('never goes backwards: a snapshot behind what the live stream showed is not applied', () => {
+    const shown = fold([meta, ...chapter(0, 'One.'), ...chapter(1, 'Two, most of it', false)])
+    const behind = streamReducer({ ...shown, phase: 'finishing' }, { kind: 'replay', events: [meta, ...chapter(0, 'One.'), ...chapter(1, 'Two', false)] })
+    expect(behind.chapters.map((c) => c.text)).toEqual(['One.', 'Two, most of it'])
+    expect(behind.phase).toBe('finishing')
+  })
+
   it('ends as the live stream ends: an error event is the error state', () => {
     const after = streamReducer({ ...initialStreamState, phase: 'finishing' }, { kind: 'replay', events: [meta, errorEvent] })
     expect(after.phase).toBe('error')

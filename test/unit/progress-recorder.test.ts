@@ -50,12 +50,19 @@ describe('VT-RC1: the snapshot rebuilds the reader the live stream built', () =>
     })
   }
 
-  it('is a few events, not thousands: one delta per chapter', () => {
+  it('is a few events, not thousands: one delta per chapter while it is written', () => {
     const events = streamOf('ok')
-    const live = fold(events)
-    const compact = compactEvents(live, events.at(-1)!)
+    const writing = events.slice(0, events.findIndex((e) => e.type === 'done'))
+    const live = fold(writing)
+    const compact = compactEvents(live, null)
     expect(compact.filter((e) => e.type === 'chapter_delta')).toHaveLength(live.chapters.length)
-    expect(compact.length).toBeLessThan(events.length / 3)
+    expect(compact.length).toBeLessThan(writing.length / 3)
+  })
+
+  it('once done, the story is sent once: facts, meta and `done`, not every chapter again', () => {
+    const events = streamOf('ok')
+    const compact = compactEvents(fold(events), events.at(-1)!)
+    expect(compact.map((e) => e.type)).toEqual(['facts', 'meta', 'done'])
   })
 })
 
@@ -117,6 +124,38 @@ describe('VT-RC2: written throttled, in order, and never at the stream\'s expens
     expect(recorder.stats.failures).toBeGreaterThan(0)
   })
 
+  it('a slow database never queues more than the newest snapshot behind the write in flight', async () => {
+    const { db, rows } = recordingDb({ delayMs: 3_000 })
+    const recorder = new ProgressRecorder(db, 'gen', 'fam')
+    const events = streamOf('ok')
+    for (const event of events) {
+      recorder.observe(event)
+      await vi.advanceTimersByTimeAsync(5)
+    }
+    const settled = recorder.settled()
+    await vi.runAllTimersAsync()
+    await settled
+    // Every chapter end is urgent, yet with 3 s writes only a couple of writes happen at all.
+    expect(rows.length).toBeLessThanOrEqual(Math.ceil((events.length * 5) / 3_000) + 2)
+    expect(rows.at(-1)!.events.at(-1)).toMatchObject({ type: 'done' })
+  })
+
+  it('a missing table (a deploy before its migration) is tried once, then left alone', async () => {
+    let tries = 0
+    const db = { from: () => ({ upsert: async () => (tries++, { error: { code: '42P01', message: 'relation "generation_progress" does not exist' } }) }) }
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const recorder = new ProgressRecorder(db as never, 'gen', 'fam')
+    for (const event of streamOf('ok')) {
+      recorder.observe(event)
+      await vi.advanceTimersByTimeAsync(5)
+    }
+    const settled = recorder.settled()
+    await vi.runAllTimersAsync()
+    await settled
+    expect(tries).toBe(1)
+    warn.mockRestore()
+  })
+
   it('a listener that throws is ignored by the channel', async () => {
     const channel = new SseChannel()
     channel.onPush(() => {
@@ -130,6 +169,19 @@ describe('VT-RC2: written throttled, in order, and never at the stream\'s expens
     for await (const e of channel.events()) received.push(e)
     expect(received).toEqual([event])
     warn.mockRestore()
+  })
+
+  it('a listener still hears every event after the page has gone (the stream was cancelled)', async () => {
+    const heard: SseEvent[] = []
+    const channel = new SseChannel()
+    channel.onPush((e) => heard.push(e))
+    const events = streamOf('ok')
+    const reader = channel.toReadableStream().getReader()
+    channel.push(events[0]!)
+    await reader.read()
+    await reader.cancel() // the phone locked
+    for (const event of events.slice(1)) channel.push(event)
+    expect(heard).toEqual(events)
   })
 })
 

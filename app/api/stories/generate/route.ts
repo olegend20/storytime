@@ -106,11 +106,11 @@ export async function POST(request: Request): Promise<Response> {
   // Issue #59: accepted, so recorded - a page that loses the stream asks how it ended by this id.
   const generationId = generationIdFrom(request)
   const records = generationId ? supabaseService() : null
-  if (generationId && records) await startGenerationRequest(records, generationId, familyId)
+  const recorded = generationId && records ? await startGenerationRequest(records, generationId, familyId) : false
 
   const channel = new SseChannel()
   // Issue #82: the story so far, for this page if it loses the stream and comes back.
-  const progress = generationId && records ? new ProgressRecorder(records, generationId, familyId) : null
+  const progress = recorded && generationId && records ? new ProgressRecorder(records, generationId, familyId) : null
   if (progress && records) {
     channel.onPush((event) => progress.observe(event))
     void pruneGenerationProgress(records)

@@ -28,12 +28,15 @@ function urgent(event: SseEvent): boolean {
 /**
  * The stream folded to the fewest events that rebuild the same reader: facts, meta, each
  * chapter as one start, one delta with its whole text and its end once complete, then the
- * terminal event as it was sent.
+ * terminal event as it was sent - or, once the story is done, facts, meta and `done` alone.
  */
 export function compactEvents(state: StreamState, terminal: SseEvent | null): SseEvent[] {
   const events: SseEvent[] = []
   if (state.facts) events.push(state.facts)
   if (state.meta) events.push(state.meta)
+  // `done` carries the whole story, and the reader rebuilds every chapter from it: the
+  // chapters are not sent twice (code review on #83).
+  if (terminal?.type === 'done') return [...events, terminal]
   for (const [index, chapter] of state.chapters.entries()) {
     events.push({ type: 'chapter_start', index, heading: chapter.heading })
     if (chapter.text) events.push({ type: 'chapter_delta', index, text: chapter.text })
@@ -62,7 +65,11 @@ export class ProgressRecorder {
   private lastWriteAt = Number.NEGATIVE_INFINITY
   private pendingSince: number | null = null
   private timer: ReturnType<typeof setTimeout> | null = null
-  private chain: Promise<void> = Promise.resolve()
+  /** The write in flight, and the newest snapshot waiting behind it: never more than one. */
+  private inFlight: Promise<void> | null = null
+  private queued: { version: number; events: SseEvent[]; since: number } | null = null
+  /** Set once the table is missing (a deploy before its migration): no more writes are tried. */
+  private disabled = false
   readonly stats: ProgressStats = { writes: 0, failures: 0, lagMs: [] }
   private readonly writeMs: number
   private readonly now: () => number
@@ -89,7 +96,7 @@ export class ProgressRecorder {
   /** Writes what is still pending and resolves once every write has returned. */
   settled(): Promise<void> {
     if (this.pendingSince !== null) this.flush()
-    return this.chain
+    return this.inFlight ?? Promise.resolve()
   }
 
   private schedule(): void {
@@ -111,10 +118,22 @@ export class ProgressRecorder {
     this.pendingSince = null
     this.lastWriteAt = this.now()
     this.version += 1
-    const version = this.version
-    const events = compactEvents(this.state, this.terminal)
-    // One write at a time, in order: a version in the table only ever goes up.
-    this.chain = this.chain.then(() => this.write(version, events, since))
+    // Coalesced: a slow database never builds a queue of whole-story copies. The newest snapshot
+    // replaces any still waiting, and is written once the write in flight returns, in order, so
+    // a version in the table only ever goes up (code review on #83).
+    this.queued = { version: this.version, events: compactEvents(this.state, this.terminal), since: this.queued?.since ?? since }
+    this.inFlight ??= this.drain()
+  }
+
+  private async drain(): Promise<void> {
+    // Yield first, so `inFlight` is set before this can finish and clear it.
+    await Promise.resolve()
+    while (this.queued) {
+      const job = this.queued
+      this.queued = null
+      if (!this.disabled) await this.write(job.version, job.events, job.since)
+    }
+    this.inFlight = null
   }
 
   private async write(version: number, events: SseEvent[], since: number): Promise<void> {
@@ -132,6 +151,7 @@ export class ProgressRecorder {
       if (error) {
         this.stats.failures += 1
         console.warn(`[generate] generation_progress write: ${error.message}`)
+        if (error.code === '42P01' || /does not exist/i.test(error.message)) this.disabled = true
         return
       }
       this.stats.writes += 1

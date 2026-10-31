@@ -110,8 +110,13 @@ export function streamReducer(state: StreamState, action: StreamAction): StreamS
         (s, event) => streamReducer(s, { kind: 'event', event }),
         { ...initialStreamState, phase: 'streaming', unknownEvents: state.unknownEvents },
       )
+      if (rebuilt.phase !== 'streaming') return rebuilt
+      // The snapshot is written at most every 1.5 s, so the first one read can be behind what
+      // the live stream already showed: the page never goes backwards for it, and the next,
+      // newer snapshot takes over (code review on #83).
+      if (shownLength(rebuilt) < shownLength(state)) return { ...state, phase: 'finishing' }
       // Still being written: keep following it, so the form never offers a second story.
-      return rebuilt.phase === 'streaming' ? { ...rebuilt, phase: 'finishing' } : rebuilt
+      return { ...rebuilt, phase: 'finishing' }
     }
     case 'event':
       break
@@ -187,6 +192,11 @@ export function streamReducer(state: StreamState, action: StreamAction): StreamS
       // Unreachable for known types; an added event type arrives here as `unknown` instead.
       return state
   }
+}
+
+/** How much of the story is on the page: chapters and their prose. */
+function shownLength(state: StreamState): number {
+  return state.chapters.reduce((n, c) => n + c.heading.length + c.text.length, 0)
 }
 
 /**

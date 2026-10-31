@@ -63,16 +63,22 @@ export class SseChannel {
   }
 
   push(event: SseEvent): void {
+    // Listeners hear every event the pipeline sends, even after the page has gone (its
+    // `cancel` closes the channel): the story so far must carry on past a dropped phone, which
+    // is the whole point of keeping it (issue #82, code review on #83).
+    if (this.listeners.length > 0) {
+      if (this.validate) assertSseEvent(event)
+      for (const listener of this.listeners) {
+        try {
+          listener(event)
+        } catch (err) {
+          console.warn('[generate] stream listener threw:', err)
+        }
+      }
+    }
     if (this.closed) return
     if (this.validate) assertSseEvent(event)
     this.buffer.push(event)
-    for (const listener of this.listeners) {
-      try {
-        listener(event)
-      } catch (err) {
-        console.warn('[generate] stream listener threw:', err)
-      }
-    }
     if (!this.opened) {
       this.opened = true
       this.openResolve?.()
