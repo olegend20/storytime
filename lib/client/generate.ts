@@ -31,7 +31,7 @@ export interface StreamingChapter extends Chapter {
 export interface StreamState {
   /**
    * `finishing`: the stream dropped after the server accepted the request, and the page is
-   * waiting for the story to be saved (lib/client/finish.ts, issue #59).
+   * following the story the server is still writing (lib/client/resume.ts, issues #59, #82).
    */
   phase: 'idle' | 'connecting' | 'streaming' | 'finishing' | 'done' | 'error'
   /** The fact cards, sent before the writer starts. Null until then. */
@@ -73,6 +73,11 @@ export type StreamAction =
   | { kind: 'fail'; error: ErrorBody }
   /** The connection dropped mid-story; what arrived stays on screen while the page waits. */
   | { kind: 'finishing' }
+  /**
+   * The story so far, read back after the connection dropped (issue #82): the page is rebuilt
+   * from it through this same reducer, and keeps following the story until it ends.
+   */
+  | { kind: 'replay'; events: SseEvent[] }
 
 const EMPTY_CHAPTER: StreamingChapter = { heading: '', text: '', shout_line: null, complete: false }
 
@@ -100,6 +105,14 @@ export function streamReducer(state: StreamState, action: StreamAction): StreamS
       return { ...state, phase: 'error', error: action.error }
     case 'finishing':
       return { ...state, phase: 'finishing', error: null }
+    case 'replay': {
+      const rebuilt = action.events.reduce<StreamState>(
+        (s, event) => streamReducer(s, { kind: 'event', event }),
+        { ...initialStreamState, phase: 'streaming', unknownEvents: state.unknownEvents },
+      )
+      // Still being written: keep following it, so the form never offers a second story.
+      return rebuilt.phase === 'streaming' ? { ...rebuilt, phase: 'finishing' } : rebuilt
+    }
     case 'event':
       break
   }

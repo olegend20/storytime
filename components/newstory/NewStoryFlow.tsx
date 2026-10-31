@@ -3,15 +3,9 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { fetchChildren, fetchGenerationStatus, fetchQuota, fetchSuggestedTopics } from '@/lib/client/api'
-import {
-  FINISHING_MESSAGE,
-  NOT_FINISHED,
-  NOT_KNOWN,
-  newGenerationId,
-  visibilityAwareSleep,
-  waitForSavedStory,
-} from '@/lib/client/finish'
+import { fetchChildren, fetchGenerationProgress, fetchQuota, fetchSuggestedTopics } from '@/lib/client/api'
+import { NOT_FINISHED, NOT_KNOWN, newGenerationId, visibilityAwareSleep } from '@/lib/client/finish'
+import { resumeStory } from '@/lib/client/resume'
 import {
   initialStreamState,
   readGenerationEvents,
@@ -280,16 +274,17 @@ export function NewStoryFlow({
       /* the connection dropped; handled below */
     }
     if (!finished && !controller.signal.aborted) {
-      // Issue #59: ask how the request ended and open the story here, instead of sending the
-      // parent to a library the story has not reached yet. Reads only - a retry would make a
-      // second story.
+      // Issues #59 and #82: follow the story the server is still writing - the chapters carry
+      // on appearing here, and it ends here - instead of sending the parent to a library the
+      // story has not reached yet. Reads only: a retry would make a second story.
       dispatch({ kind: 'finishing' })
       const result = !generationId
         ? ({ kind: 'unknown' } as const) // no id to ask by (a browser without crypto)
-        : await waitForSavedStory(
+        : await resumeStory(
         { generationId, sentAt },
         {
-          status: (id) => fetchGenerationStatus(id, controller.signal),
+          progress: (id, after) => fetchGenerationProgress(id, after, controller.signal),
+          apply: (events) => dispatch({ kind: 'replay', events }),
           now: Date.now,
           sleep: visibilityAwareSleep(controller.signal),
           signal: controller.signal,
@@ -321,12 +316,13 @@ export function NewStoryFlow({
   // Waiting for the writer, quietly. The reader takes over the moment the title (`meta`)
   // arrives; until then the moon shows the stage the server has reached.
   const names = selectedChildren.map((c) => c.first_name)
-  // Not an alert: nothing has gone wrong that the parent must act on (issue #59).
+  // No message (issue #82): the page carries on as if nothing happened, because for the parent
+  // nothing has - the story keeps coming. Screen readers are told it is still being written.
   const finishingNote =
     stream.phase === 'finishing' ? (
-      <div className="card p-4" role="status" data-testid="finishing">
-        <p className="mt-0 mb-0">{FINISHING_MESSAGE}</p>
-      </div>
+      <p className="sr-only-text" role="status" data-testid="finishing">
+        Still writing your story.
+      </p>
     ) : null
 
   if ((stream.phase === 'connecting' || stream.phase === 'streaming' || stream.phase === 'finishing') && !stream.meta) {
@@ -348,7 +344,7 @@ export function NewStoryFlow({
   if (stream.phase === 'streaming' || stream.phase === 'done' || stream.meta) {
     return (
       <main id="main">
-        {finishingNote && <div className="st-reader-aside">{finishingNote}</div>}
+        {finishingNote}
         {stream.error && (
           <div className="st-reader-aside">
             <GenerationError error={stream.error} onRetry={() => void submit()} />

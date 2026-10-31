@@ -888,6 +888,15 @@ safety review with a retired rule-7 report and a soft concern stays unsafe; the 
 constants sit below the comment that describes them. **Gates:** lint ✅ · typecheck ✅ ·
 unit+int 1340 ✅ · guardrails 32 ✅ · e2e mock 196 ✅ · e2e real 6 ✅.
 
+### 2026-10-31 — a story keeps streaming after the phone locks (issue #82, DECISIONS #214)
+
+On the owner's Pixel a locked phone said "We lost the connection", though the story was fine.
+Now the server keeps the story so far, and a page that loses its stream reads it back and
+carries on: the chapters keep appearing where they stopped, there is no message, and the
+story ends on the same page. If the story finished while the phone was locked, it is there,
+finished. The migration (`generation_progress`) is applied to production by hand after merge
+(DEPLOY.md); until then the page does what it did before.
+
 ### 2026-10-31 — the writer streams its thinking summary in production (issue #80, DECISIONS #213)
 
 The owner turned it on after the #78 evals: the writer's stream no longer sits silent for up

@@ -1,5 +1,5 @@
 import { QuotaResponse, SuggestedTopicsResponse } from '@/lib/schemas'
-import { GenerationStatus } from './finish'
+import { GenerationProgress } from './resume'
 import { ChildrenResponse, LibraryResponse, StoryResponse } from './types'
 
 /**
@@ -90,9 +90,16 @@ export async function fetchStory(id: string, signal?: AbortSignal): Promise<Stor
 }
 
 /** How a story request ended, by the id the page sent with it (issue #59). Null: not known yet. */
-export async function fetchGenerationStatus(id: string, signal?: AbortSignal): Promise<GenerationStatus | null> {
+/** The story so far after a dropped stream (issue #82); null for an unknown id. */
+export async function fetchGenerationProgress(
+  id: string,
+  after: number,
+  signal?: AbortSignal,
+): Promise<GenerationProgress | null> {
   try {
-    return GenerationStatus.parse(await getJson(`/stories/generate/${encodeURIComponent(id)}`, signal))
+    return GenerationProgress.parse(
+      await getJson(`/stories/generate/${encodeURIComponent(id)}/progress?after=${after}`, signal),
+    )
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) return null
     throw err

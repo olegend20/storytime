@@ -74,6 +74,11 @@ the longest silence on any one call, and pings per minute. The writer streams it
 summary, as production does since issue #80; `--thinking-display=omitted` measures Sonnet 5's
 silent default instead.
 
+It also prints a `progress (issue #82):` line. The eval keeps the story so far as production
+does, for a page that loses its stream. The line shows the snapshots written per story, the lag
+from an event to its snapshot being stored (how far behind a returning page can be), and
+write failures.
+
 ## What is in here
 
 | Path | What |

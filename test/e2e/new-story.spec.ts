@@ -464,22 +464,25 @@ test('an ordinary story carries no notice', async ({ page }) => {
 
 /**
  * 2026-10-08: a phone lost the connection while a story was being made, and the page said
- * "We couldn't reach StoryTime" - though the story was made and saved. Issue #59, 2026-10-17:
- * the "still being made, see your library" message that replaced it sent parents to a library
- * the story had not reached yet. Now the page waits, and opens the story itself once it is
- * saved - never offering a retry, which would make a second story.
+ * "We couldn't reach StoryTime" - though the story was made and saved. Issue #59 made the page
+ * wait and open the saved story. Issue #82 (VT-RC5, the owner's Pixel, 2026-10-31): the page
+ * follows the story the server is still writing - the chapters carry on appearing on the same
+ * page, with no "lost the connection" message, and the story ends there.
  */
-test('a connection lost mid-story waits for the saved story and opens it', async ({ page }) => {
+test('VT-RC5: a connection lost mid-story carries on: the chapters keep coming, and it ends on the same page', async ({ page }) => {
   await startStory(page, '!dropped the history of soccer')
-  // The chapters that arrived stay on screen while it waits, and the wait is not an error.
-  await expect(page).toHaveURL(/\/stories\/[0-9a-f-]{36}$/, { timeout: 30_000 })
-  await expect(page.getByText(/couldn.t reach StoryTime/)).toHaveCount(0)
+  const url = page.url()
+  // The stream drops after 2 chapters; the rest arrive from the story so far.
+  await expect(page.locator('[data-chapter-index="2"]')).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByRole('heading', { name: 'Saved to your library' })).toBeVisible({ timeout: 30_000 })
+  expect(page.url()).toBe(url)
+  expect(await page.locator('[data-chapter-index]').count()).toBeGreaterThan(2)
+  await expect(page.getByText(/lost the connection|couldn.t reach StoryTime/)).toHaveCount(0)
   await expect(page.getByRole('button', { name: /try again/i })).toHaveCount(0)
-  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
 })
 
-/** Issue #59: the server discarded the story after the drop - said at once, and that it was free. */
-test('a connection lost before a discard says it could not be finished, and that no story was used', async ({ page }) => {
+/** Issue #59, and VT-RC6 (#82): the server discarded the story after the drop - said at once, and that it was free. */
+test('VT-RC6: a connection lost before a discard says it could not be finished, and that no story was used', async ({ page }) => {
   await startStory(page, '!dropdiscard the history of soccer')
   const alert = page.getByRole('alert').filter({ hasText: /couldn.t finish that story/ })
   await expect(alert).toBeVisible({ timeout: 20_000 })
