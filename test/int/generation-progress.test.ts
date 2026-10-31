@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { randomUUID } from 'node:crypto'
-import { finishGenerationRequest, startGenerationRequest } from '@/lib/generate/requests'
+import { STALE_AFTER_MS, finishGenerationRequest, startGenerationRequest } from '@/lib/generate/requests'
 import {
   PROGRESS_RETENTION_MS,
   ProgressRecorder,
@@ -81,6 +81,24 @@ describe.skipIf(!available)('generation_progress (int)', () => {
     expect(read.error?.message).toMatch(/permission denied/i)
     const write = await client.from('generation_progress').insert({ generation_id: randomUUID(), family_id: family.familyId, version: 1, events: [] })
     expect(write.error?.message).toMatch(/permission denied/i)
+  })
+
+  it('VT-RC7: an unsaved story whose request was killed before it finished loses its snapshot at the next prune', async () => {
+    const killed = randomUUID()
+    const discarded = randomUUID()
+    const saved = randomUUID()
+    for (const id of [killed, discarded, saved]) {
+      await startGenerationRequest(family.db, id, family.familyId)
+      const recorder = new ProgressRecorder(family.db, id, family.familyId)
+      recorder.observe(events[0]!)
+      await recorder.settled()
+    }
+    await family.db.from('generation_requests').update({ started_at: new Date(Date.now() - STALE_AFTER_MS - 60_000).toISOString() }).eq('id', killed)
+    await family.db.from('generation_requests').update({ status: 'discarded' }).eq('id', discarded)
+    await family.db.from('generation_requests').update({ status: 'ready' }).eq('id', saved)
+    await pruneGenerationProgress(family.db)
+    const { data } = await family.db.from('generation_progress').select('generation_id').in('generation_id', [killed, discarded, saved])
+    expect((data ?? []).map((r) => r.generation_id)).toEqual([saved])
   })
 
   it('VT-RC7: snapshots older than an hour are pruned, newer ones kept', async () => {

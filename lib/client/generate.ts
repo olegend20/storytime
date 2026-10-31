@@ -114,7 +114,7 @@ export function streamReducer(state: StreamState, action: StreamAction): StreamS
       // The snapshot is written at most every 1.5 s, so the first one read can be behind what
       // the live stream already showed: the page never goes backwards for it, and the next,
       // newer snapshot takes over (code review on #83).
-      if (shownLength(rebuilt) < shownLength(state)) return { ...state, phase: 'finishing' }
+      if (isBehind(rebuilt, state)) return { ...state, phase: 'finishing' }
       // Still being written: keep following it, so the form never offers a second story.
       return { ...rebuilt, phase: 'finishing' }
     }
@@ -194,9 +194,19 @@ export function streamReducer(state: StreamState, action: StreamAction): StreamS
   }
 }
 
-/** How much of the story is on the page: chapters and their prose. */
-function shownLength(state: StreamState): number {
-  return state.chapters.reduce((n, c) => n + c.heading.length + c.text.length, 0)
+/**
+ * The snapshot is only an older view of what is on the page: the same chapters, each a prefix
+ * of what is shown, and less in all. A snapshot that differs - a chapter the writer restarted
+ * after a drop (#74), shorter than the cut draft - is newer, and replaces the page.
+ */
+function isBehind(snapshot: StreamState, shown: StreamState): boolean {
+  if (snapshot.chapters.length > shown.chapters.length) return false
+  const prefix = snapshot.chapters.every((c, i) => {
+    const s = shown.chapters[i]!
+    return c.heading === s.heading && s.text.startsWith(c.text)
+  })
+  const length = (st: StreamState) => st.chapters.reduce((n, c) => n + c.text.length, 0) + st.chapters.length
+  return prefix && length(snapshot) < length(shown)
 }
 
 /**

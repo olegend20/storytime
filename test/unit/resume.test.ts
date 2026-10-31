@@ -185,6 +185,12 @@ describe('the replay action (issue #82)', () => {
     expect(behind.phase).toBe('finishing')
   })
 
+  it('a chapter the writer restarted (#74) replaces the cut draft at once, though it is shorter so far', () => {
+    const shown = fold([meta, ...chapter(0, 'One.'), ...chapter(1, 'The cut draft, long by now', false)])
+    const restarted = streamReducer({ ...shown, phase: 'finishing' }, { kind: 'replay', events: [meta, ...chapter(0, 'One.'), ...chapter(1, 'Again', false)] })
+    expect(restarted.chapters.map((c) => c.text)).toEqual(['One.', 'Again'])
+  })
+
   it('ends as the live stream ends: an error event is the error state', () => {
     const after = streamReducer({ ...initialStreamState, phase: 'finishing' }, { kind: 'replay', events: [meta, errorEvent] })
     expect(after.phase).toBe('error')

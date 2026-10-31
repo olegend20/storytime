@@ -3,7 +3,7 @@ import type { SseEvent } from '@/lib/schemas'
 // The page's own reducer, pure and shared: the snapshot is folded exactly as the page folds the
 // live stream, so a chapter the writer restarts after a drop (#74) is handled the same way.
 import { initialStreamState, streamReducer, type StreamState } from '@/lib/client/generate'
-import { readGenerationRequest, type GenerationRequestView } from './requests'
+import { STALE_AFTER_MS, readGenerationRequest, type GenerationRequestView } from './requests'
 
 /**
  * The story so far, for a page that lost its stream (issue #82): the `generation_progress` table.
@@ -20,7 +20,8 @@ export const PROGRESS_WRITE_MS = 1_500
 /**
  * A saved story's snapshot is deleted at the first request start after this: long after the
  * route's maxDuration. A story that was not saved has its snapshot deleted as it ends
- * (`discardGenerationProgress`), since its text is kept nowhere else (code review on #83).
+ * (`discardGenerationProgress`), since its text is kept nowhere else (code review on #83) - or,
+ * when the platform killed the request first, at the next request start (`pruneGenerationProgress`).
  */
 export const PROGRESS_RETENTION_MS = 60 * 60_000
 
@@ -188,6 +189,21 @@ export async function pruneGenerationProgress(db: SupabaseClient, now: number = 
       .delete()
       .lt('updated_at', new Date(now - PROGRESS_RETENTION_MS).toISOString())
     if (error) console.warn(`[generate] generation_progress prune: ${error.message}`)
+    // A request the platform killed before `finish` ran never had its snapshot discarded: it is
+    // still "writing" past STALE_AFTER_MS, or ended unsaved. Its text goes now (review on #83).
+    const { data: dead, error: deadError } = await db
+      .from('generation_requests')
+      .select('id, generation_progress!inner(generation_id)')
+      .or(`status.in.(discarded,failed,refused),and(status.eq.writing,started_at.lt.${new Date(now - STALE_AFTER_MS).toISOString()})`)
+      .limit(100)
+    if (deadError) {
+      console.warn(`[generate] generation_progress prune (unsaved): ${deadError.message}`)
+      return
+    }
+    const ids = ((dead ?? []) as { id: string }[]).map((r) => r.id)
+    if (ids.length === 0) return
+    const { error: delError } = await db.from('generation_progress').delete().in('generation_id', ids)
+    if (delError) console.warn(`[generate] generation_progress prune (unsaved): ${delError.message}`)
   } catch (err) {
     console.warn('[generate] generation_progress prune threw:', err)
   }
