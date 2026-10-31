@@ -70,8 +70,9 @@ never a pass criterion: one sample per scenario through a remote API is too nois
 
 A live run also prints a `drops (issue #78):` line: per call purpose, the calls that failed by
 who ended them (`peer_reset`, `peer_end`, `upstream_error`, ...), our own aborts counted apart,
-the longest silence on any one call, and pings per minute. `--thinking-display=summarized`
-streams the writer's thinking summary instead of Sonnet 5's silent default, to measure it.
+the longest silence on any one call, and pings per minute. The writer streams its thinking
+summary, as production does since issue #80; `--thinking-display=omitted` measures Sonnet 5's
+silent default instead.
 
 ## What is in here
 

@@ -114,3 +114,14 @@ export function modelForRole(role: keyof typeof models.roles | string): string {
 export function capabilities(model: string): Record<string, unknown> {
   return models.capabilities[model] ?? {}
 }
+
+/**
+ * Whether a model takes an explicit adaptive `thinking` config, and so a `display` (#78/#80).
+ * Fable 5.1's thinking is always on and 400s on any config; a budget-thinking model takes
+ * `budget_tokens`, not adaptive. The one list for the wrappers, production and the eval
+ * (review on #81), so a new thinking mode cannot be handled in one place and missed in another.
+ */
+export function takesAdaptiveThinking(model: string): boolean {
+  const mode = capabilities(model).thinking
+  return mode !== 'always_on_omit_param' && mode !== 'extended_budget_tokens'
+}

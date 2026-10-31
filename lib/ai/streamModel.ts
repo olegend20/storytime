@@ -1,6 +1,6 @@
 import Anthropic, { APIConnectionError, APIError } from '@anthropic-ai/sdk'
 import type { CallPurpose } from '@/lib/schemas/common'
-import { capabilities, computeCost, modelForRole } from './pricing'
+import { capabilities, computeCost, modelForRole, takesAdaptiveThinking } from './pricing'
 import { MissingFixtureError, fixtureKey, readFixture, writeFixture } from './fixtures'
 import { getDefaultLogSink, normalizeUsage, type CacheableBlock, type CallModelResult } from './callModel'
 import { causeOf, closeKind, failedRowError, isDroppedStream, isUpstreamStreamError, newTrace, summarize, traceMiddleware } from './streamTrace'
@@ -76,11 +76,8 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
     return block
   })
 
-  const thinkingMode = caps.thinking as string | undefined
   const thinking =
-    opts.thinking === 'adaptive' &&
-    thinkingMode !== 'always_on_omit_param' &&
-    thinkingMode !== 'extended_budget_tokens'
+    opts.thinking === 'adaptive' && takesAdaptiveThinking(model)
       ? { type: 'adaptive' as const, ...(opts.thinkingDisplay ? { display: opts.thinkingDisplay } : {}) }
       : undefined
   const effort = opts.effort && caps.supports_effort === true ? { effort: opts.effort } : {}

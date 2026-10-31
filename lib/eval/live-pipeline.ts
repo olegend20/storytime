@@ -18,11 +18,24 @@ import {
   runGeneration,
   SseChannel,
   UnmeteredQuotaService,
+  writerThinkingDisplay,
   type PreparedGeneration,
   type RunGenerationResult,
 } from '@/lib/generate'
 import type { GateSummary } from './caps'
 import { assertThinkingDisplaySupported, parseForceDropAfterChapters, parseThinkingDisplay, type FirstDraft, type GenerateInput, type PipelineStoryResult, type StoryPipeline } from './pipeline'
+
+/**
+ * What the eval sends as the writer's thinking display. Unset runs what production runs (issue
+ * #80); `omitted` sends no display, Sonnet 5's silent default, as production did before #80;
+ * `summarized` forces it, and is refused for a writer that cannot take it.
+ */
+export function evalThinkingDisplay(setting: 'summarized' | 'omitted' | undefined, model: string): 'summarized' | undefined {
+  if (setting === undefined) return writerThinkingDisplay(model)
+  if (setting === 'omitted') return undefined
+  assertThinkingDisplaySupported(model)
+  return setting
+}
 
 /**
  * F13/F14: the live pipeline behind `pnpm eval` and `pnpm bakeoff` - the function
@@ -48,15 +61,15 @@ import { assertThinkingDisplaySupported, parseForceDropAfterChapters, parseThink
  */
 export function createEvalPipeline(db: SupabaseClient = supabaseService()): StoryPipeline {
   const forced = parseForceDropAfterChapters(process.env.EVAL_FORCE_DROP_AFTER_CHAPTERS)
-  const thinkingDisplay = parseThinkingDisplay(process.env.EVAL_THINKING_DISPLAY)
+  const setting = parseThinkingDisplay(process.env.EVAL_THINKING_DISPLAY)
   return {
     kind: 'live',
     describe:
       'F6 runGeneration (write, F7 gate + L4 review, rewrite, save, bible update)' +
       (forced === undefined ? '' : `, every first write cut after ${forced} chapter(s) and continued (issue #74)`) +
-      (thinkingDisplay === undefined ? '' : `, writer thinking display ${thinkingDisplay} (issue #78)`),
+      (setting === undefined ? '' : `, writer thinking display ${setting} (issue #78)`),
     generate: async (input) => {
-      if (thinkingDisplay) assertThinkingDisplaySupported(input.writingModel ?? modelForRole('writer'))
+      const thinkingDisplay = evalThinkingDisplay(setting, input.writingModel ?? modelForRole('writer'))
       const result = await generateOne(input, db, undefined, forced, thinkingDisplay)
       // Null only in first-draft mode, which this pipeline never asks for.
       if (!result) throw new Error(`eval scenario ${input.scenario.id} returned no result`)

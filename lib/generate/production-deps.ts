@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { capabilities, modelForRole, takesAdaptiveThinking } from '@/lib/ai/pricing'
 import { supabaseService } from '@/lib/supabase/service'
 import { consumeQuota, preflight, quotaStatus, type QuotaSnapshot } from '@/lib/limits'
 import { guardInput, reviewOutput, scanStoryStructure } from '@/lib/guardrails'
@@ -119,12 +120,27 @@ export class GuardrailsSafetyReviewer implements SafetyReviewer {
   }
 }
 
+/**
+ * The writer streams its thinking summary (issue #80, the owner's call after the #78 evals).
+ * Sonnet 5 hides its thinking by default, so a write sat silent for a median 78 s and up to
+ * 180 s; with the summary the longest silence was 8.7 s, at the same cost, and the text on the
+ * page is unchanged. A writer that takes no display (thinking always on with no parameter, set
+ * by budget, or not in config) keeps the plain request, so changing `WRITING_MODEL` never breaks a story.
+ */
+export function writerThinkingDisplay(model: string = modelForRole('writer')): 'summarized' | undefined {
+  // A writer missing from config/models.json gets no display: unknown is not "supported".
+  if (capabilities(model).thinking === undefined) return undefined
+  return takesAdaptiveThinking(model) ? 'summarized' : undefined
+}
+
 /** Everything production passes to `prepareGeneration` and `runGeneration`. */
 export function productionDeps(db: SupabaseClient = supabaseService()): GenerationDeps {
+  const thinkingDisplay = writerThinkingDisplay()
   return {
     db,
     quota: new LimitsQuotaService(db),
     inputGuard: new GuardrailsInputGuard(),
     safetyReviewer: new GuardrailsSafetyReviewer(),
+    ...(thinkingDisplay ? { thinkingDisplay } : {}),
   }
 }
