@@ -75,10 +75,11 @@ describe('issue #50: a real dropped stream, through the real SDK', () => {
     )
     expect(connections).toBe(2)
     expect(err?.message).toMatch(/rewrite call to claude-sonnet-5 failed after 2 attempt\(s\): terminated/)
-    expect(sink.rows.map((r) => r.error)).toEqual([
-      '[partial usage, lower bound] terminated',
-      '[partial usage, lower bound] terminated',
-    ])
+    // Each row says who closed it (#78): the server destroyed the socket, so `peer_reset`.
+    for (const r of sink.rows) {
+      expect(r.error).toMatch(/^\[partial usage, lower bound\] terminated \[close=peer_reset cause=UND_ERR_SOCKET:other side closed /)
+    }
+    expect(sink.rows).toHaveLength(2)
   })
 
   it('VT-W1 (#52): streamModel reports a real drop or a lost connection as dropped, and a 500 as not', async () => {

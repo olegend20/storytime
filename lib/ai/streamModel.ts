@@ -2,7 +2,8 @@ import Anthropic, { APIConnectionError, APIError } from '@anthropic-ai/sdk'
 import type { CallPurpose } from '@/lib/schemas/common'
 import { capabilities, computeCost, modelForRole } from './pricing'
 import { MissingFixtureError, fixtureKey, readFixture, writeFixture } from './fixtures'
-import { getDefaultLogSink, isDroppedStream, isUpstreamStreamError, normalizeUsage, type CacheableBlock, type CallModelResult } from './callModel'
+import { getDefaultLogSink, normalizeUsage, type CacheableBlock, type CallModelResult } from './callModel'
+import { causeOf, closeKind, failedRowError, isDroppedStream, isUpstreamStreamError, newTrace, summarize, traceMiddleware } from './streamTrace'
 import { ModelCallError, ModelRefusalError, type GenerationLogSink } from './types'
 import { servedByOtherModel, understudyHeaders, workloadFor, type WorkloadVariant } from './workload'
 
@@ -22,6 +23,12 @@ export interface StreamModelOptions {
   messages: Anthropic.MessageParam[]
   maxTokens?: number
   thinking?: 'adaptive' | 'off'
+  /**
+   * Stream a summary of the thinking as it goes (#78). Unset is the model's default - on
+   * Sonnet 5 `omitted`, a silent stream while it thinks - and leaves the request and the
+   * fixture key exactly as they were. Thinking text never reaches `onText`.
+   */
+  thinkingDisplay?: 'summarized'
   effort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max'
   /**
    * Structured outputs: `output_config.format`. The reply is constrained to the schema, so
@@ -74,7 +81,7 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
     opts.thinking === 'adaptive' &&
     thinkingMode !== 'always_on_omit_param' &&
     thinkingMode !== 'extended_budget_tokens'
-      ? { type: 'adaptive' as const }
+      ? { type: 'adaptive' as const, ...(opts.thinkingDisplay ? { display: opts.thinkingDisplay } : {}) }
       : undefined
   const effort = opts.effort && caps.supports_effort === true ? { effort: opts.effort } : {}
   const format = opts.outputFormat ? { format: opts.outputFormat } : {}
@@ -151,6 +158,7 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
   let stream: ReturnType<ReturnType<typeof anthropic>['messages']['stream']> | null = null
   // The model the gateway says served the call, when it is not the one asked for (#76).
   let other: string | null = null
+  const trace = newTrace(started)
   try {
     stream = anthropic().messages.stream(
       {
@@ -161,7 +169,11 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
         ...(thinking ? { thinking } : {}),
         ...(outputConfig ? { output_config: outputConfig } : {}),
       } as unknown as Anthropic.MessageStreamParams,
-      { signal: opts.signal, headers: understudyHeaders(workloadFor(opts.purpose, opts.variant)) },
+      {
+        signal: opts.signal,
+        headers: understudyHeaders(workloadFor(opts.purpose, opts.variant)),
+        middleware: [traceMiddleware(trace)],
+      },
     )
 
     // The headers arrive before any text: a reply from another model is stopped there, so none
@@ -216,6 +228,7 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
       latency_ms: latencyMs,
       ok: stopReason !== 'refusal',
       error: stopReason === 'refusal' ? 'refusal' : null,
+      stream: summarize(trace, null, null),
     })
 
     if (stopReason === 'refusal') {
@@ -253,6 +266,9 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
     const partial = stream?.currentMessage?.usage
     const used = partial ? normalizeUsage(partial) : null
     const message = other ? `served_by_other_model:${other}` : err instanceof Error ? err.message : String(err)
+    // Who ended it (#78): our own signal, or the far side - and what came over the wire first.
+    const close = closeKind(err, opts.signal?.aborted === true || other !== null, trace)
+    const sum = summarize(trace, close, causeOf(err))
     await sink.write({
       family_id: opts.familyId ?? null,
       story_id: opts.storyId ?? null,
@@ -268,7 +284,8 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
         : 0,
       latency_ms: latencyMs,
       ok: false,
-      error: `${used ? '[partial usage, lower bound] ' : other ? '[usage unknown] ' : ''}${message}`.slice(0, 500),
+      error: failedRowError(`${used ? '[partial usage, lower bound] ' : other ? '[usage unknown] ' : ''}${message}`, sum),
+      stream: sum,
     })
     if (other) {
       throw new ModelCallError(`${opts.purpose} stream to ${model} was served by ${other}`, {
@@ -277,6 +294,7 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
         attempts: 1,
         retryable: false,
         servedBy: other,
+        close,
       })
     }
     throw new ModelCallError(
@@ -288,8 +306,10 @@ export async function streamModel(opts: StreamModelOptions): Promise<CallModelRe
         retryable: false,
         // The SDK's 'Connection error.' (APIConnectionError, a subclass of APIError) is the same
         // failure seen before the first byte: two first writes in the v5 eval died one each way.
-        // An upstream error event mid-stream is the same loss, told rather than cut (#74).
+        // An upstream error event mid-stream is the same loss, told rather than cut (#74), and so
+        // is a stream that ends cleanly with no message (#78).
         dropped: isDroppedStream(err) || err instanceof APIConnectionError || isUpstreamStreamError(err),
+        close,
         ...(err instanceof APIError && typeof err.status === 'number' ? { status: err.status } : {}),
       },
     )
