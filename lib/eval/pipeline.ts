@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { capabilities } from '@/lib/ai/pricing'
+import { capabilities, takesAdaptiveThinking } from '@/lib/ai/pricing'
 import type { GenerationLogSink } from '@/lib/ai'
 import type { GenerationRequest, StoryOutput } from '@/lib/schemas'
 import type { FactPackLike, GateSummary } from './caps'
@@ -118,9 +118,8 @@ export function parseThinkingDisplay(raw: string | undefined): 'summarized' | 'o
  * says otherwise, so it is refused (code review on #79).
  */
 export function assertThinkingDisplaySupported(model: string): void {
-  const mode = capabilities(model).thinking
-  if (mode === 'always_on_omit_param' || mode === 'extended_budget_tokens') {
-    throw new Error(`--thinking-display: ${model} takes no thinking display (thinking: ${String(mode)})`)
+  if (!takesAdaptiveThinking(model)) {
+    throw new Error(`--thinking-display: ${model} takes no thinking display (thinking: ${String(capabilities(model).thinking)})`)
   }
 }
 

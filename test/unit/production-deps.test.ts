@@ -179,6 +179,8 @@ describe('productionDeps', () => {
 
   it('VT-TS2: a writer that takes no display keeps the plain request', () => {
     expect(writerThinkingDisplay('claude-fable-5-1')).toBeUndefined()
+    // A writer missing from config/models.json is not assumed to take one (review on #81).
+    expect(writerThinkingDisplay('claude-not-in-config')).toBeUndefined()
     const before = process.env.WRITING_MODEL
     process.env.WRITING_MODEL = 'claude-fable-5-1'
     try {

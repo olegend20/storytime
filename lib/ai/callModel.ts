@@ -1,7 +1,7 @@
 import Anthropic, { APIConnectionError, APIError } from '@anthropic-ai/sdk'
 import type { z } from 'zod'
 import type { CallPurpose } from '@/lib/schemas/common'
-import { capabilities, computeCost, modelForRole } from './pricing'
+import { capabilities, computeCost, modelForRole, takesAdaptiveThinking } from './pricing'
 import { servedByOtherModel, understudyHeaders, workloadFor, type WorkloadVariant } from './workload'
 import {
   MissingFixtureError,
@@ -212,7 +212,7 @@ function applyCapabilities(
   const thinkingMode = caps.thinking as string | undefined
   if (opts.thinking === 'adaptive') {
     // Fable 5.1 has thinking always on and 400s on any explicit config: omit entirely.
-    if (thinkingMode !== 'always_on_omit_param' && thinkingMode !== 'extended_budget_tokens') {
+    if (takesAdaptiveThinking(model)) {
       out.thinking = { type: 'adaptive', ...(opts.thinkingDisplay ? { display: opts.thinkingDisplay } : {}) }
     }
   }
