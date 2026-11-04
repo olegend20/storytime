@@ -1,0 +1,1020 @@
+{
+  "kind": "revise-bench-run",
+  "ran_at": "2026-11-04T07:38:36.355Z",
+  "set": "eval/review-bench/set-rewritten-2026-11-04.json",
+  "model": "writer",
+  "summary": {
+    "drafts": 53,
+    "first_pass": 7,
+    "failing": 46,
+    "mended": 0,
+    "revised": 18,
+    "still_rewrite": 28,
+    "median_changed_share": 0.05467582910068718,
+    "cost_usd": 2.378787
+  },
+  "rows": [
+    {
+      "id": "bicycles-band-b-5min-tricks@r82",
+      "first": "pass",
+      "outcome": "pass",
+      "first_reasons": [],
+      "left_reasons": [],
+      "edits": 0,
+      "rejected": 0,
+      "changed_share": 0,
+      "cost_usd": 0.005564
+    },
+    {
+      "id": "bicycles-band-c-5min@b1023",
+      "first": "rewrite",
+      "outcome": "revised",
+      "first_reasons": [
+        "banned_word:kill"
+      ],
+      "left_reasons": [],
+      "edits": 1,
+      "rejected": 0,
+      "changed_share": 0.007317605941459152,
+      "cost_usd": 0.03453,
+      "proposed": 1,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "climb-walls-band-a-15min-wild@a1023",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "word_count_in_range:1563 not in 1950-2550 (+/-15%)"
+      ],
+      "left_reasons": [
+        "the children must DO things that change what happens, not watch",
+        "Sam only asks, guesses and claps; Gordon opens every door and explains every trick"
+      ],
+      "edits": 9,
+      "rejected": 0,
+      "changed_share": 0.13117508681527948,
+      "cost_usd": 0.042771,
+      "proposed": 9,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "climb-walls-band-a-15min-wild@b1023",
+      "first": "rewrite",
+      "outcome": "revised",
+      "first_reasons": [
+        "word_count_in_range:1541 not in 1950-2550 (+/-15%)"
+      ],
+      "left_reasons": [],
+      "edits": 8,
+      "rejected": 0,
+      "changed_share": 0.1749853886616014,
+      "cost_usd": 0.043784,
+      "proposed": 8,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "climb-walls-mixed-3-11@b1023",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "word_count_in_range:1100 not in 1300-1700 (+/-15%)",
+        "facts contradict the fact pack",
+        "ch10/true facts: 'made sticky climbing gloves' is not in pack; pack says climbers studied gecko feet for glove ideas",
+        "ch10: 'Maybe someday' says gloves don't exist yet, contradicting the claim that scientists made them",
+        "GUARDRAILS rule 10 breached",
+        "GUARDRAILS rule 10 breached",
+        "GUARDRAILS rule 10 breached",
+        "GUARDRAILS rule 10 breached",
+        "GUARDRAILS rule 10 breached",
+        "GUARDRAILS rule 10 breached",
+        "GUARDRAILS rule 10 breached",
+        "GUARDRAILS rule 10 breached",
+        "GUARDRAILS rule 10 breached",
+        "GUARDRAILS rule 10 breached",
+        "output safety review returned safe: false"
+      ],
+      "left_reasons": [
+        "the children must DO things that change what happens, not watch",
+        "chapters 2-10: Gordy explains and demonstrates; Rosa and Isla mostly ask, watch and cheer, and no choice they make changes events"
+      ],
+      "edits": 9,
+      "rejected": 1,
+      "changed_share": 0.32043852779953014,
+      "cost_usd": 0.054237,
+      "proposed": 10,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "dinosaurs-band-a-15min-continuity@a1023",
+      "first": "pass",
+      "outcome": "pass",
+      "first_reasons": [],
+      "left_reasons": [],
+      "edits": 0,
+      "rejected": 0,
+      "changed_share": 0,
+      "cost_usd": 0.008346
+    },
+    {
+      "id": "dinosaurs-band-a-15min-continuity@b1023",
+      "first": "rewrite",
+      "outcome": "revised",
+      "first_reasons": [
+        "word_count_in_range:1560 not in 1950-2550 (+/-15%)"
+      ],
+      "left_reasons": [],
+      "edits": 6,
+      "rejected": 0,
+      "changed_share": 0.14868491680085882,
+      "cost_usd": 0.043093,
+      "proposed": 6,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "honey-band-a-15min-twins@b1023",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "word_count_in_range:1256 not in 1950-2550 (+/-15%)",
+        "banned_word:kiss",
+        "banned_word:kissed",
+        "banned_word:kisses",
+        "GUARDRAILS rule 1 breached",
+        "output safety review returned safe: false"
+      ],
+      "left_reasons": [
+        "word_count_in_range:1398 not in 1950-2550 (+/-15%)",
+        "banned_word:kiss",
+        "GUARDRAILS rule 1 breached",
+        "output safety review returned safe: false"
+      ],
+      "edits": 12,
+      "rejected": 1,
+      "changed_share": 0.23540856031128404,
+      "cost_usd": 0.05336,
+      "proposed": 13,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "honey-band-a-15min-twins@r82",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "word_count_in_range:1169 not in 1950-2550 (+/-15%)",
+        "banned_word:kisses",
+        "banned_word:kiss",
+        "not age-appropriate for band A",
+        "chapter 4: 'forager' is a big word and is not explained",
+        "GUARDRAILS rule 1 breached",
+        "output safety review returned safe: false"
+      ],
+      "left_reasons": [
+        "word_count_in_range:1399 not in 1950-2550 (+/-15%)",
+        "banned_word:kisses"
+      ],
+      "edits": 9,
+      "rejected": 0,
+      "changed_share": 0.3309211518166742,
+      "cost_usd": 0.062695,
+      "proposed": 9,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "lego-band-c-rivals@a1023",
+      "first": "rewrite",
+      "outcome": "revised",
+      "first_reasons": [
+        "GUARDRAILS rule 9 breached",
+        "GUARDRAILS rule 9 breached",
+        "output safety review returned safe: false",
+        "a named child is not portrayed positively"
+      ],
+      "left_reasons": [],
+      "edits": 1,
+      "rejected": 0,
+      "changed_share": 0.008906443618339529,
+      "cost_usd": 0.039256,
+      "proposed": 1,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "lego-band-c-rivals@b1023",
+      "first": "pass",
+      "outcome": "pass",
+      "first_reasons": [],
+      "left_reasons": [],
+      "edits": 0,
+      "rejected": 0,
+      "changed_share": 0,
+      "cost_usd": 0.008829
+    },
+    {
+      "id": "lego-band-c-rivals@r82",
+      "first": "rewrite",
+      "outcome": "revised",
+      "first_reasons": [
+        "not age-appropriate for band C",
+        "chapter 2: 'serifs' is a big word and is not explained"
+      ],
+      "left_reasons": [],
+      "edits": 2,
+      "rejected": 0,
+      "changed_share": 0.03430632994424401,
+      "cost_usd": 0.05046,
+      "proposed": 2,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "magnets-band-b-5min@r82",
+      "first": "rewrite",
+      "outcome": "revised",
+      "first_reasons": [
+        "not age-appropriate for band B",
+        "chapter 3: 'atom' is a big word and is not explained in everyday words"
+      ],
+      "left_reasons": [],
+      "edits": 2,
+      "rejected": 0,
+      "changed_share": 0.05360412851673048,
+      "cost_usd": 0.034364,
+      "proposed": 2,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "pompeii-band-b-care@a1023",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "facts contradict the fact pack",
+        "chapter 3: amphitheater 'about 70 years before the eruption' contradicts pack's 'around 70 BC' (about 150 years earlier)",
+        "scary_level 2 above band B limit"
+      ],
+      "left_reasons": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack",
+        "true facts: amphitheater 'about seventy years before the eruption' contradicts pack's c.70 BC (about 150 years before)",
+        "chapter 3: claim that the amphitheater is 'the very first kind' of stadium is not in the pack and is doubtful",
+        "chapters 1-9: Nora mostly asks and watches; the tile explains everything and no choice she makes changes events"
+      ],
+      "edits": 2,
+      "rejected": 1,
+      "changed_share": 0.04406329953567706,
+      "cost_usd": 0.042048,
+      "proposed": 3,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "pompeii-band-b-care@r82",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "word_count_in_range:1061 not in 1600-2200 (+/-15%)"
+      ],
+      "left_reasons": [
+        "word_count_in_range:1150 not in 1600-2200 (+/-15%)",
+        "not age-appropriate for band B",
+        "the children must DO things that change what happens, not watch",
+        "chapter 4: 'Plinian' is used but never explained in everyday words",
+        "chapters 4-8: the tessera steers every choice; Nora mostly watches and reacts"
+      ],
+      "edits": 8,
+      "rejected": 0,
+      "changed_share": 0.18562388447184813,
+      "cost_usd": 0.037179,
+      "proposed": 8,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "pompeii-band-c-15min@a1023",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "sentence_length:14% of sentences over 25 words (limit 12%). Split the long sentences."
+      ],
+      "left_reasons": [
+        "facts contradict the fact pack",
+        "chapter 5: says Pliny the Younger lived 'another forty years'; not in pack and historically about 34"
+      ],
+      "edits": 6,
+      "rejected": 0,
+      "changed_share": 0.08959485989648402,
+      "cost_usd": 0.05759,
+      "proposed": 6,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "pompeii-band-c-15min@b1023",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "sentence_length:average 16.5 words (limit 14); 23% of sentences over 25 words (limit 12%). Split the long sentences.",
+        "not age-appropriate for band C",
+        "chapter 7: 'UNESCO World Heritage Site' is not explained",
+        "chapter 3: 'stylus' is not explained"
+      ],
+      "left_reasons": [
+        "sentence_length:average 15.0 words (limit 14); 18% of sentences over 25 words (limit 12%). Split the long sentences."
+      ],
+      "edits": 8,
+      "rejected": 0,
+      "changed_share": 0.1194587858287342,
+      "cost_usd": 0.066221,
+      "proposed": 8,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "pompeii-band-c-15min@r82",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "facts contradict the fact pack",
+        "chapter 4: 62 AD earthquake is not in the fact pack; remove or flag as outside the pack",
+        "chapter 8: 1997 World Heritage date is not in the fact pack; remove or flag as outside the pack"
+      ],
+      "left_reasons": [
+        "not age-appropriate for band C",
+        "chapter 5: 'stylus' is a technical term and is not explained"
+      ],
+      "edits": 2,
+      "rejected": 0,
+      "changed_share": 0.024648508735807987,
+      "cost_usd": 0.047497,
+      "proposed": 2,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "rainbows-band-a-5min@b1023",
+      "first": "rewrite",
+      "outcome": "revised",
+      "first_reasons": [
+        "not age-appropriate for band A",
+        "facts contradict the fact pack",
+        "chapter 6: 'palette' is a big word not explained",
+        "chapter 7: Kamal al-Din using round glass balls is not in the fact pack"
+      ],
+      "left_reasons": [],
+      "edits": 3,
+      "rejected": 0,
+      "changed_share": 0.07587403917679147,
+      "cost_usd": 0.031242,
+      "proposed": 3,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "rainbows-band-b-5min-teasing@b1023",
+      "first": "rewrite",
+      "outcome": "revised",
+      "first_reasons": [
+        "banned_word:pistol"
+      ],
+      "left_reasons": [],
+      "edits": 7,
+      "rejected": 0,
+      "changed_share": 0.11654306039049493,
+      "cost_usd": 0.036329,
+      "proposed": 7,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "sharks-band-a-continuity@a1023",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "word_count_in_range:1096 not in 1300-1700 (+/-15%)",
+        "GUARDRAILS rule 10 breached",
+        "output safety review returned safe: false"
+      ],
+      "left_reasons": [
+        "GUARDRAILS rule 10 breached",
+        "output safety review returned safe: false"
+      ],
+      "edits": 7,
+      "rejected": 0,
+      "changed_share": 0.2820594311139361,
+      "cost_usd": 0.043195,
+      "proposed": 7,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "sharks-band-a-continuity@r82",
+      "first": "rewrite",
+      "outcome": "revised",
+      "first_reasons": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack",
+        "chapters 2-4 and 6: the brick explains almost everything and the kids mostly react; no choice changes what happens",
+        "chapter 6: says megalodon swam before most dinosaurs; not in pack, and megalodon lived long after most dinosaurs died out"
+      ],
+      "left_reasons": [],
+      "edits": 5,
+      "rejected": 0,
+      "changed_share": 0.12267510882469332,
+      "cost_usd": 0.056979,
+      "proposed": 5,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "sleep-band-c-5min-bedtime@a1023",
+      "first": "rewrite",
+      "outcome": "revised",
+      "first_reasons": [
+        "facts contradict the fact pack",
+        "chapter 8: 'Randy turned out fine' is a claim about a real person that the fact pack does not support"
+      ],
+      "left_reasons": [],
+      "edits": 1,
+      "rejected": 0,
+      "changed_share": 0.03439991263514251,
+      "cost_usd": 0.034303,
+      "proposed": 1,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "sleep-band-c-5min-bedtime@b1023",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "the children must DO things that change what happens, not watch",
+        "Arjun mostly asks questions and watches; Inspector Nod explains and solves every case"
+      ],
+      "left_reasons": [
+        "facts contradict the fact pack",
+        "chapter 7: bats called 'laziest mammals on record, officially' overstates pack's 'among the sleepiest mammals'"
+      ],
+      "edits": 6,
+      "rejected": 0,
+      "changed_share": 0.2573774393146121,
+      "cost_usd": 0.049257,
+      "proposed": 6,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "sleep-band-c-5min-bedtime@r82",
+      "first": "pass",
+      "outcome": "pass",
+      "first_reasons": [],
+      "left_reasons": [],
+      "edits": 0,
+      "rejected": 0,
+      "changed_share": 0,
+      "cost_usd": 0.005749
+    },
+    {
+      "id": "sleep-band-d-5min@b1023",
+      "first": "rewrite",
+      "outcome": "revised",
+      "first_reasons": [
+        "the children must DO things that change what happens, not watch",
+        "levels 2-7: Noah mostly listens while the controller explains; his only real choice is at the end",
+        "output safety review returned safe: false",
+        "scary_level 3 above band D limit",
+        "a named child is not portrayed positively",
+        "the ending is not safe, warm and resolved"
+      ],
+      "left_reasons": [],
+      "edits": 6,
+      "rejected": 0,
+      "changed_share": 0.1345555171221031,
+      "cost_usd": 0.062503,
+      "proposed": 6,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "soccer-band-c-5min@a1023",
+      "first": "pass",
+      "outcome": "pass",
+      "first_reasons": [],
+      "left_reasons": [],
+      "edits": 0,
+      "rejected": 0,
+      "changed_share": 0,
+      "cost_usd": 0.006729
+    },
+    {
+      "id": "soccer-band-c-5min@b1023",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "facts contradict the fact pack",
+        "chapter 8: says Pele 'lifted the trophy' in 1970; pack only says he was on three winning squads"
+      ],
+      "left_reasons": [
+        "facts contradict the fact pack",
+        "chapter 8: says Pele 'lifted the trophy' in 1970; pack only says he was on three winning squads"
+      ],
+      "edits": 0,
+      "rejected": 1,
+      "changed_share": 0,
+      "cost_usd": 0.025293,
+      "proposed": 1,
+      "stop_reason": "end_turn",
+      "raw": "```json\n{\n  \"edits\": [\n    {\n      \"part\": \"chapter\",\n      \"index\": 8,\n      \"find\": \"And somewhere in black and white footage flickering past, a Brazilian forward named **Pele** lifted the trophy a third time — **1958, 1962, 1970** — the only player in history to manage that hat trick of championships.\",\n      \"replace\": \"And somewhere in black and white footage flickering past, a Brazilian forward named **Pele** celebrated his third championship — **1958, 1962, 1970** — the only player in history to be on three winning World Cup squads.\"\n    }\n  ]\n}\n```"
+    },
+    {
+      "id": "soccer-band-c-5min@r82",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "the children must DO things that change what happens, not watch",
+        "chapters 2-8: Lena mostly watches and reacts while the ball drives every stop and answers every question"
+      ],
+      "left_reasons": [
+        "the children must DO things that change what happens, not watch",
+        "Lena mostly watches and reacts; the ball narrates and resolves each stop, including the stolen trophy"
+      ],
+      "edits": 4,
+      "rejected": 0,
+      "changed_share": 0.11355087933313002,
+      "cost_usd": 0.054904,
+      "proposed": 4,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "soccer-band-c-continuity@b1023",
+      "first": "rewrite",
+      "outcome": "revised",
+      "first_reasons": [
+        "the children must DO things that change what happens, not watch",
+        "Theo mostly watches and asks questions; Bit drives every level and Theo never makes a choice or changes what happens"
+      ],
+      "left_reasons": [],
+      "edits": 8,
+      "rejected": 0,
+      "changed_share": 0.14226423795250173,
+      "cost_usd": 0.073752,
+      "proposed": 8,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "soccer-band-d@a1023",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "facts contradict the fact pack",
+        "chapter 7: says Brazil's 'five World Cup titles' by 1970; pack gives three by 1970, five only after 2002"
+      ],
+      "left_reasons": [
+        "facts contradict the fact pack",
+        "chapter 3: FA Cup 'played every single year since' is not in the pack and is untrue; it was suspended in both world wars"
+      ],
+      "edits": 1,
+      "rejected": 0,
+      "changed_share": 0.02515299533995845,
+      "cost_usd": 0.043798,
+      "proposed": 1,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "soccer-band-d@b1023",
+      "first": "rewrite",
+      "outcome": "revised",
+      "first_reasons": [
+        "banned_word:killed",
+        "the children must DO things that change what happens, not watch",
+        "Mia mostly watches and reacts; add a chapter where her own stats reasoning or choice changes where the ball goes"
+      ],
+      "left_reasons": [],
+      "edits": 2,
+      "rejected": 0,
+      "changed_share": 0.0409577121321288,
+      "cost_usd": 0.05141,
+      "proposed": 2,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "space-race-band-b-15min-continuity@a1023",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "not age-appropriate for band B",
+        "chapter 6: 'visor' is a big word and is not explained",
+        "chapter 5: 'hull' is a big word and is not explained",
+        "chapter 4: 'podium' is a big word and is not explained",
+        "output safety review returned safe: false",
+        "scary_level 3 above band B limit",
+        "a named child is not portrayed positively",
+        "the ending is not safe, warm and resolved"
+      ],
+      "left_reasons": [
+        "GUARDRAILS rule 10 breached",
+        "GUARDRAILS rule 10 breached",
+        "output safety review returned safe: false"
+      ],
+      "edits": 6,
+      "rejected": 0,
+      "changed_share": 0.03501896333754741,
+      "cost_usd": 0.062941,
+      "proposed": 6,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "space-race-band-b-15min-continuity@b1023",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "sentence_length:14% of sentences over 20 words (limit 12%). Split the long sentences.",
+        "not age-appropriate for band B",
+        "facts contradict the fact pack",
+        "chapter 1: 'rivet' is not explained",
+        "chapter 4: 'podium' is not explained",
+        "chapter 1: Sputnik 'about as wide as your bicycle is long' contradicts pack's about 58 cm",
+        "GUARDRAILS rule 2 breached",
+        "output safety review returned safe: false"
+      ],
+      "left_reasons": [
+        "sentence_length:13% of sentences over 20 words (limit 12%). Split the long sentences."
+      ],
+      "edits": 4,
+      "rejected": 0,
+      "changed_share": 0.09022716014436345,
+      "cost_usd": 0.060369,
+      "proposed": 4,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "space-race-band-b-15min-continuity@r82",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "not age-appropriate for band B",
+        "facts contradict the fact pack",
+        "chapter 5: 'decade' is not explained",
+        "chapter 6: 'forty-eight orbits' is not in the fact pack",
+        "GUARDRAILS rule 1 breached",
+        "output safety review returned safe: false"
+      ],
+      "left_reasons": [
+        "GUARDRAILS rule 10 breached",
+        "output safety review returned safe: false"
+      ],
+      "edits": 5,
+      "rejected": 1,
+      "changed_share": 0.04830494986471431,
+      "cost_usd": 0.048507,
+      "proposed": 6,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "space-race-band-c-15min@a1023",
+      "first": "rewrite",
+      "outcome": "revised",
+      "first_reasons": [
+        "banned_word:idiot",
+        "not age-appropriate for band C",
+        "chapter 2: 'aerodynamic' is a technical term and is never explained",
+        "chapter 8: 'command module' is a technical term and is never explained"
+      ],
+      "left_reasons": [],
+      "edits": 3,
+      "rejected": 0,
+      "changed_share": 0.026126126126126126,
+      "cost_usd": 0.06465,
+      "proposed": 3,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "space-race-band-c-15min@b1023",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "facts contradict the fact pack",
+        "Explorer 1 section: says 'three months before NASA' but dates are January 31 and October 1, 1958, about eight months apart"
+      ],
+      "left_reasons": [
+        "facts contradict the fact pack",
+        "chapter 4: says Gagarin would 'not come back down', contradicting the pack's single orbit and safe return"
+      ],
+      "edits": 1,
+      "rejected": 0,
+      "changed_share": 0.009159081802049345,
+      "cost_usd": 0.044887,
+      "proposed": 1,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "space-race-band-c-15min@r82",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "the children must DO things that change what happens, not watch",
+        "Theo mostly observes and comments; none of his choices change what happens, and the clipboard man explains each event"
+      ],
+      "left_reasons": [
+        "GUARDRAILS rule 2 breached",
+        "output safety review returned safe: false"
+      ],
+      "edits": 3,
+      "rejected": 0,
+      "changed_share": 0.06546337441018828,
+      "cost_usd": 0.077314,
+      "proposed": 3,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "space-race-band-d@b1023",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "banned_word:cigarette",
+        "the children must DO things that change what happens, not watch",
+        "Eli mostly watches while Control narrates each scene; give Eli a choice or idea that changes an outcome in at least one chapter",
+        "GUARDRAILS rule 6 breached",
+        "GUARDRAILS rule 2 breached",
+        "GUARDRAILS rule 6 breached",
+        "output safety review returned safe: false"
+      ],
+      "left_reasons": [
+        "GUARDRAILS rule 2 breached",
+        "GUARDRAILS rule 6 breached",
+        "GUARDRAILS rule 6 breached",
+        "output safety review returned safe: false"
+      ],
+      "edits": 5,
+      "rejected": 0,
+      "changed_share": 0.054833399557245845,
+      "cost_usd": 0.07025,
+      "proposed": 5,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "space-race-band-d@r82",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "the children must DO things that change what happens, not watch",
+        "Eli mostly asks questions and reacts; he changes no event, and the Beacon supplies every explanation and choice",
+        "GUARDRAILS rule 3 breached",
+        "GUARDRAILS rule 6 breached",
+        "output safety review returned safe: false"
+      ],
+      "left_reasons": [
+        "GUARDRAILS rule 2 breached",
+        "GUARDRAILS rule 2 breached",
+        "GUARDRAILS rule 6 breached",
+        "output safety review returned safe: false"
+      ],
+      "edits": 4,
+      "rejected": 0,
+      "changed_share": 0.08211432721236643,
+      "cost_usd": 0.078279,
+      "proposed": 4,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "titanic-band-b@a1023",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "not age-appropriate for band B",
+        "too scary for band B: scary_level 2, limit 1",
+        "chapter 3: 'gangway' is not explained",
+        "chapter 2: 'rivets' is not explained",
+        "chapter 7: 'steamship' is not explained",
+        "chapter 4: 'crow's nest' is not explained",
+        "scary_level 2 above band B limit"
+      ],
+      "left_reasons": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack",
+        "chapter 4: Pip says the ship will not sink; pack says it sank about 2:20 a.m.",
+        "Maya mostly asks and reacts; Pip explains and solves, and her spotting changes nothing",
+        "scary_level 2 above band B limit"
+      ],
+      "edits": 4,
+      "rejected": 0,
+      "changed_share": 0.10732850881663439,
+      "cost_usd": 0.046776,
+      "proposed": 4,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "titanic-band-b@b1023",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "not age-appropriate for band B",
+        "too scary for band B: scary_level 2, limit 1",
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack",
+        "chapter 6: 'wireless' is not explained",
+        "chapter 1: 'scaffolding' is not explained",
+        "chapter 5: says the ship 'brushed' the ice; pack says Titanic struck the iceberg",
+        "Maya mostly watches and draws; her actions change nothing in the events"
+      ],
+      "left_reasons": [
+        "not age-appropriate for band B",
+        "chapter 1: 'hull' is used but never explained in everyday words",
+        "chapter 8: 'bow' is used but never explained in everyday words",
+        "chapter 6: 'wireless operators' is used but never explained in everyday words",
+        "scary_level 2 above band B limit"
+      ],
+      "edits": 4,
+      "rejected": 1,
+      "changed_share": 0.07287040775131207,
+      "cost_usd": 0.068754,
+      "proposed": 5,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "titanic-band-b@r82",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "not age-appropriate for band B",
+        "too scary for band B: scary_level 2, limit 1",
+        "the children must DO things that change what happens, not watch",
+        "chapter 6: 'distress call' is a big word and is not explained",
+        "Maya mostly watches and asks; the boat explains everything and the rescue is done by Carpathia and other people, not by her choices",
+        "GUARDRAILS rule 2 breached",
+        "output safety review returned safe: false",
+        "scary_level 2 above band B limit"
+      ],
+      "left_reasons": [
+        "too scary for band B: scary_level 2, limit 1",
+        "GUARDRAILS rule 3 breached",
+        "GUARDRAILS rule 2 breached",
+        "output safety review returned safe: false",
+        "scary_level 2 above band B limit"
+      ],
+      "edits": 3,
+      "rejected": 0,
+      "changed_share": 0.04035320926699582,
+      "cost_usd": 0.054534,
+      "proposed": 3,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "titanic-band-c@a1023",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "not age-appropriate for band C",
+        "facts contradict the fact pack",
+        "ch1: 'slipways' not explained",
+        "ch5: 'companionway' not explained",
+        "ch6: 'davits' not explained",
+        "ch9: 'prow' not explained",
+        "ch5: '58 miles' distance to Carpathia is not in the fact pack"
+      ],
+      "left_reasons": [
+        "not age-appropriate for band C",
+        "chapter 2: 'tallow' is not explained"
+      ],
+      "edits": 5,
+      "rejected": 0,
+      "changed_share": 0.08055160984848485,
+      "cost_usd": 0.057017,
+      "proposed": 5,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "titanic-band-c@b1023",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "not age-appropriate for band C",
+        "chapter 6: 'wireless' (room, operators) is a technical term never explained"
+      ],
+      "left_reasons": [
+        "not age-appropriate for band C",
+        "chapter 1: 'boilers' is a technical term never explained"
+      ],
+      "edits": 2,
+      "rejected": 0,
+      "changed_share": 0.04759776536312849,
+      "cost_usd": 0.052421,
+      "proposed": 2,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "titanic-band-c@r82",
+      "first": "pass",
+      "outcome": "pass",
+      "first_reasons": [],
+      "left_reasons": [],
+      "edits": 0,
+      "rejected": 0,
+      "changed_share": 0,
+      "cost_usd": 0.007743
+    },
+    {
+      "id": "video-games-band-b-15min@b1023",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "contains_url_or_contact:phone"
+      ],
+      "left_reasons": [
+        "contains_url_or_contact:phone"
+      ],
+      "edits": 0,
+      "rejected": 0,
+      "changed_share": 0,
+      "cost_usd": 0.030829,
+      "proposed": 0,
+      "stop_reason": "end_turn",
+      "raw": "```json\n{\n  \"edits\": []\n}\n```"
+    },
+    {
+      "id": "video-games-band-b-15min@r82",
+      "first": "rewrite",
+      "outcome": "revised",
+      "first_reasons": [
+        "not age-appropriate for band B",
+        "chapter 3: 'solder' is a technical word, not explained",
+        "chapter 3 and chapter 9: 'prototype' is not explained in everyday words",
+        "chapter 1: 'modem' in the 'dial-up modem' simile is not explained"
+      ],
+      "left_reasons": [],
+      "edits": 2,
+      "rejected": 1,
+      "changed_share": 0.019508629898240287,
+      "cost_usd": 0.058991,
+      "proposed": 3,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "video-games-band-c-solo@a1023",
+      "first": "rewrite",
+      "outcome": "revised",
+      "first_reasons": [
+        "word_count_in_range:1771 not in 2200-3200 (+/-15%)",
+        "GUARDRAILS rule 1 breached",
+        "GUARDRAILS rule 1 breached",
+        "output safety review returned safe: false"
+      ],
+      "left_reasons": [],
+      "edits": 9,
+      "rejected": 0,
+      "changed_share": 0.29498211350671955,
+      "cost_usd": 0.058514,
+      "proposed": 9,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "video-games-band-c-solo@r82",
+      "first": "rewrite",
+      "outcome": "revised",
+      "first_reasons": [
+        "facts contradict the fact pack",
+        "chapter 7: 'first big console to use CDs' is a claim the pack does not make"
+      ],
+      "left_reasons": [],
+      "edits": 1,
+      "rejected": 0,
+      "changed_share": 0.015230460921843688,
+      "cost_usd": 0.037863,
+      "proposed": 1,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "volcanoes-band-b-15min@a1023",
+      "first": "pass",
+      "outcome": "pass",
+      "first_reasons": [],
+      "left_reasons": [],
+      "edits": 0,
+      "rejected": 0,
+      "changed_share": 0,
+      "cost_usd": 0.008273
+    },
+    {
+      "id": "volcanoes-mixed-ages@a1023",
+      "first": "rewrite",
+      "outcome": "revised",
+      "first_reasons": [
+        "child_has_action:Theo",
+        "facts contradict the fact pack",
+        "chapter 4: Mauna Loa 'four thousand soccer fields stacked' misstates pack's 4,000 meters; use meters or a fair comparison"
+      ],
+      "left_reasons": [],
+      "edits": 2,
+      "rejected": 0,
+      "changed_share": 0.05467582910068718,
+      "cost_usd": 0.038512,
+      "proposed": 2,
+      "stop_reason": "end_turn"
+    },
+    {
+      "id": "volcanoes-mixed-ages@r82",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "word_count_in_range:986 not in 1300-1700 (+/-15%)",
+        "not age-appropriate for band A",
+        "chapter 6: 'gravity' is a big word and is not explained"
+      ],
+      "left_reasons": [
+        "facts contradict the fact pack",
+        "chapter 2: Mauna Loa 'taller than four thousand steps' contradicts pack's over 4,000 meters; 4,000 steps is much less than 4,000 meters"
+      ],
+      "edits": 9,
+      "rejected": 0,
+      "changed_share": 0.2788962165914613,
+      "cost_usd": 0.044096,
+      "proposed": 9,
+      "stop_reason": "end_turn"
+    }
+  ]
+}

@@ -147,6 +147,12 @@ export interface EvalSummary {
    * Reported, not a pass criterion: the owner's hill-climb metric (2026-10-08).
    */
   first_draft?: { passed: number; of: number }
+  /**
+   * Issue #85: what happened to each story after it began streaming - the owner's measure of
+   * the swap bug. `replaced` is a full rewrite (or shorter retry) delivered in place of what
+   * the parent was reading; `edited` is sentences changed in place.
+   */
+  after_streaming?: { unchanged: number; edited: number; replaced: number; of: number }
   passed: boolean
   failures: string[]
   /** Optional only because results written before issue #46 have none. */
@@ -595,6 +601,18 @@ function latencyStats(values: (number | null)[]): LatencyStats {
   return { n: known.length, median_ms: Math.round(median(known)), p95_ms: Math.round(p95(known)) }
 }
 
+/** Issue #85. Records from before #85 carry no `after_streaming` and are left out. */
+export function afterStreamingSummary(records: readonly EvalScenarioRecord[]): EvalSummary['after_streaming'] {
+  const known = records.map((r) => r.first_draft?.after_streaming).filter((a): a is NonNullable<typeof a> => a !== undefined)
+  if (known.length === 0) return undefined
+  return {
+    unchanged: known.filter((a) => a === 'unchanged').length,
+    edited: known.filter((a) => a === 'edited').length,
+    replaced: known.filter((a) => a === 'replaced').length,
+    of: known.length,
+  }
+}
+
 export function summarizeLatency(records: EvalScenarioRecord[]): EvalLatencySummary {
   const byStep: Record<string, StepLatency> = {}
   for (const r of records) {
@@ -712,6 +730,7 @@ export function summarize(records: EvalScenarioRecord[]): EvalSummary {
       passed: records.filter((r) => r.first_draft?.passed === true).length,
       of: records.filter((r) => r.first_draft != null).length,
     },
+    after_streaming: afterStreamingSummary(records),
     passed: failures.length === 0,
     failures,
     // Never in `failures`: latency is reported, not gated (issue #46).
@@ -757,6 +776,8 @@ export function compareEvalRuns(current: EvalResult, previous: EvalResult | null
   )
   const drafts = (s: EvalSummary): string => (s.first_draft ? `${s.first_draft.passed}/${s.first_draft.of}` : 'not recorded')
   lines.push(`  first drafts untouched: ${drafts(current.summary)} (was ${drafts(previous.summary)})`)
+  const replaced = (s: EvalSummary): string => (s.after_streaming ? `${s.after_streaming.replaced}/${s.after_streaming.of}` : 'not recorded')
+  lines.push(`  stories replaced after streaming: ${replaced(current.summary)} (was ${replaced(previous.summary)})`)
 
   const before = new Map(previous.scenarios.map((s) => [s.scenario_id, s]))
   for (const s of current.scenarios) {
@@ -834,6 +855,10 @@ export function formatEval(result: EvalResult): string {
   )
   if (result.summary.first_draft && result.summary.first_draft.of > 0) {
     lines.push(`  first drafts untouched: ${result.summary.first_draft.passed}/${result.summary.first_draft.of}`)
+  }
+  const after = result.summary.after_streaming
+  if (after && after.of > 0) {
+    lines.push(`  after streaming began (issue #85): ${after.unchanged} unchanged, ${after.edited} edited in place, ${after.replaced} replaced by a rewrite (of ${after.of})`)
   }
   lines.push('')
   lines.push('  scenario                        band  words  target       overall  1st ch   total    caps')

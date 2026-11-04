@@ -25,7 +25,7 @@ import {
   type RunGenerationResult,
 } from '@/lib/generate'
 import type { GateSummary } from './caps'
-import { assertThinkingDisplaySupported, parseForceDropAfterChapters, parseThinkingDisplay, type FirstDraft, type GenerateInput, type PipelineStoryResult, type StoryPipeline } from './pipeline'
+import { assertThinkingDisplaySupported, parseForceDropAfterChapters, parseThinkingDisplay, type AfterStreaming, type FirstDraft, type GenerateInput, type PipelineStoryResult, type StoryPipeline } from './pipeline'
 
 /**
  * What the eval sends as the writer's thinking display. Unset runs what production runs (issue
@@ -247,6 +247,16 @@ async function generateOne(
   }
 }
 
+/**
+ * Issue #85: replaced when a second full writing call's story was delivered (a rewrite, or
+ * rung 3's shorter retry), not when a lost rewrite fell back to attempt 1 (#72).
+ */
+export function afterStreaming(quality: QualityResult, edited: boolean): AfterStreaming {
+  const fellBack = quality.rewrite_reasons.some((r) => r.startsWith('rewrite output unusable'))
+  if (quality.attempt === 2 && !fellBack) return 'replaced'
+  return edited ? 'edited' : 'unchanged'
+}
+
 export function firstDraftOf(
   quality: QualityResult | null,
   writeCalls: number,
@@ -255,11 +265,14 @@ export function firstDraftOf(
   if (!quality) return null
   const sentBack = quality.first_attempt ?? null
   const mendedRules = quality.mended?.rules ?? []
+  // An in-place revision (#85) records edits with no rule: it is a touched draft all the same.
+  const edited = (quality.mended?.edits ?? 0) + (quality.mended?.cut ?? 0) > 0
   return {
-    passed: writeCalls <= 1 && sentBack === null && mendedRules.length === 0 && quality.outcome !== 'discarded',
+    passed: writeCalls <= 1 && sentBack === null && mendedRules.length === 0 && !edited && quality.outcome !== 'discarded',
     failures: (sentBack?.failures ?? []).map((f) => f.check),
     reasons: sentBack?.reasons ?? [],
     mended_rules: mendedRules,
+    after_streaming: afterStreaming(quality, edited),
     ...(gated ? { story: gated.story, request: gated.request } : {}),
   }
 }

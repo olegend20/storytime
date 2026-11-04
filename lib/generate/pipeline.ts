@@ -50,6 +50,7 @@ import { parseStoryOutput } from './parse'
 import { salvageTrueFacts } from './normalize'
 import { STORY_OUTPUT_FORMAT } from './output-schema'
 import { StoryStreamParser } from './story-stream'
+import { reviseInRounds, reviseStory } from './revise'
 import { SseChannel } from './sse'
 import { resolveGuard, resolveQuota, type GenerationDeps, type QuotaState } from './deps'
 
@@ -392,6 +393,11 @@ export const AFTER_WRITE_MS = 90_000
  * Tied to AFTER_WRITE_MS so the write always keeps its 90 s when that grows (PR #63 review).
  */
 export const RETRY_MIN_MS = AFTER_WRITE_MS + 90_000
+/**
+ * Below this much time before the deadline, a failing attempt 1 goes straight to the rewrite
+ * (issue #85): the revision and its gate (~60 s together) must leave the rewrite its own time.
+ */
+export const REVISE_MIN_MS = RETRY_MIN_MS + 60_000
 /**
  * How many times a writing call the gateway drops is tried again (issue #72): on 2026-10-19,
  * 12 of 67 writes were cut before any text arrived, and one retry lost three stories. Bounded
@@ -858,6 +864,43 @@ export async function runGeneration(
       const fixed = await mend(1, request)
       if (fixed && !gate.needsRewrite) {
         console.info(`[generate] mended attempt 1 in place of a rewrite (${[...mended.rules].join(', ')})`)
+      }
+    }
+
+    // Issue #85: the parent has been reading attempt 1 as it streamed, and a full rewrite
+    // replaces it - title, chapters and all. So first the sentences that failed are edited in
+    // place and the whole gate runs again, as attempt 1. Only a story that still fails goes
+    // to the rewrite, exactly as it would have: story and verdict are put back first. Not after
+    // a shorter retry (no writing call is left), and not near the deadline, where the rewrite
+    // still needs its time.
+    if (gate.needsRewrite && !retriedShorter) {
+      const before = { story, gate }
+      try {
+        const revised = await reviseInRounds(story, gate, {
+          revise: (s, result) =>
+            reviseStory(s, result, request, pack, {
+              ...(deps.writingModel ? { model: deps.writingModel } : {}),
+              familyId: prepared.familyId,
+              storyId: prepared.storyId,
+              ...(sink ? { sink } : {}),
+            }),
+          regate: (s) => {
+            story = s
+            return regate(1, request)
+          },
+          canStart: () => deps.deadlineMs === undefined || deps.deadlineMs - Date.now() >= REVISE_MIN_MS,
+        })
+        if (revised.passed) {
+          ;({ story, gate } = revised)
+          mended.edits += revised.edits
+          console.info(`[generate] revised attempt 1 in place of a rewrite (${revised.edits} edit(s) in ${revised.rounds} round(s), ${revised.changedChars} characters)`)
+        } else {
+          ;({ story, gate } = before)
+        }
+      } catch (err) {
+        // The revision is an optimisation: any failure leaves the rewrite path as it was.
+        ;({ story, gate } = before)
+        console.warn(`[generate] the in-place revision failed - rewriting instead: ${(err as Error).message}`)
       }
     }
 
