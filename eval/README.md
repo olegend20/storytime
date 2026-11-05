@@ -85,6 +85,7 @@ write failures.
 |---|---|
 | `run-eval.ts` | `pnpm eval` |
 | `run-bakeoff.ts` | `pnpm bakeoff` |
+| `run-revise-bench.ts` | Issue #85: replays rewritten first drafts (`review-bench/set-rewritten-*.json`) through the gate and the in-place revision, and counts how many it fixes. LIVE. |
 | `results/` | `eval-<date>.json`, `bakeoff-<date>.{json,md}`, `calibration-<date>.json`. Never overwritten: a second run on the same day gets a `-2` suffix. |
 | `fixtures/stories/` | Optional recorded stories for fixture-mode runs, named `<scenario>.<model>.<sample>.json`. |
 
