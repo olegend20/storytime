@@ -8,7 +8,7 @@ import { getScenario, scenarioSplit } from '@/lib/eval/scenarios'
 import { mendStory } from '@/lib/generate/mend'
 import { onlyHardRuleBreaches } from '@/lib/generate/pipeline'
 import { GuardrailsSafetyReviewer } from '@/lib/generate/production-deps'
-import { reviseInRounds, reviseStory } from '@/lib/generate/revise'
+import { reviseInRounds, reviseStory, storyChars } from '@/lib/generate/revise'
 import { runQualityGate } from '@/lib/quality/gate'
 import type { StoryOutput } from '@/lib/schemas'
 
@@ -44,10 +44,6 @@ interface Row {
   proposed?: number
   stop_reason?: string | null
   raw?: string
-}
-
-function chars(story: StoryOutput): number {
-  return story.chapters.reduce((n, c) => n + c.text.length, 0)
 }
 
 async function main(): Promise<void> {
@@ -118,7 +114,7 @@ async function main(): Promise<void> {
           left_reasons: outcome === 'rewrite' ? gate.result.rewrite_reasons : [],
           edits,
           rejected,
-          changed_share: changed / chars(item.story),
+          changed_share: changed / storyChars(item.story),
           cost_usd: sink.totalCostUsd,
           rounds,
           ...diag,

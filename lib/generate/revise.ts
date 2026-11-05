@@ -27,6 +27,8 @@ export const REVISE_EFFORT = 'medium' as const
 export const REVISE_MAX_CHANGED_SHARE = 0.35
 /** Thinking counts toward it; at the writer's default effort (high) 12k was spent before any edit. */
 export const REVISE_MAX_TOKENS = 32_000
+/** No revise call (or retry of one) starts with less than this before its deadline. */
+export const REVISE_MIN_CALL_MS = 60_000
 
 export interface ReviseEdit {
   part: 'chapter' | 'ending_line' | 'true_fact'
@@ -44,6 +46,8 @@ export interface ReviseOptions {
    */
   effort?: 'low' | 'medium' | 'high'
   sink?: GenerationLogSink
+  /** The call is cut off here (and not retried past it), so the rewrite keeps its own time. */
+  deadlineAt?: number
   familyId?: string | null
   storyId?: string | null
   signal?: AbortSignal
@@ -124,13 +128,18 @@ function parseEdits(raw: unknown): ReviseEdit[] {
   )
 }
 
+/** The story is shown entity-escaped (escapeForDataBlock); edits quote it back that way. */
+function unescapeEntities(text: string): string {
+  return text.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
+}
+
 function occurrences(hay: string, needle: string): number {
   let n = 0
   for (let at = hay.indexOf(needle); at !== -1; at = hay.indexOf(needle, at + needle.length)) n++
   return n
 }
 
-function storyChars(story: StoryOutput): number {
+export function storyChars(story: StoryOutput): number {
   return (
     story.chapters.reduce((n, c) => n + c.text.length, 0) +
     story.ending_line.length +
@@ -154,28 +163,33 @@ export function applyRevisions(
   let rejected = 0
   let changed = 0
   const removedFacts = new Set<number>()
-  for (const edit of edits.slice(0, REVISE_MAX_EDITS)) {
-    const cost = Math.max(edit.find.length, edit.replace.trim().length)
+  for (const raw of edits.slice(0, REVISE_MAX_EDITS)) {
+    const edit = { ...raw, find: unescapeEntities(raw.find), replace: unescapeEntities(raw.replace) }
+    // Removing a True Fact costs the whole fact, however little of it `find` quotes.
+    const removed = edit.part === 'true_fact' && edit.replace.trim() === '' ? (out.true_facts[edit.index]?.text.length ?? 0) : 0
+    const cost = Math.max(edit.find.length, edit.replace.length, removed)
     if (changed + cost > budget) {
       rejected++
       continue
     }
-    const replace = edit.replace.trim()
+    // Not trimmed: a find that ends in a space or a paragraph break keeps it in the replacement.
+    const replace = edit.replace
+    const blank = replace.trim() === ''
     let next: StoryOutput | null = null
     if (edit.part === 'chapter') {
       const ch = out.chapters[edit.index]
-      if (ch && occurrences(ch.text, edit.find) === 1 && replace !== '') {
+      if (ch && occurrences(ch.text, edit.find) === 1 && !blank) {
         const text = ch.text.replace(edit.find, () => replace)
         if (text.trim() !== '') next = { ...out, chapters: out.chapters.map((c, i) => (i === edit.index ? { ...c, text } : c)) }
       }
     } else if (edit.part === 'ending_line') {
-      if (edit.index === 0 && occurrences(out.ending_line, edit.find) === 1 && replace !== '') {
+      if (edit.index === 0 && occurrences(out.ending_line, edit.find) === 1 && !blank) {
         next = { ...out, ending_line: out.ending_line.replace(edit.find, () => replace) }
       }
     } else {
       const fact = out.true_facts[edit.index]
       if (fact && !removedFacts.has(edit.index) && occurrences(fact.text, edit.find) === 1) {
-        if (replace === '') {
+        if (blank) {
           if (out.true_facts.length - removedFacts.size > STORY_MIN_TRUE_FACTS) {
             removedFacts.add(edit.index)
             next = out
@@ -208,6 +222,8 @@ export async function reviseStory(
 ): Promise<ReviseResult> {
   const call = await callModel({
     purpose: 'mend',
+    // Its own Understudy workload: a writer-model edit, not the helper's hard-rule mend.
+    variant: 'revise',
     role: 'writer',
     ...(opts.model ? { model: opts.model } : {}),
     system: [{ text: loadPrompt('revise').body }],
@@ -215,6 +231,7 @@ export async function reviseStory(
     maxTokens: REVISE_MAX_TOKENS,
     effort: opts.effort ?? REVISE_EFFORT,
     timeoutMs: 180_000,
+    ...(opts.deadlineAt !== undefined ? { deadlineAt: opts.deadlineAt, minRetryMs: REVISE_MIN_CALL_MS } : {}),
     familyId: opts.familyId ?? null,
     storyId: opts.storyId ?? null,
     ...(opts.sink ? { sink: opts.sink } : {}),

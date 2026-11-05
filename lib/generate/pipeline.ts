@@ -50,7 +50,7 @@ import { parseStoryOutput } from './parse'
 import { salvageTrueFacts } from './normalize'
 import { STORY_OUTPUT_FORMAT } from './output-schema'
 import { StoryStreamParser } from './story-stream'
-import { reviseInRounds, reviseStory } from './revise'
+import { REVISE_MIN_CALL_MS, reviseInRounds, reviseStory } from './revise'
 import { SseChannel } from './sse'
 import { resolveGuard, resolveQuota, type GenerationDeps, type QuotaState } from './deps'
 
@@ -393,11 +393,14 @@ export const AFTER_WRITE_MS = 90_000
  * Tied to AFTER_WRITE_MS so the write always keeps its 90 s when that grows (PR #63 review).
  */
 export const RETRY_MIN_MS = AFTER_WRITE_MS + 90_000
+/** What the gate after a revision is left (issue #85): the revise call stops this much earlier. */
+export const REVISE_REGATE_MS = 45_000
 /**
  * Below this much time before the deadline, a failing attempt 1 goes straight to the rewrite
- * (issue #85): the revision and its gate (~60 s together) must leave the rewrite its own time.
+ * (issue #85): the revise call (at least REVISE_MIN_CALL_MS) and its gate must leave the
+ * rewrite its own RETRY_MIN_MS. The call itself is cut off at that line, too.
  */
-export const REVISE_MIN_MS = RETRY_MIN_MS + 60_000
+export const REVISE_MIN_MS = RETRY_MIN_MS + REVISE_REGATE_MS + REVISE_MIN_CALL_MS
 /**
  * How many times a writing call the gateway drops is tried again (issue #72): on 2026-10-19,
  * 12 of 67 writes were cut before any text arrived, and one retry lost three stories. Bounded
@@ -883,6 +886,7 @@ export async function runGeneration(
               familyId: prepared.familyId,
               storyId: prepared.storyId,
               ...(sink ? { sink } : {}),
+              ...(deps.deadlineMs !== undefined ? { deadlineAt: deps.deadlineMs - RETRY_MIN_MS - REVISE_REGATE_MS } : {}),
             }),
           regate: (s) => {
             story = s
@@ -891,8 +895,8 @@ export async function runGeneration(
           canStart: () => deps.deadlineMs === undefined || deps.deadlineMs - Date.now() >= REVISE_MIN_MS,
         })
         if (revised.passed) {
+          // Not counted in quality.mended: that is the hard-rule ladder's record (#32).
           ;({ story, gate } = revised)
-          mended.edits += revised.edits
           console.info(`[generate] revised attempt 1 in place of a rewrite (${revised.edits} edit(s) in ${revised.rounds} round(s), ${revised.changedChars} characters)`)
         } else {
           ;({ story, gate } = before)

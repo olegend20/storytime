@@ -41,12 +41,21 @@ describe('first draft', () => {
     expect(firstDraftOf(quality(), 1)).not.toHaveProperty('story')
   })
 
-  it('VT-FR5 (#85): an in-place revision is a touched draft, edited after streaming, not replaced', () => {
-    const revised = quality({ attempt: 1, first_attempt: { failures: [], reasons: ['facts contradict the fact pack'] }, mended: { edits: 4, cut: 0, rules: [] } } as Partial<QualityResult>)
-    expect(firstDraftOf(revised, 1)).toMatchObject({ passed: false, after_streaming: 'edited' })
-    // A rewrite that never arrived falls back to attempt 1 (#72): the page was not swapped.
-    const fellBack = quality({ attempt: 2, outcome: 'flagged', rewrite_reasons: ['x', 'rewrite output unusable: rewrite_failed:dropped'] } as Partial<QualityResult>)
-    expect(firstDraftOf(fellBack, 2)?.after_streaming).toBe('unchanged')
+  it('VT-FR5 (#85): read from the stories - the same title and headings with new text is edited, a new title is replaced', () => {
+    const request = { age_band: 'A' } as unknown as GenerationRequest
+    const first = { title: 'The Lost Signal', subtitle: null, chapters: [{ heading: 'One', text: 'Milo watched.' }], ending_line: 'Goodnight.', true_facts: [] } as unknown as StoryOutput
+    const edited = { ...first, chapters: [{ heading: 'One', text: 'Milo pulled the rope.' }] } as StoryOutput
+    const rewritten = { ...first, title: 'A New Story' } as StoryOutput
+    const sentBack = quality({ attempt: 1, first_attempt: { failures: [], reasons: ['facts contradict the fact pack'] } } as Partial<QualityResult>)
+    expect(firstDraftOf(sentBack, 1, { story: first, request }, edited)).toMatchObject({ passed: false, after_streaming: 'edited' })
+    expect(firstDraftOf(quality(), 1, { story: first, request }, first)).toMatchObject({ passed: true, after_streaming: 'unchanged' })
+    expect(firstDraftOf(quality({ attempt: 2 } as Partial<QualityResult>), 2, { story: first, request }, rewritten)?.after_streaming).toBe('replaced')
+    // A rewrite that never arrived falls back to attempt 1 (#72), even if the ladder then mends it: not swapped.
+    const fellBack = quality({ attempt: 2, outcome: 'flagged', rewrite_reasons: ['x'], mended: { edits: 1, cut: 0, rules: [10] } } as Partial<QualityResult>)
+    expect(firstDraftOf(fellBack, 2, { story: first, request }, edited)?.after_streaming).toBe('edited')
+    // Rung 3's shorter retry replaced the unusable draft that streamed.
+    const shorter = quality({ attempt: 2, first_attempt: { failures: [], reasons: ['output unusable; retried 15 -> 10 minutes'] } } as Partial<QualityResult>)
+    expect(firstDraftOf(shorter, 2, { story: first, request }, first)?.after_streaming).toBe('replaced')
   })
 
   it('VT-FR5 (#85): the summary counts stories unchanged, edited and replaced after streaming', () => {

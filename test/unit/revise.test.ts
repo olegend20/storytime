@@ -69,6 +69,25 @@ describe('applyRevisions (VT-FR3)', () => {
     expect(fixed.story.true_facts[2]!.fact_id).toBe('f3')
   })
 
+  it('reads the entity-escaped quotes the model saw, and never writes an entity into the story', () => {
+    const amp = { ...story, chapters: story.chapters.map((c, i) => (i === 0 ? { ...c, text: `Lewis & Clark <went> west. ${c.text}` } : c)) }
+    const out = applyRevisions(amp, [{ part: 'chapter', index: 0, find: 'Lewis &amp; Clark &lt;went&gt; west.', replace: 'Lewis &amp; Clark paddled west.' }])
+    expect(out.applied).toBe(1)
+    expect(out.story.chapters[0]!.text.startsWith('Lewis & Clark paddled west. ')).toBe(true)
+  })
+
+  it('keeps the whitespace the find spans: a trailing space or paragraph break is not trimmed away', () => {
+    const out = applyRevisions(story, [edit({ find: `${first} `, replace: 'Milo heard it first. ' })])
+    expect(out.applied).toBe(1)
+    expect(out.story.chapters[0]!.text).toBe(`Milo heard it first. ${story.chapters[0]!.text.slice(first.length + 1)}`)
+  })
+
+  it('charges a removed True Fact its whole length against the cap, however little find quotes', () => {
+    const facts = story.true_facts.map((f, i): ReviseEdit => ({ part: 'true_fact', index: i, find: f.text.slice(0, 1), replace: '' }))
+    const out = applyRevisions(story, facts.slice(0, 1))
+    expect(out.changedChars).toBe(story.true_facts[0]!.text.length)
+  })
+
   it('fixes the ending line, and never empties it', () => {
     const ok = applyRevisions(story, [{ part: 'ending_line', index: 0, find: 'Play well.', replace: 'Play well, both of you.' }])
     expect(ok.story.ending_line).toBe('Goodnight, Milo. Goodnight, Juno. Play well, both of you.')

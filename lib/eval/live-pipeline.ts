@@ -239,7 +239,7 @@ async function generateOne(
         totalMs,
       },
       attempts: result.writeCalls,
-      firstDraft: firstDraftOf(result.quality, result.writeCalls, result.firstGated),
+      firstDraft: firstDraftOf(result.quality, result.writeCalls, result.firstGated, result.story ?? undefined),
       progress: { ...progress.stats },
     }
   } finally {
@@ -248,31 +248,41 @@ async function generateOne(
 }
 
 /**
- * Issue #85: replaced when a second full writing call's story was delivered (a rewrite, or
- * rung 3's shorter retry), not when a lost rewrite fell back to attempt 1 (#72).
+ * Issue #85: what the parent saw happen to the story that streamed. Read from the stories
+ * themselves: a new title or new headings is a replaced story (a rewrite), the same ones with
+ * different text an edited one. A lost rewrite that fell back to attempt 1 (#72) is not
+ * replaced, whatever the ladder did to it after. Rung 3's shorter retry is replaced: the
+ * unusable draft streamed first. Without the stories, the gate's record is the guess.
  */
-export function afterStreaming(quality: QualityResult, edited: boolean): AfterStreaming {
+export function afterStreaming(quality: QualityResult, first?: StoryOutput, delivered?: StoryOutput): AfterStreaming {
+  if ((quality.first_attempt?.reasons ?? []).some((r) => r.startsWith('output unusable; retried'))) return 'replaced'
+  if (first && delivered) {
+    const outline = (s: StoryOutput) => JSON.stringify([s.title, s.subtitle, s.chapters.map((c) => c.heading)])
+    const body = (s: StoryOutput) => JSON.stringify([s.chapters.map((c) => c.text), s.ending_line, s.true_facts])
+    if (outline(first) !== outline(delivered)) return 'replaced'
+    return body(first) !== body(delivered) ? 'edited' : 'unchanged'
+  }
   const fellBack = quality.rewrite_reasons.some((r) => r.startsWith('rewrite output unusable'))
   if (quality.attempt === 2 && !fellBack) return 'replaced'
-  return edited ? 'edited' : 'unchanged'
+  return (quality.mended?.edits ?? 0) + (quality.mended?.cut ?? 0) > 0 ? 'edited' : 'unchanged'
 }
 
 export function firstDraftOf(
   quality: QualityResult | null,
   writeCalls: number,
   gated?: { story: StoryOutput; request: GenerationRequest },
+  delivered?: StoryOutput,
 ): FirstDraft | null {
   if (!quality) return null
   const sentBack = quality.first_attempt ?? null
   const mendedRules = quality.mended?.rules ?? []
-  // An in-place revision (#85) records edits with no rule: it is a touched draft all the same.
-  const edited = (quality.mended?.edits ?? 0) + (quality.mended?.cut ?? 0) > 0
+  const after = afterStreaming(quality, gated?.story, delivered)
   return {
-    passed: writeCalls <= 1 && sentBack === null && mendedRules.length === 0 && !edited && quality.outcome !== 'discarded',
+    passed: writeCalls <= 1 && sentBack === null && mendedRules.length === 0 && after === 'unchanged' && quality.outcome !== 'discarded',
     failures: (sentBack?.failures ?? []).map((f) => f.check),
     reasons: sentBack?.reasons ?? [],
     mended_rules: mendedRules,
-    after_streaming: afterStreaming(quality, edited),
+    after_streaming: after,
     ...(gated ? { story: gated.story, request: gated.request } : {}),
   }
 }

@@ -26,7 +26,7 @@ const drops = vi.hoisted(() => ({
    * Issue #85: the in-place revision's reply (an edits JSON), or null to leave it unrecorded -
    * the call then fails like any fixture miss and the pipeline rewrites, as before #85.
    */
-  revise: { reply: null as string | null, calls: 0 },
+  revise: { reply: null as string | null, calls: 0, asked: [] as { variant?: string; deadlineAt?: number }[] },
 }))
 vi.mock('@/lib/ai', async (orig) => {
   const actual = await orig<typeof import('@/lib/ai')>()
@@ -39,6 +39,7 @@ vi.mock('@/lib/ai', async (orig) => {
       if (opts.purpose === 'rewrite') drops.rewriteVariants.push(opts.variant)
       if (opts.purpose === 'mend' && opts.role === 'writer') {
         drops.revise.calls += 1
+        drops.revise.asked.push({ variant: opts.variant, deadlineAt: opts.deadlineAt })
         if (drops.revise.reply === null) throw new Error('no revise reply recorded')
         return {
           text: drops.revise.reply, data: null, costUsd: 0.02, latencyMs: 20_000, model: 'stub', stopReason: 'end_turn', replayed: true,
@@ -131,7 +132,7 @@ import {
 } from '../helpers/fixtures'
 import { buildContinuationPrompt, buildPrompt, type StorySoFar } from '@/lib/generate/prompt'
 import { buildQualityReviewMessage, measuredForReview, QUALITY_REVIEW_THINKING_MAX_TOKENS } from '@/lib/quality/review'
-import { AFTER_WRITE_MS, MAX_DROP_RETRIES, RETRY_MIN_MS, REVISE_MIN_MS, WRITER_MAX_TOKENS } from '@/lib/generate/pipeline'
+import { AFTER_WRITE_MS, MAX_DROP_RETRIES, RETRY_MIN_MS, REVISE_MIN_MS, REVISE_REGATE_MS, WRITER_MAX_TOKENS } from '@/lib/generate/pipeline'
 import { MEND_MAX_TOKENS, cutViolations, mendUserMessage, passagesFor } from '@/lib/generate/mend'
 import { REVISE_MAX_ROUNDS } from '@/lib/generate/revise'
 import { STORY_OUTPUT_FORMAT } from '@/lib/generate/output-schema'
@@ -818,11 +819,12 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     const reset = () => {
       drops.revise.reply = null
       drops.revise.calls = 0
+      drops.revise.asked = []
     }
     beforeEach(reset)
     afterEach(reset)
 
-    it('VT-FR1: the revision passes the whole gate again - no rewrite, the same title and chapters, edits recorded', async () => {
+    it('VT-FR1: the revision passes the whole gate again - no rewrite, the same title and chapters', async () => {
       const run = await prepared()
       const { story } = stubResponsesFor(run)
       const revised = stubMendFor(run, story, [], [{ chapter: 0, find: SENTENCE, replace: REPLACEMENT }])
@@ -830,15 +832,19 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       let reviewCall = 0
       const safetyReviewer = { review: async (): Promise<OutputSafetyReview> => (++reviewCall === 1 ? tooScary : clean) }
       const sink = new MemoryLogSink()
-      const { result } = await collect(run, { db: family.db, sink, quota: new RecordingQuota(), safetyReviewer, now: () => FIXED_NOW })
+      const deadlineMs = Date.now() + 3_600_000
+      const { result } = await collect(run, { db: family.db, sink, quota: new RecordingQuota(), safetyReviewer, now: () => FIXED_NOW, deadlineMs })
 
       expect(drops.revise.calls).toBe(1)
+      // Its own workload, and cut off where the rewrite would still have all of its time.
+      expect(drops.revise.asked).toEqual([{ variant: 'revise', deadlineAt: deadlineMs - RETRY_MIN_MS - REVISE_REGATE_MS }])
       expect(reviewCall).toBe(2)
       expect(result.status).toBe('ready')
       expect(result.writeCalls).toBe(1)
       expect(sink.rows.filter((r) => r.purpose === 'rewrite')).toHaveLength(0)
       expect(result.quality?.attempt).toBe(1)
-      expect(result.quality?.mended).toEqual({ edits: 1, cut: 0, rules: [] })
+      // quality.mended stays the hard-rule ladder's record (#32); the revision is not in it.
+      expect(result.quality?.mended).toBeUndefined()
       expect(result.quality?.first_attempt?.reasons).toEqual(reasons)
       expect(result.story?.title).toBe(story.title)
       expect(result.story?.chapters.map((c) => c.heading)).toEqual(story.chapters.map((c) => c.heading))
