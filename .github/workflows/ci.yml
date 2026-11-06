@@ -51,9 +51,11 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Pinned, not `latest`: CLI v3.0.0 (2026-11) rejects `[inbucket]` in supabase/config.toml
+      # and failed every PR. Same version as local dev; move both to v3 together.
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.119.0
       - name: Start Supabase and apply migrations
         run: supabase start
       # Before the schema test: it needs the service key, and without it reports "not
@@ -113,9 +115,11 @@ jobs:
       # The `mobile` project is an iPhone 13, which Playwright drives with WebKit; chromium
       # alone leaves half the matrix unable to launch a browser.
       - run: pnpm exec playwright install --with-deps chromium webkit
+      # Pinned, not `latest`: CLI v3.0.0 (2026-11) rejects `[inbucket]` in supabase/config.toml
+      # and failed every PR. Same version as local dev; move both to v3 together.
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.119.0
       # F2's magic-link VT needs the auth server and its mailbox, and F3's CRUD VT needs the
       # database. Port 3000 is the only origin in `supabase/config.toml`'s
       # `additional_redirect_urls`, so the default port also gives the sign-in link its real
