@@ -1,6 +1,8 @@
 import { serverEnv } from '@/lib/env'
 import { smtpTransport } from '@/lib/kindle/send'
 import { BRAND } from '@/lib/brand'
+import { renderEmail } from '@/lib/email/layout'
+import { EMAIL } from '@/lib/landing/copy'
 
 /**
  * "Your place is ready" (issue #92): sent once, when the owner approves an address.
@@ -15,6 +17,8 @@ export interface InviteMail {
   from: string
   subject: string
   text: string
+  /** The branded version (issue #98); `text` is always sent with it. */
+  html?: string
 }
 
 export interface InviteSender {
@@ -31,7 +35,7 @@ export function smtpInviteSender(): InviteSender | null {
   if (!t || !inviteFromAddress()) return null
   return {
     async send(mail) {
-      await t.sendMail({ to: mail.to, from: mail.from, subject: mail.subject, text: mail.text })
+      await t.sendMail({ to: mail.to, from: mail.from, subject: mail.subject, text: mail.text, html: mail.html })
     },
   }
 }
@@ -40,23 +44,23 @@ export function smtpInviteSender(): InviteSender | null {
 export function inviteMail(to: string, from: string, origin: string): InviteMail {
   const login = new URL('/login', origin)
   login.searchParams.set('email', to)
+  const m = EMAIL.invite
   return {
     to,
     from: `${BRAND.wordmark} <${from}>`,
-    subject: `Your place at ${BRAND.wordmark} is ready`,
-    text: [
-      'Hello,',
-      '',
-      `Thank you for joining the waitlist. Your place at ${BRAND.wordmark} is ready.`,
-      '',
-      'Create your account here:',
-      login.toString(),
-      '',
-      'Enter this email address and we will send you a sign-in link. There is no password.',
-      '',
-      'Sleep well,',
-      BRAND.wordmark,
-    ].join('\n'),
+    subject: m.subject,
+    // The same words as the html part, so a client showing plain text says the same thing.
+    text: ['Hello,', '', m.lead, '', `${m.button}:`, login.toString(), '', m.note, '', m.reason, '', 'Sleep well,', BRAND.wordmark].join('\n'),
+    html: renderEmail({
+      preheader: m.preheader,
+      eyebrow: m.eyebrow,
+      headline: m.headline,
+      lead: m.lead,
+      button: { label: m.button, href: login.toString() },
+      note: m.note,
+      aside: EMAIL.how,
+      reason: m.reason,
+    }),
   }
 }
 

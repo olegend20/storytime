@@ -210,6 +210,64 @@ export const COMING_SOON = {
   },
 } as const
 
+/**
+ * The words in our emails (issue #98), held to the same rules as the pages. Each email is one
+ * action with one button, then a little of the project's own words. Sign-in mail is sent by
+ * Supabase from supabase/templates/, which are generated from these (lib/email/auth-templates.ts).
+ */
+export const EMAIL = {
+  confirm: {
+    subject: `Confirm your place on the waitlist for ${BRAND.wordmark}`,
+    preheader: 'One press and you are on the list.',
+    eyebrow: 'The waitlist',
+    headline: ['One press and you are ', 'on the list.'] as const,
+    lead: `Someone, hopefully you, asked to join the waitlist for ${BRAND.wordmark} with this address. Confirm it was you and we will keep your place.`,
+    button: 'Confirm my place',
+    note: 'The link works for 7 days. We will email you again when your place is ready.',
+    reason: 'If this was not you, ignore this email and we will forget the address.',
+  },
+  invite: {
+    subject: `Your place at ${BRAND.wordmark} is ready`,
+    preheader: 'Thank you for waiting. Tonight’s story can be about them.',
+    eyebrow: 'Your place is ready',
+    headline: ['Tonight, the last ten minutes ', 'are theirs.'] as const,
+    lead: `Thank you for waiting. Your place at ${BRAND.wordmark} is ready: a bedtime story where your child is the hero, with something true to wonder about.`,
+    button: 'Create my account',
+    note: 'Use this email address and we will send you a sign-in link. There is no password.',
+    reason: `You joined the waitlist for ${BRAND.wordmark} with this address.`,
+  },
+  signIn: {
+    subject: `Your sign-in link for ${BRAND.wordmark}`,
+    preheader: 'Press the button to sign in. No password needed.',
+    eyebrow: 'Sign in',
+    headline: ['Your sign-in link ', 'is here.'] as const,
+    lead: 'Press the button to sign in. There is no password to remember.',
+    button: 'Sign in',
+    note: 'The link works once and expires after a short while. You can always ask for a new one.',
+    reason: 'If you did not ask to sign in, ignore this email. Nothing changes.',
+  },
+  /** Below the button: why the project exists, in the coming-soon page's words. */
+  why: {
+    eyebrow: COMING_SOON.shelf.eyebrow,
+    title: COMING_SOON.shelf.headline,
+    body: COMING_SOON.shelf.body,
+    points: COMING_SOON.points,
+  },
+  /** Below the invite's button: the first night, step by step. */
+  how: {
+    eyebrow: HOW.eyebrow,
+    title: ['A new book, about them, ', 'every night.'] as const,
+    body: HOW.aside,
+    points: HOW.steps,
+  },
+  /** Below the sign-in button: one quiet line, so a link email is still ours. */
+  tonight: {
+    eyebrow: BRAND.project,
+    title: ['Tonight, keep the last ', 'ten.'] as const,
+    body: 'A story with them at the centre, and something true to talk about before the light goes out.',
+  },
+} as const
+
 /** Every sentence a visitor can read, for the copy rules test. */
 export function allLandingCopy(): string[] {
   return [
@@ -228,5 +286,9 @@ export function allLandingCopy(): string[] {
     ...QUESTIONS.flatMap((x) => [x.q, x.a]),
     CLOSING.headline.join(''), CLOSING.lead,
     KINDLE.promise, KINDLE.answer,
+    ...[EMAIL.confirm, EMAIL.invite, EMAIL.signIn].flatMap((m) => [
+      m.subject, m.preheader, m.eyebrow, m.headline.join(''), m.lead, m.button, m.note, m.reason,
+    ]),
+    EMAIL.how.title.join(''), EMAIL.tonight.title.join(''), EMAIL.tonight.body,
   ]
 }

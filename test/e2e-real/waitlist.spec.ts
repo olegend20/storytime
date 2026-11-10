@@ -102,6 +102,17 @@ test.describe('issue #92: the coming-soon page and the approved waitlist', () =>
       // ---- 1b. Issue #95: the emailed link opens a page with one button; pressing it confirms.
       // Opening the link alone confirms nothing (mail scanners open links).
       const link = await confirmLink(visitor)
+      // Issue #98 (VT-E5): the designed email's one big button opens that same link.
+      // Not waiting for the load event: the email's fonts and moons come from outside this stack.
+      await page.setContent(await fetchLatestEmailBody(visitor, 20_000, 'html'), { waitUntil: 'domcontentloaded' })
+      await expect(page.getByRole('heading', { name: 'One press and you are on the list.' })).toBeVisible()
+      const [opened] = await Promise.all([
+        page.waitForEvent('popup'),
+        page.getByRole('link', { name: /^Confirm my place/ }).click(),
+      ])
+      await expect(opened).toHaveURL(link)
+      await expect(opened.getByRole('heading', { name: 'Confirm your place' })).toBeVisible()
+      await opened.close()
       await page.goto(link)
       await expect(page.getByRole('heading', { name: 'Confirm your place' })).toBeVisible()
       await page.getByRole('button', { name: 'Confirm my place' }).click()
@@ -141,7 +152,13 @@ test.describe('issue #92: the coming-soon page and the approved waitlist', () =>
       await expect(page.getByLabel('Email address')).toHaveValue(visitor)
       await page.getByRole('button', { name: 'Email me a sign-in link' }).click()
       await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible()
-      await page.goto(await nextSignInLink(visitor))
+      const signIn = await nextSignInLink(visitor)
+      // Issue #98 (VT-E5): Supabase sends the sign-in link in our design too.
+      const signInHtml = await fetchLatestEmailBody(visitor, 20_000, 'html')
+      const button = signInHtml.match(/<a href="([^"]+)"[^>]*display:inline-block;padding/)?.[1]
+      expect(button?.replace(/&amp;/g, '&'), 'the designed button carries the sign-in link').toBe(signIn)
+      expect(signInHtml).toContain('Ten minutes. Together.')
+      await page.goto(signIn)
       await expect(page).toHaveURL(/\/dashboard$/)
       await expect(page.getByRole('heading', { name: 'My family' })).toBeVisible()
       expect(await accountExists(visitor)).toBe(true)

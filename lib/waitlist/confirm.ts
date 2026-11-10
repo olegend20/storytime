@@ -1,5 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { BRAND } from '@/lib/brand'
+import { renderEmail } from '@/lib/email/layout'
+import { EMAIL } from '@/lib/landing/copy'
 import type { InviteMail } from './invite'
 
 /**
@@ -44,24 +46,24 @@ export function isConfirmToken(value: unknown): value is string {
 export function confirmMail(to: string, from: string, origin: string, token: string): InviteMail {
   const link = new URL('/waitlist/confirm', origin)
   link.searchParams.set('token', token)
+  const m = EMAIL.confirm
   return {
     to,
     from: `${BRAND.wordmark} <${from}>`,
-    subject: `Confirm your place on the waitlist for ${BRAND.wordmark}`,
-    text: [
-      'Hello,',
-      '',
-      `Someone, hopefully you, asked to join the waitlist for ${BRAND.wordmark} with this address.`,
-      '',
-      'Confirm your place here:',
-      link.toString(),
-      '',
-      'The link works for 7 days. We will email you again when your place is ready.',
-      '',
-      'If this was not you, ignore this email and we will forget the address.',
-      '',
-      'Sleep well,',
-      BRAND.wordmark,
-    ].join('\n'),
+    subject: m.subject,
+    // The same words as the html part, so a client showing plain text says the same thing.
+    text: ['Hello,', '', m.lead, '', `${m.button}:`, link.toString(), '', m.note, '', m.reason, '', 'Sleep well,', BRAND.wordmark].join(
+      '\n',
+    ),
+    html: renderEmail({
+      preheader: m.preheader,
+      eyebrow: m.eyebrow,
+      headline: m.headline,
+      lead: m.lead,
+      button: { label: m.button, href: link.toString() },
+      note: m.note,
+      aside: EMAIL.why,
+      reason: m.reason,
+    }),
   }
 }
