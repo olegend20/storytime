@@ -4,6 +4,7 @@ import { normalizeEmail } from './email'
 import { inviteFromAddress, inviteMail, type InviteSender } from './invite'
 import {
   confirmMail,
+  CONFIRM_EMAILS_PER_DAY,
   CONFIRM_RESEND_AFTER_MS,
   CONFIRM_TTL_MS,
   hashConfirmToken,
@@ -14,6 +15,7 @@ import {
   approve,
   claimConfirmEmail,
   claimInvite,
+  confirmEmailsSince,
   confirmByToken,
   isApproved,
   joinWaitlist,
@@ -41,6 +43,8 @@ export interface JoinDeps {
   sender: InviteSender | null
   /** The site the confirmation link points at - SITE_URL, or the request's own origin. */
   origin: string
+  /** Confirmation emails a day across all addresses; `CONFIRM_EMAILS_PER_DAY` unless a test sets it. */
+  dailyCap?: number
 }
 
 /**
@@ -52,7 +56,8 @@ export interface JoinDeps {
  * one is emailed a link. The right to send is claimed first - at most one email per address
  * per day, so this form cannot flood a stranger's inbox - and given back if the send fails.
  * A failed send is not the visitor's problem to solve: the row is kept and they can join
- * again.
+ * again. Past `CONFIRM_EMAILS_PER_DAY` across everyone nothing is sent at all: sign-in links
+ * share the mail account, and a bot must not be able to spend it.
  *
  * `website` is a honeypot: a field people never see, which form-filling bots fill. Such a
  * request is answered exactly like a real one and stored nowhere.
@@ -82,6 +87,13 @@ export async function handleJoinWaitlist(deps: JoinDeps, body: unknown): Promise
   const tokenHash = hashConfirmToken(token)
   let claimed: boolean
   try {
+    // The daily cap is checked before claiming, so a burst may pass it by a few: it protects
+    // the mail budget, not an exact number.
+    const sentToday = await confirmEmailsSince(deps.service, new Date(Date.now() - 24 * 60 * 60 * 1000))
+    if (sentToday >= (deps.dailyCap ?? CONFIRM_EMAILS_PER_DAY)) {
+      console.error('[waitlist] daily confirmation email cap reached; address kept unconfirmed')
+      return apiOk({ ok: true })
+    }
     claimed = await claimConfirmEmail(deps.service, email, tokenHash, CONFIRM_RESEND_AFTER_MS)
   } catch (cause) {
     console.error('[waitlist] confirm claim failed', cause)

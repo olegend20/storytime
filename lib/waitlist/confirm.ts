@@ -9,6 +9,13 @@ import type { InviteMail } from './invite'
 
 /** One confirmation email per address per day: the form cannot be used to flood an inbox. */
 export const CONFIRM_RESEND_AFTER_MS = 24 * 60 * 60 * 1000
+/**
+ * At most this many confirmation emails a day, across all addresses. Sign-in links go out
+ * through the same mail account (Resend's free plan allows 100 a day), so a bot joining with
+ * thousands of addresses must not use up the mail parents need to sign in. Past the cap the
+ * address is kept, unconfirmed, and joining again tomorrow sends its link.
+ */
+export const CONFIRM_EMAILS_PER_DAY = 40
 /** A link works for a week; an address nobody confirms is deleted after the same week. */
 export const CONFIRM_TTL_MS = 7 * 24 * 60 * 60 * 1000
 

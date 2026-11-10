@@ -140,6 +140,16 @@ export async function claimConfirmEmail(
   return (data ?? []).length > 0
 }
 
+/** How many confirmation emails went out since `since`: the daily cap's count. */
+export async function confirmEmailsSince(db: SupabaseClient, since: Date): Promise<number> {
+  const { count, error } = await db
+    .from('waitlist')
+    .select('email', { count: 'exact', head: true })
+    .gt('confirm_sent_at', since.toISOString())
+  if (error) throw new Error(`waitlist confirm count failed: ${error.message}`)
+  return count ?? 0
+}
+
 /** The send failed: give the claim back, so joining again tries again. Only this claim's. */
 export async function releaseConfirmEmail(db: SupabaseClient, email: string, tokenHash: string): Promise<void> {
   const { error } = await db

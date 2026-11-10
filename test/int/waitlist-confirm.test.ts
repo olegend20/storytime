@@ -56,7 +56,13 @@ function recorder(): { sent: InviteMail[]; sender: InviteSender } {
   const sent: InviteMail[] = []
   return { sent, sender: { send: async (m) => void sent.push(m) } }
 }
-const deps = (sender: InviteSender | null): JoinDeps => ({ service: service(), sender, origin: 'https://lastten.example' })
+// No daily cap here (leftovers from other runs must not flake these); the cap has its own test.
+const deps = (sender: InviteSender | null): JoinDeps => ({
+  service: service(),
+  sender,
+  origin: 'https://lastten.example',
+  dailyCap: Number.MAX_SAFE_INTEGER,
+})
 const tokenIn = (mail: InviteMail): string => {
   const link = mail.text.match(/https:\/\/lastten\.example\/waitlist\/confirm\?token=(\S+)/)
   expect(link, 'the email links to the confirm page').not.toBeNull()
@@ -272,5 +278,22 @@ describe.runIf(reachable)('the owner sees confirmed addresses only (VT-W12)', ()
     expect(res).toEqual({ approved: true, emailed: true, alreadyInvited: false })
     expect(sent[0]!.subject).toMatch(/is ready/)
     expect((await row(email))?.confirmed_at).not.toBeNull()
+  })
+})
+
+describe.runIf(reachable)('a daily cap across all addresses (VT-W10)', () => {
+  it('past the cap nothing is sent, the address is kept, and the answer is the same', async () => {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000)
+    const { confirmEmailsSince } = await import('@/lib/waitlist/store')
+    const already = await confirmEmailsSince(service(), since)
+    const { sent, sender } = recorder()
+    const under = address('cap-under')
+    const over = address('cap-over')
+    await handleJoinWaitlist({ ...deps(sender), dailyCap: already + 1 }, { email: under })
+    const res = await handleJoinWaitlist({ ...deps(sender), dailyCap: already + 1 }, { email: over })
+    expect(await res.json()).toEqual({ ok: true })
+    expect(sent.map((m) => m.to)).toEqual([under])
+    expect(await row(over)).not.toBeNull()
+    expect((await row(over))?.confirm_sent_at).toBeNull()
   })
 })
