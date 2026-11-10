@@ -28,8 +28,17 @@ export const EMAIL_COLORS = {
   accentSoft: '#e9eee3',
 } as const
 
-/** The moons row, served from public/ (scripts/email-moons.ts draws it). 386 x 26 at 1x. */
+/**
+ * Where an email's images and footer link point: always the public site, never the host that
+ * sent it - a preview deployment sits behind Vercel's login and localhost is nobody's, so an
+ * image from either would be broken in the parent's inbox.
+ */
+export const EMAIL_SITE = 'https://lastten.org'
+
+/** The moons row, served from public/ and drawn at 3x by scripts/email-moons.ts. */
 export const MOONS_PATH = '/email/moons.png'
+export const MOONS = { count: 10, size: 20, gap: 10 } as const
+export const MOONS_WIDTH = MOONS.count * MOONS.size + (MOONS.count - 1) * MOONS.gap
 
 const SERIF = "Newsreader, Georgia, 'Iowan Old Style', 'Times New Roman', serif"
 const SANS = "Inter, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
@@ -56,8 +65,6 @@ export interface EmailContent {
   aside?: EmailBlock & { points?: ReadonlyArray<{ title: string; body: string }> }
   /** Why this email arrived, and what to do if it was not wanted. */
   reason: string
-  /** The site the moons and the footer link point at, e.g. https://lastten.org. */
-  origin: string
 }
 
 export function escapeHtml(s: string): string {
@@ -67,6 +74,12 @@ export function escapeHtml(s: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
+}
+
+/** i., ii., iii. ... as on the site's lists; plain numbers past ten. */
+function numeral(n: number): string {
+  const r = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x'][n - 1]
+  return `${r ?? n}.`
 }
 
 const c = EMAIL_COLORS
@@ -91,7 +104,7 @@ function aside(block: NonNullable<EmailContent['aside']>): string {
   const points = (block.points ?? [])
     .map(
       (p, i) => `<tr>
-<td valign="top" width="34" style="padding:14px 0 0;font-family:${SERIF};font-style:italic;font-size:17px;line-height:1.4;color:${c.accent};">${['i.', 'ii.', 'iii.', 'iv.'][i] ?? ''}</td>
+<td valign="top" width="34" style="padding:14px 0 0;font-family:${SERIF};font-style:italic;font-size:17px;line-height:1.4;color:${c.accent};">${numeral(i + 1)}</td>
 <td valign="top" style="padding:14px 0 0;font-family:${SANS};font-size:15px;line-height:1.55;color:${c.soft};"><strong style="color:${c.fg};font-weight:600;">${e(p.title)}.</strong> ${e(p.body)}</td>
 </tr>`,
     )
@@ -106,7 +119,7 @@ ${points ? `<table role="presentation" width="100%" cellpadding="0" cellspacing=
 
 /** The whole HTML document. Every value is escaped, so a link or an address cannot break out. */
 export function renderEmail(m: EmailContent): string {
-  const site = m.origin.replace(/\/+$/, '')
+  const site = EMAIL_SITE
   const host = site.replace(/^https?:\/\//, '')
   return `<!doctype html>
 <html lang="en">
@@ -153,7 +166,7 @@ ${m.aside ? aside(m.aside) : ''}
 </td></tr>
 
 <tr><td align="center" style="padding:38px 10px 0;">
-<img src="${e(site + MOONS_PATH)}" width="290" height="20" alt="Ten moons, waxing from new to full" style="display:block;width:290px;max-width:100%;height:auto;border:0;">
+<img src="${e(site + MOONS_PATH)}" width="${MOONS_WIDTH}" height="${MOONS.size}" alt="Ten moons, waxing from new to full" style="display:block;width:${MOONS_WIDTH}px;max-width:100%;height:auto;border:0;">
 <div style="margin-top:16px;font-family:${SANS};font-size:10.5px;letter-spacing:0.24em;text-transform:uppercase;font-weight:600;color:${c.muted};">${e(BRAND.tagline)}</div>
 </td></tr>
 

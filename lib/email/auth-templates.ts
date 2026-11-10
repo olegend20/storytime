@@ -8,10 +8,8 @@ import { EMAIL } from '@/lib/landing/copy'
  * waitlist emails by scripts/email-templates.ts, and a test regenerates them so the files
  * cannot drift from the code.
  *
- * `{{ .ConfirmationURL }}` is Supabase's own placeholder for the sign-in link. The moons and
- * the footer point at lastten.org, the only site these templates are pushed to.
+ * `{{ .ConfirmationURL }}` is Supabase's own placeholder for the sign-in link.
  */
-export const AUTH_TEMPLATE_SITE = 'https://lastten.org'
 export const CONFIRMATION_URL = '{{ .ConfirmationURL }}'
 
 function signIn(): string {
@@ -25,7 +23,6 @@ function signIn(): string {
     note: m.note,
     aside: EMAIL.tonight,
     reason: m.reason,
-    origin: AUTH_TEMPLATE_SITE,
   })
 }
 
@@ -34,7 +31,10 @@ function signIn(): string {
  * later one is "magic_link"; to a parent both are just the sign-in link, so they are the same.
  */
 export function authTemplates(): Record<string, string> {
-  return { 'magic_link.html': signIn(), 'confirmation.html': signIn() }
+  const html = `${signIn()}\n`
+  return { 'magic_link.html': html, 'confirmation.html': html }
 }
 
 export const AUTH_TEMPLATE_SUBJECT = EMAIL.signIn.subject
+/** The template kinds config.toml names, each with our subject. */
+export const AUTH_TEMPLATE_KINDS = ['magic_link', 'confirmation'] as const

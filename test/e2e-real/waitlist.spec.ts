@@ -103,7 +103,8 @@ test.describe('issue #92: the coming-soon page and the approved waitlist', () =>
       // Opening the link alone confirms nothing (mail scanners open links).
       const link = await confirmLink(visitor)
       // Issue #98 (VT-E5): the designed email's one big button opens that same link.
-      await page.setContent(await fetchLatestEmailBody(visitor, 20_000, 'html'))
+      // Not waiting for the load event: the email's fonts and moons come from outside this stack.
+      await page.setContent(await fetchLatestEmailBody(visitor, 20_000, 'html'), { waitUntil: 'domcontentloaded' })
       await expect(page.getByRole('heading', { name: 'One press and you are on the list.' })).toBeVisible()
       const [opened] = await Promise.all([
         page.waitForEvent('popup'),

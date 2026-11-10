@@ -7,16 +7,15 @@ import { chromium } from '@playwright/test'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { createElement } from 'react'
 import { Phase } from '@/components/Phase'
-import { EMAIL_COLORS } from '@/lib/email/layout'
+import { EMAIL_COLORS, MOONS, MOONS_WIDTH } from '@/lib/email/layout'
 
-const SIZE = 20
-const GAP = 10
+const { size: SIZE, gap: GAP } = MOONS
 
 async function main() {
-  const moons = Array.from({ length: 10 }, (_, i) =>
-    renderToStaticMarkup(createElement(Phase, { lit: (i + 1) / 10, size: SIZE })),
+  const moons = Array.from({ length: MOONS.count }, (_, i) =>
+    renderToStaticMarkup(createElement(Phase, { lit: (i + 1) / MOONS.count, size: SIZE })),
   ).join('')
-  const width = 10 * SIZE + 9 * GAP
+  const width = MOONS_WIDTH
   const browser = await chromium.launch()
   const page = await browser.newPage({ viewport: { width, height: SIZE }, deviceScaleFactor: 3 })
   await page.setContent(

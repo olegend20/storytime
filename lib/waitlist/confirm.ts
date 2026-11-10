@@ -51,21 +51,10 @@ export function confirmMail(to: string, from: string, origin: string, token: str
     to,
     from: `${BRAND.wordmark} <${from}>`,
     subject: m.subject,
-    text: [
-      'Hello,',
-      '',
-      `Someone, hopefully you, asked to join the waitlist for ${BRAND.wordmark} with this address.`,
-      '',
-      'Confirm your place here:',
-      link.toString(),
-      '',
-      'The link works for 7 days. We will email you again when your place is ready.',
-      '',
-      'If this was not you, ignore this email and we will forget the address.',
-      '',
-      'Sleep well,',
-      BRAND.wordmark,
-    ].join('\n'),
+    // The same words as the html part, so a client showing plain text says the same thing.
+    text: ['Hello,', '', m.lead, '', `${m.button}:`, link.toString(), '', m.note, '', m.reason, '', 'Sleep well,', BRAND.wordmark].join(
+      '\n',
+    ),
     html: renderEmail({
       preheader: m.preheader,
       eyebrow: m.eyebrow,
@@ -75,7 +64,6 @@ export function confirmMail(to: string, from: string, origin: string, token: str
       note: m.note,
       aside: EMAIL.why,
       reason: m.reason,
-      origin,
     }),
   }
 }

@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { AUTH_TEMPLATE_SUBJECT, authTemplates, CONFIRMATION_URL } from '@/lib/email/auth-templates'
-import { MOONS_PATH, renderEmail, type EmailContent } from '@/lib/email/layout'
+import { AUTH_TEMPLATE_KINDS, AUTH_TEMPLATE_SUBJECT, authTemplates, CONFIRMATION_URL } from '@/lib/email/auth-templates'
+import { EMAIL_SITE, MOONS_PATH, renderEmail, type EmailContent } from '@/lib/email/layout'
 import { BRAND } from '@/lib/brand'
 import { EMAIL } from '@/lib/landing/copy'
 import { confirmMail, newConfirmToken } from '@/lib/waitlist/confirm'
@@ -21,7 +21,6 @@ const content: EmailContent = {
   note: 'A note.',
   aside: { eyebrow: 'Why', title: ['A ', 'title.'], body: 'Body.', points: [{ title: 'One', body: 'First.' }] },
   reason: 'Why you got this.',
-  origin: 'https://lastten.org/',
 }
 
 /** The hrefs of every link styled as the button (padded, filled). */
@@ -53,7 +52,8 @@ describe('renderEmail (VT-E1)', () => {
     expect(html).toContain('Confirm my place&nbsp;&rarr;')
   })
 
-  it('takes the moons from the site, as a PNG with alt text (email clients drop SVG)', () => {
+  it('takes the moons from the public site, as a PNG with alt text (email clients drop SVG)', () => {
+    expect(EMAIL_SITE).toBe('https://lastten.org')
     expect(html).toContain(`src="https://lastten.org${MOONS_PATH}"`)
     expect(html).toMatch(/alt="Ten moons[^"]*"/)
     expect(html).not.toContain('<svg')
@@ -94,6 +94,20 @@ describe('the waitlist emails are sent as text and html (VT-E2)', () => {
     expect(mail.html).toContain('7 days')
   })
 
+  it('the images and footer link point at lastten.org even when sent from a preview or localhost', () => {
+    const mail = inviteMail('ana@example.com', 'hello@lastten.org', 'https://preview-xyz.vercel.app')
+    expect(buttonHrefs(mail.html!)).toEqual(['https://preview-xyz.vercel.app/login?email=ana%40example.com'])
+    expect(mail.html).toContain(`src="https://lastten.org${MOONS_PATH}"`)
+    expect(mail.html).not.toMatch(/src="https:\/\/preview/)
+  })
+
+  it('the text part says what the html says', () => {
+    const c = confirmMail('ana@example.com', 'hello@lastten.org', 'https://lastten.org', newConfirmToken())
+    for (const line of [EMAIL.confirm.lead, EMAIL.confirm.note, EMAIL.confirm.reason]) expect(c.text).toContain(line)
+    const i = inviteMail('ana@example.com', 'hello@lastten.org', 'https://lastten.org')
+    for (const line of [EMAIL.invite.lead, EMAIL.invite.note]) expect(i.text).toContain(line)
+  })
+
   it('the invite: a "Create my account" button to sign-in with the address filled in, and how it works', () => {
     const mail = inviteMail('ana@example.com', 'hello@lastten.org', 'https://lastten.org')
     const link = 'https://lastten.org/login?email=ana%40example.com'
@@ -128,6 +142,7 @@ describe('the Supabase sign-in templates (VT-E3)', () => {
   it('are the generated files, unchanged: run scripts/email-templates.ts after editing the layout or copy', () => {
     for (const [name, html] of Object.entries(authTemplates())) {
       expect(readFileSync(join('supabase', 'templates', name), 'utf8'), name).toBe(html)
+      expect(html.endsWith('</html>\n'), `${name} ends in a newline, as editors leave it`).toBe(true)
     }
   })
 
@@ -141,7 +156,7 @@ describe('the Supabase sign-in templates (VT-E3)', () => {
 
   it('config.toml sends both sign-in emails with them, under our subject', () => {
     const config = readFileSync(join('supabase', 'config.toml'), 'utf8')
-    for (const kind of ['magic_link', 'confirmation']) {
+    for (const kind of AUTH_TEMPLATE_KINDS) {
       const block = config.split(`[auth.email.template.${kind}]`)[1]?.split('\n[')[0] ?? ''
       expect(block, kind).toContain(`content_path = "./supabase/templates/${kind}.html"`)
       expect(block, kind).toContain(`subject = "${AUTH_TEMPLATE_SUBJECT}"`)

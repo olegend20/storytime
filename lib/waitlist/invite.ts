@@ -49,19 +49,8 @@ export function inviteMail(to: string, from: string, origin: string): InviteMail
     to,
     from: `${BRAND.wordmark} <${from}>`,
     subject: m.subject,
-    text: [
-      'Hello,',
-      '',
-      `Thank you for joining the waitlist. Your place at ${BRAND.wordmark} is ready.`,
-      '',
-      'Create your account here:',
-      login.toString(),
-      '',
-      'Enter this email address and we will send you a sign-in link. There is no password.',
-      '',
-      'Sleep well,',
-      BRAND.wordmark,
-    ].join('\n'),
+    // The same words as the html part, so a client showing plain text says the same thing.
+    text: ['Hello,', '', m.lead, '', `${m.button}:`, login.toString(), '', m.note, '', 'Sleep well,', BRAND.wordmark].join('\n'),
     html: renderEmail({
       preheader: m.preheader,
       eyebrow: m.eyebrow,
@@ -71,7 +60,6 @@ export function inviteMail(to: string, from: string, origin: string): InviteMail
       note: m.note,
       aside: EMAIL.how,
       reason: m.reason,
-      origin,
     }),
   }
 }
