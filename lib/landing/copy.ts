@@ -159,9 +159,50 @@ export const CLOSING = {
   lead: BRAND.footer,
 } as const
 
+/**
+ * The coming-soon page (issue #92): what lastten.org says while places open a few at a time.
+ * The same rules as the rest of the page apply, and the same test reads it.
+ */
+export const COMING_SOON = {
+  eyebrow: 'Coming soon',
+  headline: ['Turn the last ten minutes of the day into the part you both ', 'love.'] as const,
+  lead:
+    'A bedtime story where your child is the hero, about whatever they wonder about. Ten quiet ' +
+    'minutes together that leave you both a little more curious.',
+  joinLabel: 'Email for the waitlist',
+  joinButton: 'Join the waitlist',
+  joining: 'Adding you…',
+  note: 'We are opening places a few families at a time, and will email you when yours is ready.',
+  privacy: 'We use your address only for that. No newsletters, no sharing.',
+  joinedTitle: 'You’re on the list.',
+  joinedBody: 'We’ll email you when your place is ready. Sleep well.',
+  joinError: 'We could not add you just now. Please try again in a moment.',
+  badEmail: 'Please enter an email address we can write to.',
+  signIn: 'Already have a place? Sign in',
+  shelf: {
+    eyebrow: 'Why we are building it',
+    headline: ['No encyclopedia on the shelf? Tonight’s story ', 'is one.'] as const,
+    body:
+      'There may be no encyclopedia in the house any more, but there is still bedtime. Let the ' +
+      'story be where your child learns about anything their mind can imagine: the deep sea, ' +
+      'the Moon, how a bee makes honey, the question they asked at dinner.',
+  },
+  points: [
+    { title: 'For your child', body: 'A story with them at the centre, and something true to wonder about.' },
+    { title: 'For you', body: 'An easy, lovely way to end the day, even on the tired nights.' },
+    { title: 'For both of you', body: 'Something new to talk about before the light goes out.' },
+  ],
+  more: 'Read more about the project',
+} as const
+
 /** Every sentence a visitor can read, for the copy rules test. */
 export function allLandingCopy(): string[] {
   return [
+    COMING_SOON.eyebrow, COMING_SOON.headline.join(''), COMING_SOON.lead, COMING_SOON.joinLabel,
+    COMING_SOON.joinButton, COMING_SOON.joining, COMING_SOON.note, COMING_SOON.privacy,
+    COMING_SOON.joinedTitle, COMING_SOON.joinedBody, COMING_SOON.joinError, COMING_SOON.badEmail,
+    COMING_SOON.signIn, COMING_SOON.shelf.eyebrow, COMING_SOON.shelf.headline.join(''),
+    COMING_SOON.shelf.body, ...COMING_SOON.points.flatMap((p) => [p.title, p.body]), COMING_SOON.more,
     HERO.eyebrow, HERO.headline.join(''), HERO.lead, HERO.cta, HERO.secondary, HERO.note, HERO.moons,
     MISSION.join(''),
     ...BELIEFS.flatMap((b) => [b.title, b.body]),

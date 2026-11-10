@@ -40,6 +40,9 @@ const PROTECTED_API = [
   '/api/topics',
 ]
 
+/** The public ways in (issue #92): rate-limited apart from the rest of the API. */
+const PUBLIC_ENTRY_API = ['/api/auth/prepare', '/api/waitlist']
+
 function isUnder(pathname: string, prefixes: readonly string[]): boolean {
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`))
 }
@@ -62,7 +65,11 @@ export default async function proxy(request: NextRequest) {
   // and 30/min turned 66 of 118 e2e tests into 429s the day the limiter and the UI merged.
   const mockApi = process.env.UI_MOCK_API === '1' && isUnder(pathname, ['/api/mock'])
   if (pathname.startsWith('/api/') && !mockApi) {
-    const verdict = checkRateLimit(clientIp(request.headers))
+    // Issue #92: signing in and joining the waitlist go through our API now, so they get a
+    // bucket of their own - a parent's dashboard loading must never use up the requests a
+    // sign-in needs, nor the other way round. Supabase still limits emails per address.
+    const bucket = isUnder(pathname, PUBLIC_ENTRY_API) ? 'entry:' : ''
+    const verdict = checkRateLimit(bucket + clientIp(request.headers))
     if (!verdict.allowed) {
       return NextResponse.json(RATE_LIMITED_BODY, {
         status: 429,

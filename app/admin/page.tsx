@@ -114,6 +114,9 @@ export function AdminDashboard({ metrics: m }: { metrics: AdminMetrics }) {
     <main className="mx-auto max-w-5xl px-4 py-8">
       <header className="flex flex-wrap items-baseline justify-between gap-2">
         <h1 className="text-xl font-semibold">StoryTime ops</h1>
+        <a href="/admin/waitlist" className="text-xs underline opacity-70">
+          Waitlist →
+        </a>
         <p className="text-xs opacity-55">
           All figures from SQL views over <code>generation_logs</code> and <code>stories</code> ·{' '}
           {new Date(m.generatedAt).toISOString().replace('T', ' ').slice(0, 19)}Z

@@ -126,7 +126,15 @@ function signInTarget(link: string, baseURL: string): string {
  * The whole F2 login VT as one helper: request a link, read the mailbox, open it, land on
  * the dashboard.
  */
-export async function signInWithMagicLink(page: Page, email: string): Promise<void> {
+export async function signInWithMagicLink(
+  page: Page,
+  email: string,
+  options: { approve?: boolean } = {},
+): Promise<void> {
+  // Issue #92: with the waitlist on, only an approved address can create an account. A test
+  // signing in as a new parent is one the owner already let in; pass `approve: false` to
+  // test the gate itself.
+  if (options.approve !== false) await approveEmail(email)
   await page.goto('/login')
   await page.getByLabel('Email address').fill(email)
   await page.getByRole('button', { name: 'Email me a sign-in link' }).click()
@@ -155,6 +163,27 @@ function cleanupKey(): string | null {
   return null
 }
 
+/**
+ * Issue #92: put `email` on the waitlist, approved - what the owner does at /admin/waitlist.
+ * Harmless with the waitlist off. Throws when it cannot, so a gate test never passes by
+ * accident.
+ */
+export async function approveEmail(email: string): Promise<void> {
+  const serviceKey = cleanupKey()
+  if (!serviceKey) throw new Error('No service key to approve a test email with')
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/waitlist?on_conflict=email`, {
+    method: 'POST',
+    headers: {
+      apikey: serviceKey,
+      authorization: `Bearer ${serviceKey}`,
+      'content-type': 'application/json',
+      prefer: 'resolution=merge-duplicates,return=minimal',
+    },
+    body: JSON.stringify({ email: email.toLowerCase(), approved_at: new Date().toISOString() }),
+  })
+  if (!response.ok) throw new Error(`approveEmail failed: ${response.status} ${await response.text()}`)
+}
+
 /** Remove the user this test created, and with it the family and everything under it. */
 export async function deleteTestUser(email: string): Promise<void> {
   const serviceKey = cleanupKey()
@@ -173,6 +202,10 @@ export async function deleteTestUser(email: string): Promise<void> {
         headers: { apikey: serviceKey, authorization: `Bearer ${serviceKey}` },
       })
     }
+    await fetch(`${SUPABASE_URL}/rest/v1/waitlist?email=eq.${encodeURIComponent(email.toLowerCase())}`, {
+      method: 'DELETE',
+      headers: { apikey: serviceKey, authorization: `Bearer ${serviceKey}` },
+    })
   } catch {
     /* best effort: a leftover test user is harmless, and never truncate a shared database */
   }
