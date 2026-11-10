@@ -50,7 +50,7 @@ export function inviteMail(to: string, from: string, origin: string): InviteMail
     from: `${BRAND.wordmark} <${from}>`,
     subject: m.subject,
     // The same words as the html part, so a client showing plain text says the same thing.
-    text: ['Hello,', '', m.lead, '', `${m.button}:`, login.toString(), '', m.note, '', 'Sleep well,', BRAND.wordmark].join('\n'),
+    text: ['Hello,', '', m.lead, '', `${m.button}:`, login.toString(), '', m.note, '', m.reason, '', 'Sleep well,', BRAND.wordmark].join('\n'),
     html: renderEmail({
       preheader: m.preheader,
       eyebrow: m.eyebrow,

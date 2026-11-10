@@ -5,8 +5,9 @@ import { BRAND } from '@/lib/brand'
  * headline with its one italic word, one large button, the ten moons and the tagline.
  *
  * Email clients are not browsers, so this is the old dialect on purpose: tables for layout,
- * styles inline, no SVG (Gmail drops it - the moons are a PNG), web fonts only as a nicety with
- * Georgia and system sans behind them. The button is a padded link inside a table cell, so it is
+ * styles inline, no SVG (Gmail drops it - the moons are a PNG), and no web-font link: loading one
+ * would tell a third party that a parent opened the email, so Newsreader and Inter are named for
+ * readers who have them, with Georgia and the system sans behind. The button is a padded link inside a table cell, so it is
  * one large target everywhere and still a link where styles are stripped. The same link is
  * printed under it as text for clients that block buttons, and every email also carries a
  * plain-text part.
@@ -129,7 +130,6 @@ export function renderEmail(m: EmailContent): string {
 <meta name="color-scheme" content="light">
 <meta name="supported-color-schemes" content="light">
 <title>${e(m.headline.join(''))}</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Newsreader:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
 <style>
   :root { color-scheme: light; supported-color-schemes: light; }
   body { margin:0; padding:0; }

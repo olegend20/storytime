@@ -57,6 +57,7 @@ describe('renderEmail (VT-E1)', () => {
     expect(html).toContain(`src="https://lastten.org${MOONS_PATH}"`)
     expect(html).toMatch(/alt="Ten moons[^"]*"/)
     expect(html).not.toContain('<svg')
+    expect(html, 'no third-party request on open').not.toMatch(/fonts\.googleapis|<link /)
     expect(readFileSync(join('public', MOONS_PATH)).subarray(1, 4).toString()).toBe('PNG')
   })
 
@@ -105,7 +106,7 @@ describe('the waitlist emails are sent as text and html (VT-E2)', () => {
     const c = confirmMail('ana@example.com', 'hello@lastten.org', 'https://lastten.org', newConfirmToken())
     for (const line of [EMAIL.confirm.lead, EMAIL.confirm.note, EMAIL.confirm.reason]) expect(c.text).toContain(line)
     const i = inviteMail('ana@example.com', 'hello@lastten.org', 'https://lastten.org')
-    for (const line of [EMAIL.invite.lead, EMAIL.invite.note]) expect(i.text).toContain(line)
+    for (const line of [EMAIL.invite.lead, EMAIL.invite.note, EMAIL.invite.reason]) expect(i.text).toContain(line)
   })
 
   it('the invite: a "Create my account" button to sign-in with the address filled in, and how it works', () => {
