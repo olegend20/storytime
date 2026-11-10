@@ -120,9 +120,11 @@ describe('the waitlist emails are sent as text and html (VT-E2)', () => {
 })
 
 describe('the SMTP sender passes the html part through (VT-E2)', () => {
-  afterEach(() => {
+  afterEach(async () => {
     vi.doUnmock('@/lib/kindle/send')
+    vi.unstubAllEnvs()
     vi.resetModules()
+    ;(await import('@/lib/env')).resetEnvCache()
   })
 
   it('sends text and html together', async () => {
@@ -135,7 +137,6 @@ describe('the SMTP sender passes the html part through (VT-E2)', () => {
     const mail = invite('ana@example.com', 'hello@lastten.org', 'https://lastten.org')
     await smtpInviteSender()!.send(mail)
     expect(sendMail).toHaveBeenCalledWith(expect.objectContaining({ text: mail.text, html: mail.html }))
-    vi.unstubAllEnvs()
   })
 })
 
