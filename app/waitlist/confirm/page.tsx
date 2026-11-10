@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { LandingFooter, LandingHeader } from '@/components/landing/Chrome'
+import { BRAND } from '@/lib/brand'
 import { COMING_SOON } from '@/lib/landing/copy'
 import { isConfirmToken } from '@/lib/waitlist/confirm'
 import ConfirmButton from './ConfirmButton'
@@ -13,7 +14,7 @@ import '../../landing.css'
  */
 
 export const metadata: Metadata = {
-  title: 'Confirm your place — The Last Ten',
+  title: `Confirm your place — ${BRAND.wordmark}`,
   robots: { index: false, follow: false },
   // The token is in this page's address: never send it on to another site.
   referrer: 'no-referrer',

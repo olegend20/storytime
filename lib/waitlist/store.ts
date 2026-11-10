@@ -77,19 +77,25 @@ export async function listWaitlist(db: SupabaseClient): Promise<WaitlistView> {
  */
 export async function approve(db: SupabaseClient, email: string): Promise<void> {
   await joinWaitlist(db, email)
-  const now = new Date().toISOString()
-  const approved = await db
+  // Confirmed first: if the approval then fails, the row is merely confirmed, and pressing
+  // Approve again finishes the job - never approved with a live link.
+  await markConfirmed(db, email)
+  const { error } = await db
     .from('waitlist')
-    .update({ approved_at: now })
+    .update({ approved_at: new Date().toISOString() })
     .eq('email', email)
     .is('approved_at', null)
-  if (approved.error) throw new Error(`waitlist approve failed: ${approved.error.message}`)
-  const confirmed = await db
+  if (error) throw new Error(`waitlist approve failed: ${error.message}`)
+}
+
+/** Confirm an address without a token (the owner vouched, or there is no mail to confirm by). */
+export async function markConfirmed(db: SupabaseClient, email: string): Promise<void> {
+  const { error } = await db
     .from('waitlist')
-    .update({ confirmed_at: now, confirm_token_hash: null })
+    .update({ confirmed_at: new Date().toISOString(), confirm_token_hash: null })
     .eq('email', email)
     .is('confirmed_at', null)
-  if (confirmed.error) throw new Error(`waitlist approve failed: ${confirmed.error.message}`)
+  if (error) throw new Error(`waitlist confirm failed: ${error.message}`)
 }
 
 /** Take the right to send this address its invite: true for exactly one caller. */

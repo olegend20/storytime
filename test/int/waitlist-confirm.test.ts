@@ -144,13 +144,35 @@ describe.runIf(reachable)('joining sends one confirmation email (VT-W10)', () =>
     expect(sent).toHaveLength(1)
   })
 
-  it('with no mail set up the address is kept, unconfirmed', async () => {
+  it('with no mail set up the address goes straight onto the list, as before #95', async () => {
     const email = address('nomail')
     expect(await (await handleJoinWaitlist(deps(null), { email })).json()).toEqual({ ok: true })
     const stored = await row(email)
-    expect(stored).not.toBeNull()
-    expect(stored?.confirmed_at).toBeNull()
+    expect(stored?.confirmed_at).not.toBeNull()
     expect(stored?.confirm_sent_at).toBeNull()
+    expect((await listWaitlist(service())).waiting.map((r) => r.email)).toContain(email)
+  })
+
+  it('someone whose link expired gets a fresh one by joining again (code review)', async () => {
+    const email = address('rejoin')
+    const week = ago(8 * DAY)
+    await service().from('waitlist').insert({ email, created_at: week, confirm_sent_at: week, confirm_token_hash: 'f'.repeat(64) })
+    const { sent, sender } = recorder()
+    await handleJoinWaitlist(deps(sender), { email })
+    expect(sent.map((m) => m.to)).toEqual([email])
+    expect((await confirm(tokenIn(sent[0]!))).status).toBe(200)
+  })
+
+  it('in production the email goes after the answer: the answer cannot wait on SMTP', async () => {
+    const email = address('deferred')
+    const { sent, sender } = recorder()
+    const tasks: (() => Promise<void>)[] = []
+    const res = await handleJoinWaitlist({ ...deps(sender), defer: (t) => void tasks.push(t) }, { email })
+    expect(await res.json()).toEqual({ ok: true })
+    expect(sent).toHaveLength(0)
+    expect(tasks).toHaveLength(1)
+    await tasks[0]!()
+    expect(sent.map((m) => m.to)).toEqual([email])
   })
 
   it('answers every case the same: new, repeat, confirmed, approved, failed send, honeypot', async () => {
@@ -282,6 +304,18 @@ describe.runIf(reachable)('the owner sees confirmed addresses only (VT-W12)', ()
 })
 
 describe.runIf(reachable)('a daily cap across all addresses (VT-W10)', () => {
+  it('a burst of joins at once never sends past the cap (code review)', async () => {
+    const { confirmEmailsSince } = await import('@/lib/waitlist/store')
+    const already = await confirmEmailsSince(service(), new Date(Date.now() - DAY))
+    const { sent, sender } = recorder()
+    const burst = Array.from({ length: 8 }, (_, i) => address(`cap-burst-${i}`))
+    await Promise.all(burst.map((email) => handleJoinWaitlist({ ...deps(sender), dailyCap: already + 2 }, { email })))
+    expect(sent.length).toBeLessThanOrEqual(2)
+    // The ones held back keep their row, with no claim left on it: joining tomorrow sends.
+    const held = burst.filter((e) => !sent.some((m) => m.to === e))
+    for (const email of held) expect((await row(email))?.confirm_sent_at, email).toBeNull()
+  })
+
   it('past the cap nothing is sent, the address is kept, and the answer is the same', async () => {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000)
     const { confirmEmailsSince } = await import('@/lib/waitlist/store')

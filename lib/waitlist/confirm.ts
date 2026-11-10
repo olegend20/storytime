@@ -16,6 +16,8 @@ export const CONFIRM_RESEND_AFTER_MS = 24 * 60 * 60 * 1000
  * address is kept, unconfirmed, and joining again tomorrow sends its link.
  */
 export const CONFIRM_EMAILS_PER_DAY = 40
+/** The window the cap counts over. */
+export const CONFIRM_CAP_WINDOW_MS = 24 * 60 * 60 * 1000
 /** A link works for a week; an address nobody confirms is deleted after the same week. */
 export const CONFIRM_TTL_MS = 7 * 24 * 60 * 60 * 1000
 
