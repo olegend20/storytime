@@ -1,5 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { BRAND } from '@/lib/brand'
+import { renderEmail } from '@/lib/email/layout'
+import { EMAIL } from '@/lib/landing/copy'
 import type { InviteMail } from './invite'
 
 /**
@@ -44,10 +46,11 @@ export function isConfirmToken(value: unknown): value is string {
 export function confirmMail(to: string, from: string, origin: string, token: string): InviteMail {
   const link = new URL('/waitlist/confirm', origin)
   link.searchParams.set('token', token)
+  const m = EMAIL.confirm
   return {
     to,
     from: `${BRAND.wordmark} <${from}>`,
-    subject: `Confirm your place on the waitlist for ${BRAND.wordmark}`,
+    subject: m.subject,
     text: [
       'Hello,',
       '',
@@ -63,5 +66,16 @@ export function confirmMail(to: string, from: string, origin: string, token: str
       'Sleep well,',
       BRAND.wordmark,
     ].join('\n'),
+    html: renderEmail({
+      preheader: m.preheader,
+      eyebrow: m.eyebrow,
+      headline: m.headline,
+      lead: m.lead,
+      button: { label: m.button, href: link.toString() },
+      note: m.note,
+      aside: EMAIL.why,
+      reason: m.reason,
+      origin,
+    }),
   }
 }

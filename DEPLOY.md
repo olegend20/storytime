@@ -86,7 +86,12 @@ lastten.org opens a few families at a time. To run it:
    `20261110000003_waitlist_confirm_backfill.sql` right **after** the deploy - within minutes, since
    it also matches rows the new code held back by the daily cap. It confirms anyone the old code
    added in between, who would otherwise be hidden and purged.
-5. Public launch: set `WAITLIST_ENABLED=false` and redeploy. Anyone can then create an account by email
+5. Issue #98: the sign-in email's design is Supabase's template, not app code, so it reaches
+   production only by pushing it: `supabase config push` with the `[auth.email.template.*]`
+   sections of `supabase/config.toml` and the files in `supabase/templates/`. Re-run
+   `pnpm tsx scripts/email-templates.ts` and push again whenever the email layout or `EMAIL` copy
+   changes. The waitlist emails need nothing: they deploy with the app.
+6. Public launch: set `WAITLIST_ENABLED=false` and redeploy. Anyone can then create an account by email
    (the server creates it, so the dashboard toggle can stay off). **If Google sign-in is on**, also switch
    "Allow new users to sign up" back on: Supabase refuses new Google accounts while it is off.
 

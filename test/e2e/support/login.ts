@@ -37,8 +37,15 @@ interface MailpitMessage {
   ID: string
 }
 
-/** Fetch the body of the most recent message sent to `address`, polling until it lands. */
-export async function fetchLatestEmailBody(address: string, timeoutMs = 20_000): Promise<string> {
+/**
+ * Fetch the body of the most recent message sent to `address`, polling until it lands. The
+ * text part by default; `part: 'html'` for the designed email (issue #98).
+ */
+export async function fetchLatestEmailBody(
+  address: string,
+  timeoutMs = 20_000,
+  part: 'text' | 'html' = 'text',
+): Promise<string> {
   const deadline = Date.now() + timeoutMs
   let lastError = 'no message arrived'
 
@@ -55,7 +62,7 @@ export async function fetchLatestEmailBody(address: string, timeoutMs = 20_000):
           const message = await fetch(`${MAILBOX_URL}/api/v1/message/${id}`)
           if (message.ok) {
             const detail = (await message.json()) as { Text?: string; HTML?: string }
-            const body = detail.Text || detail.HTML
+            const body = part === 'html' ? detail.HTML : detail.Text || detail.HTML
             if (body) return body
           }
         }
@@ -77,7 +84,7 @@ export async function fetchLatestEmailBody(address: string, timeoutMs = 20_000):
           )
           if (message.ok) {
             const detail = (await message.json()) as { body?: { text?: string; html?: string } }
-            const body = detail.body?.text || detail.body?.html
+            const body = part === 'html' ? detail.body?.html : detail.body?.text || detail.body?.html
             if (body) return body
           }
         }
