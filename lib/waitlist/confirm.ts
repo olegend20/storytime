@@ -20,6 +20,12 @@ export const CONFIRM_EMAILS_PER_DAY = 40
 export const CONFIRM_CAP_WINDOW_MS = 24 * 60 * 60 * 1000
 /** A link works for a week; an address nobody confirms is deleted after the same week. */
 export const CONFIRM_TTL_MS = 7 * 24 * 60 * 60 * 1000
+/**
+ * An address that was never emailed (held back by the daily cap, or the send failed) never
+ * had the chance to confirm, so it is kept longer before being forgotten; joining again in
+ * that time sends its link.
+ */
+export const UNSENT_TTL_MS = 30 * 24 * 60 * 60 * 1000
 
 /** 32 random bytes, URL-safe. Goes in the email only; the table keeps its hash. */
 export function newConfirmToken(): string {

@@ -178,6 +178,21 @@ test.describe('issue #92: the coming-soon page and the approved waitlist', () =>
     }
   })
 
+  test('joining from the sign-in page asks for the email confirmation too', async ({ page }) => {
+    const visitor = uniqueEmail('waitlist-login')
+    try {
+      await page.goto('/login')
+      await page.getByLabel('Email address').fill(visitor)
+      await page.getByRole('button', { name: 'Email me a sign-in link' }).click()
+      await page.getByRole('button', { name: 'Join the waitlist' }).click()
+      await expect(page.getByRole('heading', { name: 'Check your email.' })).toBeVisible()
+      await expect(page.getByText(/on the list/)).toHaveCount(0)
+      expect(await confirmLink(visitor)).toMatch(/\/waitlist\/confirm\?token=/)
+    } finally {
+      await deleteTestUser(visitor)
+    }
+  })
+
   test('a confirm link with no token, or a made-up one, says so', async ({ page }) => {
     await page.goto('/waitlist/confirm')
     await expect(page.getByRole('heading', { name: /expired or was already used/ })).toBeVisible()

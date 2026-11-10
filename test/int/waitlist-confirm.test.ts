@@ -237,8 +237,10 @@ describe.runIf(reachable)('the link confirms once (VT-W11)', () => {
     expect((await handleConfirm(db, null)).status).toBe(400)
   })
 
-  it('unconfirmed addresses are forgotten after a week; nothing else is', async () => {
+  it('emailed-but-unconfirmed addresses are forgotten after a week; never-emailed after 30 days; nothing else', async () => {
     const stale = address('purge-stale')
+    const unsentWeek = address('purge-unsent-week')
+    const unsentMonth = address('purge-unsent-month')
     const resent = address('purge-resent')
     const confirmed = address('purge-confirmed')
     const approvedOnly = address('purge-approved')
@@ -246,6 +248,9 @@ describe.runIf(reachable)('the link confirms once (VT-W11)', () => {
     const week = ago(8 * DAY)
     const seeded = await service().from('waitlist').insert([
       { email: stale, created_at: week, confirm_sent_at: week },
+      // Held back by the cap or a failed send: never had the chance to confirm.
+      { email: unsentWeek, created_at: week, confirm_sent_at: null },
+      { email: unsentMonth, created_at: ago(31 * DAY), confirm_sent_at: null },
       { email: resent, created_at: week, confirm_sent_at: ago(DAY) },
       { email: confirmed, created_at: week, confirmed_at: week },
       { email: approvedOnly, created_at: week, approved_at: week },
@@ -256,8 +261,9 @@ describe.runIf(reachable)('the link confirms once (VT-W11)', () => {
     // Through a join, as in production.
     await handleJoinWaitlist(deps(recorder().sender), { email: address('purge-trigger') })
     expect(await row(stale)).toBeNull()
-    for (const kept of [resent, confirmed, approvedOnly, fresh]) expect(await row(kept), kept).not.toBeNull()
-    await purgeUnconfirmed(service(), 7 * DAY) // and again is harmless
+    expect(await row(unsentMonth)).toBeNull()
+    for (const kept of [resent, confirmed, approvedOnly, fresh, unsentWeek]) expect(await row(kept), kept).not.toBeNull()
+    await purgeUnconfirmed(service(), 7 * DAY, 30 * DAY) // and again is harmless
     expect(await row(resent)).not.toBeNull()
   })
 })
@@ -319,12 +325,13 @@ describe.runIf(reachable)('a daily cap across all addresses (VT-W10)', () => {
   it('past the cap nothing is sent, the address is kept, and the answer is the same', async () => {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000)
     const { confirmEmailsSince } = await import('@/lib/waitlist/store')
-    const already = await confirmEmailsSince(service(), since)
     const { sent, sender } = recorder()
     const under = address('cap-under')
     const over = address('cap-over')
-    await handleJoinWaitlist({ ...deps(sender), dailyCap: already + 1 }, { email: under })
-    const res = await handleJoinWaitlist({ ...deps(sender), dailyCap: already + 1 }, { email: over })
+    // The cap is set from a fresh count before each join, so other files' joins on the shared
+    // database cannot shift it: room for exactly one more, then none.
+    await handleJoinWaitlist({ ...deps(sender), dailyCap: (await confirmEmailsSince(service(), since)) + 1 }, { email: under })
+    const res = await handleJoinWaitlist({ ...deps(sender), dailyCap: await confirmEmailsSince(service(), since) }, { email: over })
     expect(await res.json()).toEqual({ ok: true })
     expect(sent.map((m) => m.to)).toEqual([under])
     expect(await row(over)).not.toBeNull()

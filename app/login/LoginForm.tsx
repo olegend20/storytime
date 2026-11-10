@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { supabaseBrowser } from '@/lib/supabase/client'
 import { detectTimeZone } from '@/lib/family/timezone'
+import { COMING_SOON } from '@/lib/landing/copy'
 import { normalizeEmail } from '@/lib/waitlist/email'
 
 /**
@@ -136,9 +137,11 @@ export default function LoginForm({
   if (status === 'joined') {
     return (
       <div className="card p-5">
-        <h2 className="m-0 text-2xl font-normal">You&rsquo;re on the list</h2>
+        {/* Issue #95: joining sends a confirmation link; the address is on the list once confirmed. */}
+        <h2 className="m-0 text-2xl font-normal">{COMING_SOON.joinedTitle}</h2>
         <p className="mt-2 mb-0 text-sm leading-relaxed text-muted">
-          We&rsquo;ll email <strong>{email.trim()}</strong> when your place is ready.
+          We have sent a link to <strong>{email.trim()}</strong> to confirm your place. If it is not in
+          your inbox, look in spam.
         </p>
         <button type="button" onClick={() => setStatus('idle')} className="st-textlink mt-2">
           Use a different email

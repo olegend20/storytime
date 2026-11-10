@@ -188,17 +188,26 @@ export async function confirmByToken(
 }
 
 /**
- * Forget addresses nobody confirmed: unconfirmed, unapproved, joined more than `ttlMs` ago
- * and with no link sent in that time either.
+ * Forget addresses nobody confirmed: unconfirmed and unapproved, and either emailed more than
+ * `ttlMs` ago (the link expired unused) or never emailed and older than `unsentTtlMs`.
  */
-export async function purgeUnconfirmed(db: SupabaseClient, ttlMs: number, now = new Date()): Promise<void> {
+export async function purgeUnconfirmed(
+  db: SupabaseClient,
+  ttlMs: number,
+  unsentTtlMs: number,
+  now = new Date(),
+): Promise<void> {
   const cutoff = new Date(now.getTime() - ttlMs)
+  const unsentCutoff = new Date(now.getTime() - unsentTtlMs)
   const { error } = await db
     .from('waitlist')
     .delete()
     .is('confirmed_at', null)
     .is('approved_at', null)
     .lt('created_at', cutoff.toISOString())
-    .or(`confirm_sent_at.is.null,confirm_sent_at.lt.${quoted(cutoff)}`)
+    .or(
+      `confirm_sent_at.lt.${quoted(cutoff)},` +
+        `and(confirm_sent_at.is.null,created_at.lt.${quoted(unsentCutoff)})`,
+    )
   if (error) throw new Error(`waitlist purge failed: ${error.message}`)
 }

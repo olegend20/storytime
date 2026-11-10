@@ -11,6 +11,7 @@ import {
   hashConfirmToken,
   isConfirmToken,
   newConfirmToken,
+  UNSENT_TTL_MS,
 } from './confirm'
 import {
   approve,
@@ -77,7 +78,7 @@ export async function handleJoinWaitlist(deps: JoinDeps, body: unknown): Promise
   try {
     // Housekeeping first, so a returning visitor's expired row is replaced, not deleted
     // after they rejoin. Rides on joins: no cron to forget. Its failure never blocks a join.
-    await purgeUnconfirmed(deps.service, CONFIRM_TTL_MS).catch((e) => console.error('[waitlist] purge failed', e))
+    await purgeUnconfirmed(deps.service, CONFIRM_TTL_MS, UNSENT_TTL_MS).catch((e) => console.error('[waitlist] purge failed', e))
     await joinWaitlist(deps.service, email)
   } catch (cause) {
     console.error('[waitlist] join failed', cause)
