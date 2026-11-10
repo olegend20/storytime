@@ -34,3 +34,7 @@ test/guardrails/results/
 
 # Vercel project link (per machine).
 .vercel
+
+# Orchestra (Understudy) CLI state and benchmark folders (per machine). Benchmarks can
+# hold captured stories, so they are never committed.
+.understudy/
