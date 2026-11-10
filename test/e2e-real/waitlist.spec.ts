@@ -154,7 +154,10 @@ test.describe('issue #92: the coming-soon page and the approved waitlist', () =>
       await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible()
       const signIn = await nextSignInLink(visitor)
       // Issue #98 (VT-E5): Supabase sends the sign-in link in our design too.
-      expect(await fetchLatestEmailBody(visitor, 20_000, 'html')).toContain('Your sign-in link')
+      const signInHtml = await fetchLatestEmailBody(visitor, 20_000, 'html')
+      const button = signInHtml.match(/<a href="([^"]+)"[^>]*display:inline-block;padding/)?.[1]
+      expect(button?.replace(/&amp;/g, '&'), 'the designed button carries the sign-in link').toBe(signIn)
+      expect(signInHtml).toContain('Ten minutes. Together.')
       await page.goto(signIn)
       await expect(page).toHaveURL(/\/dashboard$/)
       await expect(page.getByRole('heading', { name: 'My family' })).toBeVisible()
