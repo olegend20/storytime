@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { parseEnv, resetEnvCache } from '@/lib/env'
 import { allLandingCopy, COMING_SOON } from '@/lib/landing/copy'
+import { confirmMail, hashConfirmToken, isConfirmToken, newConfirmToken } from '@/lib/waitlist/confirm'
 import { MAX_EMAIL_LENGTH, normalizeEmail } from '@/lib/waitlist/email'
 import { handlePrepareSignIn, type PrepareDeps } from '@/lib/waitlist/handlers'
 import { inviteMail } from '@/lib/waitlist/invite'
@@ -107,5 +108,40 @@ describe('POST /api/auth/prepare - before any database', () => {
     for (const body of [{ email: 'nope' }, {}, null]) {
       expect((await handlePrepareSignIn(deps, body)).status).toBe(400)
     }
+  })
+})
+
+describe('the confirmation token and email (VT-W9, issue #95)', () => {
+  it('a token is 43 URL-safe characters, never the same twice, and stored only as its hash', () => {
+    const a = newConfirmToken()
+    const b = newConfirmToken()
+    expect(isConfirmToken(a)).toBe(true)
+    expect(a).not.toBe(b)
+    expect(hashConfirmToken(a)).toMatch(/^[0-9a-f]{64}$/)
+    expect(hashConfirmToken(a)).toBe(hashConfirmToken(a))
+    expect(hashConfirmToken(a)).not.toContain(a)
+  })
+
+  it.each(['', 'short', 'x'.repeat(44), `${'a'.repeat(42)}=`, `${'a'.repeat(42)} `, 42, null, undefined])(
+    'refuses %j as a token',
+    (value) => expect(isConfirmToken(value)).toBe(false),
+  )
+
+  it('links to the confirm page on the site, and says what to do if it was not you', () => {
+    const token = newConfirmToken()
+    const mail = confirmMail('ana@example.com', 'hello@lastten.org', 'https://lastten.org', token)
+    expect(mail.to).toBe('ana@example.com')
+    expect(mail.from).toBe('The Last Ten <hello@lastten.org>')
+    expect(mail.subject).toBe('Confirm your place on the waitlist for The Last Ten')
+    expect(mail.text).not.toMatch(/the The/)
+    expect(mail.text).toContain(`https://lastten.org/waitlist/confirm?token=${token}`)
+    expect(mail.text).toMatch(/7 days/)
+    expect(mail.text).toMatch(/If this was not you/)
+  })
+
+  it('the confirm page copy is held to the landing copy rules', () => {
+    const copy = allLandingCopy()
+    for (const line of Object.values(COMING_SOON.confirm)) expect(copy).toContain(line)
+    expect(COMING_SOON.joinedTitle).toMatch(/Check your email/)
   })
 })

@@ -1,6 +1,7 @@
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest'
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest } from 'next/server'
+import { resetEnvCache } from '@/lib/env'
 import { anon, applyTestSupabaseEnv, dbReachable, service, SKIP_REASON, testSupabaseEnv } from '../helpers/db'
 
 /**
@@ -67,6 +68,9 @@ afterAll(async () => {
   await db.from('waitlist').delete().in('email', made)
 })
 
+/** Joining with no mail set up (the confirmation email is test/int/waitlist-confirm.test.ts). */
+const joinDeps = () => ({ service: service(), sender: null, origin: 'https://lastten.example' })
+
 /** The real link request, as the login form makes it: never creating anyone. */
 async function requestLink(email: string): Promise<string | null> {
   const { error } = await anon().auth.signInWithOtp({ email, options: { shouldCreateUser: false } })
@@ -76,8 +80,8 @@ async function requestLink(email: string): Promise<string | null> {
 describe.runIf(reachable)('POST /api/waitlist (VT-W3)', () => {
   it('stores the address once, normalised', async () => {
     const email = address('join')
-    const first = await handleJoinWaitlist(service(), { email: `  ${email.toUpperCase()} ` })
-    const again = await handleJoinWaitlist(service(), { email })
+    const first = await handleJoinWaitlist(joinDeps(), { email: `  ${email.toUpperCase()} ` })
+    const again = await handleJoinWaitlist(joinDeps(), { email })
     expect(first.status).toBe(200)
     expect(await first.json()).toEqual(await again.json())
     const { data } = await service().from('waitlist').select('email').eq('email', email)
@@ -88,21 +92,21 @@ describe.runIf(reachable)('POST /api/waitlist (VT-W3)', () => {
   it('answers an approved address exactly like a new one (no enumeration)', async () => {
     const email = address('known')
     await service().from('waitlist').insert({ email, approved_at: new Date().toISOString() })
-    const known = await handleJoinWaitlist(service(), { email })
-    const fresh = await handleJoinWaitlist(service(), { email: address('fresh') })
+    const known = await handleJoinWaitlist(joinDeps(), { email })
+    const fresh = await handleJoinWaitlist(joinDeps(), { email: address('fresh') })
     expect(known.status).toBe(fresh.status)
     expect(await known.json()).toEqual(await fresh.json())
   })
 
   it('400s an address it cannot use', async () => {
     for (const body of [{ email: 'nope' }, {}, null, 'ana@example.com']) {
-      expect((await handleJoinWaitlist(service(), body)).status).toBe(400)
+      expect((await handleJoinWaitlist(joinDeps(), body)).status).toBe(400)
     }
   })
 
   it('accepts a filled honeypot without storing anything', async () => {
     const email = address('bot')
-    const res = await handleJoinWaitlist(service(), { email, website: 'http://spam.example' })
+    const res = await handleJoinWaitlist(joinDeps(), { email, website: 'http://spam.example' })
     expect(res.status).toBe(200)
     expect(await row(email)).toBeNull()
   })
@@ -142,7 +146,7 @@ describe.runIf(reachable)('POST /api/auth/prepare and the login form’s flow (V
 
   it('an address that is not approved gets no account, and its link never comes', async () => {
     const email = address('unapproved')
-    await handleJoinWaitlist(service(), { email }) // waiting, not approved
+    await handleJoinWaitlist(joinDeps(), { email }) // waiting, not approved
     expect(await requestLink(email)).toMatch(/signup_disabled|otp_disabled/)
     const res = await prepare(true, email)
     expect(await res.json()).toEqual({ ok: true })
@@ -196,9 +200,10 @@ describe.runIf(reachable)('approving (VT-W5)', () => {
 
   it('approves once and sends one invite, recording when', async () => {
     const email = address('invite')
-    await handleJoinWaitlist(service(), { email })
+    await handleJoinWaitlist(joinDeps(), { email })
     const { sent, sender } = recorder()
     vi.stubEnv('MAIL_FROM_EMAIL', 'hello@storytime.local')
+    resetEnvCache()
     try {
       const deps = { service: service(), sender, origin: 'https://lastten.example' }
       const first = await (await handleApprove(deps, { email })).json()
@@ -213,6 +218,7 @@ describe.runIf(reachable)('approving (VT-W5)', () => {
       expect(stored?.invited_at).not.toBeNull()
     } finally {
       vi.unstubAllEnvs()
+      resetEnvCache()
     }
   })
 
@@ -220,6 +226,7 @@ describe.runIf(reachable)('approving (VT-W5)', () => {
     const email = address('race')
     const { sent, sender } = recorder()
     vi.stubEnv('MAIL_FROM_EMAIL', 'hello@storytime.local')
+    resetEnvCache()
     try {
       const deps = { service: service(), sender, origin: 'https://x.example' }
       const results = await Promise.all([handleApprove(deps, { email }), handleApprove(deps, { email })])
@@ -228,6 +235,7 @@ describe.runIf(reachable)('approving (VT-W5)', () => {
       expect(bodies.filter((b) => b.emailed)).toHaveLength(1)
     } finally {
       vi.unstubAllEnvs()
+      resetEnvCache()
     }
   })
 
@@ -239,18 +247,21 @@ describe.runIf(reachable)('approving (VT-W5)', () => {
 
     const { sent, sender } = recorder()
     vi.stubEnv('MAIL_FROM_EMAIL', 'hello@storytime.local')
+    resetEnvCache()
     try {
       const later = await (await handleApprove({ service: service(), sender, origin: 'https://x.example' }, { email })).json()
       expect(later.emailed).toBe(true)
       expect(sent).toHaveLength(1)
     } finally {
       vi.unstubAllEnvs()
+      resetEnvCache()
     }
   })
 
   it('a failed send leaves the approval in place and the invite unsent', async () => {
     const email = address('sendfail')
     vi.stubEnv('MAIL_FROM_EMAIL', 'hello@storytime.local')
+    resetEnvCache()
     try {
       const failing = { send: async () => { throw new Error('smtp down') } }
       const res = await (await handleApprove({ service: service(), sender: failing, origin: 'https://x.example' }, { email })).json()
@@ -260,6 +271,7 @@ describe.runIf(reachable)('approving (VT-W5)', () => {
       expect(stored?.invited_at).toBeNull()
     } finally {
       vi.unstubAllEnvs()
+      resetEnvCache()
     }
   })
 

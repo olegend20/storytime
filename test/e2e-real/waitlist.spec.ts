@@ -14,7 +14,8 @@ import { E2E_OWNER_EMAIL, E2E_OWNER_ID } from './owner'
 /**
  * Issue #92 (VT-W8): lastten.org as it launches, on the real local stack - the coming-soon
  * page, the waitlist, the gate on sign-up, the owner's approval, the invite email, and the
- * approved parent signing in. The server runs with WAITLIST_ENABLED=true and OWNER_USER_ID
+ * approved parent signing in. Issue #95 (VT-W13): the address is confirmed by email before
+ * the owner sees it. The server runs with WAITLIST_ENABLED=true and OWNER_USER_ID
  * set to the test owner (playwright.real.config.ts).
  */
 
@@ -28,6 +29,17 @@ async function accountExists(email: string): Promise<boolean> {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?filter=${encodeURIComponent(email)}`, { headers: admin })
   const body = (await res.json()) as { users?: { email: string }[] }
   return (body.users ?? []).some((u) => u.email === email)
+}
+
+/** Poll the mailbox until the newest message to `email` is the confirmation; its link. */
+async function confirmLink(email: string): Promise<string> {
+  const deadline = Date.now() + 20_000
+  for (;;) {
+    const link = (await fetchLatestEmailBody(email)).match(/https?:\/\/\S+\/waitlist\/confirm\?token=\S+/)?.[0]
+    if (link) return link
+    if (Date.now() > deadline) throw new Error('no confirmation email arrived')
+    await new Promise((r) => setTimeout(r, 400))
+  }
 }
 
 /** Poll the mailbox until the newest message to `email` is a sign-in link, not the invite. */
@@ -78,14 +90,26 @@ test.describe('issue #92: the coming-soon page and the approved waitlist', () =>
     await expect(page.getByRole('link', { name: /Join the waitlist/ }).first()).toHaveAttribute('href', '/#join')
   })
 
-  test('join, refused until approved, approved by the owner, invited, signed in', async ({ page, browser }) => {
+  test('join, confirm, refused until approved, approved by the owner, invited, signed in', async ({ page, browser }) => {
     const visitor = uniqueEmail('waitlist')
     try {
-      // ---- 1. A visitor joins.
+      // ---- 1. A visitor joins, and is asked to confirm by email.
       await page.goto('/')
       await page.getByLabel('Email for the waitlist').fill(visitor)
       await page.getByRole('button', { name: 'Join the waitlist' }).click()
-      await expect(page.getByText('You’re on the list.')).toBeVisible()
+      await expect(page.getByText('Check your email.')).toBeVisible()
+
+      // ---- 1b. Issue #95: the emailed link opens a page with one button; pressing it confirms.
+      // Opening the link alone confirms nothing (mail scanners open links).
+      const link = await confirmLink(visitor)
+      await page.goto(link)
+      await expect(page.getByRole('heading', { name: 'Confirm your place' })).toBeVisible()
+      await page.getByRole('button', { name: 'Confirm my place' }).click()
+      await expect(page.getByRole('heading', { name: 'You’re on the list.' })).toBeVisible()
+      // The same link a second time: used.
+      await page.goto(link)
+      await page.getByRole('button', { name: 'Confirm my place' }).click()
+      await expect(page.getByRole('heading', { name: /expired or was already used/ })).toBeVisible()
 
       // ---- 2. Signing in before approval: the same screen anyone sees (the page never says
       // who has an account), with the waitlist offered - and no account, and no link.
@@ -124,6 +148,48 @@ test.describe('issue #92: the coming-soon page and the approved waitlist', () =>
     } finally {
       await deleteTestUser(visitor)
     }
+  })
+
+  test('an address nobody confirms never reaches the owner’s list (VT-W13)', async ({ page, browser }) => {
+    const unconfirmed = uniqueEmail('waitlist-unconfirmed')
+    const confirmed = uniqueEmail('waitlist-confirmed')
+    try {
+      for (const email of [unconfirmed, confirmed]) {
+        await page.goto('/')
+        await page.getByLabel('Email for the waitlist').fill(email)
+        await page.getByRole('button', { name: 'Join the waitlist' }).click()
+        await expect(page.getByText('Check your email.')).toBeVisible()
+      }
+      await page.goto(await confirmLink(confirmed))
+      await page.getByRole('button', { name: 'Confirm my place' }).click()
+      await expect(page.getByRole('heading', { name: 'You’re on the list.' })).toBeVisible()
+
+      const ownerContext = await browser.newContext()
+      const owner = await ownerContext.newPage()
+      await signInWithMagicLink(owner, E2E_OWNER_EMAIL, { approve: false })
+      await owner.goto('/admin/waitlist')
+      await expect(owner.getByRole('button', { name: `Approve: ${confirmed}` })).toBeVisible()
+      await expect(owner.getByText(unconfirmed)).toHaveCount(0)
+      await expect(owner.getByText(/not confirmed yet/)).toBeVisible()
+      await ownerContext.close()
+    } finally {
+      await deleteTestUser(unconfirmed)
+      await deleteTestUser(confirmed)
+    }
+  })
+
+  test('a confirm link with no token, or a made-up one, says so', async ({ page }) => {
+    await page.goto('/waitlist/confirm')
+    await expect(page.getByRole('heading', { name: /expired or was already used/ })).toBeVisible()
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.goto(`/waitlist/confirm?token=${'A'.repeat(43)}`)
+    const scan = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()
+    expect(scan.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([])
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+    expect(overflow, 'no horizontal scroll at 375px').toBeLessThanOrEqual(0)
+    await page.getByRole('button', { name: 'Confirm my place' }).click()
+    await expect(page.getByRole('heading', { name: /expired or was already used/ })).toBeVisible()
+    await expect(page.getByRole('link', { name: /Join the waitlist/ })).toHaveAttribute('href', '/#join')
   })
 
   test('/admin/waitlist is a 404 to a parent', async ({ page }) => {

@@ -40,7 +40,7 @@ const PROTECTED_API = [
   '/api/topics',
 ]
 
-/** The public ways in (issue #92): rate-limited apart from the rest of the API. */
+/** The public ways in (issue #92): rate-limited apart from the rest of the API. Covers /api/waitlist/confirm (#95). */
 const PUBLIC_ENTRY_API = ['/api/auth/prepare', '/api/waitlist']
 
 function isUnder(pathname: string, prefixes: readonly string[]): boolean {

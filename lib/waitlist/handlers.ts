@@ -2,7 +2,25 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { apiError, apiOk } from '@/lib/http/responses'
 import { normalizeEmail } from './email'
 import { inviteFromAddress, inviteMail, type InviteSender } from './invite'
-import { approve, claimInvite, isApproved, joinWaitlist, releaseInvite } from './store'
+import {
+  confirmMail,
+  CONFIRM_RESEND_AFTER_MS,
+  CONFIRM_TTL_MS,
+  hashConfirmToken,
+  isConfirmToken,
+  newConfirmToken,
+} from './confirm'
+import {
+  approve,
+  claimConfirmEmail,
+  claimInvite,
+  confirmByToken,
+  isApproved,
+  joinWaitlist,
+  purgeUnconfirmed,
+  releaseConfirmEmail,
+  releaseInvite,
+} from './store'
 
 /**
  * The waitlist's route bodies (issue #92), kept out of `app/` so the integration tests can
@@ -17,25 +35,90 @@ function readBody(body: unknown): Record<string, unknown> | null {
 
 // ---------------------------------------------------------------- join
 
+export interface JoinDeps {
+  service: SupabaseClient
+  /** Null when mail is not set up: the address is kept, unconfirmed, and the owner page says so. */
+  sender: InviteSender | null
+  /** The site the confirmation link points at - SITE_URL, or the request's own origin. */
+  origin: string
+}
+
 /**
- * POST /api/waitlist. The answer is the same whether the address is new, already waiting or
- * already approved: the page must not tell a stranger who has signed up.
+ * POST /api/waitlist. The answer is the same whether the address is new, already waiting,
+ * already approved or was emailed an hour ago: the page must not tell a stranger who has
+ * signed up.
+ *
+ * Issue #95: the address reaches the owner's list only once its inbox confirms it, so a new
+ * one is emailed a link. The right to send is claimed first - at most one email per address
+ * per day, so this form cannot flood a stranger's inbox - and given back if the send fails.
+ * A failed send is not the visitor's problem to solve: the row is kept and they can join
+ * again.
  *
  * `website` is a honeypot: a field people never see, which form-filling bots fill. Such a
  * request is answered exactly like a real one and stored nowhere.
  */
-export async function handleJoinWaitlist(db: SupabaseClient, body: unknown): Promise<Response> {
+export async function handleJoinWaitlist(deps: JoinDeps, body: unknown): Promise<Response> {
   const input = readBody(body)
   const email = normalizeEmail(input?.email)
   if (!email) return apiError('invalid_request', BAD_EMAIL, { field: 'email' })
   if (typeof input?.website === 'string' && input.website.trim() !== '') return apiOk({ ok: true })
   try {
-    await joinWaitlist(db, email)
+    await joinWaitlist(deps.service, email)
   } catch (cause) {
     console.error('[waitlist] join failed', cause)
     return apiError('server_error', 'We could not add you just now. Please try again in a moment.')
   }
+
+  // Housekeeping rides on joins: no cron to forget. Its failure never blocks a join.
+  await purgeUnconfirmed(deps.service, CONFIRM_TTL_MS).catch((e) => console.error('[waitlist] purge failed', e))
+
+  const from = inviteFromAddress()
+  if (!deps.sender || !from) {
+    console.error('[waitlist] confirmation email is off (SMTP or MAIL_FROM_EMAIL unset)')
+    return apiOk({ ok: true })
+  }
+
+  const token = newConfirmToken()
+  const tokenHash = hashConfirmToken(token)
+  let claimed: boolean
+  try {
+    claimed = await claimConfirmEmail(deps.service, email, tokenHash, CONFIRM_RESEND_AFTER_MS)
+  } catch (cause) {
+    console.error('[waitlist] confirm claim failed', cause)
+    return apiOk({ ok: true })
+  }
+  if (!claimed) return apiOk({ ok: true })
+
+  try {
+    await deps.sender.send(confirmMail(email, from, deps.origin, token))
+  } catch (cause) {
+    console.error('[waitlist] confirmation email failed', cause)
+    await releaseConfirmEmail(deps.service, email, tokenHash).catch((e) =>
+      console.error('[waitlist] confirm release failed', e),
+    )
+  }
   return apiOk({ ok: true })
+}
+
+/**
+ * POST /api/waitlist/confirm { token } -> { confirmed: true } or 400 `link_invalid`.
+ *
+ * Reached from the button on /waitlist/confirm, never from the emailed link itself: mail
+ * scanners open links, and a scanner must not confirm an address for its owner. A wrong,
+ * used and expired token all get the same answer.
+ */
+export async function handleConfirm(db: SupabaseClient, body: unknown): Promise<Response> {
+  const token = readBody(body)?.token
+  const invalid = () =>
+    apiError('invalid_request', 'That link has expired or was already used.', { field: 'token' })
+  if (!isConfirmToken(token)) return invalid()
+  try {
+    const email = await confirmByToken(db, hashConfirmToken(token), CONFIRM_TTL_MS)
+    return email ? apiOk({ confirmed: true }) : invalid()
+  } catch (cause) {
+    console.error('[waitlist] confirm failed', cause)
+    return apiError('server_error', 'We could not confirm that just now. Please try again in a moment.')
+  }
 }
 
 // ---------------------------------------------------------------- the account, before the link

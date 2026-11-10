@@ -8,7 +8,8 @@ import { smtpInviteSender } from '@/lib/waitlist/invite'
 import ApproveButton from './ApproveButton'
 
 /**
- * Issue #92 - the owner's waitlist: who is waiting, and an Approve button for each. Approving
+ * Issue #92 - the owner's waitlist: who is waiting, and an Approve button for each. Since
+ * issue #95 "waiting" means confirmed by email; the unconfirmed are only counted. Approving
  * lets the address create an account and emails it "your place is ready" when mail is set up.
  * Non-owners get a 404, like /admin (F12).
  */
@@ -29,7 +30,7 @@ function mailReady(): boolean {
 
 export default async function WaitlistAdminPage() {
   await requireOwner()
-  const { waiting, approved, waitingCount, approvedCount } = await listWaitlist(supabaseService())
+  const { waiting, approved, waitingCount, approvedCount, unconfirmedCount } = await listWaitlist(supabaseService())
   const mail = mailReady()
 
   return (
@@ -47,7 +48,7 @@ export default async function WaitlistAdminPage() {
           WAITLIST_ENABLED = {String(waitlistEnabled())}
         </span>
         <span className="rounded border border-black/10 px-2 py-0.5 dark:border-white/15">
-          invite email = {mail ? 'on' : 'off (SMTP or MAIL_FROM_EMAIL unset): tell people yourself'}
+          invite and confirmation email = {mail ? 'on' : 'off (SMTP or MAIL_FROM_EMAIL unset): tell people yourself'}
         </span>
       </div>
 
@@ -55,6 +56,11 @@ export default async function WaitlistAdminPage() {
         <h2 id="waiting-h" className="text-sm font-semibold uppercase tracking-wide opacity-70">
           Waiting ({waitingCount})
         </h2>
+        <p className="mt-1 text-xs opacity-55">
+          Only addresses whose owner confirmed them by email.{' '}
+          {unconfirmedCount === 1 ? '1 more has' : `${unconfirmedCount} more have`} not confirmed yet and{' '}
+          {unconfirmedCount === 1 ? 'is' : 'are'} not shown; unconfirmed addresses are deleted after 7 days.
+        </p>
         {waitingCount > waiting.length ? (
           <p className="mt-1 text-xs opacity-55">
             Showing the {WAITLIST_PAGE} who have waited longest. Approve some to see the rest.

@@ -56,9 +56,15 @@ describe.runIf(process.env.RUN_SCHEMA_TESTS === '1')('F1 schema introspection', 
     }
   })
 
-  /** Issue #92 (VT-W6): the waitlist holds an adult's address and three timestamps, nothing else. */
-  it('waitlist exists with exactly its four columns', async () => {
-    const { error } = await db!.from('waitlist').select('email, created_at, approved_at, invited_at').limit(0)
+  /**
+   * Issue #92 (VT-W6): the waitlist holds an adult's address and timestamps, nothing else.
+   * Issue #95 added the confirmation: a time, a token's hash and when it was sent.
+   */
+  it('waitlist exists with exactly its columns', async () => {
+    const { error } = await db!
+      .from('waitlist')
+      .select('email, created_at, approved_at, invited_at, confirmed_at, confirm_token_hash, confirm_sent_at')
+      .limit(0)
     expect(error, `waitlist: ${error?.message}`).toBeNull()
     const extra = await db!.from('waitlist').select('name').limit(0)
     expect(extra.error, 'waitlist must not have a name column').not.toBeNull()
