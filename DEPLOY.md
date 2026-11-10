@@ -99,7 +99,11 @@ lastten.org opens a few families at a time. To run it:
      org is "Last Ten StoryTime");
    - `supabase config push --workdir <dir>`. It prints the changes and asks before applying: the
      list must show only `mailer_subjects_*` and `mailer_templates_*`. Anything else, answer no.
-   Settings the scratch config does not name are left as they are. Re-run
+   The CLI sends only the fields that differ from production and names each one before asking:
+   the 2026-11-09 push of `enable_signup` by this method listed `auth.enable_signup [update]` and
+   nothing else, and the 2026-11-10 SMTP push likewise; sign-in on lastten.org kept working after
+   both. If the list ever names `site_url`, redirect URLs or anything outside the templates,
+   answer no and paste the templates in Dashboard → Authentication → Email Templates instead. Re-run
    `pnpm tsx scripts/email-templates.ts` and push again whenever the layout or `EMAIL` copy
    changes. The waitlist emails need nothing: they deploy with the app.
 6. Public launch: set `WAITLIST_ENABLED=false` and redeploy. Anyone can then create an account by email
