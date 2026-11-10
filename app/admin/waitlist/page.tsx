@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { requireOwner } from '@/lib/admin/gate'
 import { supabaseService } from '@/lib/supabase/service'
-import { listWaitlist } from '@/lib/waitlist/store'
+import { listWaitlist, WAITLIST_PAGE } from '@/lib/waitlist/store'
 import { waitlistEnabled } from '@/lib/waitlist/mode'
 import { smtpInviteSender } from '@/lib/waitlist/invite'
 import ApproveButton from './ApproveButton'
@@ -29,9 +29,7 @@ function mailReady(): boolean {
 
 export default async function WaitlistAdminPage() {
   await requireOwner()
-  const rows = await listWaitlist(supabaseService())
-  const waiting = rows.filter((r) => !r.approved_at)
-  const approved = rows.filter((r) => r.approved_at)
+  const { waiting, approved, waitingCount, approvedCount } = await listWaitlist(supabaseService())
   const mail = mailReady()
 
   return (
@@ -55,8 +53,13 @@ export default async function WaitlistAdminPage() {
 
       <section className="mt-8" aria-labelledby="waiting-h">
         <h2 id="waiting-h" className="text-sm font-semibold uppercase tracking-wide opacity-70">
-          Waiting ({waiting.length})
+          Waiting ({waitingCount})
         </h2>
+        {waitingCount > waiting.length ? (
+          <p className="mt-1 text-xs opacity-55">
+            Showing the {WAITLIST_PAGE} who have waited longest. Approve some to see the rest.
+          </p>
+        ) : null}
         {waiting.length === 0 ? (
           <p className="mt-3 text-sm opacity-60">Nobody is waiting.</p>
         ) : (
@@ -89,8 +92,11 @@ export default async function WaitlistAdminPage() {
 
       <section className="mt-10" aria-labelledby="approved-h">
         <h2 id="approved-h" className="text-sm font-semibold uppercase tracking-wide opacity-70">
-          Approved ({approved.length})
+          Approved ({approvedCount})
         </h2>
+        {approvedCount > approved.length ? (
+          <p className="mt-1 text-xs opacity-55">Showing the {WAITLIST_PAGE} approved most recently.</p>
+        ) : null}
         {approved.length === 0 ? (
           <p className="mt-3 text-sm opacity-60">Nobody approved yet.</p>
         ) : (

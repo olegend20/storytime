@@ -78,6 +78,8 @@ const ServerEnv = z.object({
    * `false` is the public launch (the homepage returns at `/`, anyone can sign up).
    */
   WAITLIST_ENABLED: Booleanish.default(true),
+  /** The public site, e.g. https://lastten.org: where the invite email links. Unset = the owner's request origin. */
+  SITE_URL: blankIsUnset(z.string().url()),
 
   /** F12: /admin is gated to this user id; everyone else gets a 404. */
   OWNER_USER_ID: z.string().uuid().optional(),

@@ -4,7 +4,7 @@ import { Landing } from '@/components/landing/Landing'
 import { NewStoryFlow } from '@/components/newstory/NewStoryFlow'
 import { AppFooter, AppHeader } from '@/components/SiteHeader'
 import { currentFamily } from '@/lib/auth/session'
-import { kindleConfigured } from '@/lib/kindle/send'
+import { canSendToKindle } from '@/lib/kindle/send'
 import { creatorInitial } from '@/lib/newstory/initial'
 import { waitlistEnabled } from '@/lib/waitlist/mode'
 import TimezoneSync from './dashboard/TimezoneSync'
@@ -16,18 +16,6 @@ export const metadata: Metadata = {
     'Make the last ten minutes of the day the ones they remember: a bedtime story where your child is the hero, with something true to learn.',
 }
 
-/**
- * `kindleConfigured()` reads the validated server env, which throws when a required variable
- * is missing. The landing page must still render then - it is the one page with nothing to
- * configure - so a failure here just means the page does not mention Kindle.
- */
-function canSendToKindle(): boolean {
-  try {
-    return kindleConfigured()
-  } catch {
-    return false
-  }
-}
 
 /**
  * Home (issue #17). A visitor to lastten.org gets the mission and one action; a signed-in

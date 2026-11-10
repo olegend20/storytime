@@ -1,6 +1,6 @@
 -- The waitlist (issue #92): lastten.org opens a few families at a time. A visitor leaves an
 -- email address; the owner approves it at /admin/waitlist; only then can that address create
--- an account (app/api/auth/email/route.ts - Supabase's own sign-up is switched off, so the
+-- an account (app/api/auth/prepare/route.ts - Supabase's own sign-up is switched off, so the
 -- server is the only way an account is made).
 --
 -- An adult's email address and nothing else: no name, no child, no tracking. Kept only to
@@ -19,7 +19,9 @@ create table waitlist (
   invited_at  timestamptz
 );
 
+-- The owner page's two lists (lib/waitlist/store.ts listWaitlist).
 create index waitlist_waiting_idx on waitlist (created_at) where approved_at is null;
+create index waitlist_approved_idx on waitlist (approved_at desc) where approved_at is not null;
 
 alter table waitlist enable row level security;
 revoke all on waitlist from anon, authenticated;

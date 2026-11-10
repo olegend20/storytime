@@ -18,20 +18,28 @@ export function assertOwner(userId: string | null | undefined): void {
   if (!isOwner(userId)) notFound()
 }
 
+/** The signed-in user's id, or null - no session, no cookies and auth unreachable alike. */
+async function currentUserId(): Promise<string | null> {
+  try {
+    const supabase = await supabaseServer()
+    const { data } = await supabase.auth.getUser()
+    return data.user?.id ?? null
+  } catch {
+    return null
+  }
+}
+
+/** For a route handler that answers a non-owner with its own 404 (issue #92). */
+export async function currentUserIsOwner(): Promise<boolean> {
+  return isOwner(await currentUserId())
+}
+
 /**
  * Resolve the signed-in user and 404 unless they are the owner.
  * Returns the owner's user id on success.
  */
 export async function requireOwner(): Promise<string> {
-  let userId: string | null = null
-  try {
-    const supabase = await supabaseServer()
-    const { data } = await supabase.auth.getUser()
-    userId = data.user?.id ?? null
-  } catch {
-    // No session, no cookies, auth unreachable — all indistinguishable from "not the owner".
-    userId = null
-  }
+  const userId = await currentUserId()
   assertOwner(userId)
   return userId as string
 }

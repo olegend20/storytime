@@ -3,8 +3,7 @@
 import { useState } from 'react'
 import { ArrowRight } from '@/components/Icons'
 import { COMING_SOON } from '@/lib/landing/copy'
-
-const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+import { normalizeEmail } from '@/lib/waitlist/email'
 
 /**
  * Issue #92: the coming-soon page's one action. Posts to /api/waitlist and swaps itself for
@@ -22,8 +21,8 @@ export function WaitlistForm() {
 
   async function join(event: React.FormEvent) {
     event.preventDefault()
-    const address = email.trim()
-    if (!EMAIL_SHAPE.test(address)) {
+    const address = normalizeEmail(email)
+    if (!address) {
       setError(COMING_SOON.badEmail)
       return
     }

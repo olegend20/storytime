@@ -21,6 +21,7 @@ export default async function LoginPage({
   const rawError = params.error
   const initialError = typeof rawError === 'string' ? rawError : undefined
   const initialEmail = normalizeEmail(params.email) ?? ''
+  const waitlist = waitlistEnabled()
 
   return (
     <main className="mx-auto w-full max-w-sm px-5 py-14">
@@ -28,8 +29,13 @@ export default async function LoginPage({
       <p className="mt-2 mb-7 text-[0.95rem] leading-relaxed text-muted">
         Enter your email and we will send you a link. No password needed.
       </p>
-      <LoginForm next={safeNext(params.next)} initialError={initialError} initialEmail={initialEmail} />
-      {waitlistEnabled() ? (
+      <LoginForm
+        next={safeNext(params.next)}
+        initialError={initialError}
+        initialEmail={initialEmail}
+        waitlist={waitlist}
+      />
+      {waitlist ? (
         <p className="mt-6 mb-0 text-sm leading-relaxed text-muted">
           New here? We are opening places a few families at a time.{' '}
           <Link href="/#join" className="st-textlink" style={{ minHeight: 0, padding: 0 }}>

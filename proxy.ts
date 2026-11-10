@@ -41,7 +41,7 @@ const PROTECTED_API = [
 ]
 
 /** The public ways in (issue #92): rate-limited apart from the rest of the API. */
-const PUBLIC_ENTRY_API = ['/api/auth/email', '/api/waitlist']
+const PUBLIC_ENTRY_API = ['/api/auth/prepare', '/api/waitlist']
 
 function isUnder(pathname: string, prefixes: readonly string[]): boolean {
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`))

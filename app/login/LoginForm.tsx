@@ -3,13 +3,16 @@
 import { useState } from 'react'
 import { supabaseBrowser } from '@/lib/supabase/client'
 import { detectTimeZone } from '@/lib/family/timezone'
+import { normalizeEmail } from '@/lib/waitlist/email'
 
 /**
  * F2: email magic link, plus Google OAuth when the provider is configured.
  *
- * Issue #92: the link is asked of our own server (`POST /api/auth/email`), which is the only
- * thing allowed to create an account - only for an approved address while the waitlist is
- * on. An address that is not approved yet is offered the waitlist right here.
+ * Issue #92: Supabase's own sign-up is off, so the link below only reaches an existing
+ * account. When Supabase finds none, `POST /api/auth/prepare` creates it if the address may
+ * have one (approved, or the waitlist is off) and the link is asked for once more. Every
+ * address then sees the same "Check your email" - the page never says who has an account or
+ * a place - and, while the waitlist is on, how to join it if no email comes.
  *
  * Google is wired up but disabled by default: `supabase/config.toml` ships
  * `[auth.external.google] enabled = false`, so enabling it is a config change (provider
@@ -18,20 +21,24 @@ import { detectTimeZone } from '@/lib/family/timezone'
 
 const GOOGLE_ENABLED = process.env.NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED === 'true'
 
-const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+/** What Supabase says when the address has no account and sign-up is closed. */
+const NO_ACCOUNT_CODES = new Set(['otp_disabled', 'signup_disabled', 'user_not_found'])
 
 export default function LoginForm({
   next,
   initialError,
   initialEmail = '',
+  waitlist = false,
 }: {
   next: string
   initialError?: string
   /** From the invite email's link (`/login?email=`), so the parent only has to press send. */
   initialEmail?: string
+  /** Places open a few at a time: "Check your email" also says how to join the waitlist. */
+  waitlist?: boolean
 }) {
   const [email, setEmail] = useState(initialEmail)
-  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'not_approved' | 'joined'>('idle')
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'joined'>('idle')
   const [error, setError] = useState<string | null>(initialError ?? null)
 
   const callbackUrl = () => {
@@ -55,39 +62,50 @@ export default function LoginForm({
 
   async function sendMagicLink(event: React.FormEvent) {
     event.preventDefault()
-    const address = email.trim()
-    if (!EMAIL_SHAPE.test(address)) {
+    const address = normalizeEmail(email)
+    if (!address) {
       setError('Please enter an email address we can send the link to.')
       return
     }
     setError(null)
     setStatus('sending')
     rememberTimezone()
-    try {
-      const response = await fetch('/api/auth/email', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email: address, next }),
+
+    const requestLink = () =>
+      supabaseBrowser().auth.signInWithOtp({
+        email: address,
+        options: { shouldCreateUser: false, emailRedirectTo: callbackUrl() },
       })
-      const body = (await response.json().catch(() => null)) as { status?: string; message?: string } | null
-      if (response.ok && body?.status === 'not_approved') {
-        setStatus('not_approved')
-        return
-      }
-      if (!response.ok || body?.status !== 'sent') {
-        setStatus('idle')
-        setError(
-          response.status === 429 && body?.message
-            ? body.message
-            : 'We could not send that link just now. Please try again in a moment.',
-        )
-        return
-      }
-      setStatus('sent')
-    } catch {
+    const couldNotSend = () => {
       setStatus('idle')
       setError('We could not send that link just now. Please try again in a moment.')
     }
+
+    let { error: sendError } = await requestLink()
+    if (sendError && NO_ACCOUNT_CODES.has(sendError.code ?? '')) {
+      try {
+        const prepared = await fetch('/api/auth/prepare', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ email: address }),
+        })
+        if (!prepared.ok) return couldNotSend()
+      } catch {
+        return couldNotSend()
+      }
+      ;({ error: sendError } = await requestLink())
+    }
+    // Still no account means no place yet. That looks exactly like a link on its way: the
+    // page must not tell a stranger who has an account.
+    if (sendError && !NO_ACCOUNT_CODES.has(sendError.code ?? '')) {
+      if (sendError.status === 429) {
+        setStatus('idle')
+        setError('Too many links asked for just now. Please wait a minute and try again.')
+        return
+      }
+      return couldNotSend()
+    }
+    setStatus('sent')
   }
 
   async function joinWaitlist() {
@@ -96,7 +114,7 @@ export default function LoginForm({
       const response = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() }),
+        body: JSON.stringify({ email: normalizeEmail(email) }),
       })
       if (!response.ok) throw new Error(String(response.status))
       setStatus('joined')
@@ -115,37 +133,16 @@ export default function LoginForm({
     if (oauthError) setError('Google sign-in is not available right now.')
   }
 
-  if (status === 'not_approved' || status === 'joined') {
+  if (status === 'joined') {
     return (
       <div className="card p-5">
-        {status === 'joined' ? (
-          <>
-            <h2 className="m-0 text-2xl font-normal">You&rsquo;re on the list</h2>
-            <p className="mt-2 mb-0 text-sm leading-relaxed text-muted">
-              We&rsquo;ll email <strong>{email.trim()}</strong> when your place is ready.
-            </p>
-          </>
-        ) : (
-          <>
-            <h2 className="m-0 text-2xl font-normal">Your place isn&rsquo;t ready yet</h2>
-            <p className="mt-2 mb-0 text-sm leading-relaxed text-muted">
-              We are opening places a few families at a time, and{' '}
-              <strong>{email.trim()}</strong> doesn&rsquo;t have one yet. Join the waitlist and
-              we&rsquo;ll email you when it&rsquo;s ready.
-            </p>
-            <button type="button" onClick={joinWaitlist} className="btn mt-4 w-full">
-              Join the waitlist
-            </button>
-          </>
-        )}
+        <h2 className="m-0 text-2xl font-normal">You&rsquo;re on the list</h2>
+        <p className="mt-2 mb-0 text-sm leading-relaxed text-muted">
+          We&rsquo;ll email <strong>{email.trim()}</strong> when your place is ready.
+        </p>
         <button type="button" onClick={() => setStatus('idle')} className="st-textlink mt-2">
           Use a different email
         </button>
-        {error ? (
-          <p role="alert" className="mt-3 mb-0 text-sm text-danger">
-            {error}
-          </p>
-        ) : null}
       </div>
     )
   }
@@ -154,10 +151,26 @@ export default function LoginForm({
     return (
       <div className="card p-5">
         <h2 className="m-0 text-2xl font-normal">Check your email</h2>
-        <p className="mt-2 mb-0 text-sm leading-relaxed text-muted">
-          We sent a sign-in link to <strong>{email.trim()}</strong>. It opens StoryTime on this
-          device and expires shortly.
-        </p>
+        {waitlist ? (
+          <>
+            <p className="mt-2 mb-0 text-sm leading-relaxed text-muted">
+              If <strong>{email.trim()}</strong> has a place, a sign-in link is on its way. It
+              opens StoryTime on this device and expires shortly.
+            </p>
+            <p className="mt-3 mb-0 text-sm leading-relaxed text-muted">
+              No email in a few minutes? We are opening places a few families at a time, so you
+              may not have one yet.
+            </p>
+            <button type="button" onClick={joinWaitlist} className="btn btn-quiet mt-3 w-full">
+              Join the waitlist
+            </button>
+          </>
+        ) : (
+          <p className="mt-2 mb-0 text-sm leading-relaxed text-muted">
+            We sent a sign-in link to <strong>{email.trim()}</strong>. It opens StoryTime on this
+            device and expires shortly.
+          </p>
+        )}
         <button
           type="button"
           onClick={() => setStatus('idle')}
@@ -165,6 +178,11 @@ export default function LoginForm({
         >
           Use a different email
         </button>
+        {error ? (
+          <p role="alert" className="mt-3 mb-0 text-sm text-danger">
+            {error}
+          </p>
+        ) : null}
       </div>
     )
   }

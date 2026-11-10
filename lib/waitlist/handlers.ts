@@ -2,11 +2,11 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { apiError, apiOk } from '@/lib/http/responses'
 import { normalizeEmail } from './email'
 import { inviteFromAddress, inviteMail, type InviteSender } from './invite'
-import { approve, isApproved, joinWaitlist, markInvited } from './store'
+import { approve, claimInvite, isApproved, joinWaitlist, releaseInvite } from './store'
 
 /**
- * The three waitlist route bodies (issue #92), kept out of `app/` so the integration tests
- * can drive them against the local database with the real Supabase clients.
+ * The waitlist's route bodies (issue #92), kept out of `app/` so the integration tests can
+ * drive them against the local database with the real Supabase clients.
  */
 
 const BAD_EMAIL = 'Please enter an email address we can write to.'
@@ -28,83 +28,63 @@ export async function handleJoinWaitlist(db: SupabaseClient, body: unknown): Pro
   const input = readBody(body)
   const email = normalizeEmail(input?.email)
   if (!email) return apiError('invalid_request', BAD_EMAIL, { field: 'email' })
-  if (typeof input?.website === 'string' && input.website.trim() !== '') return apiOk({ joined: true })
+  if (typeof input?.website === 'string' && input.website.trim() !== '') return apiOk({ ok: true })
   try {
     await joinWaitlist(db, email)
   } catch (cause) {
     console.error('[waitlist] join failed', cause)
     return apiError('server_error', 'We could not add you just now. Please try again in a moment.')
   }
-  return apiOk({ joined: true })
+  return apiOk({ ok: true })
 }
 
-// ---------------------------------------------------------------- sign in / sign up
+// ---------------------------------------------------------------- the account, before the link
 
-export type SignInStatus = 'sent' | 'not_approved'
-
-export interface SignInDeps {
-  /** Sends the magic link. Must NOT create a user: `shouldCreateUser: false`. */
-  sendLink: (email: string) => Promise<{ error: { code?: string; status?: number; message: string } | null }>
+export interface PrepareDeps {
   /** Service-role client: reads the waitlist and creates approved accounts. */
   service: SupabaseClient
   waitlistOn: boolean
 }
 
-/** What GoTrue answers when a link is asked for an address with no account and no sign-up. */
-const NO_ACCOUNT_CODES = new Set(['otp_disabled', 'signup_disabled', 'user_not_found'])
+/** What GoTrue says when the account being created is already there. */
+const EXISTS_CODES = new Set(['email_exists', 'user_already_exists'])
 
 /**
- * POST /api/auth/email - the only way an account is created (issue #92).
+ * POST /api/auth/prepare - the only way an account is created (issue #92).
  *
- * Supabase's own sign-up is switched off (supabase/config.toml, and the dashboard toggle in
- * production), so a browser cannot create a user by talking to Supabase directly. Here:
+ * Supabase's own sign-up is off (supabase/config.toml `[auth] enable_signup`, and the
+ * dashboard toggle in production), so the browser's `signInWithOtp` only reaches existing
+ * accounts. When it finds none, the login form calls this, then asks for the link again:
  *
- *  1. Ask for a link without creating anyone. An existing account - approved or from before
- *     the waitlist - gets it, and that is the end of it.
- *  2. No account: with the waitlist on, only an approved address continues; anyone else is
- *     told to join the waitlist. With it off, everyone continues.
- *  3. Create the account with the service role (confirmed: the link proves the inbox), then
- *     send the link.
+ *  - waitlist on and the address approved, or waitlist off: create the account with the
+ *    service role (confirmed: the link that follows proves the inbox);
+ *  - otherwise: nothing.
+ *
+ * The answer is `{ ok: true }` either way, so this route cannot be used to learn who is
+ * approved. The link itself is still requested by the browser, as before #92: Supabase's
+ * per-IP limits see each parent's own address rather than one server's, and the PKCE
+ * verifier stays in this browser for /auth/callback.
  */
-export async function handleSignInEmail(deps: SignInDeps, body: unknown): Promise<Response> {
+export async function handlePrepareSignIn(deps: PrepareDeps, body: unknown): Promise<Response> {
   const email = normalizeEmail(readBody(body)?.email)
   if (!email) return apiError('invalid_request', BAD_EMAIL, { field: 'email' })
 
   const failed = () =>
     apiError('server_error', 'We could not send that link just now. Please try again in a moment.')
 
-  const first = await deps.sendLink(email)
-  if (!first.error) return apiOk({ status: 'sent' satisfies SignInStatus })
-  if (!NO_ACCOUNT_CODES.has(first.error.code ?? '')) {
-    console.error('[auth/email] sign-in link failed', first.error.code, first.error.status)
-    return first.error.status === 429
-      ? apiError('rate_limited', 'Too many links asked for just now. Please wait a minute and try again.')
-      : failed()
-  }
-
   try {
-    if (deps.waitlistOn && !(await isApproved(deps.service, email))) {
-      return apiOk({ status: 'not_approved' satisfies SignInStatus })
-    }
+    if (deps.waitlistOn && !(await isApproved(deps.service, email))) return apiOk({ ok: true })
   } catch (cause) {
-    console.error('[auth/email] waitlist lookup failed', cause)
+    console.error('[auth/prepare] waitlist lookup failed', cause)
     return failed()
   }
 
   const created = await deps.service.auth.admin.createUser({ email, email_confirm: true })
-  // A second request racing this one may have created the account already; the link below
-  // works either way.
-  if (created.error && !/already/i.test(created.error.message)) {
-    console.error('[auth/email] account creation failed', created.error.status)
+  if (created.error && !EXISTS_CODES.has(created.error.code ?? '')) {
+    console.error('[auth/prepare] account creation failed', created.error.code, created.error.status)
     return failed()
   }
-
-  const second = await deps.sendLink(email)
-  if (second.error) {
-    console.error('[auth/email] sign-in link failed after sign-up', second.error.code, second.error.status)
-    return failed()
-  }
-  return apiOk({ status: 'sent' satisfies SignInStatus })
+  return apiOk({ ok: true })
 }
 
 // ---------------------------------------------------------------- owner: approve
@@ -113,36 +93,46 @@ export interface ApproveDeps {
   service: SupabaseClient
   /** Null when mail is not set up: the approval still happens, and the page says no email went. */
   sender: InviteSender | null
-  /** The site the owner is on, for the link in the email. */
+  /** The site the invite links to - SITE_URL, or the owner's own request origin. */
   origin: string
 }
 
 /**
  * POST /api/admin/waitlist { email }. The route has already 404'd anyone but the owner.
- * The invite goes once: pressing Approve again only resends one that never went out (mail
- * was not set up, or the send failed).
+ *
+ * The invite goes at most once: the row is claimed (`invited_at` set where it was null)
+ * before sending, so two presses in two tabs cannot both send, and released if the send
+ * fails, so pressing Approve again retries one that never went out.
  */
 export async function handleApprove(deps: ApproveDeps, body: unknown): Promise<Response> {
   const email = normalizeEmail(readBody(body)?.email)
   if (!email) return apiError('invalid_request', BAD_EMAIL, { field: 'email' })
 
-  let invited: boolean
   try {
-    ;({ invited } = await approve(deps.service, email))
+    await approve(deps.service, email)
   } catch (cause) {
     console.error('[admin/waitlist] approve failed', cause)
     return apiError('server_error', 'Could not approve that address. Try again.')
   }
-  if (invited) return apiOk({ approved: true, emailed: false, alreadyInvited: true })
 
   const from = inviteFromAddress()
   if (!deps.sender || !from) return apiOk({ approved: true, emailed: false, alreadyInvited: false })
+
+  let claimed: boolean
   try {
-    await deps.sender.send(inviteMail(email, from, deps.origin))
-    await markInvited(deps.service, email)
-    return apiOk({ approved: true, emailed: true, alreadyInvited: false })
+    claimed = await claimInvite(deps.service, email)
   } catch (cause) {
-    console.error('[admin/waitlist] invite email failed', cause)
+    console.error('[admin/waitlist] invite claim failed', cause)
     return apiOk({ approved: true, emailed: false, alreadyInvited: false })
   }
+  if (!claimed) return apiOk({ approved: true, emailed: false, alreadyInvited: true })
+
+  try {
+    await deps.sender.send(inviteMail(email, from, deps.origin))
+  } catch (cause) {
+    console.error('[admin/waitlist] invite email failed', cause)
+    await releaseInvite(deps.service, email).catch((e) => console.error('[admin/waitlist] release failed', e))
+    return apiOk({ approved: true, emailed: false, alreadyInvited: false })
+  }
+  return apiOk({ approved: true, emailed: true, alreadyInvited: false })
 }

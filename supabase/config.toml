@@ -40,7 +40,7 @@ additional_redirect_urls = [
 ]
 jwt_expiry = 3600
 # Issue #92: nobody creates an account by talking to Supabase directly. The app's server
-# (POST /api/auth/email) creates accounts with the service role - only for an approved
+# (POST /api/auth/prepare) creates accounts with the service role - only for an approved
 # address while the waitlist is on - and existing accounts sign in as before. Production
 # needs the same switch in the dashboard: Authentication -> Sign In / Providers ->
 # "Allow new users to sign up" off (DEPLOY.md).

@@ -2,13 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { parseEnv, resetEnvCache } from '@/lib/env'
 import { allLandingCopy, COMING_SOON } from '@/lib/landing/copy'
 import { MAX_EMAIL_LENGTH, normalizeEmail } from '@/lib/waitlist/email'
-import { handleSignInEmail, type SignInDeps } from '@/lib/waitlist/handlers'
+import { handlePrepareSignIn, type PrepareDeps } from '@/lib/waitlist/handlers'
 import { inviteMail } from '@/lib/waitlist/invite'
 import { waitlistEnabled } from '@/lib/waitlist/mode'
 
 /**
  * Issue #92, the parts with no database: VT-W1 (addresses and the switch), VT-W2 (the
- * coming-soon copy), the invite email's content, and the sign-in route's error branches.
+ * coming-soon copy), the invite email's content, and the prepare route's refusal of bad input.
  * The database paths are test/int/waitlist.test.ts.
  */
 
@@ -98,38 +98,14 @@ describe('the invite email', () => {
   })
 })
 
-describe('POST /api/auth/email - the branches that need no database', () => {
-  const deps = (sendLink: SignInDeps['sendLink']): SignInDeps => ({
-    sendLink,
-    // Any database use here is a bug: these branches end before the waitlist is read.
-    service: new Proxy({}, { get: () => { throw new Error('database touched') } }) as SignInDeps['service'],
-    waitlistOn: true,
-  })
-
-  it('400s a bad address without asking Supabase', async () => {
-    const send = vi.fn()
-    const res = await handleSignInEmail(deps(send), { email: 'nope' })
-    expect(res.status).toBe(400)
-    expect(send).not.toHaveBeenCalled()
-  })
-
-  it('an existing account gets its link and nothing else happens', async () => {
-    const send = vi.fn(async () => ({ error: null }))
-    const res = await handleSignInEmail(deps(send), { email: 'Ana@Example.com' })
-    expect(await res.json()).toEqual({ status: 'sent' })
-    expect(send).toHaveBeenCalledExactlyOnceWith('ana@example.com')
-  })
-
-  it('passes on a rate limit as a 429 with a kind message', async () => {
-    const send = vi.fn(async () => ({ error: { code: 'over_email_send_rate_limit', status: 429, message: 'x' } }))
-    const res = await handleSignInEmail(deps(send), { email: 'ana@example.com' })
-    expect(res.status).toBe(429)
-  })
-
-  it('any other Supabase failure is a 500 that does not leak the cause', async () => {
-    const send = vi.fn(async () => ({ error: { code: 'unexpected_failure', status: 500, message: 'secret detail' } }))
-    const res = await handleSignInEmail(deps(send), { email: 'ana@example.com' })
-    expect(res.status).toBe(500)
-    expect(JSON.stringify(await res.json())).not.toContain('secret detail')
+describe('POST /api/auth/prepare - before any database', () => {
+  it('400s an address it cannot use, without touching the database', async () => {
+    const deps: PrepareDeps = {
+      service: new Proxy({}, { get: () => { throw new Error('database touched') } }) as PrepareDeps['service'],
+      waitlistOn: true,
+    }
+    for (const body of [{ email: 'nope' }, {}, null]) {
+      expect((await handlePrepareSignIn(deps, body)).status).toBe(400)
+    }
   })
 })

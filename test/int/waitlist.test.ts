@@ -1,5 +1,5 @@
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest'
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js'
 import { NextRequest } from 'next/server'
 import { anon, applyTestSupabaseEnv, dbReachable, service, SKIP_REASON, testSupabaseEnv } from '../helpers/db'
 
@@ -19,7 +19,7 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }))
 
-const { handleApprove, handleJoinWaitlist, handleSignInEmail } = await import('@/lib/waitlist/handlers')
+const { handleApprove, handleJoinWaitlist, handlePrepareSignIn } = await import('@/lib/waitlist/handlers')
 const { POST: approveRoute } = await import('@/app/api/admin/waitlist/route')
 type InviteMail = import('@/lib/waitlist/invite').InviteMail
 
@@ -67,12 +67,10 @@ afterAll(async () => {
   await db.from('waitlist').delete().in('email', made)
 })
 
-/** The real link request, as the route makes it: never creating anyone. */
-function linkSender(client: SupabaseClient) {
-  return async (email: string) => {
-    const { error } = await client.auth.signInWithOtp({ email, options: { shouldCreateUser: false } })
-    return { error: error ? { code: error.code, status: error.status, message: error.message } : null }
-  }
+/** The real link request, as the login form makes it: never creating anyone. */
+async function requestLink(email: string): Promise<string | null> {
+  const { error } = await anon().auth.signInWithOtp({ email, options: { shouldCreateUser: false } })
+  return error ? (error.code ?? 'error') : null
 }
 
 describe.runIf(reachable)('POST /api/waitlist (VT-W3)', () => {
@@ -138,39 +136,55 @@ describe.runIf(reachable)('the waitlist table is the server’s alone (VT-W6)', 
   })
 })
 
-describe.runIf(reachable)('POST /api/auth/email (VT-W4)', () => {
-  const deps = (waitlistOn: boolean) => ({ sendLink: linkSender(anon()), service: service(), waitlistOn })
+describe.runIf(reachable)('POST /api/auth/prepare and the login form’s flow (VT-W4)', () => {
+  const prepare = (waitlistOn: boolean, email: string) =>
+    handlePrepareSignIn({ service: service(), waitlistOn }, { email })
 
-  it('an address that is not approved is told to join, and no account is made', async () => {
+  it('an address that is not approved gets no account, and its link never comes', async () => {
     const email = address('unapproved')
     await handleJoinWaitlist(service(), { email }) // waiting, not approved
-    const res = await handleSignInEmail(deps(true), { email })
-    expect(await res.json()).toEqual({ status: 'not_approved' })
+    expect(await requestLink(email)).toMatch(/signup_disabled|otp_disabled/)
+    const res = await prepare(true, email)
+    expect(await res.json()).toEqual({ ok: true })
     expect(await findUser(email)).toBeNull()
+    expect(await requestLink(email)).toMatch(/signup_disabled|otp_disabled/)
   })
 
-  it('an approved new address gets an account and a link', async () => {
+  it('an approved address gets an account, and then its link', async () => {
     const email = address('approved')
     await service().from('waitlist').insert({ email, approved_at: new Date().toISOString() })
-    const res = await handleSignInEmail(deps(true), { email: email.toUpperCase() })
-    expect(await res.json()).toEqual({ status: 'sent' })
-    const user = await findUser(email)
-    expect(user).not.toBeNull()
+    expect(await requestLink(email)).not.toBeNull()
+    expect(await (await prepare(true, email.toUpperCase())).json()).toEqual({ ok: true })
+    expect(await findUser(email)).not.toBeNull()
+    expect(await requestLink(email)).toBeNull()
   })
 
-  it('an account from before the waitlist signs in without being on it', async () => {
+  it('answers every address the same, so it cannot be used to learn who is approved', async () => {
+    const approved = address('same-a')
+    await service().from('waitlist').insert({ email: approved, approved_at: new Date().toISOString() })
+    const answers = await Promise.all(
+      [approved, address('same-b')].map(async (e) => {
+        const r = await prepare(true, e)
+        return [r.status, await r.json()]
+      }),
+    )
+    expect(answers[0]).toEqual(answers[1])
+  })
+
+  it('an account from before the waitlist needs nothing: its link comes straight away', async () => {
     const email = address('existing')
     await service().auth.admin.createUser({ email, email_confirm: true })
-    const res = await handleSignInEmail(deps(true), { email })
-    expect(await res.json()).toEqual({ status: 'sent' })
+    expect(await requestLink(email)).toBeNull()
+    // And a prepare for it is harmless (the account already exists).
+    expect((await prepare(true, email)).status).toBe(200)
     expect(await row(email)).toBeNull()
   })
 
   it('with the waitlist off, anyone gets an account', async () => {
     const email = address('open')
-    const res = await handleSignInEmail(deps(false), { email })
-    expect(await res.json()).toEqual({ status: 'sent' })
+    expect(await (await prepare(false, email)).json()).toEqual({ ok: true })
     expect(await findUser(email)).not.toBeNull()
+    expect((await prepare(false, email)).status).toBe(200) // twice is fine
   })
 })
 
@@ -197,6 +211,21 @@ describe.runIf(reachable)('approving (VT-W5)', () => {
       const stored = await row(email)
       expect(stored?.approved_at).not.toBeNull()
       expect(stored?.invited_at).not.toBeNull()
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it('two presses at once send one invite', async () => {
+    const email = address('race')
+    const { sent, sender } = recorder()
+    vi.stubEnv('MAIL_FROM_EMAIL', 'hello@storytime.local')
+    try {
+      const deps = { service: service(), sender, origin: 'https://x.example' }
+      const results = await Promise.all([handleApprove(deps, { email }), handleApprove(deps, { email })])
+      const bodies = await Promise.all(results.map((r) => r.json()))
+      expect(sent).toHaveLength(1)
+      expect(bodies.filter((b) => b.emailed)).toHaveLength(1)
     } finally {
       vi.unstubAllEnvs()
     }

@@ -30,13 +30,13 @@ describe('the sign-in bucket (issue #92)', () => {
   it('a sign-in still goes through when the API budget for that address is spent', async () => {
     for (let i = 0; i < RATE_LIMIT_MAX_REQUESTS; i++) await call('/api/health')
     expect((await call('/api/health')).status).toBe(429)
-    expect((await call('/api/auth/email')).status).not.toBe(429)
+    expect((await call('/api/auth/prepare')).status).not.toBe(429)
     expect((await call('/api/waitlist')).status).not.toBe(429)
   })
 
   it('and has a limit of its own', async () => {
-    for (let i = 0; i < RATE_LIMIT_MAX_REQUESTS; i++) await call(i % 2 ? '/api/auth/email' : '/api/waitlist')
-    expect((await call('/api/auth/email')).status).toBe(429)
+    for (let i = 0; i < RATE_LIMIT_MAX_REQUESTS; i++) await call(i % 2 ? '/api/auth/prepare' : '/api/waitlist')
+    expect((await call('/api/auth/prepare')).status).toBe(429)
     expect((await call('/api/health')).status).not.toBe(429)
   })
 })

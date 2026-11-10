@@ -49,6 +49,7 @@ RUN_SCHEMA_TESTS=1 SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… SUPABASE_ANON_
 | `OWNER_USER_ID` | The owner's auth user id: unlocks `/admin` and the unlimited quota |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `KINDLE_FROM_EMAIL` | Send to Kindle. Unset = the feature says it is not set up, and the landing page does not mention it |
 | `WAITLIST_ENABLED` | Issue #92. Unset or `true`: lastten.org is the coming-soon page, and only an address approved at `/admin/waitlist` can create an account. `false` is the public launch: the homepage returns at `/` and anyone can sign up |
+| `SITE_URL` | `https://lastten.org`: where the waitlist invite links, wherever the owner approved from. Unset = the address the owner approved from |
 | `MAIL_FROM_EMAIL` | The sender of the waitlist's "your place is ready" email, e.g. `hello@lastten.org` (same SMTP settings). Unset falls back to `KINDLE_FROM_EMAIL`; with neither, approving still works and `/admin/waitlist` says no email was sent |
 
 A changed variable takes effect on the **next deployment**, not instantly: after flipping the
@@ -71,12 +72,14 @@ lastten.org opens a few families at a time. To run it:
    sign-in page is gated either way. `supabase/config.toml` sets the same thing for local dev and CI.
    **Leave the Email provider itself enabled.** Turning that off stops magic links for every existing
    account too ("Email logins are disabled"). Only the sign-up toggle goes off.
-2. Leave `WAITLIST_ENABLED` unset (on). Set `OWNER_USER_ID` so `/admin/waitlist` opens for you.
+2. Leave `WAITLIST_ENABLED` unset (on). Set `OWNER_USER_ID` so `/admin/waitlist` opens for you, and
+   `SITE_URL=https://lastten.org` so invites always link there.
 3. Production mail (item 2 below) is needed for both sign-in links and the "you're in" email.
 4. Approve people at **lastten.org/admin/waitlist**. Pressing Approve again on someone whose invite
    did not go out resends it.
-5. Public launch: set `WAITLIST_ENABLED=false` and redeploy. Sign-up stays server-side (the dashboard
-   toggle can stay off), and anyone can now create an account.
+5. Public launch: set `WAITLIST_ENABLED=false` and redeploy. Anyone can then create an account by email
+   (the server creates it, so the dashboard toggle can stay off). **If Google sign-in is on**, also switch
+   "Allow new users to sign up" back on: Supabase refuses new Google accounts while it is off.
 
 ## Not done yet — each one matters before telling families about it
 

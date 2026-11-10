@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { Landing } from '@/components/landing/Landing'
-import { kindleConfigured } from '@/lib/kindle/send'
+import { canSendToKindle } from '@/lib/kindle/send'
 import { waitlistEnabled } from '@/lib/waitlist/mode'
 import '../landing.css'
 
@@ -12,13 +12,6 @@ export const metadata: Metadata = {
 }
 
 /** As on the homepage: a page with nothing to configure must render with an incomplete env. */
-function canSendToKindle(): boolean {
-  try {
-    return kindleConfigured()
-  } catch {
-    return false
-  }
-}
 
 /**
  * Issue #92: the full homepage, kept at /about while lastten.org is a coming-soon page. Its

@@ -51,6 +51,19 @@ export function kindleConfigured(): boolean {
   return Boolean(env.SMTP_HOST && env.KINDLE_FROM_EMAIL)
 }
 
+/**
+ * `kindleConfigured()` for the public pages: it reads the validated server env, which throws
+ * when a required variable is missing, and the homepage must still render then - so a failure
+ * just means the page does not mention Kindle.
+ */
+export function canSendToKindle(): boolean {
+  try {
+    return kindleConfigured()
+  } catch {
+    return false
+  }
+}
+
 let transport: Transporter | null = null
 
 /**

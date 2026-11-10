@@ -87,11 +87,14 @@ test.describe('issue #92: the coming-soon page and the approved waitlist', () =>
       await page.getByRole('button', { name: 'Join the waitlist' }).click()
       await expect(page.getByText('You’re on the list.')).toBeVisible()
 
-      // ---- 2. Signing in before approval is refused, and creates no account.
+      // ---- 2. Signing in before approval: the same screen anyone sees (the page never says
+      // who has an account), with the waitlist offered - and no account, and no link.
       await page.goto('/login')
       await page.getByLabel('Email address').fill(visitor)
       await page.getByRole('button', { name: 'Email me a sign-in link' }).click()
-      await expect(page.getByRole('heading', { name: 'Your place isn’t ready yet' })).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible()
+      await expect(page.getByText(/has a place, a sign-in link is on its way/)).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Join the waitlist' })).toBeVisible()
       expect(await accountExists(visitor)).toBe(false)
 
       // ---- 3. The owner approves at /admin/waitlist; the invite email goes out.
