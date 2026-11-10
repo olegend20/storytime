@@ -2,48 +2,38 @@ import Link from 'next/link'
 import { ArrowRight, Check, ChevronDown } from '@/components/Icons'
 import { Phase } from '@/components/Phase'
 import { BRAND } from '@/lib/brand'
-import { ThemeToggle } from '@/components/ThemeToggle'
-import { BELIEFS, CLOSING, HERO, HOW, KINDLE, MISSION, PROMISES, QUESTIONS, SAMPLE } from '@/lib/landing/copy'
+import { LandingFooter, LandingHeader } from './Chrome'
+import { BELIEFS, CLOSING, COMING_SOON, HERO, HOW, KINDLE, MISSION, PROMISES, QUESTIONS, SAMPLE } from '@/lib/landing/copy'
 
 /**
  * lastten.org (issue #17): the mission in one screen, and one thing to do about it.
  *
  * A server component with no client JavaScript of its own: the ten moons arrive with a CSS
  * stagger, the questions are native <details>, and every link is a real link. The action
- * always points at the creator: the proxy sends a signed-out visitor through sign-in and back
- * (`/login?next=/new`), so there is one path and no auth logic here.
+ * points at the creator: the proxy sends a signed-out visitor through sign-in and back
+ * (`/login?next=/new`), so there is one path and no auth logic here. While the waitlist is on
+ * (issue #92) this page is /about and the action is the coming-soon page's waitlist.
  */
 export function Landing({
   justDeleted,
   kindle,
+  waitlist = false,
 }: {
   justDeleted: boolean
   /** This server can send to a Kindle, so the page may say so. */
   kindle: boolean
+  /**
+   * Issue #92: places open a few at a time, so this page lives at /about and its buttons
+   * join the waitlist on the coming-soon page instead of opening the creator.
+   */
+  waitlist?: boolean
 }) {
-  const start = '/new'
+  const start = waitlist ? '/#join' : '/new'
+  const cta = waitlist ? COMING_SOON.joinButton : HERO.cta
 
   return (
     <div className="lt">
-      <header className="st-header">
-        <div className="st-header-in">
-          <Link href="/" className="st-brand" aria-label={`${BRAND.wordmark}, home`}>
-            <span className="st-wordmark">{BRAND.wordmark}</span>
-            <span className="st-byline">{BRAND.wordmarkByline}</span>
-          </Link>
-          <nav className="st-nav" aria-label="Main">
-            <a href="#mission" className="st-navlink st-hide-sm">
-              Our mission
-            </a>
-            <a href="#how" className="st-navlink st-hide-sm">
-              How it works
-            </a>
-            <Link href="/login" className="st-navlink">
-              Sign in
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <LandingHeader sections />
 
       <main id="main">
         <section className="lt-hero">
@@ -60,7 +50,7 @@ export function Landing({
           <p className="lt-lead">{HERO.lead}</p>
           <div className="lt-cta">
             <Link href={start} className="st-primary lt-primary">
-              {HERO.cta} <ArrowRight />
+              {cta} <ArrowRight />
             </Link>
             <a href="#mission" className="st-textlink">
               {HERO.secondary}
@@ -208,24 +198,13 @@ export function Landing({
           <p className="lt-lead">{CLOSING.lead}</p>
           <div className="lt-cta">
             <Link href={start} className="st-primary lt-primary">
-              {HERO.cta} <ArrowRight />
+              {cta} <ArrowRight />
             </Link>
           </div>
         </section>
       </main>
 
-      <footer className="st-footer">
-        <div className="st-footer-in">
-          <span>
-            {BRAND.project} · {BRAND.app} is our bedtime story app.
-          </span>
-          <span className="st-footer-links">
-            <a href="#mission">Our mission</a>
-            <Link href="/privacy">Privacy</Link>
-            <ThemeToggle compact />
-          </span>
-        </div>
-      </footer>
+      <LandingFooter missionHref="#mission" />
     </div>
   )
 }

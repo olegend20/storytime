@@ -92,6 +92,11 @@ export default function PrivacyPage() {
           Send-to-Kindle address, used only to email you a story you ask for. And the stories we made for you, with what
           each one cost us to generate.
         </p>
+        <p className="mt-3 mb-0 text-[0.95rem] leading-relaxed">
+          If you join the waitlist, we keep the email address you give us, when you joined, and
+          when your place opened - nothing else - so we can tell you when your place is ready.
+          Ask us and we will delete it.
+        </p>
       </section>
 
       <section className="mb-8">

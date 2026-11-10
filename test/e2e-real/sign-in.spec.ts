@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 import {
+  approveEmail,
   deleteTestUser,
   extractSignInLink,
   fetchLatestEmailBody,
@@ -55,10 +56,11 @@ test.describe('F2: the magic link, opened exactly as it arrives', () => {
     page,
   }) => {
     const email = uniqueEmail('owner-loop')
+    await approveEmail(email) // issue #92: a new parent is one the owner let in
     try {
       // ---- 1. First sign-in, from the landing page's "Sign in".
       await page.goto('/')
-      await page.getByRole('link', { name: 'Sign in' }).click()
+      await page.getByRole('link', { name: 'Sign in', exact: true }).click()
       const first = await requestLink(page, email, null)
       // The bug itself: Supabase rewrote this to the bare site root.
       expect(new URL(first).searchParams.get('redirect_to')).toMatch(
@@ -147,6 +149,7 @@ test.describe('F2: the magic link, opened exactly as it arrives', () => {
     // Belt and braces for any redirect Supabase does not recognise: it falls back to the
     // site root with `?code=`, and the proxy forwards that to the callback.
     const email = uniqueEmail('owner-root')
+    await approveEmail(email)
     try {
       await page.goto('/login')
       const link = await requestLink(page, email, null)

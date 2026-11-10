@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
+import { E2E_OWNER_ID } from './test/e2e-real/owner'
 
 /**
  * `pnpm test:e2e:real` - the app as a parent uses it: real Supabase auth, real `/api/*`,
@@ -39,6 +40,10 @@ export default defineConfig({
       SMTP_HOST: process.env.SMTP_HOST ?? '127.0.0.1',
       SMTP_PORT: process.env.SMTP_PORT ?? '54325',
       KINDLE_FROM_EMAIL: process.env.KINDLE_FROM_EMAIL ?? 'kindle@storytime.local',
+      /** Issue #92: lastten.org as it launches - a coming-soon page with an approved waitlist. */
+      WAITLIST_ENABLED: 'true',
+      MAIL_FROM_EMAIL: 'hello@storytime.local',
+      OWNER_USER_ID: E2E_OWNER_ID,
     },
   },
 })

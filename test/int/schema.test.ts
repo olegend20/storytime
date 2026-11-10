@@ -56,6 +56,14 @@ describe.runIf(process.env.RUN_SCHEMA_TESTS === '1')('F1 schema introspection', 
     }
   })
 
+  /** Issue #92 (VT-W6): the waitlist holds an adult's address and three timestamps, nothing else. */
+  it('waitlist exists with exactly its four columns', async () => {
+    const { error } = await db!.from('waitlist').select('email, created_at, approved_at, invited_at').limit(0)
+    expect(error, `waitlist: ${error?.message}`).toBeNull()
+    const extra = await db!.from('waitlist').select('name').limit(0)
+    expect(extra.error, 'waitlist must not have a name column').not.toBeNull()
+  })
+
   /** Kickoff rule 7: children's data is minimal and the field list is closed. */
   it('children has no last_name or birthdate column (F11 VT)', async () => {
     for (const forbidden of ['last_name', 'birthdate', 'surname', 'photo_url', 'address']) {

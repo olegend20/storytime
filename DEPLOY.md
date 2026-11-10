@@ -48,6 +48,8 @@ RUN_SCHEMA_TESTS=1 SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… SUPABASE_ANON_
 | `DAILY_BUDGET_USD` | Global daily spend cap (5) |
 | `OWNER_USER_ID` | The owner's auth user id: unlocks `/admin` and the unlimited quota |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `KINDLE_FROM_EMAIL` | Send to Kindle. Unset = the feature says it is not set up, and the landing page does not mention it |
+| `WAITLIST_ENABLED` | Issue #92. Unset or `true`: lastten.org is the coming-soon page, and only an address approved at `/admin/waitlist` can create an account. `false` is the public launch: the homepage returns at `/` and anyone can sign up |
+| `MAIL_FROM_EMAIL` | The sender of the waitlist's "your place is ready" email, e.g. `hello@lastten.org` (same SMTP settings). Unset falls back to `KINDLE_FROM_EMAIL`; with neither, approving still works and `/admin/waitlist` says no email was sent |
 
 A changed variable takes effect on the **next deployment**, not instantly: after flipping the
 kill switch or the budget cap, redeploy (`vercel redeploy <url>` or Deployments → Redeploy).
@@ -59,6 +61,22 @@ deploy" in the plan amounts to here; a running instance keeps the values it star
 Site URL is `https://lastten.org`; allowed redirects are `lastten.org`, `www.lastten.org` and
 the Vercel production URL. To change them, edit a config with only those keys and
 `supabase config diff` / `supabase config push` (undeclared settings are left alone).
+
+## The waitlist (issue #92)
+
+lastten.org opens a few families at a time. To run it:
+
+1. **Supabase dashboard → Authentication → Sign In / Providers → "Allow new users to sign up": off.**
+   Without this, someone who calls Supabase's API directly can still create an account. The app's own
+   sign-in page is gated either way. `supabase/config.toml` sets the same thing for local dev and CI.
+   **Leave the Email provider itself enabled.** Turning that off stops magic links for every existing
+   account too ("Email logins are disabled"). Only the sign-up toggle goes off.
+2. Leave `WAITLIST_ENABLED` unset (on). Set `OWNER_USER_ID` so `/admin/waitlist` opens for you.
+3. Production mail (item 2 below) is needed for both sign-in links and the "you're in" email.
+4. Approve people at **lastten.org/admin/waitlist**. Pressing Approve again on someone whose invite
+   did not go out resends it.
+5. Public launch: set `WAITLIST_ENABLED=false` and redeploy. Sign-up stays server-side (the dashboard
+   toggle can stay off), and anyone can now create an account.
 
 ## Not done yet — each one matters before telling families about it
 

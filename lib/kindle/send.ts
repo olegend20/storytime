@@ -61,10 +61,13 @@ export function smtpPooling(env: Record<string, string | undefined> = process.en
   return !env.VERCEL && !env.AWS_LAMBDA_FUNCTION_NAME
 }
 
-/** The configured SMTP transport (one per process, like the Supabase client), or null. */
-export function smtpSender(): MailSender | null {
+/**
+ * The SMTP transport (one per process, like the Supabase client), or null with no SMTP_HOST.
+ * Shared with the waitlist's invite email (lib/waitlist/invite.ts).
+ */
+export function smtpTransport(): Transporter | null {
   const env = serverEnv()
-  if (!kindleConfigured()) return null
+  if (!env.SMTP_HOST) return null
   transport ??= nodemailer.createTransport({
     host: env.SMTP_HOST,
     port: env.SMTP_PORT,
@@ -72,7 +75,14 @@ export function smtpSender(): MailSender | null {
     pool: smtpPooling(),
     ...(env.SMTP_USER ? { auth: { user: env.SMTP_USER, pass: env.SMTP_PASS ?? '' } } : {}),
   })
-  const t = transport
+  return transport
+}
+
+/** The configured SMTP sender for Kindle, or null unless the whole feature is set up. */
+export function smtpSender(): MailSender | null {
+  if (!kindleConfigured()) return null
+  const t = smtpTransport()
+  if (!t) return null
   return {
     async send(mail) {
       await t.sendMail({
