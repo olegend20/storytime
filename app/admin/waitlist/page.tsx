@@ -59,7 +59,8 @@ export default async function WaitlistAdminPage() {
         <p className="mt-1 text-xs opacity-55">
           Only addresses whose owner confirmed them by email.{' '}
           {unconfirmedCount === 1 ? '1 more has' : `${unconfirmedCount} more have`} not confirmed yet and{' '}
-          {unconfirmedCount === 1 ? 'is' : 'are'} not shown; unconfirmed addresses are deleted after 7 days.
+          {unconfirmedCount === 1 ? 'is' : 'are'} not shown; unconfirmed addresses are deleted after 7 days
+          (30 if their email could not be sent).
         </p>
         {waitingCount > waiting.length ? (
           <p className="mt-1 text-xs opacity-55">
