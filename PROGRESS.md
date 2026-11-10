@@ -898,6 +898,15 @@ finished. The migration (`generation_progress`) is applied to production by hand
 (DEPLOY.md); until then the page does what it did before.
 
 
+### 2026-11-10 — waitlist double opt-in (issue #95, DECISIONS #217)
+
+**Delivered**
+- Joining emails a "Confirm your place" link (one per address per 24 h); `/waitlist/confirm` has a
+  button that confirms; only confirmed addresses appear at `/admin/waitlist`, which counts the rest.
+  Unconfirmed rows are deleted after 7 days. Migration `20261110000001_waitlist_confirm.sql`
+  (additive; existing rows marked confirmed).
+- Tests: VT-W9 (unit), VT-W10..W12 (`test/int/waitlist-confirm.test.ts`), VT-W13 (e2e-real).
+
 ### 2026-11-09 — lastten.org opens as a coming-soon page with an approved waitlist (issue #92, DECISIONS #216)
 
 Signed-out visitors see a coming-soon page in the site's own type and moons. It carries the owner's two messages: the last ten minutes of the day turned into something parent and child both love, and, with no encyclopedia on the shelf, the bedtime story as the place to learn about anything. It has one action, Join the waitlist. The homepage is kept at `/about`, and `WAITLIST_ENABLED=false` brings it back at `/`. The owner approves at `/admin/waitlist`, which sends a "your place is ready" email when SMTP is set. The browser still asks Supabase for the link, which now reaches only existing accounts. Accounts are created only by `POST /api/auth/prepare`, for approved addresses, because Supabase's own sign-up is off. In the `[auth]` section, not `[auth.email]`, where `false` turns off email sign-in for everyone. The two public entry routes are rate-limited in their own bucket. The privacy page names what the waitlist keeps. **Gates:** lint ✅ · typecheck ✅ · unit+int 1512 ✅ · schema 7 ✅ · guardrails 32 ✅ · e2e mock 198 ✅ · e2e real 9 ✅.

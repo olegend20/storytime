@@ -80,7 +80,12 @@ lastten.org opens a few families at a time. To run it:
    `SITE_URL=https://lastten.org` so invites always link there.
 3. Production mail (item 2 below) is needed for both sign-in links and the "you're in" email.
 4. Approve people at **lastten.org/admin/waitlist**. Pressing Approve again on someone whose invite
-   did not go out resends it.
+   did not go out resends it. Since issue #95 the list shows only addresses confirmed from the
+   "Confirm your place" email; it counts the unconfirmed, which are deleted after 7 days (30 if their email could not be sent). Its
+   migrations `20261110000001` and `…0002` are additive, so apply them before the merge; apply
+   `20261110000003_waitlist_confirm_backfill.sql` right **after** the deploy - within minutes, since
+   it also matches rows the new code held back by the daily cap. It confirms anyone the old code
+   added in between, who would otherwise be hidden and purged.
 5. Public launch: set `WAITLIST_ENABLED=false` and redeploy. Anyone can then create an account by email
    (the server creates it, so the dashboard toggle can stay off). **If Google sign-in is on**, also switch
    "Allow new users to sign up" back on: Supabase refuses new Google accounts while it is off.

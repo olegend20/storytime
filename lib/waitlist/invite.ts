@@ -59,3 +59,16 @@ export function inviteMail(to: string, from: string, origin: string): InviteMail
     ].join('\n'),
   }
 }
+
+/**
+ * What a waitlist route needs to send mail: the sender (null when mail is not set up, or the
+ * env cannot be read) and the site its links point at - SITE_URL, so a preview deployment or
+ * localhost still links parents to lastten.org, else the request's own origin.
+ */
+export function waitlistMail(requestOrigin: string): { sender: InviteSender | null; origin: string } {
+  try {
+    return { sender: smtpInviteSender(), origin: serverEnv().SITE_URL ?? requestOrigin }
+  } catch {
+    return { sender: null, origin: requestOrigin }
+  }
+}

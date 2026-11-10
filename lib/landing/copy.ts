@@ -174,8 +174,9 @@ export const COMING_SOON = {
   joining: 'Adding you…',
   note: 'We are opening places a few families at a time, and will email you when yours is ready.',
   privacy: 'We use your address only for that. No newsletters, no sharing.',
-  joinedTitle: 'You’re on the list.',
-  joinedBody: 'We’ll email you when your place is ready. Sleep well.',
+  // Issue #95: joining sends a link; the address is on the list once it is confirmed.
+  joinedTitle: 'Check your email.',
+  joinedBody: 'We have sent you a link to confirm your place. If it is not in your inbox, look in spam.',
   joinError: 'We could not add you just now. Please try again in a moment.',
   badEmail: 'Please enter an email address we can write to.',
   signIn: 'Already have a place? Sign in',
@@ -193,6 +194,20 @@ export const COMING_SOON = {
     { title: 'For both of you', body: 'Something new to talk about before the light goes out.' },
   ],
   more: 'Read more about the project',
+  /** /waitlist/confirm (issue #95): the page the emailed link opens. */
+  confirm: {
+    eyebrow: 'The waitlist',
+    title: 'Confirm your place',
+    body: 'One press and you are on the list.',
+    button: 'Confirm my place',
+    confirming: 'Confirming…',
+    doneTitle: 'You’re on the list.',
+    doneBody: 'We’ll email you when your place is ready. Sleep well.',
+    badTitle: 'That link has expired or was already used.',
+    badBody: 'If you pressed Confirm before, you are already on the list. If not, join again and we will send a fresh link.',
+    again: 'Join the waitlist',
+    error: 'We could not confirm that just now. Please try again in a moment.',
+  },
 } as const
 
 /** Every sentence a visitor can read, for the copy rules test. */
@@ -203,6 +218,7 @@ export function allLandingCopy(): string[] {
     COMING_SOON.joinedTitle, COMING_SOON.joinedBody, COMING_SOON.joinError, COMING_SOON.badEmail,
     COMING_SOON.signIn, COMING_SOON.shelf.eyebrow, COMING_SOON.shelf.headline.join(''),
     COMING_SOON.shelf.body, ...COMING_SOON.points.flatMap((p) => [p.title, p.body]), COMING_SOON.more,
+    ...Object.values(COMING_SOON.confirm),
     HERO.eyebrow, HERO.headline.join(''), HERO.lead, HERO.cta, HERO.secondary, HERO.note, HERO.moons,
     MISSION.join(''),
     ...BELIEFS.flatMap((b) => [b.title, b.body]),
