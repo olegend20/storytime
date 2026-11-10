@@ -124,7 +124,7 @@ async function sendConfirmation(deps: JoinDeps, email: string): Promise<void> {
 }
 
 /**
- * POST /api/waitlist/confirm { token } -> { confirmed: true } or 400 `link_invalid`.
+ * POST /api/waitlist/confirm { token } -> { confirmed: true } or 400 `invalid_request` (field `token`).
  *
  * Reached from the button on /waitlist/confirm, never from the emailed link itself: mail
  * scanners open links, and a scanner must not confirm an address for its owner. A wrong,
