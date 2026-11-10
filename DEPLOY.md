@@ -88,11 +88,19 @@ lastten.org opens a few families at a time. To run it:
    added in between, who would otherwise be hidden and purged.
 5. Issue #98: the sign-in email's design is Supabase's template, not app code, so it reaches
    production only by pushing it. **Never `supabase config push` the repo's `supabase/config.toml`
-   to production**: it would overwrite production's `site_url`, redirect URLs and SMTP with the
-   local ones and stop every sign-in. Push from a scratch folder whose `supabase/config.toml` holds
-   only `project_id` and the two `[auth.email.template.*]` sections (copy them, with
-   `supabase/templates/`), linked to the production ref: settings it does not name are left alone.
-   Re-run `pnpm tsx scripts/email-templates.ts` and push again whenever the layout or `EMAIL` copy
+   to production**: it carries `site_url = "http://localhost:3000"`, localhost-only redirect URLs
+   and no SMTP, and pushing it would send every magic link to localhost and stop sign-in. Instead:
+   - make a scratch folder `<dir>` with `<dir>/supabase/config.toml` holding only
+     `project_id = "storytime"` and the two `[auth.email.template.magic_link]` /
+     `[auth.email.template.confirmation]` blocks copied from the repo, and copy
+     `supabase/templates/` to `<dir>/supabase/templates/`. `content_path` resolves from `<dir>`
+     (the `--workdir`), so `./supabase/templates/magic_link.html` finds the copy;
+   - link it to production: `supabase link --project-ref <prod ref> --workdir <dir>` (check the
+     org is "Last Ten StoryTime");
+   - `supabase config push --workdir <dir>`. It prints the changes and asks before applying: the
+     list must show only `mailer_subjects_*` and `mailer_templates_*`. Anything else, answer no.
+   Settings the scratch config does not name are left as they are. Re-run
+   `pnpm tsx scripts/email-templates.ts` and push again whenever the layout or `EMAIL` copy
    changes. The waitlist emails need nothing: they deploy with the app.
 6. Public launch: set `WAITLIST_ENABLED=false` and redeploy. Anyone can then create an account by email
    (the server creates it, so the dashboard toggle can stay off). **If Google sign-in is on**, also switch
