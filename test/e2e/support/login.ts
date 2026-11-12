@@ -100,10 +100,10 @@ export async function fetchLatestEmailBody(
 
 /**
  * The sign-in link in an email. Since issue #101 the template builds it on the site itself:
- * `<site_url>/auth/callback?token_hash=...&type=email`, with no Supabase hop.
+ * `<site_url>/auth/link?token_hash=...&type=magiclink|signup`, which hands on to Supabase.
  */
 export function extractSignInLink(body: string): string {
-  const match = body.match(/https?:\/\/[^\s"'<>)]*\/auth\/callback\?token_hash=[^\s"'<>)]*/)
+  const match = body.match(/https?:\/\/[^\s"'<>)]*\/auth\/link\?token_hash=[^\s"'<>)]*/)
   if (!match) throw new Error(`No sign-in link in the email body:\n${body.slice(0, 500)}`)
   return match[0].replace(/&amp;/g, '&')
 }
@@ -111,7 +111,8 @@ export function extractSignInLink(body: string): string {
 /**
  * The link on the server under test. The template's host is `site_url` - the dev server on
  * :3000 locally, lastten.org in production - while `pnpm test:e2e:real` runs on its own port.
- * Only the origin changes: the path, the token and its type are opened exactly as emailed.
+ * Only the origin changes: the path, the token and its type are opened exactly as emailed,
+ * and Supabase's redirect hop back to /auth/callback happens for real.
  */
 export function onTestServer(link: string, baseURL: string): string {
   const url = new URL(link)

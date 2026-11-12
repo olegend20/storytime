@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { AUTH_TEMPLATE_KINDS, AUTH_TEMPLATE_SUBJECT, authTemplates, SIGN_IN_URL } from '@/lib/email/auth-templates'
+import { AUTH_TEMPLATE_KINDS, AUTH_TEMPLATE_SUBJECT, authTemplates, signInUrl } from '@/lib/email/auth-templates'
 import { EMAIL_SITE, MOONS_PATH, renderEmail, type EmailContent } from '@/lib/email/layout'
 import { BRAND } from '@/lib/brand'
 import { EMAIL } from '@/lib/landing/copy'
@@ -148,11 +148,15 @@ describe('the Supabase sign-in templates (VT-E3)', () => {
     }
   })
 
-  it('have one button, to our own callback with the token Supabase fills in (VT-L1, issue #101)', () => {
-    expect(SIGN_IN_URL).toBe('{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=email')
-    for (const html of Object.values(authTemplates())) {
-      const href = SIGN_IN_URL.replace('&', '&amp;')
-      expect(buttonHrefs(html)).toEqual([href])
+  it('have one button, to our own /auth/link with the token Supabase fills in (VT-L1, issue #101)', () => {
+    const expected = {
+      'magic_link.html': '{{ .SiteURL }}/auth/link?token_hash={{ .TokenHash }}&type=magiclink',
+      'confirmation.html': '{{ .SiteURL }}/auth/link?token_hash={{ .TokenHash }}&type=signup',
+    }
+    expect(signInUrl('magiclink')).toBe(expected['magic_link.html'])
+    for (const [name, html] of Object.entries(authTemplates())) {
+      const href = expected[name as keyof typeof expected].replace('&', '&amp;')
+      expect(buttonHrefs(html), name).toEqual([href])
       expect(html, 'the printed link is the same').toContain(`>${href}</a>`)
       expect(html).not.toContain('ConfirmationURL')
       expect(html).not.toContain('supabase.co')

@@ -898,12 +898,13 @@ finished. The migration (`generation_progress`) is applied to production by hand
 (DEPLOY.md); until then the page does what it did before.
 
 
-### 2026-11-12 — sign-in links on lastten.org, any device (issue #101, DECISIONS #219)
+### 2026-11-12 — sign-in links on lastten.org (issue #101, DECISIONS #219)
 
 **Delivered**
-- The sign-in email links to `lastten.org/auth/callback?token_hash=…` (template change, no
-  Supabase hop). The link works in a browser other than the one that asked. The page a parent
-  started from is remembered in a cookie (`lib/auth/next.ts`).
+- The sign-in email links to `lastten.org/auth/link?token_hash=…`, which hands on to Supabase's
+  check; the link still only works in the browser that asked (owner decision). The page a
+  parent started from is remembered in a cookie (`lib/auth/next.ts`). A used or expired link
+  says so on the login page.
 - Tests: VT-L1 (`test/unit/email.test.ts`), VT-L2 (`test/unit/auth-next.test.ts`), VT-L3..L6
   (`test/e2e-real/sign-in.spec.ts`), VT-L7 (the waitlist sign-up e2e on the new link).
 

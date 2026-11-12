@@ -66,12 +66,12 @@ test.describe('F2: the magic link, opened exactly as it arrives', () => {
       await page.getByRole('link', { name: 'Sign in', exact: true }).click()
       const first = await requestLink(page, email, null)
       // Issue #101 (VT-L3): the link is on the site itself - site_url, which is the dev
-      // server locally and lastten.org in production - with no Supabase hop.
+      // server locally and lastten.org in production - and /auth/link hands it to Supabase.
       const url = new URL(first)
       expect(url.origin).toBe('http://localhost:3000')
-      expect(url.pathname).toBe('/auth/callback')
-      expect(url.searchParams.get('token_hash')).toMatch(/^\w{20,}/)
-      expect(url.searchParams.get('type')).toBe('email')
+      expect(url.pathname).toBe('/auth/link')
+      expect(url.searchParams.get('token_hash')).toMatch(/^[\w-]{20,}/)
+      expect(url.searchParams.get('type')).toMatch(/^(magiclink|signup)$/)
       await page.goto(onTestServer(first, origin(page)))
       await expect(page).toHaveURL(/localhost:\d+\/dashboard$/)
       await expect(page.getByRole('heading', { name: 'My family' })).toBeVisible()
@@ -171,10 +171,11 @@ test.describe('F2: the magic link, opened exactly as it arrives', () => {
     }
   })
 
-  test('the link works on another device: no cookies from the browser that asked (VT-L4)', async ({
+  test('the link only signs in the browser that asked for it (VT-L4, owner decision)', async ({
     page,
     browser,
   }) => {
+    // DECISIONS #219: a forwarded email, or a scanner that opens links, must not sign anyone in.
     const email = uniqueEmail('cross-device')
     await approveEmail(email)
     const phone = await browser.newContext()
@@ -183,8 +184,10 @@ test.describe('F2: the magic link, opened exactly as it arrives', () => {
       const link = await requestLink(page, email, null)
       const other = await phone.newPage()
       await other.goto(onTestServer(link, origin(page)))
-      await expect(other).toHaveURL(/\/dashboard$/)
-      await expect(other.getByRole('heading', { name: 'My family' })).toBeVisible()
+      await expect(other).toHaveURL(/\/login\?error=/)
+      await expect(other.getByText(/Open it on the device and browser you asked from/)).toBeVisible()
+      await other.goto('/dashboard')
+      await expect(other).toHaveURL(/\/login\?next=/)
     } finally {
       await phone.close()
       await deleteTestUser(email)
@@ -209,26 +212,38 @@ test.describe('F2: the magic link, opened exactly as it arrives', () => {
     }
   })
 
-  test('a used or altered link is refused and says so (VT-L6)', async ({ page, browser }) => {
+  test('a used or altered link is refused and says so (VT-L6)', async ({ page }) => {
+    // In the browser that asked, so only the link itself can be at fault.
     const email = uniqueEmail('reuse')
+    const second = uniqueEmail('altered')
     await approveEmail(email)
     try {
       await page.goto('/login')
       const link = onTestServer(await requestLink(page, email, null), origin(page))
       await page.goto(link)
       await expect(page).toHaveURL(/\/dashboard$/)
+      await page.goto('/settings')
+      await page.getByRole('button', { name: 'Sign out' }).click()
 
-      for (const bad of [link, link.replace(/token_hash=(\w)/, (_, c: string) => `token_hash=${c === 'a' ? 'b' : 'a'}`)]) {
-        const fresh = await browser.newContext()
-        const p = await fresh.newPage()
-        await p.goto(bad)
-        await expect(p).toHaveURL(/\/login\?error=/)
-        await expect(p.getByText('That sign-in link has expired. Please request a new one.')).toBeVisible()
-        await p.goto('/dashboard')
-        await expect(p).toHaveURL(/\/login\?next=/)
-        await fresh.close()
-      }
+      await page.goto(link) // used
+      await expect(page).toHaveURL(/\/login/)
+      await expect(page.getByText(/expired or was already used|did not work/)).toBeVisible()
+      await page.goto('/dashboard')
+      await expect(page).toHaveURL(/\/login\?next=/)
+
+      // A second address: Supabase allows one link a minute per address.
+      await approveEmail(second)
+      await page.goto('/login')
+      const fresh = onTestServer(await requestLink(page, second, null), origin(page))
+      const altered = fresh.replace(/token_hash=([^&]*)/, (_, t: string) => `token_hash=${t.slice(0, -1)}${t.endsWith('a') ? 'b' : 'a'}`)
+      expect(altered).not.toBe(fresh)
+      await page.goto(altered)
+      await expect(page).toHaveURL(/\/login/)
+      await expect(page.getByText(/expired or was already used|did not work/)).toBeVisible()
+      await page.goto('/dashboard')
+      await expect(page).toHaveURL(/\/login\?next=/)
     } finally {
+      await deleteTestUser(second)
       await deleteTestUser(email)
     }
   })

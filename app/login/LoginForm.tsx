@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NEXT_COOKIE, NEXT_COOKIE_MAX_AGE_S } from '@/lib/auth/next'
 import { supabaseBrowser } from '@/lib/supabase/client'
 import { detectTimeZone } from '@/lib/family/timezone'
@@ -26,6 +26,8 @@ const GOOGLE_ENABLED = process.env.NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED === 'true'
 /** What Supabase says when the address has no account and sign-up is closed. */
 const NO_ACCOUNT_CODES = new Set(['otp_disabled', 'signup_disabled', 'user_not_found'])
 
+export const LINK_REFUSED = 'That sign-in link has expired or was already used. Please request a new one.'
+
 export default function LoginForm({
   next,
   initialError,
@@ -42,6 +44,19 @@ export default function LoginForm({
   const [email, setEmail] = useState(initialEmail)
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'joined'>('idle')
   const [error, setError] = useState<string | null>(initialError ?? null)
+
+  // Issue #101: when Supabase refuses a used or expired link it says so after the `#`, which
+  // the server never sees, so the callback can only report a missing token. Say what happened.
+  useEffect(() => {
+    const hash = new URLSearchParams(window.location.hash.slice(1))
+    if (!hash.get('error_code') && !hash.get('error')) return
+    // After hydration, so the server-rendered page and the first client render agree.
+    const id = window.setTimeout(() => {
+      setError(LINK_REFUSED)
+      window.history.replaceState(null, '', window.location.pathname + window.location.search)
+    }, 0)
+    return () => window.clearTimeout(id)
+  }, [])
 
   const callbackUrl = () => {
     const url = new URL('/auth/callback', window.location.origin)
@@ -63,9 +78,9 @@ export default function LoginForm({
   }
 
   /**
-   * Issue #101: the emailed link goes straight to /auth/callback and cannot carry `next`, so
-   * leave it here for the callback (lib/auth/next.ts). Cleared when there is none, so an old
-   * one cannot send a later sign-in somewhere unexpected.
+   * Issue #101: the emailed link is built by the email template and cannot carry `next`, so
+   * leave it here for the callback (lib/auth/next.ts). Set or cleared on every sign-in
+   * attempt, so an old one cannot send a later sign-in somewhere unexpected.
    */
   const rememberNext = () => {
     try {
@@ -144,6 +159,7 @@ export default function LoginForm({
   async function signInWithGoogle() {
     setError(null)
     rememberTimezone()
+    rememberNext()
     const { error: oauthError } = await supabaseBrowser().auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: callbackUrl() },

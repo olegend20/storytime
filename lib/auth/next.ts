@@ -1,14 +1,16 @@
 /**
  * Where a parent goes after signing in (issue #101).
  *
- * The sign-in email links straight to /auth/callback on our own site, built by the email
- * template, which cannot carry the page the parent started from. So the login form leaves it
- * in a short-lived cookie, and the callback takes, in order: `?next=` on the link (Google
- * sign-in and older emails still carry it), the cookie, then the dashboard. On another device
- * there is no cookie, and the dashboard is the right place anyway.
+ * The sign-in email's link is built by its template (/auth/link), which cannot carry the page
+ * the parent started from. So the login form leaves it in a short-lived cookie, and the
+ * callback takes, in order: `?next=` (Google sign-in still carries it), the cookie, then the
+ * dashboard.
  */
 export const NEXT_COOKIE = 'st_next'
-/** As long as a sign-in link lasts (Supabase's default OTP expiry is an hour). */
+/**
+ * As long as a sign-in link lasts: Supabase's OTP expiry, an hour by default (`otp_expiry`,
+ * not set in supabase/config.toml or production). Raise both together.
+ */
 export const NEXT_COOKIE_MAX_AGE_S = 60 * 60
 export const DEFAULT_NEXT = '/dashboard'
 
@@ -23,17 +25,9 @@ export function safeNext(raw: string | null | undefined): string {
   return raw
 }
 
-/** The cookie as the browser wrote it (URI-encoded); undecodable means unusable. */
-function decodeCookie(raw: string | null | undefined): string | null {
-  if (!raw) return null
-  try {
-    return decodeURIComponent(raw)
-  } catch {
-    return null
-  }
-}
-
 export function resolveNext(query: string | null | undefined, cookie: string | null | undefined): string {
   if (query) return safeNext(query)
-  return safeNext(decodeCookie(cookie))
+  // Next has already decoded the cookie's value (`request.cookies`); decoding again would
+  // corrupt a path holding a literal `%`.
+  return safeNext(cookie)
 }

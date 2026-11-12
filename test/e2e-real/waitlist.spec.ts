@@ -48,7 +48,7 @@ async function nextSignInLink(email: string): Promise<string> {
   const deadline = Date.now() + 20_000
   for (;;) {
     const body = await fetchLatestEmailBody(email)
-    if (/\/auth\/callback\?token_hash=/.test(body)) return extractSignInLink(body)
+    if (/\/auth\/link\?token_hash=/.test(body)) return extractSignInLink(body)
     if (Date.now() > deadline) throw new Error('no sign-in email arrived after the invite')
     await new Promise((r) => setTimeout(r, 400))
   }
