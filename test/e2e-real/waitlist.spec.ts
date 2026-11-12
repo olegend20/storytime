@@ -5,6 +5,7 @@ import {
   extractSignInLink,
   fetchLatestEmailBody,
   localAuthStackReachable,
+  onTestServer,
   signInWithMagicLink,
   SKIP_REASON,
   uniqueEmail,
@@ -47,7 +48,7 @@ async function nextSignInLink(email: string): Promise<string> {
   const deadline = Date.now() + 20_000
   for (;;) {
     const body = await fetchLatestEmailBody(email)
-    if (/\/auth\/v1\/verify/.test(body)) return extractSignInLink(body)
+    if (/\/auth\/callback\?token_hash=/.test(body)) return extractSignInLink(body)
     if (Date.now() > deadline) throw new Error('no sign-in email arrived after the invite')
     await new Promise((r) => setTimeout(r, 400))
   }
@@ -158,7 +159,7 @@ test.describe('issue #92: the coming-soon page and the approved waitlist', () =>
       const button = signInHtml.match(/<a href="([^"]+)"[^>]*display:inline-block;padding/)?.[1]
       expect(button?.replace(/&amp;/g, '&'), 'the designed button carries the sign-in link').toBe(signIn)
       expect(signInHtml).toContain('Ten minutes. Together.')
-      await page.goto(signIn)
+      await page.goto(onTestServer(signIn, new URL(page.url()).origin))
       await expect(page).toHaveURL(/\/dashboard$/)
       await expect(page.getByRole('heading', { name: 'My family' })).toBeVisible()
       expect(await accountExists(visitor)).toBe(true)

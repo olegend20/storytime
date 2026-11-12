@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { NEXT_COOKIE, NEXT_COOKIE_MAX_AGE_S } from '@/lib/auth/next'
 import { supabaseBrowser } from '@/lib/supabase/client'
 import { detectTimeZone } from '@/lib/family/timezone'
 import { COMING_SOON } from '@/lib/landing/copy'
@@ -61,6 +62,21 @@ export default function LoginForm({
     }
   }
 
+  /**
+   * Issue #101: the emailed link goes straight to /auth/callback and cannot carry `next`, so
+   * leave it here for the callback (lib/auth/next.ts). Cleared when there is none, so an old
+   * one cannot send a later sign-in somewhere unexpected.
+   */
+  const rememberNext = () => {
+    try {
+      document.cookie = next
+        ? `${NEXT_COOKIE}=${encodeURIComponent(next)}; path=/; max-age=${NEXT_COOKIE_MAX_AGE_S}; samesite=lax`
+        : `${NEXT_COOKIE}=; path=/; max-age=0; samesite=lax`
+    } catch {
+      /* cookies disabled: the parent lands on the dashboard */
+    }
+  }
+
   async function sendMagicLink(event: React.FormEvent) {
     event.preventDefault()
     const address = normalizeEmail(email)
@@ -71,6 +87,7 @@ export default function LoginForm({
     setError(null)
     setStatus('sending')
     rememberTimezone()
+    rememberNext()
 
     const requestLink = () =>
       supabaseBrowser().auth.signInWithOtp({

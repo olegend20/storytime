@@ -8,9 +8,13 @@ import { EMAIL } from '@/lib/landing/copy'
  * waitlist emails by scripts/email-templates.ts, and a test regenerates them so the files
  * cannot drift from the code.
  *
- * `{{ .ConfirmationURL }}` is Supabase's own placeholder for the sign-in link.
+ * The link is built here, on our own site, rather than Supabase's `{{ .ConfirmationURL }}`
+ * (issue #101): parents see lastten.org, and /auth/callback verifies the token itself, so the
+ * link works on any device. `{{ .SiteURL }}` is the project's site_url - lastten.org in
+ * production, the dev server locally - and `type=email` covers a first sign-in and every
+ * later one.
  */
-export const CONFIRMATION_URL = '{{ .ConfirmationURL }}'
+export const SIGN_IN_URL = '{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=email'
 
 function signIn(): string {
   const m = EMAIL.signIn
@@ -19,7 +23,7 @@ function signIn(): string {
     eyebrow: m.eyebrow,
     headline: m.headline,
     lead: m.lead,
-    button: { label: m.button, href: CONFIRMATION_URL },
+    button: { label: m.button, href: SIGN_IN_URL },
     note: m.note,
     aside: EMAIL.tonight,
     reason: m.reason,
