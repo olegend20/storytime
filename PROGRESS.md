@@ -898,6 +898,16 @@ finished. The migration (`generation_progress`) is applied to production by hand
 (DEPLOY.md); until then the page does what it did before.
 
 
+### 2026-11-13 — story costs count the writing calls (issue #104, DECISIONS #220)
+
+**Delivered**
+- /admin's cost per story and per family now include the writing, review and rewrite calls.
+  They were logged before the story row existed and lost their family and story; the sink now
+  keeps the family and links the story once it is saved (`lib/costs/sink.ts`, `linkStory`).
+  Rows written before this fix are unchanged.
+- Tests: VT-SC1, VT-SC2 (`test/int/cost-logging.test.ts`), VT-SC3, VT-SC4
+  (`test/int/pipeline.test.ts`).
+
 ### 2026-11-12 — sign-in links on lastten.org (issue #101, DECISIONS #219)
 
 **Delivered**

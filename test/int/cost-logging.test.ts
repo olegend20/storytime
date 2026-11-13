@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { anon, dbReachable, service, SKIP_REASON, TestWorld, applyTestSupabaseEnv } from '../helpers/db'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -204,6 +205,75 @@ describe.runIf(reachable)('F8 Supabase generation log sink', () => {
     expect(data).toHaveLength(1)
     expect(data![0]!.story_id).toBeNull()
     expect(Number(data![0]!.cost_usd)).toBeCloseTo(0.123456, 6)
+  })
+
+  /** Issue #104: the pipeline logs its calls before the story row exists. */
+  const storyRow = (familyId: string | null, storyId: string, marker: string) => ({
+    family_id: familyId,
+    story_id: storyId,
+    fact_pack_id: null,
+    purpose: 'write' as const,
+    model: 'claude-sonnet-5',
+    input_tokens: 10,
+    cache_read_tokens: 0,
+    cache_write_tokens: 0,
+    output_tokens: 5,
+    cost_usd: 0.25,
+    latency_ms: 1,
+    ok: true,
+    error: marker,
+  })
+  async function logsMarked(marker: string) {
+    const { data, error } = await db.from('generation_logs').select('id, family_id, story_id').eq('error', marker)
+    if (error) throw new Error(error.message)
+    world.trackLogIds((data ?? []).map((r) => r.id as string))
+    return data ?? []
+  }
+
+  it('VT-SC1: a story not saved yet drops only the story reference - the row keeps its family', async () => {
+    const family = await world.createFamily({ label: 'sc1' })
+    const sink = new SupabaseLogSink(db)
+    const marker = `sc1-${randomUUID()}`
+    await sink.write(storyRow(family.familyId, randomUUID(), marker))
+    expect(sink.failedWrites, sink.lastError ?? '').toBe(0)
+    const rows = await logsMarked(marker)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]!.family_id).toBe(family.familyId)
+    expect(rows[0]!.story_id).toBeNull()
+
+    // Only a family that is gone as well clears the family.
+    const gone = `sc1-gone-${randomUUID()}`
+    await sink.write(storyRow(randomUUID(), randomUUID(), gone))
+    expect(sink.failedWrites, sink.lastError ?? '').toBe(0)
+    const orphan = await logsMarked(gone)
+    expect(orphan).toHaveLength(1)
+    expect(orphan[0]!.family_id).toBeNull()
+  })
+
+  it('VT-SC2: linkStory attaches exactly the rows written for that story, once the row exists', async () => {
+    const family = await world.createFamily({ label: 'sc2' })
+    const sink = new SupabaseLogSink(db)
+    const storyId = randomUUID()
+    const other = randomUUID()
+    const marker = `sc2-${randomUUID()}`
+    await sink.write(storyRow(family.familyId, storyId, marker))
+    await sink.write(storyRow(family.familyId, storyId, marker))
+    await sink.write(storyRow(family.familyId, other, marker))
+
+    // An unknown story is a no-op, and so is a story whose row still does not exist.
+    await sink.linkStory(randomUUID())
+    expect(sink.failedWrites, sink.lastError ?? '').toBe(0)
+
+    await world.createStory({ familyId: family.familyId, seriesId: await world.createSeries(family.familyId), id: storyId })
+    await sink.linkStory(storyId)
+    expect(sink.failedWrites, sink.lastError ?? '').toBe(0)
+
+    const rows = await logsMarked(marker)
+    expect(rows.filter((r) => r.story_id === storyId)).toHaveLength(2)
+    expect(rows.filter((r) => r.story_id === null)).toHaveLength(1)
+    // Claimed once: a second link has nothing left to attach.
+    await sink.linkStory(storyId)
+    expect(sink.failedWrites, sink.lastError ?? '').toBe(0)
   })
 
   it('keeps generation_logs invisible to a client key', async () => {

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { setDefaultLogSink } from '@/lib/ai/callModel'
 import type { GenerationLogRow, GenerationLogSink } from '@/lib/ai/types'
@@ -20,19 +21,38 @@ export class SupabaseLogSink implements GenerationLogSink {
     this.client = client
   }
 
+  /**
+   * Log ids written for a story whose row did not exist yet, by story id (issue #104). The
+   * pipeline inserts the story only when it is saved, so every call before that - the
+   * writes, the gate, the rewrite - names a story the foreign key cannot see yet.
+   */
+  private readonly unlinked = new Map<string, string[]>()
+
   async write(row: GenerationLogRow): Promise<void> {
-    let { error } = await this.insert(row, true)
-    if (error && (error.code === INVALID_TEXT_REPRESENTATION || error.code === FOREIGN_KEY_VIOLATION)) {
+    const id = randomUUID()
+    let refs: References = { family_id: row.family_id, story_id: row.story_id, fact_pack_id: row.fact_pack_id }
+    let { error } = await this.insert(id, row, refs)
+    while (error && (error.code === INVALID_TEXT_REPRESENTATION || error.code === FOREIGN_KEY_VIOLATION)) {
       /**
        * A reference that is not a UUID (the eval harness correlates by ids like
-       * `eval:titanic-band-b`) or no longer exists (an eval family cleaned up before its
-       * judge call was logged). The COST is the point of this table: keep the row and drop
-       * the references rather than lose the spend.
+       * `eval:titanic-band-b`) or does not exist: the story not saved yet, or an eval family
+       * cleaned up before its judge call was logged. The COST is the point of this table:
+       * keep the row and drop references, the story first, then the pack, then the family,
+       * so a story not saved yet still leaves the row on its family.
        */
-      console.warn(
-        `[costs] generation_logs: ${error.message} - logging ${row.purpose}/${row.model} without family/story/pack references`,
-      )
-      ;({ error } = await this.insert(row, false))
+      const next = dropOne(refs)
+      if (!next) break
+      console.warn(`[costs] generation_logs: ${error.message} - logging ${row.purpose}/${row.model} without its ${next.dropped} reference`)
+      refs = next.refs
+      ;({ error } = await this.insert(id, row, refs))
+    }
+
+    if (!error && refs.story_id === null && row.story_id !== null && UUID.test(row.story_id)) {
+      if (!this.unlinked.has(row.story_id) && this.unlinked.size >= MAX_UNLINKED_STORIES) {
+        // A discarded or failed story is never saved, so its entry is never claimed.
+        this.unlinked.delete(this.unlinked.keys().next().value!)
+      }
+      this.unlinked.set(row.story_id, [...(this.unlinked.get(row.story_id) ?? []), id])
     }
 
     if (error) {
@@ -51,12 +71,25 @@ export class SupabaseLogSink implements GenerationLogSink {
     }
   }
 
-  private insert(row: GenerationLogRow, withReferences: boolean) {
+  /** The story row exists now: point the rows written before it at it. Never throws. */
+  async linkStory(storyId: string): Promise<void> {
+    const ids = this.unlinked.get(storyId)
+    if (!ids) return
+    this.unlinked.delete(storyId)
+    const db = this.client ?? supabaseService()
+    const { error } = await db.from('generation_logs').update({ story_id: storyId }).in('id', ids)
+    if (error) {
+      this.failedWrites += 1
+      this.lastError = error.message
+      console.error(`[costs] linking ${ids.length} generation_logs rows to story ${storyId} failed: ${error.message}`)
+    }
+  }
+
+  private insert(id: string, row: GenerationLogRow, refs: References) {
     const db = this.client ?? supabaseService()
     return db.from('generation_logs').insert({
-      family_id: withReferences ? row.family_id : null,
-      story_id: withReferences ? row.story_id : null,
-      fact_pack_id: withReferences ? row.fact_pack_id : null,
+      id,
+      ...refs,
       purpose: row.purpose,
       model: row.model,
       input_tokens: row.input_tokens,
@@ -70,6 +103,21 @@ export class SupabaseLogSink implements GenerationLogSink {
     })
   }
 }
+
+type References = Pick<GenerationLogRow, 'family_id' | 'story_id' | 'fact_pack_id'>
+
+/** The next reference to give up, in the order that loses the least. */
+function dropOne(refs: References): { refs: References; dropped: string } | null {
+  if (refs.story_id !== null) return { refs: { ...refs, story_id: null }, dropped: 'story' }
+  if (refs.fact_pack_id !== null) return { refs: { ...refs, fact_pack_id: null }, dropped: 'fact pack' }
+  if (refs.family_id !== null) return { refs: { ...refs, family_id: null }, dropped: 'family' }
+  return null
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** Stories waiting for their row at once, per server instance; far above any real load. */
+const MAX_UNLINKED_STORIES = 200
 
 /** Postgres SQLSTATEs for a malformed uuid and a dangling foreign key. */
 const INVALID_TEXT_REPRESENTATION = '22P02'

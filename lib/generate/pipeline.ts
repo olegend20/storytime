@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabaseService } from '@/lib/supabase/service'
-import { callModel, parseJsonLoose, streamModel, structuredOutputRejected, ModelCallError, ModelRefusalError } from '@/lib/ai'
+import { callModel, parseJsonLoose, streamModel, structuredOutputRejected, ModelCallError, ModelRefusalError, getDefaultLogSink } from '@/lib/ai'
 import { serverEnv } from '@/lib/env'
 import { parentMessage, type ParentMessageKey } from '@/lib/messages'
 import {
@@ -1056,6 +1056,8 @@ export async function runGeneration(
       content_notice: contentNotice,
     })
     if (insertError) throw new GenerationFailed(`saving the story failed: ${insertError.message}`)
+    // The calls above were logged before this row existed, so their story link waited (#104).
+    await (sink ?? getDefaultLogSink()).linkStory?.(prepared.storyId)
 
     // F8 AC: quota is consumed ONLY after a successful stories insert. This line and the
     // `preflight` in prepareGeneration are the whole enforcement - lane 3 cannot check it.
