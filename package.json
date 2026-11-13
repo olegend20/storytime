@@ -43,7 +43,7 @@
     "@supabase/supabase-js": "^2.60.0",
     "jszip": "^3.10.2",
     "next": "^16.3.6",
-    "nodemailer": "^10.0.12",
+    "nodemailer": "^10.1.4",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "zod": "^4.6.5"
