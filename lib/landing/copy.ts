@@ -227,14 +227,33 @@ export const EMAIL = {
     reason: 'If this was not you, ignore this email and we will forget the address.',
   },
   invite: {
-    subject: `Your place at ${BRAND.wordmark} is ready`,
-    preheader: 'Thank you for waiting. Tonight’s story can be about them.',
+    subject: `You’re in: your place at ${BRAND.wordmark} is ready`,
+    preheader: 'Thank you for waiting. Tonight’s bedtime story can star your child.',
     eyebrow: 'Your place is ready',
     headline: ['Tonight, the last ten minutes ', 'are theirs.'] as const,
-    lead: `Thank you for waiting. Your place at ${BRAND.wordmark} is ready: a bedtime story where your child is the hero, with something true to wonder about.`,
-    button: 'Create my account',
-    note: 'Use this email address and we will send you a sign-in link. There is no password.',
+    lead: `Thank you for waiting. Your place at ${BRAND.wordmark} is open: a bedtime story where your child is the hero, with something true to wonder about.`,
+    button: 'Start tonight’s story',
+    chips: 'Free for families · No password · No adverts',
+    note: 'Use this email address and we will send you a sign-in link. There is nothing to remember.',
     reason: `You joined the waitlist for ${BRAND.wordmark} with this address.`,
+    help: 'Questions? Our answers are at',
+    /** The site's own sample (SAMPLE), labelled as one. Never a real child's name. */
+    sample: {
+      eyebrow: 'A peek at tonight',
+      title: ['A book with your child ', 'in it.'] as const,
+      label: SAMPLE.label,
+      bookTitle: SAMPLE.title,
+      byline: SAMPLE.byline,
+      paragraphs: SAMPLE.paragraphs,
+      factLabel: SAMPLE.factLabel,
+      fact: SAMPLE.fact,
+      caption: 'Yours will star your own children, by first name, and end with a few true facts to talk about.',
+    },
+    promisesEyebrow: 'What you can count on',
+    promises: PROMISES.filter((p) =>
+      (['no-payment', 'text-only', 'no-engagement-mechanics', 'child-data-minimal'] as PromiseFeature[]).includes(p.feature),
+    ),
+    close: ['Tonight, keep the last ', 'ten.'] as const,
   },
   signIn: {
     subject: `Your sign-in link for ${BRAND.wordmark}`,
@@ -290,5 +309,7 @@ export function allLandingCopy(): string[] {
       m.subject, m.preheader, m.eyebrow, m.headline.join(''), m.lead, m.button, m.note, m.reason,
     ]),
     EMAIL.how.title.join(''), EMAIL.tonight.title.join(''), EMAIL.tonight.body,
+    EMAIL.invite.chips, EMAIL.invite.help, EMAIL.invite.sample.eyebrow, EMAIL.invite.sample.title.join(''),
+    EMAIL.invite.sample.caption, EMAIL.invite.promisesEyebrow, EMAIL.invite.close.join(''),
   ]
 }

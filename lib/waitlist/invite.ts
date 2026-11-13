@@ -1,7 +1,7 @@
 import { serverEnv } from '@/lib/env'
 import { smtpTransport } from '@/lib/kindle/send'
 import { BRAND } from '@/lib/brand'
-import { renderEmail } from '@/lib/email/layout'
+import { inviteText, renderInviteEmail } from '@/lib/email/invite-layout'
 import { EMAIL } from '@/lib/landing/copy'
 
 /**
@@ -50,17 +50,8 @@ export function inviteMail(to: string, from: string, origin: string): InviteMail
     from: `${BRAND.wordmark} <${from}>`,
     subject: m.subject,
     // The same words as the html part, so a client showing plain text says the same thing.
-    text: ['Hello,', '', m.lead, '', `${m.button}:`, login.toString(), '', m.note, '', m.reason, '', 'Sleep well,', BRAND.wordmark].join('\n'),
-    html: renderEmail({
-      preheader: m.preheader,
-      eyebrow: m.eyebrow,
-      headline: m.headline,
-      lead: m.lead,
-      button: { label: m.button, href: login.toString() },
-      note: m.note,
-      aside: EMAIL.how,
-      reason: m.reason,
-    }),
+    text: inviteText(login.toString()),
+    html: renderInviteEmail(login.toString()),
   }
 }
 

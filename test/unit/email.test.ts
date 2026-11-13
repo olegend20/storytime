@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AUTH_TEMPLATE_KINDS, AUTH_TEMPLATE_SUBJECT, authTemplates, signInUrl } from '@/lib/email/auth-templates'
-import { EMAIL_SITE, MOONS_PATH, renderEmail, type EmailContent } from '@/lib/email/layout'
+import { inviteText, renderInviteEmail } from '@/lib/email/invite-layout'
+import { EMAIL_SITE, MOONS_PATH, escapeHtml, renderEmail, type EmailContent } from '@/lib/email/layout'
 import { BRAND } from '@/lib/brand'
 import { EMAIL } from '@/lib/landing/copy'
 import { confirmMail, newConfirmToken } from '@/lib/waitlist/confirm'
@@ -109,13 +110,59 @@ describe('the waitlist emails are sent as text and html (VT-E2)', () => {
     for (const line of [EMAIL.invite.lead, EMAIL.invite.note, EMAIL.invite.reason]) expect(i.text).toContain(line)
   })
 
-  it('the invite: a "Create my account" button to sign-in with the address filled in, and how it works', () => {
+  it('the invite: a "Start tonight’s story" button to sign-in with the address filled in, and how it works', () => {
     const mail = inviteMail('ana@example.com', 'hello@lastten.org', 'https://lastten.org')
     const link = 'https://lastten.org/login?email=ana%40example.com'
     expect(mail.text).toContain(link)
     expect(buttonHrefs(mail.html!)).toEqual([link])
     expect(mail.html).toContain(`${EMAIL.invite.button}&nbsp;`)
     expect(mail.html).toContain(EMAIL.how.points[0]!.title)
+  })
+})
+
+describe('the redesigned invite email (owner request 2026-11-13)', () => {
+  const href = 'https://lastten.org/login?email=ana%40example.com'
+  const html = renderInviteEmail(href)
+  const m = EMAIL.invite
+
+  it('has exactly one button, to the sign-in link, with the link also printed as text', () => {
+    expect(buttonHrefs(html)).toEqual([href])
+    expect(html).toContain(`>${href}</a>`)
+  })
+
+  it('shows the sample page with its true fact, the three steps and the four promises', () => {
+    expect(m.promises).toHaveLength(4)
+    for (const text of [
+      m.sample.bookTitle,
+      m.sample.fact,
+      ...EMAIL.how.points.map((p) => p.title),
+      ...m.promises.map((p) => p.title),
+    ]) {
+      expect(html).toContain(escapeHtml(text))
+    }
+  })
+
+  it('takes the moons from lastten.org even when sent from a preview deployment', () => {
+    const preview = renderInviteEmail('https://preview-xyz.vercel.app/login?email=ana%40example.com')
+    expect(preview).toContain(`src="https://lastten.org${MOONS_PATH}"`)
+    expect(preview).not.toMatch(/src="https:\/\/preview/)
+  })
+
+  it('keeps the email-client rules: no SVG, no web-font link, no <link> tag', () => {
+    expect(html).not.toContain('<svg')
+    expect(html).not.toContain('fonts.googleapis')
+    expect(html).not.toContain('<link ')
+  })
+
+  it('escapes the link, so an address cannot break out of the href', () => {
+    const evil = renderInviteEmail('https://lastten.org/login?email="><img src=x onerror=alert(1)>')
+    expect(evil).not.toContain('"><img')
+    expect(evil).toContain('&quot;&gt;&lt;img')
+  })
+
+  it('the text part carries the lead, the note, the sign-in link and the reason', () => {
+    const text = inviteText(href)
+    for (const line of [m.lead, m.note, href, m.reason]) expect(text).toContain(line)
   })
 })
 
