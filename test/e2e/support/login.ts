@@ -37,8 +37,15 @@ interface MailpitMessage {
   ID: string
 }
 
-/** Fetch the body of the most recent message sent to `address`, polling until it lands. */
-export async function fetchLatestEmailBody(address: string, timeoutMs = 20_000): Promise<string> {
+/**
+ * Fetch the body of the most recent message sent to `address`, polling until it lands. The
+ * text part by default; `part: 'html'` for the designed email (issue #98).
+ */
+export async function fetchLatestEmailBody(
+  address: string,
+  timeoutMs = 20_000,
+  part: 'text' | 'html' = 'text',
+): Promise<string> {
   const deadline = Date.now() + timeoutMs
   let lastError = 'no message arrived'
 
@@ -55,7 +62,7 @@ export async function fetchLatestEmailBody(address: string, timeoutMs = 20_000):
           const message = await fetch(`${MAILBOX_URL}/api/v1/message/${id}`)
           if (message.ok) {
             const detail = (await message.json()) as { Text?: string; HTML?: string }
-            const body = detail.Text || detail.HTML
+            const body = part === 'html' ? detail.HTML : detail.Text || detail.HTML
             if (body) return body
           }
         }
@@ -77,7 +84,7 @@ export async function fetchLatestEmailBody(address: string, timeoutMs = 20_000):
           )
           if (message.ok) {
             const detail = (await message.json()) as { body?: { text?: string; html?: string } }
-            const body = detail.body?.text || detail.body?.html
+            const body = part === 'html' ? detail.body?.html : detail.body?.text || detail.body?.html
             if (body) return body
           }
         }
@@ -91,42 +98,43 @@ export async function fetchLatestEmailBody(address: string, timeoutMs = 20_000):
   throw new Error(`No sign-in email for ${address} after ${timeoutMs}ms (${lastError})`)
 }
 
-/** Pull the Supabase verify URL out of the email body. */
+/**
+ * The sign-in link in an email. Since issue #101 the template builds it on the site itself:
+ * `<site_url>/auth/link?token_hash=...&type=magiclink|signup`, which hands on to Supabase.
+ */
 export function extractSignInLink(body: string): string {
-  const match = body.match(/https?:\/\/[^\s"'<>)]*\/auth\/v1\/verify[^\s"'<>)]*/)
-  if (!match) throw new Error(`No verify link in the email body:\n${body.slice(0, 500)}`)
+  const match = body.match(/https?:\/\/[^\s"'<>)]*\/auth\/link\?token_hash=[^\s"'<>)]*/)
+  if (!match) throw new Error(`No sign-in link in the email body:\n${body.slice(0, 500)}`)
   return match[0].replace(/&amp;/g, '&')
 }
 
 /**
- * Where the emailed link should be opened.
- *
- * GoTrue validates `redirect_to` against `site_url` + `additional_redirect_urls` in
- * `supabase/config.toml`, both of which name port 3000 only. On 3000 the link is followed
- * exactly as a parent would follow it, redirect hop included. On any other port GoTrue
- * would silently rewrite the destination back to 3000 - another lane's dev server - so the
- * emailed token is instead handed to our own `/auth/callback?token_hash=...&type=magiclink`,
- * which is the second branch that route already supports (it is what a custom email
- * template produces). That still exercises the real email, the real token verification,
- * the real family creation and the real session cookies; only GoTrue's redirect hop is
- * skipped.
+ * The link on the server under test. The template's host is `site_url` - the dev server on
+ * :3000 locally, lastten.org in production - while `pnpm test:e2e:real` runs on its own port.
+ * Only the origin changes: the path, the token and its type are opened exactly as emailed,
+ * and Supabase's redirect hop back to /auth/callback happens for real.
  */
-function signInTarget(link: string, baseURL: string): string {
-  if (new URL(baseURL).port === '3000') return link
-  const verify = new URL(link)
-  const token = verify.searchParams.get('token')
-  if (!token) throw new Error(`No token in the verify link: ${link}`)
-  const callback = new URL('/auth/callback', baseURL)
-  callback.searchParams.set('token_hash', token)
-  callback.searchParams.set('type', verify.searchParams.get('type') ?? 'magiclink')
-  return callback.toString()
+export function onTestServer(link: string, baseURL: string): string {
+  const url = new URL(link)
+  const base = new URL(baseURL)
+  url.protocol = base.protocol
+  url.host = base.host
+  return url.toString()
 }
 
 /**
  * The whole F2 login VT as one helper: request a link, read the mailbox, open it, land on
  * the dashboard.
  */
-export async function signInWithMagicLink(page: Page, email: string): Promise<void> {
+export async function signInWithMagicLink(
+  page: Page,
+  email: string,
+  options: { approve?: boolean } = {},
+): Promise<void> {
+  // Issue #92: with the waitlist on, only an approved address can create an account. A test
+  // signing in as a new parent is one the owner already let in; pass `approve: false` to
+  // test the gate itself.
+  if (options.approve !== false) await approveEmail(email)
   await page.goto('/login')
   await page.getByLabel('Email address').fill(email)
   await page.getByRole('button', { name: 'Email me a sign-in link' }).click()
@@ -134,7 +142,7 @@ export async function signInWithMagicLink(page: Page, email: string): Promise<vo
 
   const baseURL = new URL(page.url()).origin
   const link = extractSignInLink(await fetchLatestEmailBody(email))
-  await page.goto(signInTarget(link, baseURL))
+  await page.goto(onTestServer(link, baseURL))
   await expect(page).toHaveURL(/\/dashboard$/)
 }
 
@@ -155,6 +163,27 @@ function cleanupKey(): string | null {
   return null
 }
 
+/**
+ * Issue #92: put `email` on the waitlist, approved - what the owner does at /admin/waitlist.
+ * Harmless with the waitlist off. Throws when it cannot, so a gate test never passes by
+ * accident.
+ */
+export async function approveEmail(email: string): Promise<void> {
+  const serviceKey = cleanupKey()
+  if (!serviceKey) throw new Error('No service key to approve a test email with')
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/waitlist?on_conflict=email`, {
+    method: 'POST',
+    headers: {
+      apikey: serviceKey,
+      authorization: `Bearer ${serviceKey}`,
+      'content-type': 'application/json',
+      prefer: 'resolution=merge-duplicates,return=minimal',
+    },
+    body: JSON.stringify({ email: email.toLowerCase(), approved_at: new Date().toISOString() }),
+  })
+  if (!response.ok) throw new Error(`approveEmail failed: ${response.status} ${await response.text()}`)
+}
+
 /** Remove the user this test created, and with it the family and everything under it. */
 export async function deleteTestUser(email: string): Promise<void> {
   const serviceKey = cleanupKey()
@@ -173,6 +202,10 @@ export async function deleteTestUser(email: string): Promise<void> {
         headers: { apikey: serviceKey, authorization: `Bearer ${serviceKey}` },
       })
     }
+    await fetch(`${SUPABASE_URL}/rest/v1/waitlist?email=eq.${encodeURIComponent(email.toLowerCase())}`, {
+      method: 'DELETE',
+      headers: { apikey: serviceKey, authorization: `Bearer ${serviceKey}` },
+    })
   } catch {
     /* best effort: a leftover test user is harmless, and never truncate a shared database */
   }

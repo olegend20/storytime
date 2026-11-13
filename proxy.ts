@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { clientIp, rateLimitHeaders, checkRateLimit, RATE_LIMITED_BODY } from '@/lib/http/ratelimit'
+import { canonicalUrl } from '@/lib/http/canonical'
 
 /**
  * Three jobs, in this order:
@@ -40,12 +41,19 @@ const PROTECTED_API = [
   '/api/topics',
 ]
 
+/** The public ways in (issue #92): rate-limited apart from the rest of the API. Covers /api/waitlist/confirm (#95). */
+const PUBLIC_ENTRY_API = ['/api/auth/prepare', '/api/waitlist']
+
 function isUnder(pathname: string, prefixes: readonly string[]): boolean {
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`))
 }
 
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // www.lastten.org -> lastten.org (issue #101): signing in only works on one origin.
+  const canonical = canonicalUrl(request.url, request.headers.get('host'), process.env.SITE_URL)
+  if (canonical) return NextResponse.redirect(canonical, 308)
 
   // A sign-in code that lands on the home page (Supabase falls back to `site_url` when the
   // requested redirect is not allow-listed) is forwarded to the callback that can use it,
@@ -62,7 +70,11 @@ export default async function proxy(request: NextRequest) {
   // and 30/min turned 66 of 118 e2e tests into 429s the day the limiter and the UI merged.
   const mockApi = process.env.UI_MOCK_API === '1' && isUnder(pathname, ['/api/mock'])
   if (pathname.startsWith('/api/') && !mockApi) {
-    const verdict = checkRateLimit(clientIp(request.headers))
+    // Issue #92: signing in and joining the waitlist go through our API now, so they get a
+    // bucket of their own - a parent's dashboard loading must never use up the requests a
+    // sign-in needs, nor the other way round. Supabase still limits emails per address.
+    const bucket = isUnder(pathname, PUBLIC_ENTRY_API) ? 'entry:' : ''
+    const verdict = checkRateLimit(bucket + clientIp(request.headers))
     if (!verdict.allowed) {
       return NextResponse.json(RATE_LIMITED_BODY, {
         status: 429,

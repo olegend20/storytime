@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>Your sign-in link is here.</title>
+<style>
+  :root { color-scheme: light; supported-color-schemes: light; }
+  body { margin:0; padding:0; }
+  a { color:#355c49; }
+  @media (max-width: 620px) {
+    .pad { padding-left:26px !important; padding-right:26px !important; }
+    .h1 h1 { font-size:30px !important; }
+  }
+</style>
+</head>
+<body style="margin:0;padding:0;background:#f6f4ee;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;mso-hide:all;">Press the button to sign in. No password needed.&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f6f4ee" style="background:#f6f4ee;">
+<tr><td align="center" style="padding:36px 14px 40px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;">
+
+<tr><td align="center" style="padding:0 0 22px;">
+<a href="https://lastten.org" target="_blank" style="text-decoration:none;color:#293a34;font-family:Newsreader, Georgia, 'Iowan Old Style', 'Times New Roman', serif;font-size:24px;line-height:1.2;letter-spacing:-0.01em;">The Last Ten</a>
+<div style="margin-top:4px;font-family:Inter, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:10.5px;letter-spacing:0.24em;text-transform:uppercase;color:#626c63;">Stories for curious children</div>
+</td></tr>
+
+<tr><td style="background:#fffdf8;border:1px solid #dcded3;border-radius:18px;overflow:hidden;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td style="padding:44px 44px 40px;" class="pad h1">
+<p style="margin:0 0 14px;font-family:Inter, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:11px;line-height:1.4;letter-spacing:0.22em;text-transform:uppercase;font-weight:600;color:#626c63;">Sign in</p>
+<h1 style="margin:0 0 16px;font-family:Newsreader, Georgia, 'Iowan Old Style', 'Times New Roman', serif;font-weight:400;font-size:36px;line-height:1.18;color:#293a34;letter-spacing:-0.01em;">Your sign-in link <em style="font-style:italic;color:#355c49;">is here.</em></h1>
+<p style="margin:0 0 26px;font-family:Inter, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:17px;line-height:1.6;color:#46554e;">Press the button to sign in. There is no password to remember.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 0;">
+<tr><td align="center" bgcolor="#355c49" style="border-radius:999px;background:#355c49;">
+<a href="{{ .SiteURL }}/auth/link?token_hash={{ .TokenHash }}&amp;type=magiclink" target="_blank" style="display:inline-block;padding:17px 38px;font-family:Inter, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:17px;line-height:1.2;font-weight:600;color:#fffdf8;text-decoration:none;border-radius:999px;">Sign in&nbsp;&rarr;</a>
+</td></tr></table>
+<p style="margin:18px 0 0;font-family:Inter, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:13.5px;line-height:1.55;color:#626c63;">The link works once and expires after a short while. You can always ask for a new one.</p>
+<p style="margin:22px 0 0;padding-top:18px;border-top:1px solid #dcded3;font-family:Inter, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:12.5px;line-height:1.55;color:#626c63;">Button not working? Paste this link into your browser:<br><a href="{{ .SiteURL }}/auth/link?token_hash={{ .TokenHash }}&amp;type=magiclink" target="_blank" style="color:#355c49;word-break:break-all;">{{ .SiteURL }}/auth/link?token_hash={{ .TokenHash }}&amp;type=magiclink</a></p>
+</td></tr>
+<tr><td style="padding:34px 44px 38px;background:#e9eee3;border-top:1px solid #dcded3;" class="pad">
+<p style="margin:0 0 14px;font-family:Inter, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:11px;line-height:1.4;letter-spacing:0.22em;text-transform:uppercase;font-weight:600;color:#626c63;">The Last Ten Project</p>
+<h2 style="margin:0 0 12px;font-family:Newsreader, Georgia, 'Iowan Old Style', 'Times New Roman', serif;font-weight:400;font-size:23px;line-height:1.25;color:#293a34;">Tonight, keep the last <em style="font-style:italic;color:#355c49;">ten.</em></h2>
+<p style="margin:0;font-family:Inter, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:15px;line-height:1.6;color:#46554e;">A story with them at the centre, and something true to talk about before the light goes out.</p>
+
+</td></tr>
+</table>
+</td></tr>
+
+<tr><td align="center" style="padding:38px 10px 0;">
+<img src="https://lastten.org/email/moons.png" width="290" height="20" alt="Ten moons, waxing from new to full" style="display:block;width:290px;max-width:100%;height:auto;border:0;">
+<div style="margin-top:16px;font-family:Inter, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:10.5px;letter-spacing:0.24em;text-transform:uppercase;font-weight:600;color:#626c63;">Ten minutes. Together.</div>
+</td></tr>
+
+<tr><td align="center" style="padding:26px 26px 0;">
+<p style="margin:0 0 14px;font-family:Newsreader, Georgia, 'Iowan Old Style', 'Times New Roman', serif;font-style:italic;font-size:17px;line-height:1.5;color:#46554e;">Ten minutes of curiosity. A little more time together.</p>
+<p style="margin:0;font-family:Inter, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:12px;line-height:1.6;color:#626c63;">If you did not ask to sign in, ignore this email. Nothing changes.<br>The Last Ten Project &middot; <a href="https://lastten.org" target="_blank" style="color:#626c63;">lastten.org</a></p>
+</td></tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>

@@ -52,6 +52,12 @@ export default defineConfig({
        */
       UI_MOCK_API: '1',
       NEXT_PUBLIC_API_MOCK: '1',
+      /**
+       * Issue #92: this suite tests lastten.org as it is after the public launch - the full
+       * homepage at `/`. The coming-soon page and the approval gate are tested on the real
+       * stack (test/e2e-real/waitlist.spec.ts), where the waitlist is on.
+       */
+      WAITLIST_ENABLED: 'false',
     },
   },
 })

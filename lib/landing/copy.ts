@@ -159,9 +159,124 @@ export const CLOSING = {
   lead: BRAND.footer,
 } as const
 
+/**
+ * The coming-soon page (issue #92): what lastten.org says while places open a few at a time.
+ * The same rules as the rest of the page apply, and the same test reads it.
+ */
+export const COMING_SOON = {
+  eyebrow: 'Coming soon',
+  headline: ['Turn the last ten minutes of the day into the part you both ', 'love.'] as const,
+  lead:
+    'A bedtime story where your child is the hero, about whatever they wonder about. Ten quiet ' +
+    'minutes together that leave you both a little more curious.',
+  joinLabel: 'Email for the waitlist',
+  joinButton: 'Join the waitlist',
+  joining: 'Adding you…',
+  note: 'We are opening places a few families at a time, and will email you when yours is ready.',
+  privacy: 'We use your address only for that. No newsletters, no sharing.',
+  // Issue #95: joining sends a link; the address is on the list once it is confirmed.
+  joinedTitle: 'Check your email.',
+  joinedBody: 'We have sent you a link to confirm your place. If it is not in your inbox, look in spam.',
+  joinError: 'We could not add you just now. Please try again in a moment.',
+  badEmail: 'Please enter an email address we can write to.',
+  signIn: 'Already have a place? Sign in',
+  shelf: {
+    eyebrow: 'Why we are building it',
+    headline: ['No encyclopedia on the shelf? Tonight’s story ', 'is one.'] as const,
+    body:
+      'There may be no encyclopedia in the house any more, but there is still bedtime. Let the ' +
+      'story be where your child learns about anything their mind can imagine: the deep sea, ' +
+      'the Moon, how a bee makes honey, the question they asked at dinner.',
+  },
+  points: [
+    { title: 'For your child', body: 'A story with them at the centre, and something true to wonder about.' },
+    { title: 'For you', body: 'An easy, lovely way to end the day, even on the tired nights.' },
+    { title: 'For both of you', body: 'Something new to talk about before the light goes out.' },
+  ],
+  more: 'Read more about the project',
+  /** /waitlist/confirm (issue #95): the page the emailed link opens. */
+  confirm: {
+    eyebrow: 'The waitlist',
+    title: 'Confirm your place',
+    body: 'One press and you are on the list.',
+    button: 'Confirm my place',
+    confirming: 'Confirming…',
+    doneTitle: 'You’re on the list.',
+    doneBody: 'We’ll email you when your place is ready. Sleep well.',
+    badTitle: 'That link has expired or was already used.',
+    badBody: 'If you pressed Confirm before, you are already on the list. If not, join again and we will send a fresh link.',
+    again: 'Join the waitlist',
+    error: 'We could not confirm that just now. Please try again in a moment.',
+  },
+} as const
+
+/**
+ * The words in our emails (issue #98), held to the same rules as the pages. Each email is one
+ * action with one button, then a little of the project's own words. Sign-in mail is sent by
+ * Supabase from supabase/templates/, which are generated from these (lib/email/auth-templates.ts).
+ */
+export const EMAIL = {
+  confirm: {
+    subject: `Confirm your place on the waitlist for ${BRAND.wordmark}`,
+    preheader: 'One press and you are on the list.',
+    eyebrow: 'The waitlist',
+    headline: ['One press and you are ', 'on the list.'] as const,
+    lead: `Someone, hopefully you, asked to join the waitlist for ${BRAND.wordmark} with this address. Confirm it was you and we will keep your place.`,
+    button: 'Confirm my place',
+    note: 'The link works for 7 days. We will email you again when your place is ready.',
+    reason: 'If this was not you, ignore this email and we will forget the address.',
+  },
+  invite: {
+    subject: `Your place at ${BRAND.wordmark} is ready`,
+    preheader: 'Thank you for waiting. Tonight’s story can be about them.',
+    eyebrow: 'Your place is ready',
+    headline: ['Tonight, the last ten minutes ', 'are theirs.'] as const,
+    lead: `Thank you for waiting. Your place at ${BRAND.wordmark} is ready: a bedtime story where your child is the hero, with something true to wonder about.`,
+    button: 'Create my account',
+    note: 'Use this email address and we will send you a sign-in link. There is no password.',
+    reason: `You joined the waitlist for ${BRAND.wordmark} with this address.`,
+  },
+  signIn: {
+    subject: `Your sign-in link for ${BRAND.wordmark}`,
+    preheader: 'Press the button to sign in. No password needed.',
+    eyebrow: 'Sign in',
+    headline: ['Your sign-in link ', 'is here.'] as const,
+    lead: 'Press the button to sign in. There is no password to remember.',
+    button: 'Sign in',
+    note: 'The link works once and expires after a short while. You can always ask for a new one.',
+    reason: 'If you did not ask to sign in, ignore this email. Nothing changes.',
+  },
+  /** Below the button: why the project exists, in the coming-soon page's words. */
+  why: {
+    eyebrow: COMING_SOON.shelf.eyebrow,
+    title: COMING_SOON.shelf.headline,
+    body: COMING_SOON.shelf.body,
+    points: COMING_SOON.points,
+  },
+  /** Below the invite's button: the first night, step by step. */
+  how: {
+    eyebrow: HOW.eyebrow,
+    title: ['A new book, about them, ', 'every night.'] as const,
+    body: HOW.aside,
+    points: HOW.steps,
+  },
+  /** Below the sign-in button: one quiet line, so a link email is still ours. */
+  tonight: {
+    eyebrow: BRAND.project,
+    title: ['Tonight, keep the last ', 'ten.'] as const,
+    body: 'A story with them at the centre, and something true to talk about before the light goes out.',
+  },
+} as const
+
 /** Every sentence a visitor can read, for the copy rules test. */
 export function allLandingCopy(): string[] {
   return [
+    COMING_SOON.eyebrow, COMING_SOON.headline.join(''), COMING_SOON.lead, COMING_SOON.joinLabel,
+    COMING_SOON.joinButton, COMING_SOON.joining, COMING_SOON.note, COMING_SOON.privacy,
+    COMING_SOON.joinedTitle, COMING_SOON.joinedBody, COMING_SOON.joinError, COMING_SOON.badEmail,
+    COMING_SOON.signIn, COMING_SOON.shelf.eyebrow, COMING_SOON.shelf.headline.join(''),
+    COMING_SOON.shelf.body, ...COMING_SOON.points.flatMap((p) => [p.title, p.body]), COMING_SOON.more,
+    ...Object.values(COMING_SOON.confirm),
     HERO.eyebrow, HERO.headline.join(''), HERO.lead, HERO.cta, HERO.secondary, HERO.note, HERO.moons,
     MISSION.join(''),
     ...BELIEFS.flatMap((b) => [b.title, b.body]),
@@ -171,5 +286,9 @@ export function allLandingCopy(): string[] {
     ...QUESTIONS.flatMap((x) => [x.q, x.a]),
     CLOSING.headline.join(''), CLOSING.lead,
     KINDLE.promise, KINDLE.answer,
+    ...[EMAIL.confirm, EMAIL.invite, EMAIL.signIn].flatMap((m) => [
+      m.subject, m.preheader, m.eyebrow, m.headline.join(''), m.lead, m.button, m.note, m.reason,
+    ]),
+    EMAIL.how.title.join(''), EMAIL.tonight.title.join(''), EMAIL.tonight.body,
   ]
 }

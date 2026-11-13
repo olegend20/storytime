@@ -66,6 +66,20 @@ const ServerEnv = z.object({
   SMTP_PASS: blankIsUnset(z.string().min(1)),
   SMTP_SECURE: Booleanish.default(false),
   KINDLE_FROM_EMAIL: blankIsUnset(z.string().email()),
+  /**
+   * The sender of the waitlist's "your place is ready" email (issue #92), e.g.
+   * hello@lastten.org. Uses the same SMTP settings; unset falls back to KINDLE_FROM_EMAIL.
+   */
+  MAIL_FROM_EMAIL: blankIsUnset(z.string().email()),
+
+  /**
+   * Issue #92: lastten.org is a coming-soon page and only approved addresses can create an
+   * account. On unless set to false, so a deployment that forgets the variable stays closed;
+   * `false` is the public launch (the homepage returns at `/`, anyone can sign up).
+   */
+  WAITLIST_ENABLED: Booleanish.default(true),
+  /** The public site, e.g. https://lastten.org: where the invite email links. Unset = the owner's request origin. */
+  SITE_URL: blankIsUnset(z.string().url()),
 
   /** F12: /admin is gated to this user id; everyone else gets a 404. */
   OWNER_USER_ID: z.string().uuid().optional(),

@@ -127,14 +127,28 @@ describe.runIf(dbUp)('security audit 2026-09-29: attacks through the public API'
     expect(ok.error).toBeNull()
   })
 
-  it('password sign-up with someone else’s email does not sign anyone in', async () => {
+  /**
+   * Issue #92 (VT-W7): sign-up is off at Supabase, so neither the password endpoint nor a
+   * magic link can make an account - only the app's server can, for an approved address.
+   * (Before #92 this asserted the weaker rule: an unconfirmed password sign-up got no session.)
+   */
+  it('password sign-up with someone else’s email creates no account and signs nobody in', async () => {
     const client = createClient(localDb.url, localDb.anonKey, { auth: { persistSession: false } })
     const email = `not-theirs-${Date.now()}@storytime.test`
     const { data, error } = await client.auth.signUp({ email, password: 'correct-horse-battery-9' })
-    expect(error).toBeNull()
-    expect(data.session, 'an unconfirmed signup must not get a session').toBeNull()
+    expect(error, 'sign-up must be refused').not.toBeNull()
+    expect(data.session).toBeNull()
     const login = await client.auth.signInWithPassword({ email, password: 'correct-horse-battery-9' })
     expect(login.data.session).toBeNull()
     if (data.user) await serviceClient().auth.admin.deleteUser(data.user.id)
+  })
+
+  it('a magic link that would create an account is refused', async () => {
+    const client = createClient(localDb.url, localDb.anonKey, { auth: { persistSession: false } })
+    const email = `otp-signup-${Date.now()}@storytime.test`
+    const { error } = await client.auth.signInWithOtp({ email, options: { shouldCreateUser: true } })
+    expect(error, 'an OTP sign-up must be refused').not.toBeNull()
+    const { data } = await serviceClient().auth.admin.listUsers({ perPage: 1000 })
+    expect(data.users.some((u) => u.email === email)).toBe(false)
   })
 })
