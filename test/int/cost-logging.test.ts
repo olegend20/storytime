@@ -271,20 +271,22 @@ describe.runIf(reachable)('F8 Supabase generation log sink', () => {
     await sink.write(storyRow(family.familyId, storyId, marker))
     await sink.write(storyRow(family.familyId, other, marker))
 
-    // An unknown story is a no-op, and so is a story whose row still does not exist.
+    // An unknown story is a no-op.
     await sink.linkStory(randomUUID())
-    expect(sink.failedWrites, sink.lastError ?? '').toBe(0)
+    expect(sink.failedLinks).toBe(0)
 
     await world.createStory({ familyId: family.familyId, seriesId: await world.createSeries(family.familyId), id: storyId })
     await sink.linkStory(storyId)
-    expect(sink.failedWrites, sink.lastError ?? '').toBe(0)
+    expect(sink.failedLinks).toBe(0)
 
     const rows = await logsMarked(marker)
     expect(rows.filter((r) => r.story_id === storyId)).toHaveLength(2)
     expect(rows.filter((r) => r.story_id === null)).toHaveLength(1)
-    // Claimed once: a second link has nothing left to attach.
+    // Claimed once: a second link has nothing left to attach and changes nothing.
     await sink.linkStory(storyId)
-    expect(sink.failedWrites, sink.lastError ?? '').toBe(0)
+    expect(sink.failedLinks).toBe(0)
+    const byId = (a: { id: unknown }, b: { id: unknown }) => String(a.id).localeCompare(String(b.id))
+    expect((await logsMarked(marker)).sort(byId)).toEqual([...rows].sort(byId))
   })
 
   it('keeps generation_logs invisible to a client key', async () => {
