@@ -918,7 +918,7 @@ finished. The migration (`generation_progress`) is applied to production by hand
 - Full eval, v6 against v10: mean 4.12 against 4.12, disqualified 1 against 0, too-scary 2
   against 0, first drafts untouched 11 against 13, swapped after streaming 5 against 7.
   Results are in `eval/results/eval-2026-11-13{,-2,-3}.json` (v6, v9, v10). Live spend for the
-  bench and three evals: about $50.
+  bench and three evals: about $60.
 
 ### 2026-11-13 — story costs count the writing calls (issue #104, DECISIONS #220)
 
