@@ -127,13 +127,13 @@ describe('sentence length is measured, and calibrated on the reference stories',
 
 describe('PROMPT_PIN_<ID> pins an older prompt version', () => {
   it('loads v1 when pinned, the newest otherwise', () => {
-    expect(loadPrompt('master').version).toBe(6)
+    expect(loadPrompt('master').version).toBe(9)
     process.env.PROMPT_PIN_MASTER = '1'
     expect(loadPrompt('master').version).toBe(1)
   })
 
   it('refuses a version that is not on disk', () => {
-    process.env.PROMPT_PIN_MASTER = '9'
-    expect(() => loadPrompt('master')).toThrow(/PROMPT_PIN_MASTER=9/)
+    process.env.PROMPT_PIN_MASTER = '99'
+    expect(() => loadPrompt('master')).toThrow(/PROMPT_PIN_MASTER=99/)
   })
 })
