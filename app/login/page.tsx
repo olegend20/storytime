@@ -3,13 +3,14 @@ import Link from 'next/link'
 import LoginForm from './LoginForm'
 import { normalizeEmail } from '@/lib/waitlist/email'
 import { waitlistEnabled } from '@/lib/waitlist/mode'
+import { safeNext } from '@/lib/auth/next'
 
 export const metadata: Metadata = { title: 'Sign in — StoryTime' }
 
-function safeNext(raw: string | string[] | undefined): string {
+/** The page to return to, or '' for none: lib/auth/next's check, the one the callback uses. */
+function nextParam(raw: string | string[] | undefined): string {
   const value = Array.isArray(raw) ? raw[0] : raw
-  if (!value || !value.startsWith('/') || value.startsWith('//')) return ''
-  return value
+  return value && safeNext(value) === value ? value : ''
 }
 
 export default async function LoginPage({
@@ -30,7 +31,7 @@ export default async function LoginPage({
         Enter your email and we will send you a link. No password needed.
       </p>
       <LoginForm
-        next={safeNext(params.next)}
+        next={nextParam(params.next)}
         initialError={initialError}
         initialEmail={initialEmail}
         waitlist={waitlist}
