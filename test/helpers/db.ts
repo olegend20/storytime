@@ -162,6 +162,8 @@ export class TestWorld {
   async createStory(opts: {
     familyId: string
     seriesId: string
+    /** A story id fixed in advance, as the pipeline fixes it before the row exists. */
+    id?: string
     factPackId?: string | null
     createdAt?: string
     status?: 'ready' | 'flagged' | 'failed'
@@ -170,6 +172,7 @@ export class TestWorld {
     const { data, error } = await this.db
       .from('stories')
       .insert({
+        ...(opts.id ? { id: opts.id } : {}),
         family_id: opts.familyId,
         series_id: opts.seriesId,
         topic_input: 'lane 3 integration test',

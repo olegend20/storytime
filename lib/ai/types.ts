@@ -66,6 +66,11 @@ export interface StreamSummary {
  */
 export interface GenerationLogSink {
   write(row: GenerationLogRow): Promise<void>
+  /**
+   * The story row now exists: attach it to the rows written for it before it did (issue
+   * #104). Optional - a sink that keeps no foreign keys has nothing to attach.
+   */
+  linkStory?(storyId: string): Promise<void>
 }
 
 /** Default sink: collects in memory. Replaced at runtime by the Supabase sink. */
@@ -143,6 +148,17 @@ export class TeeLogSink implements GenerationLogSink {
         // One failing sink must not lose the row for the others, or silence the call.
         console.warn(
           `[costs] a log sink failed: ${err instanceof Error ? err.message : String(err)}`,
+        )
+      }
+    }
+  }
+  async linkStory(storyId: string): Promise<void> {
+    for (const sink of this.sinks) {
+      try {
+        await sink.linkStory?.(storyId)
+      } catch (err) {
+        console.warn(
+          `[costs] a log sink failed to link story costs: ${err instanceof Error ? err.message : String(err)}`,
         )
       }
     }
