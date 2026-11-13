@@ -40,6 +40,7 @@ describe('resolveNext', () => {
 describe('/auth/link: the emailed link hands on to Supabase (VT-L2)', () => {
   beforeEach(() => {
     vi.stubEnv('SUPABASE_URL', 'https://ref.supabase.co')
+    vi.stubEnv('SITE_URL', '')
     resetEnvCache()
   })
   afterEach(() => {
@@ -136,15 +137,11 @@ describe('the callback (VT-L2)', () => {
     expect(clearsNextCookie(res)).toBe(false)
   })
 
-  it('a token_hash is verified only as a sign-in type', async () => {
-    verifyOtp.mockResolvedValue({ error: null })
-    getUser.mockResolvedValue({ data: { user: { id: 'u1' } } })
-    await callback('token_hash=abc&type=magiclink')
-    expect(verifyOtp).toHaveBeenCalledWith({ type: 'magiclink', token_hash: 'abc' })
-    for (const type of ['recovery', 'invite', 'email_change', 'nonsense']) {
-      verifyOtp.mockClear()
+  it('a token_hash never signs in: only a code from the asking browser does (DECISIONS #219)', async () => {
+    for (const type of ['magiclink', 'signup', 'email', 'recovery']) {
       const res = await callback(`token_hash=abc&type=${type}`)
       expect(verifyOtp, type).not.toHaveBeenCalled()
+      expect(getUser, type).not.toHaveBeenCalled()
       expect(res.headers.get('location')).toMatch(/^\/login\?error=/)
     }
   })
@@ -157,6 +154,23 @@ describe('/auth/link on 127.0.0.1', () => {
     const { GET } = await import('@/app/auth/link/route')
     const res = GET(new NextRequest('http://localhost:3000/auth/link?token_hash=pkce_abc123def456&type=magiclink', { headers: { host: '127.0.0.1:3000' } }))
     expect(new URL(res.headers.get('location')!).searchParams.get('redirect_to')).toBe('http://127.0.0.1:3000/auth/callback')
+    vi.unstubAllEnvs()
+    resetEnvCache()
+  })
+})
+
+describe('/auth/link with SITE_URL set (production)', () => {
+  it('always returns to SITE_URL, whatever Host the request claims', async () => {
+    vi.stubEnv('SUPABASE_URL', 'https://ref.supabase.co')
+    vi.stubEnv('SITE_URL', 'https://lastten.org')
+    resetEnvCache()
+    const { GET } = await import('@/app/auth/link/route')
+    const res = GET(
+      new NextRequest('https://lastten.org/auth/link?token_hash=pkce_abc123def456&type=magiclink', {
+        headers: { host: 'evil.example', 'x-forwarded-host': 'evil.example' },
+      }),
+    )
+    expect(new URL(res.headers.get('location')!).searchParams.get('redirect_to')).toBe('https://lastten.org/auth/callback')
     vi.unstubAllEnvs()
     resetEnvCache()
   })

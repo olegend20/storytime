@@ -127,8 +127,8 @@ test.describe('F2: the magic link, opened exactly as it arrives', () => {
       await page.goto('/dashboard')
       await expect(page).toHaveURL(/\/login\?next=%2Fdashboard/)
 
-      // ---- 4. Sign back in with the same email - from a protected page, so the link carries
-      //         `?next=`, the case that also looped.
+      // ---- 4. Sign back in with the same email - from a protected page. The link no longer
+      //         carries `?next=` (#101): /dashboard comes back through the st_next cookie.
       const second = await requestLink(page, email, first)
       await page.goto(onTestServer(second, origin(page)))
       await expect(page).toHaveURL(/localhost:\d+\/dashboard$/)
@@ -188,6 +188,22 @@ test.describe('F2: the magic link, opened exactly as it arrives', () => {
       await expect(other.getByText(/Open it on the device and browser you asked from/)).toBeVisible()
       await other.goto('/dashboard')
       await expect(other).toHaveURL(/\/login\?next=/)
+
+      // Nor by taking the token straight to the callback: only a code from the asking browser
+      // signs in (the reviewer's bypass, closed in #101).
+      const hash = new URL(link).searchParams.get('token_hash')!
+      const direct = new URL('/auth/callback', origin(page))
+      direct.searchParams.set('token_hash', hash)
+      direct.searchParams.set('type', 'magiclink')
+      await other.goto(direct.toString())
+      await expect(other).toHaveURL(/\/login\?error=/)
+      await other.goto('/dashboard')
+      await expect(other).toHaveURL(/\/login\?next=/)
+
+      // Opened elsewhere, the link is spent at Supabase's check (as before #101): even the
+      // asking browser now needs a new one, which the message tells the parent to request.
+      await page.goto(onTestServer(link, origin(page)))
+      await expect(page).toHaveURL(/\/login/)
     } finally {
       await phone.close()
       await deleteTestUser(email)

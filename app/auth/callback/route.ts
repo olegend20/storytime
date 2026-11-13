@@ -9,8 +9,9 @@ import { supabaseRoute } from '@/lib/supabase/route'
  * F2: the magic-link / OAuth landing route.
  *
  * Supabase sends the parent here with a PKCE `code`: after its check of the emailed link
- * (/auth/link, issue #101) and after Google. A `token_hash` + `type` pair is also accepted,
- * for the sign-in types only.
+ * (/auth/link, issue #101) and after Google. Only a `code` signs in: it works only in the
+ * browser that asked (DECISIONS #219). There is deliberately no `token_hash` branch - the
+ * email prints the token, and verifying it here would sign in whoever holds the email.
  *
  * On success the family row is created if it does not exist. This is the only place login
  * creates a family, and `ensureFamily` is idempotent, so opening the link twice cannot
@@ -21,9 +22,6 @@ import { supabaseRoute } from '@/lib/supabase/route'
  * to keep the new session.
  */
 
-/** Sign-in only: a link cannot choose recovery, invite or email_change here. */
-const OTP_TYPES = new Set(['email', 'magiclink', 'signup'])
-
 export const CODE_FAILED =
   'That sign-in link did not work here. Open it on the device and browser you asked from, or request a new one.'
 
@@ -31,8 +29,6 @@ export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams
   const next = resolveNext(params.get('next'), request.cookies.get(NEXT_COOKIE)?.value)
   const code = params.get('code')
-  const tokenHash = params.get('token_hash')
-  const type = params.get('type')
 
   const { db, commit } = supabaseRoute(request)
 
@@ -43,24 +39,14 @@ export async function GET(request: NextRequest) {
   if (params.get('error') || params.get('error_description')) {
     return failWith('That sign-in link did not work. Please request a new one.')
   }
-  if (!code && !tokenHash) {
+  if (!code) {
     return failWith('That sign-in link is missing its token. Please try again.')
   }
 
-  if (code) {
-    const { error } = await db.auth.exchangeCodeForSession(code)
-    // Most often the link was opened in another browser or on another device than the one
-    // that asked: the code is tied to it (DECISIONS #219).
-    if (error) return failWith(CODE_FAILED)
-  } else if (tokenHash) {
-    const otpType = type ?? 'email'
-    if (!OTP_TYPES.has(otpType)) return failWith('That sign-in link did not work. Please request a new one.')
-    const { error } = await db.auth.verifyOtp({
-      type: otpType as 'email' | 'magiclink' | 'signup',
-      token_hash: tokenHash,
-    })
-    if (error) return failWith('That sign-in link has expired. Please request a new one.')
-  }
+  const { error } = await db.auth.exchangeCodeForSession(code)
+  // Most often the link was opened in another browser or on another device than the one
+  // that asked: the code is tied to it (DECISIONS #219).
+  if (error) return failWith(CODE_FAILED)
 
   const {
     data: { user },

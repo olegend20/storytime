@@ -24,11 +24,15 @@ export function GET(request: NextRequest) {
 
   // Back to the very origin this link was opened on: the PKCE verifier cookie lives there.
   // `request.nextUrl.origin` would say localhost for 127.0.0.1 (see lib/http/responses.ts), a
-  // different cookie jar; Host is what the browser used (lastten.org in production).
+  // different cookie jar; Host is what the browser used. Where SITE_URL is set (production:
+  // lastten.org) only that origin is used, so a forged Host cannot choose the destination
+  // even if Supabase's redirect allow-list were ever loosened.
+  const env = serverEnv()
   const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? request.nextUrl.host
   const proto = request.headers.get('x-forwarded-proto') ?? request.nextUrl.protocol.replace(':', '')
-  const site = `${proto}://${host}`
-  const verify = new URL('/auth/v1/verify', serverEnv().SUPABASE_URL)
+  const opened = `${proto}://${host}`
+  const site = env.SITE_URL ? new URL(env.SITE_URL).origin : opened
+  const verify = new URL('/auth/v1/verify', env.SUPABASE_URL)
   verify.searchParams.set('token', tokenHash)
   verify.searchParams.set('type', type)
   verify.searchParams.set('redirect_to', new URL('/auth/callback', site).toString())
