@@ -56,6 +56,8 @@ export interface PipelineStoryResult {
   progress?: { writes: number; failures: number; lagMs: number[] }
 }
 
+export type AfterStreaming = 'unchanged' | 'edited' | 'replaced'
+
 export interface FirstDraft {
   passed: boolean
   /** The gate's checks that sent it back (`QualityFailure.check`), empty when it passed. */
@@ -64,6 +66,12 @@ export interface FirstDraft {
   reasons: string[]
   /** Hard rules mended or cut in place (rungs 1-2). */
   mended_rules: number[]
+  /**
+   * What the parent saw happen to the story after it began streaming (issue #85): nothing, a
+   * few sentences edited in place (the mend, the cut or the revision), or the whole story
+   * replaced by a rewrite or a shorter retry. Absent in records from before #85.
+   */
+  after_streaming?: AfterStreaming
   /**
    * The draft itself and the request it was written to, so the quality reviewer can be
    * replayed on it (issue #58, `pnpm review-bench`). Absent in records from before #58.
