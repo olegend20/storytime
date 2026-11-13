@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabaseService } from '@/lib/supabase/service'
-import { callModel, parseJsonLoose, streamModel, structuredOutputRejected, ModelCallError, ModelRefusalError, getDefaultLogSink } from '@/lib/ai'
+import { callModel, parseJsonLoose, streamModel, structuredOutputRejected, ModelCallError, ModelRefusalError, getDefaultLogSink, type GenerationLogSink } from '@/lib/ai'
 import { serverEnv } from '@/lib/env'
 import { parentMessage, type ParentMessageKey } from '@/lib/messages'
 import {
@@ -331,6 +331,15 @@ export function bandSafetyHolds(result: QualityResult, band: AgeBand): boolean {
 export function fallbackSafetyHolds(result: QualityResult, band: AgeBand): boolean {
   const safety = result.safety
   return bandSafetyHolds(result, band) && (safety === null || safety.safe || result.hard_violations.length > 0)
+}
+
+/** Attach a saved story's earlier cost rows to it (#104). Never throws: it is bookkeeping. */
+async function linkStoryCosts(sink: GenerationLogSink, storyId: string): Promise<void> {
+  try {
+    await sink.linkStory?.(storyId)
+  } catch (err) {
+    console.warn(`[costs] linking story ${storyId} to its cost rows failed: ${err instanceof Error ? err.message : String(err)}`)
+  }
 }
 
 /**
@@ -1056,8 +1065,6 @@ export async function runGeneration(
       content_notice: contentNotice,
     })
     if (insertError) throw new GenerationFailed(`saving the story failed: ${insertError.message}`)
-    // The calls above were logged before this row existed, so their story link waited (#104).
-    await (sink ?? getDefaultLogSink()).linkStory?.(prepared.storyId)
 
     // F8 AC: quota is consumed ONLY after a successful stories insert. This line and the
     // `preflight` in prepareGeneration are the whole enforcement - lane 3 cannot check it.
@@ -1088,6 +1095,10 @@ export async function runGeneration(
       quota: { used: quotaAfter.used, limit: quotaAfter.limit },
     })
 
+    // The calls above were logged before the story row existed, so their story link waited
+    // (#104). Bookkeeping only: after `done`, and a failure here never touches the story.
+    const linked = linkStoryCosts(sink ?? getDefaultLogSink(), prepared.storyId)
+
     // Background bible update (F4 AC), started after `done` so the parent never waits on it.
     const bibleUpdate = scheduleBibleUpdate(prepared.seriesId, story, {
       db,
@@ -1110,7 +1121,8 @@ export async function runGeneration(
       quality: gate.result,
       wordCount,
       writeCalls,
-      bibleUpdate,
+      // The route waits on this after the response; the cost links ride along with it.
+      bibleUpdate: Promise.all([linked, bibleUpdate]),
       firstGated,
     }
   } catch (err) {

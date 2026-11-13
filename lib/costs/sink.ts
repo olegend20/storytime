@@ -16,6 +16,8 @@ export class SupabaseLogSink implements GenerationLogSink {
   /** Last write failure, for the admin page and tests. Writes never throw — see below. */
   lastError: string | null = null
   failedWrites = 0
+  /** Rows saved on their family whose story link could not be added (#104). */
+  failedLinks = 0
 
   constructor(client?: SupabaseClient) {
     this.client = client
@@ -37,13 +39,16 @@ export class SupabaseLogSink implements GenerationLogSink {
        * A reference that is not a UUID (the eval harness correlates by ids like
        * `eval:titanic-band-b`) or does not exist: the story not saved yet, or an eval family
        * cleaned up before its judge call was logged. The COST is the point of this table:
-       * keep the row and drop references, the story first, then the pack, then the family,
-       * so a story not saved yet still leaves the row on its family.
+       * keep the row and drop the reference the error names, one at a time, so a story not
+       * saved yet still leaves the row on its family.
        */
-      const next = dropOne(refs)
-      if (!next) break
-      console.warn(`[costs] generation_logs: ${error.message} - logging ${row.purpose}/${row.model} without its ${next.dropped} reference`)
-      refs = next.refs
+      const column = failedReference(error, refs)
+      if (!column) break
+      // A story not saved yet is every call before the save, not news; anything else is.
+      if (!(column === 'story_id' && error.code === FOREIGN_KEY_VIOLATION)) {
+        console.warn(`[costs] generation_logs: ${error.message} - logging ${row.purpose}/${row.model} without its ${column}`)
+      }
+      refs = { ...refs, [column]: null }
       ;({ error } = await this.insert(id, row, refs))
     }
 
@@ -71,17 +76,23 @@ export class SupabaseLogSink implements GenerationLogSink {
     }
   }
 
-  /** The story row exists now: point the rows written before it at it. Never throws. */
+  /**
+   * The story row exists now: point the rows written before it at it. Never throws. A miss
+   * loses no spend (the rows are on the family), so it is counted apart from `failedWrites`.
+   */
   async linkStory(storyId: string): Promise<void> {
     const ids = this.unlinked.get(storyId)
     if (!ids) return
     this.unlinked.delete(storyId)
-    const db = this.client ?? supabaseService()
-    const { error } = await db.from('generation_logs').update({ story_id: storyId }).in('id', ids)
-    if (error) {
-      this.failedWrites += 1
-      this.lastError = error.message
-      console.error(`[costs] linking ${ids.length} generation_logs rows to story ${storyId} failed: ${error.message}`)
+    try {
+      const db = this.client ?? supabaseService()
+      const { error } = await db.from('generation_logs').update({ story_id: storyId }).in('id', ids)
+      if (error) throw new Error(error.message)
+    } catch (err) {
+      this.failedLinks += 1
+      console.error(
+        `[costs] linking ${ids.length} generation_logs rows to story ${storyId} failed: ${err instanceof Error ? err.message : String(err)}`,
+      )
     }
   }
 
@@ -106,12 +117,22 @@ export class SupabaseLogSink implements GenerationLogSink {
 
 type References = Pick<GenerationLogRow, 'family_id' | 'story_id' | 'fact_pack_id'>
 
-/** The next reference to give up, in the order that loses the least. */
-function dropOne(refs: References): { refs: References; dropped: string } | null {
-  if (refs.story_id !== null) return { refs: { ...refs, story_id: null }, dropped: 'story' }
-  if (refs.fact_pack_id !== null) return { refs: { ...refs, fact_pack_id: null }, dropped: 'fact pack' }
-  if (refs.family_id !== null) return { refs: { ...refs, family_id: null }, dropped: 'family' }
-  return null
+const COLUMNS = ['story_id', 'fact_pack_id', 'family_id'] as const
+
+/**
+ * The reference an insert error is about: the column its foreign key names, or the column
+ * holding the value that is not a UUID. Failing that, the first still set, in the order that
+ * loses the least.
+ */
+function failedReference(error: { message: string; details?: string | null }, refs: References): (typeof COLUMNS)[number] | null {
+  const text = `${error.message} ${error.details ?? ''}`
+  const set = COLUMNS.filter((c) => refs[c] !== null)
+  return (
+    set.find((c) => text.includes(`generation_logs_${c}_fkey`)) ??
+    set.find((c) => text.includes(`"${refs[c]}"`)) ??
+    set[0] ??
+    null
+  )
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i

@@ -248,6 +248,17 @@ describe.runIf(reachable)('F8 Supabase generation log sink', () => {
     const orphan = await logsMarked(gone)
     expect(orphan).toHaveLength(1)
     expect(orphan[0]!.family_id).toBeNull()
+
+    // The reference the error names is the one dropped: a saved story keeps its link when
+    // only the pack is bad.
+    const saved = await world.createStory({ familyId: family.familyId, seriesId: await world.createSeries(family.familyId) })
+    const badPack = `sc1-pack-${randomUUID()}`
+    await sink.write({ ...storyRow(family.familyId, saved, badPack), fact_pack_id: randomUUID() })
+    expect(sink.failedWrites, sink.lastError ?? '').toBe(0)
+    const kept = await logsMarked(badPack)
+    expect(kept).toHaveLength(1)
+    expect(kept[0]!.story_id).toBe(saved)
+    expect(kept[0]!.family_id).toBe(family.familyId)
   })
 
   it('VT-SC2: linkStory attaches exactly the rows written for that story, once the row exists', async () => {
