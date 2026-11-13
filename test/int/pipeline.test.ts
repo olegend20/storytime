@@ -106,6 +106,7 @@ import {
   type QuotaService,
 } from '@/lib/generate'
 import { MemoryLogSink } from '@/lib/ai'
+import { SupabaseLogSink } from '@/lib/costs/sink'
 import { initialStreamState, streamReducer } from '@/lib/client/generate'
 import { getOrCreateSeries, loadBible, reloadBible, writeBible } from '@/lib/bible'
 import {
@@ -119,7 +120,7 @@ import {
   type StoryBible,
   type StoryOutput,
 } from '@/lib/schemas'
-import { createTestFamily, databaseAvailable, insertFactPack, type TestFamily } from '../helpers/pipeline-db'
+import { createTestFamily, databaseAvailable, insertFactPack, serviceClient, type TestFamily } from '../helpers/pipeline-db'
 import { FIXTURE_FACT_PACK, FIXTURE_TOPIC_KEY, FIXTURE_TOPIC_LABEL } from '../helpers/factpack'
 import {
   callFixtureKey,
@@ -1657,6 +1658,104 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       .single()
     expect((row as { status: string }).status).toBe('flagged')
     expect((row as { content: StoryOutput }).content.chapters.length).toBeGreaterThanOrEqual(6)
+  })
+
+  /**
+   * Issue #104: the calls before the save were logged with a story id the foreign key could
+   * not see yet, and the sink fell back to no family and no story, so /admin counted a story
+   * as its bible update alone. Real Supabase sink here, not the memory one.
+   */
+  describe('cost rows (issue #104)', () => {
+    const scaryOnce = () => {
+      let call = 0
+      return {
+        review: async (): Promise<OutputSafetyReview> => {
+          call += 1
+          return call === 1
+            ? {
+                safe: false,
+                violations: [{ rule: 3, quote: 'a monster chased them down the corridor', severity: 'hard' as const }],
+                scary_level: 3,
+                positive_portrayal: true,
+                ending_safe: true,
+              }
+            : { safe: true, violations: [], scary_level: 0, positive_portrayal: true, ending_safe: true }
+        },
+      }
+    }
+    const reasons = ['GUARDRAILS rule 3 breached', 'output safety review returned safe: false', 'scary_level 3 above band A limit']
+    const marked = new Set<string>()
+    async function familyLogs(familyId: string) {
+      const { data, error } = await serviceClient()
+        .from('generation_logs')
+        .select('id, purpose, story_id, cost_usd')
+        .eq('family_id', familyId)
+      if (error) throw new Error(error.message)
+      for (const r of data ?? []) marked.add(r.id as string)
+      return data ?? []
+    }
+    afterEach(async () => {
+      if (marked.size > 0) await serviceClient().from('generation_logs').delete().in('id', [...marked])
+      marked.clear()
+    })
+
+    it('VT-SC3: a rewritten story carries every call it made, and v_story_costs adds them all up', async () => {
+      const run = await prepared()
+      stubResponsesFor(run, { rewriteReasons: reasons })
+      const sink = new SupabaseLogSink(serviceClient())
+      const { result } = await collect(run, {
+        db: family.db,
+        sink,
+        quota: new RecordingQuota(),
+        safetyReviewer: scaryOnce(),
+        now: () => FIXED_NOW,
+      })
+      expect(result.status).toBe('ready')
+      // The bible update is logged after the result returns; count it too.
+      await result.bibleUpdate
+      expect(sink.failedWrites, sink.lastError ?? '').toBe(0)
+
+      const rows = await familyLogs(family.familyId)
+      expect(rows.map((r) => r.purpose)).toContain('bible_update')
+      const purposes = rows.map((r) => r.purpose)
+      expect(purposes).toContain('write')
+      expect(purposes).toContain('rewrite')
+      expect(purposes).toContain('quality')
+      // Every call of the run is on this story, the ones before the save included.
+      expect(rows.filter((r) => r.story_id !== run.storyId)).toEqual([])
+
+      const total = rows.reduce((sum, r) => sum + Number(r.cost_usd), 0)
+      const { data: view } = await serviceClient().from('v_story_costs').select('cost_usd').eq('story_id', run.storyId).single()
+      expect(Number(view!.cost_usd)).toBeCloseTo(total, 6)
+    })
+
+    it('VT-SC4: a discarded story is never saved, so its calls stay on the family with no story', async () => {
+      const run = await prepared()
+      stubResponsesFor(run, { rewriteReasons: reasons })
+      const alwaysHard = {
+        review: async (): Promise<OutputSafetyReview> => ({
+          safe: false,
+          violations: [{ rule: 3, quote: 'it was right behind him', severity: 'hard' as const }],
+          scary_level: 3,
+          positive_portrayal: true,
+          ending_safe: true,
+        }),
+      }
+      const sink = new SupabaseLogSink(serviceClient())
+      const { result } = await collect(run, {
+        db: family.db,
+        sink,
+        quota: new RecordingQuota(),
+        safetyReviewer: alwaysHard,
+        now: () => FIXED_NOW,
+      })
+      expect(result.status).toBe('discarded')
+      expect(sink.failedWrites, sink.lastError ?? '').toBe(0)
+
+      const rows = await familyLogs(family.familyId)
+      expect(rows.map((r) => r.purpose)).toEqual(expect.arrayContaining(['write', 'rewrite']))
+      expect(rows.every((r) => r.story_id === null)).toBe(true)
+    })
   })
 
   it('a second hard violation discards the story: no row, no quota, a kind message', async () => {

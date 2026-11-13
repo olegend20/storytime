@@ -151,6 +151,13 @@ export class MeteredLogSink extends MemoryLogSink {
       console.warn(`[costs] forwarding a log row failed: ${err instanceof Error ? err.message : String(err)}`)
     }
   }
+  async linkStory(storyId: string): Promise<void> {
+    try {
+      await this.forward.linkStory?.(storyId)
+    } catch (err) {
+      console.warn(`[costs] forwarding a story link failed: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
 }
 
 let client: Anthropic | null = null
