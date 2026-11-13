@@ -97,6 +97,11 @@ lastten.org opens a few families at a time. To run it:
      (the `--workdir`), so `./supabase/templates/magic_link.html` finds the copy;
    - link it to production: `supabase link --project-ref <prod ref> --workdir <dir>` (check the
      org is "Last Ten StoryTime");
+   - issue #101: the sign-in link is `{{ .SiteURL }}/auth/link…`, so production's `site_url`
+     must be `https://lastten.org`. Check it first: add `[auth]` `site_url = "https://lastten.org"`
+     to the scratch config, push, and answer **no**. If the list does not name `site_url`,
+     production already has it; remove the line again. If it does, stop: changing `site_url` is
+     its own decision;
    - `supabase config push --workdir <dir>`. It prints the changes and asks before applying: the
      list must show only `mailer_subjects_*` and `mailer_templates_*`. Anything else, answer no.
    The CLI sends only the fields that differ from production and names each one before asking:

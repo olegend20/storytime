@@ -8,18 +8,24 @@ import { EMAIL } from '@/lib/landing/copy'
  * waitlist emails by scripts/email-templates.ts, and a test regenerates them so the files
  * cannot drift from the code.
  *
- * `{{ .ConfirmationURL }}` is Supabase's own placeholder for the sign-in link.
+ * The link is on our own site rather than Supabase's `{{ .ConfirmationURL }}` (issue #101):
+ * parents see lastten.org. /auth/link passes it on to Supabase's check, so it still only works
+ * in the browser that asked (DECISIONS #219). `{{ .SiteURL }}` is the project's site_url -
+ * lastten.org in production, the dev server locally. A new account's first link is a
+ * `signup`, every later one a `magiclink`.
  */
-export const CONFIRMATION_URL = '{{ .ConfirmationURL }}'
+export function signInUrl(type: 'magiclink' | 'signup'): string {
+  return `{{ .SiteURL }}/auth/link?token_hash={{ .TokenHash }}&type=${type}`
+}
 
-function signIn(): string {
+function signIn(type: 'magiclink' | 'signup'): string {
   const m = EMAIL.signIn
   return renderEmail({
     preheader: m.preheader,
     eyebrow: m.eyebrow,
     headline: m.headline,
     lead: m.lead,
-    button: { label: m.button, href: CONFIRMATION_URL },
+    button: { label: m.button, href: signInUrl(type) },
     note: m.note,
     aside: EMAIL.tonight,
     reason: m.reason,
@@ -28,11 +34,10 @@ function signIn(): string {
 
 /**
  * file name -> contents. A new account's first link is Supabase's "confirmation" email, every
- * later one is "magic_link"; to a parent both are just the sign-in link, so they are the same.
+ * later one is "magic_link"; to a parent both are just the sign-in link, so they look the same.
  */
 export function authTemplates(): Record<string, string> {
-  const html = `${signIn()}\n`
-  return { 'magic_link.html': html, 'confirmation.html': html }
+  return { 'magic_link.html': `${signIn('magiclink')}\n`, 'confirmation.html': `${signIn('signup')}\n` }
 }
 
 export const AUTH_TEMPLATE_SUBJECT = EMAIL.signIn.subject

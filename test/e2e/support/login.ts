@@ -98,35 +98,28 @@ export async function fetchLatestEmailBody(
   throw new Error(`No sign-in email for ${address} after ${timeoutMs}ms (${lastError})`)
 }
 
-/** Pull the Supabase verify URL out of the email body. */
+/**
+ * The sign-in link in an email. Since issue #101 the template builds it on the site itself:
+ * `<site_url>/auth/link?token_hash=...&type=magiclink|signup`, which hands on to Supabase.
+ */
 export function extractSignInLink(body: string): string {
-  const match = body.match(/https?:\/\/[^\s"'<>)]*\/auth\/v1\/verify[^\s"'<>)]*/)
-  if (!match) throw new Error(`No verify link in the email body:\n${body.slice(0, 500)}`)
+  const match = body.match(/https?:\/\/[^\s"'<>)]*\/auth\/link\?token_hash=[^\s"'<>)]*/)
+  if (!match) throw new Error(`No sign-in link in the email body:\n${body.slice(0, 500)}`)
   return match[0].replace(/&amp;/g, '&')
 }
 
 /**
- * Where the emailed link should be opened.
- *
- * GoTrue validates `redirect_to` against `site_url` + `additional_redirect_urls` in
- * `supabase/config.toml`, both of which name port 3000 only. On 3000 the link is followed
- * exactly as a parent would follow it, redirect hop included. On any other port GoTrue
- * would silently rewrite the destination back to 3000 - another lane's dev server - so the
- * emailed token is instead handed to our own `/auth/callback?token_hash=...&type=magiclink`,
- * which is the second branch that route already supports (it is what a custom email
- * template produces). That still exercises the real email, the real token verification,
- * the real family creation and the real session cookies; only GoTrue's redirect hop is
- * skipped.
+ * The link on the server under test. The template's host is `site_url` - the dev server on
+ * :3000 locally, lastten.org in production - while `pnpm test:e2e:real` runs on its own port.
+ * Only the origin changes: the path, the token and its type are opened exactly as emailed,
+ * and Supabase's redirect hop back to /auth/callback happens for real.
  */
-function signInTarget(link: string, baseURL: string): string {
-  if (new URL(baseURL).port === '3000') return link
-  const verify = new URL(link)
-  const token = verify.searchParams.get('token')
-  if (!token) throw new Error(`No token in the verify link: ${link}`)
-  const callback = new URL('/auth/callback', baseURL)
-  callback.searchParams.set('token_hash', token)
-  callback.searchParams.set('type', verify.searchParams.get('type') ?? 'magiclink')
-  return callback.toString()
+export function onTestServer(link: string, baseURL: string): string {
+  const url = new URL(link)
+  const base = new URL(baseURL)
+  url.protocol = base.protocol
+  url.host = base.host
+  return url.toString()
 }
 
 /**
@@ -149,7 +142,7 @@ export async function signInWithMagicLink(
 
   const baseURL = new URL(page.url()).origin
   const link = extractSignInLink(await fetchLatestEmailBody(email))
-  await page.goto(signInTarget(link, baseURL))
+  await page.goto(onTestServer(link, baseURL))
   await expect(page).toHaveURL(/\/dashboard$/)
 }
 

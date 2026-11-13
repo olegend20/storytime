@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { clientIp, rateLimitHeaders, checkRateLimit, RATE_LIMITED_BODY } from '@/lib/http/ratelimit'
+import { canonicalUrl } from '@/lib/http/canonical'
 
 /**
  * Three jobs, in this order:
@@ -49,6 +50,10 @@ function isUnder(pathname: string, prefixes: readonly string[]): boolean {
 
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // www.lastten.org -> lastten.org (issue #101): signing in only works on one origin.
+  const canonical = canonicalUrl(request.url, request.headers.get('host'), process.env.SITE_URL)
+  if (canonical) return NextResponse.redirect(canonical, 308)
 
   // A sign-in code that lands on the home page (Supabase falls back to `site_url` when the
   // requested redirect is not allow-listed) is forwarded to the callback that can use it,

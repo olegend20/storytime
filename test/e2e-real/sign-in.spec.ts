@@ -1,11 +1,13 @@
 import { expect, test, type Page } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
+import { LINK_REFUSED } from '../../app/login/LoginForm'
 import {
   approveEmail,
   deleteTestUser,
   extractSignInLink,
   fetchLatestEmailBody,
   localAuthStackReachable,
+  onTestServer,
   SKIP_REASON,
   uniqueEmail,
 } from '../e2e/support/login'
@@ -31,6 +33,8 @@ const service = () =>
   createClient(SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY ?? LOCAL_SERVICE_KEY, {
     auth: { persistSession: false },
   })
+
+const origin = (page: Page) => new URL(page.url()).origin
 
 /** Request a link from the login page and return it exactly as the email carries it. */
 async function requestLink(page: Page, email: string, previous: string | null): Promise<string> {
@@ -62,11 +66,14 @@ test.describe('F2: the magic link, opened exactly as it arrives', () => {
       await page.goto('/')
       await page.getByRole('link', { name: 'Sign in', exact: true }).click()
       const first = await requestLink(page, email, null)
-      // The bug itself: Supabase rewrote this to the bare site root.
-      expect(new URL(first).searchParams.get('redirect_to')).toMatch(
-        /^http:\/\/localhost:\d+\/auth\/callback/,
-      )
-      await page.goto(first) // unmodified
+      // Issue #101 (VT-L3): the link is on the site itself - site_url, which is the dev
+      // server locally and lastten.org in production - and /auth/link hands it to Supabase.
+      const url = new URL(first)
+      expect(url.origin).toBe('http://localhost:3000')
+      expect(url.pathname).toBe('/auth/link')
+      expect(url.searchParams.get('token_hash')).toMatch(/^[\w-]{20,}/)
+      expect(url.searchParams.get('type')).toMatch(/^(magiclink|signup)$/)
+      await page.goto(onTestServer(first, origin(page)))
       await expect(page).toHaveURL(/localhost:\d+\/dashboard$/)
       await expect(page.getByRole('heading', { name: 'My family' })).toBeVisible()
 
@@ -121,10 +128,10 @@ test.describe('F2: the magic link, opened exactly as it arrives', () => {
       await page.goto('/dashboard')
       await expect(page).toHaveURL(/\/login\?next=%2Fdashboard/)
 
-      // ---- 4. Sign back in with the same email - from a protected page, so the link carries
-      //         `?next=`, the case that also looped.
+      // ---- 4. Sign back in with the same email - from a protected page. The link no longer
+      //         carries `?next=` (#101): /dashboard comes back through the st_next cookie.
       const second = await requestLink(page, email, first)
-      await page.goto(second) // unmodified
+      await page.goto(onTestServer(second, origin(page)))
       await expect(page).toHaveURL(/localhost:\d+\/dashboard$/)
 
       // Same family, same child, same story.
@@ -145,19 +152,115 @@ test.describe('F2: the magic link, opened exactly as it arrives', () => {
     }
   })
 
-  test('a link that lands on the home page still signs you in', async ({ page }) => {
-    // Belt and braces for any redirect Supabase does not recognise: it falls back to the
-    // site root with `?code=`, and the proxy forwards that to the callback.
+  test('an email sent before #101 (Supabase verify link, landing on the home page) still signs you in', async ({ page }) => {
+    // Links already in inboxes when the template changed go through Supabase's /verify and
+    // come back with `?code=`; when the redirect is not recognised Supabase falls back to the
+    // site root, and the proxy forwards that to the callback.
     const email = uniqueEmail('owner-root')
     await approveEmail(email)
     try {
       await page.goto('/login')
-      const link = await requestLink(page, email, null)
-      const verify = new URL(link)
-      verify.searchParams.set('redirect_to', `${new URL(page.url()).origin}/`)
+      const link = new URL(await requestLink(page, email, null))
+      const verify = new URL(`${SUPABASE_URL}/auth/v1/verify`)
+      verify.searchParams.set('token', link.searchParams.get('token_hash')!)
+      verify.searchParams.set('type', 'magiclink')
+      verify.searchParams.set('redirect_to', `${origin(page)}/`)
       await page.goto(verify.toString())
       await expect(page).toHaveURL(/localhost:\d+\/dashboard$/)
     } finally {
+      await deleteTestUser(email)
+    }
+  })
+
+  test('the link only signs in the browser that asked for it (VT-L4, owner decision)', async ({
+    page,
+    browser,
+  }) => {
+    // DECISIONS #219: a forwarded email, or a scanner that opens links, must not sign anyone in.
+    const email = uniqueEmail('cross-device')
+    await approveEmail(email)
+    const phone = await browser.newContext()
+    try {
+      await page.goto('/login')
+      const link = await requestLink(page, email, null)
+      const other = await phone.newPage()
+      await other.goto(onTestServer(link, origin(page)))
+      await expect(other).toHaveURL(/\/login\?error=/)
+      await expect(other.getByText(/Open it on the device and browser you asked from/)).toBeVisible()
+      await other.goto('/dashboard')
+      await expect(other).toHaveURL(/\/login\?next=/)
+
+      // Nor by taking the token straight to the callback: only a code from the asking browser
+      // signs in (the reviewer's bypass, closed in #101).
+      const hash = new URL(link).searchParams.get('token_hash')!
+      const direct = new URL('/auth/callback', origin(page))
+      direct.searchParams.set('token_hash', hash)
+      direct.searchParams.set('type', 'magiclink')
+      await other.goto(direct.toString())
+      await expect(other).toHaveURL(/\/login\?error=/)
+      await other.goto('/dashboard')
+      await expect(other).toHaveURL(/\/login\?next=/)
+
+      // Opened elsewhere, the link is spent at Supabase's check (as before #101): even the
+      // asking browser now needs a new one, which the message tells the parent to request.
+      await page.goto(onTestServer(link, origin(page)))
+      await expect(page).toHaveURL(/\/login/)
+    } finally {
+      await phone.close()
+      await deleteTestUser(email)
+    }
+  })
+
+  test('signing in from a page brings you back to it (VT-L5)', async ({ page }) => {
+    const email = uniqueEmail('next-page')
+    await approveEmail(email)
+    try {
+      await page.goto('/library')
+      await expect(page).toHaveURL(/\/login\?next=%2Flibrary/)
+      const link = await requestLink(page, email, null)
+      expect(link, 'the page is not in the emailed link').not.toContain('library')
+      await page.goto(onTestServer(link, origin(page)))
+      await expect(page).toHaveURL(/\/library$/)
+      // The remembered page is used once: the next sign-in, from /login, goes to the dashboard.
+      const cookies = await page.context().cookies()
+      expect(cookies.find((c) => c.name === 'st_next')).toBeUndefined()
+    } finally {
+      await deleteTestUser(email)
+    }
+  })
+
+  test('a used or altered link is refused and says so (VT-L6)', async ({ page }) => {
+    // In the browser that asked, so only the link itself can be at fault.
+    const email = uniqueEmail('reuse')
+    const second = uniqueEmail('altered')
+    await approveEmail(email)
+    try {
+      await page.goto('/login')
+      const link = onTestServer(await requestLink(page, email, null), origin(page))
+      await page.goto(link)
+      await expect(page).toHaveURL(/\/dashboard$/)
+      await page.goto('/settings')
+      await page.getByRole('button', { name: 'Sign out' }).click()
+
+      await page.goto(link) // used
+      await expect(page).toHaveURL(/\/login/)
+      await expect(page.getByText(LINK_REFUSED)).toBeVisible()
+      await page.goto('/dashboard')
+      await expect(page).toHaveURL(/\/login\?next=/)
+
+      // A second address: Supabase allows one link a minute per address.
+      await approveEmail(second)
+      await page.goto('/login')
+      const fresh = onTestServer(await requestLink(page, second, null), origin(page))
+      const altered = fresh.replace(/token_hash=([^&]*)/, (_, t: string) => `token_hash=${t.slice(0, -1)}${t.endsWith('a') ? 'b' : 'a'}`)
+      expect(altered).not.toBe(fresh)
+      await page.goto(altered)
+      await expect(page).toHaveURL(/\/login/)
+      await expect(page.getByText(LINK_REFUSED)).toBeVisible()
+      await page.goto('/dashboard')
+      await expect(page).toHaveURL(/\/login\?next=/)
+    } finally {
+      await deleteTestUser(second)
       await deleteTestUser(email)
     }
   })
