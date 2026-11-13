@@ -22,6 +22,11 @@ const drops = vi.hoisted(() => ({
   rewriteAttempts: 0,
   rewriteRefuses: false,
   rewriteStatus: 0,
+  /**
+   * Issue #85: the in-place revision's reply (an edits JSON), or null to leave it unrecorded -
+   * the call then fails like any fixture miss and the pipeline rewrites, as before #85.
+   */
+  revise: { reply: null as string | null, calls: 0, asked: [] as { variant?: string; deadlineAt?: number }[] },
 }))
 vi.mock('@/lib/ai', async (orig) => {
   const actual = await orig<typeof import('@/lib/ai')>()
@@ -32,6 +37,16 @@ vi.mock('@/lib/ai', async (orig) => {
       const { thinkingDisplay, ...opts } = given
       if (opts.purpose === 'rewrite') drops.displays.push([opts.purpose, thinkingDisplay])
       if (opts.purpose === 'rewrite') drops.rewriteVariants.push(opts.variant)
+      if (opts.purpose === 'mend' && opts.role === 'writer') {
+        drops.revise.calls += 1
+        drops.revise.asked.push({ variant: opts.variant, deadlineAt: opts.deadlineAt })
+        if (drops.revise.reply === null) throw new Error('no revise reply recorded')
+        return {
+          text: drops.revise.reply, data: null, costUsd: 0.02, latencyMs: 20_000, model: 'stub', stopReason: 'end_turn', replayed: true,
+          usage: { input_tokens: 9_000, output_tokens: 400, cache_read_tokens: 0, cache_write_tokens: 0 },
+          raw: { content: [{ type: 'text', text: drops.revise.reply }] },
+        } as Awaited<ReturnType<typeof actual.callModel>>
+      }
       if (opts.purpose === 'rewrite' && drops.rewriteRefuses) throw new actual.ModelRefusalError('stub', 'stub', null)
       if (opts.purpose === 'rewrite' && drops.rewriteStatus) {
         throw new actual.ModelCallError(`rewrite call to stub failed after 1 attempt(s): ${drops.rewriteStatus}`, {
@@ -117,8 +132,9 @@ import {
 } from '../helpers/fixtures'
 import { buildContinuationPrompt, buildPrompt, type StorySoFar } from '@/lib/generate/prompt'
 import { buildQualityReviewMessage, measuredForReview, QUALITY_REVIEW_THINKING_MAX_TOKENS } from '@/lib/quality/review'
-import { AFTER_WRITE_MS, MAX_DROP_RETRIES, RETRY_MIN_MS, WRITER_MAX_TOKENS } from '@/lib/generate/pipeline'
+import { AFTER_WRITE_MS, MAX_DROP_RETRIES, RETRY_MIN_MS, REVISE_MIN_MS, REVISE_REGATE_MS, WRITER_MAX_TOKENS } from '@/lib/generate/pipeline'
 import { MEND_MAX_TOKENS, cutViolations, mendUserMessage, passagesFor } from '@/lib/generate/mend'
+import { REVISE_MAX_ROUNDS } from '@/lib/generate/revise'
 import { STORY_OUTPUT_FORMAT } from '@/lib/generate/output-schema'
 import { buildBibleUpdateMessage } from '@/lib/bible'
 import { loadPrompt } from '@/lib/prompts'
@@ -784,6 +800,99 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     expect((row as { status: string }).status).toBe('ready')
     expect(JSON.stringify((row as { content: unknown }).content)).toContain(REPLACEMENT)
     if (result.bibleUpdate) await result.bibleUpdate
+  })
+
+  /**
+   * Issue #85. A first draft the gate fails is edited in place and regated before any full
+   * rewrite: the parent keeps the story they have been reading. Attempt 1 here is too scary
+   * for band A as well as breaking rule 3, so the hard-rule-only mend does not apply.
+   */
+  describe('issue #85: a failing first draft is fixed in place, not swapped', () => {
+    const tooScary: OutputSafetyReview = {
+      safe: false,
+      violations: [{ rule: 3, quote: 'a monster chased them down the corridor', severity: 'hard' as const }],
+      scary_level: 3,
+      positive_portrayal: true,
+      ending_safe: true,
+    }
+    const reasons = ['GUARDRAILS rule 3 breached', 'output safety review returned safe: false', 'scary_level 3 above band A limit']
+    const reset = () => {
+      drops.revise.reply = null
+      drops.revise.calls = 0
+      drops.revise.asked = []
+    }
+    beforeEach(reset)
+    afterEach(reset)
+
+    it('VT-FR1: the revision passes the whole gate again - no rewrite, the same title and chapters', async () => {
+      const run = await prepared()
+      const { story } = stubResponsesFor(run)
+      const revised = stubMendFor(run, story, [], [{ chapter: 0, find: SENTENCE, replace: REPLACEMENT }])
+      drops.revise.reply = JSON.stringify({ edits: [{ part: 'chapter', index: 0, find: SENTENCE, replace: REPLACEMENT }] })
+      let reviewCall = 0
+      const safetyReviewer = { review: async (): Promise<OutputSafetyReview> => (++reviewCall === 1 ? tooScary : clean) }
+      const sink = new MemoryLogSink()
+      const deadlineMs = Date.now() + 3_600_000
+      const { result } = await collect(run, { db: family.db, sink, quota: new RecordingQuota(), safetyReviewer, now: () => FIXED_NOW, deadlineMs })
+
+      expect(drops.revise.calls).toBe(1)
+      // Its own workload, and cut off where the rewrite would still have all of its time.
+      expect(drops.revise.asked).toEqual([{ variant: 'revise', deadlineAt: deadlineMs - RETRY_MIN_MS - REVISE_REGATE_MS }])
+      expect(reviewCall).toBe(2)
+      expect(result.status).toBe('ready')
+      expect(result.writeCalls).toBe(1)
+      expect(sink.rows.filter((r) => r.purpose === 'rewrite')).toHaveLength(0)
+      expect(result.quality?.attempt).toBe(1)
+      // quality.mended stays the hard-rule ladder's record (#32); the revision is not in it.
+      expect(result.quality?.mended).toBeUndefined()
+      expect(result.quality?.first_attempt?.reasons).toEqual(reasons)
+      expect(result.story?.title).toBe(story.title)
+      expect(result.story?.chapters.map((c) => c.heading)).toEqual(story.chapters.map((c) => c.heading))
+      expect(result.story?.chapters[0]!.text).toBe(revised.chapters[0]!.text)
+      expect(result.story?.chapters.slice(1)).toEqual(story.chapters.slice(1))
+      if (result.bibleUpdate) await result.bibleUpdate
+    })
+
+    it('VT-FR2: a revision that still fails is thrown away and the rewrite runs exactly as before, briefed with attempt 1', async () => {
+      const run = await prepared()
+      const { rewritten } = stubResponsesFor(run, { rewriteReasons: reasons })
+      stubMendFor(run, stubStory(), [], [{ chapter: 0, find: SENTENCE, replace: REPLACEMENT }])
+      drops.revise.reply = JSON.stringify({ edits: [{ part: 'chapter', index: 0, find: SENTENCE, replace: REPLACEMENT }] })
+      let reviewCall = 0
+      const safetyReviewer = { review: async (): Promise<OutputSafetyReview> => (++reviewCall <= 2 ? tooScary : clean) }
+      const sink = new MemoryLogSink()
+      const { result } = await collect(run, { db: family.db, sink, quota: new RecordingQuota(), safetyReviewer, now: () => FIXED_NOW })
+
+      // A second round is asked for against the new verdict; its edit no longer applies, so it stops.
+      expect(drops.revise.calls).toBe(REVISE_MAX_ROUNDS)
+      expect(reviewCall).toBe(3)
+      expect(result.writeCalls).toBe(2)
+      expect(sink.rows.filter((r) => r.purpose === 'rewrite')).toHaveLength(1)
+      expect(result.status).toBe('ready')
+      expect(result.quality?.attempt).toBe(2)
+      expect(result.quality?.mended).toBeUndefined()
+      expect(result.quality?.first_attempt?.reasons).toEqual(reasons)
+      expect(result.story?.title).toBe(rewritten.title)
+      if (result.bibleUpdate) await result.bibleUpdate
+    })
+
+    it('VT-FR4: without REVISE_MIN_MS before the deadline, no revision is tried - straight to the rewrite', async () => {
+      const run = await prepared()
+      stubResponsesFor(run, { rewriteReasons: reasons })
+      drops.revise.reply = JSON.stringify({ edits: [{ part: 'chapter', index: 0, find: SENTENCE, replace: REPLACEMENT }] })
+      let reviewCall = 0
+      const safetyReviewer = { review: async (): Promise<OutputSafetyReview> => (++reviewCall === 1 ? tooScary : clean) }
+      const sink = new MemoryLogSink()
+      const { result } = await collect(run, {
+        db: family.db, sink, quota: new RecordingQuota(), safetyReviewer, now: () => FIXED_NOW,
+        deadlineMs: Date.now() + REVISE_MIN_MS - 1_000,
+      })
+
+      expect(drops.revise.calls).toBe(0)
+      expect(sink.rows.filter((r) => r.purpose === 'rewrite')).toHaveLength(1)
+      expect(result.status).toBe('ready')
+      if (result.bibleUpdate) await result.bibleUpdate
+    })
   })
 
   it('VT-D3: a breach that survives the mend is cut, and the story ships flagged instead of discarded', async () => {

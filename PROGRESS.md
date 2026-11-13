@@ -888,6 +888,16 @@ safety review with a retired rule-7 report and a soft concern stays unsafe; the 
 constants sit below the comment that describes them. **Gates:** lint ✅ · typecheck ✅ ·
 unit+int 1340 ✅ · guardrails 32 ✅ · e2e mock 196 ✅ · e2e real 6 ✅.
 
+### 2026-11-04 — a streamed story is fixed in place, not swapped (issue #85, DECISIONS #215)
+
+A first draft that failed the gate was fully rewritten and arrived with a new title and new
+chapters while the parent was reading it. Now the writer edits only the failing sentences
+(find/replace, title and headings untouchable, at most half the text over two rounds) and the
+whole gate runs again; a story that still fails is rewritten exactly as before. Live eval
+(32 stories, $11.84): stories replaced after streaming 2/32 (was 16–20/32), mean 4.12 (10-23 A
+4.15, B 3.94, #82 3.82), lowest 3.70, 0 DQs, total time median 215s (was 257–287s).
+**Gates:** lint ✅ · typecheck ✅ · unit+int 1488 ✅ · guardrails 32 ✅ · e2e mock 198 ✅ · e2e real 6 ✅.
+
 ### 2026-10-31 — a story keeps streaming after the phone locks (issue #82, DECISIONS #214)
 
 On the owner's Pixel a locked phone said "We lost the connection", though the story was fine.

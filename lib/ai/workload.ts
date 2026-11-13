@@ -30,6 +30,8 @@ export const WORKLOAD_FOR_PURPOSE = {
 export const VARIANT_WORKLOADS = {
   continuation: { purpose: 'write', workload: 'write-continue' },
   shorter: { purpose: 'rewrite', workload: 'write-shorter' },
+  // Issue #85: the writer's in-place revision, logged as a mend but a different prompt and model.
+  revise: { purpose: 'mend', workload: 'mend-revise' },
 } as const satisfies Record<string, { purpose: CallPurpose; workload: string }>
 
 export type WorkloadVariant = keyof typeof VARIANT_WORKLOADS

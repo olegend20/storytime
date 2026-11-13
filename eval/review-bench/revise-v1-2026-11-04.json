@@ -1,0 +1,231 @@
+{
+  "kind": "revise-bench-run",
+  "ran_at": "2026-11-04T07:22:56.894Z",
+  "set": "eval/review-bench/set-master-v6-2026-10-17.json",
+  "model": "writer",
+  "summary": {
+    "drafts": 15,
+    "first_pass": 9,
+    "failing": 6,
+    "mended": 1,
+    "revised": 2,
+    "still_rewrite": 3,
+    "median_changed_share": 0.030766965994406006,
+    "cost_usd": 0.594216
+  },
+  "rows": [
+    {
+      "id": "bees-band-a-5min",
+      "first": "pass",
+      "outcome": "pass",
+      "first_reasons": [],
+      "left_reasons": [],
+      "edits": 0,
+      "rejected": 0,
+      "changed_share": 0,
+      "cost_usd": 0.004647
+    },
+    {
+      "id": "bicycles-band-b-5min-tricks",
+      "first": "pass",
+      "outcome": "pass",
+      "first_reasons": [],
+      "left_reasons": [],
+      "edits": 0,
+      "rejected": 0,
+      "changed_share": 0,
+      "cost_usd": 0.005725
+    },
+    {
+      "id": "climb-walls-band-a-15min-wild",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack",
+        "chapters 1-8: Tokay picks every destination; Sam mostly watches, counts and cheers",
+        "chapter 8: says people made sticky gloves for glass; pack says a handheld paddle (f14)",
+        "GUARDRAILS rule 3 breached",
+        "output safety review returned safe: false"
+      ],
+      "left_reasons": [
+        "the children must DO things that change what happens, not watch",
+        "facts contradict the fact pack",
+        "chapters 1-8: Tokay picks every destination; Sam mostly watches, counts and cheers",
+        "chapter 8: says people made sticky gloves for glass; pack says a handheld paddle (f14)",
+        "GUARDRAILS rule 3 breached",
+        "output safety review returned safe: false"
+      ],
+      "edits": 0,
+      "rejected": 0,
+      "changed_share": 0,
+      "cost_usd": 0.147952
+    },
+    {
+      "id": "lego-band-a-pair",
+      "first": "pass",
+      "outcome": "pass",
+      "first_reasons": [],
+      "left_reasons": [],
+      "edits": 0,
+      "rejected": 0,
+      "changed_share": 0,
+      "cost_usd": 0.005771
+    },
+    {
+      "id": "rainbows-band-b-5min-teasing",
+      "first": "pass",
+      "outcome": "pass",
+      "first_reasons": [],
+      "left_reasons": [],
+      "edits": 0,
+      "rejected": 0,
+      "changed_share": 0,
+      "cost_usd": 0.005361
+    },
+    {
+      "id": "sharks-band-b-siblings",
+      "first": "pass",
+      "outcome": "pass",
+      "first_reasons": [],
+      "left_reasons": [],
+      "edits": 0,
+      "rejected": 0,
+      "changed_share": 0,
+      "cost_usd": 0.007053
+    },
+    {
+      "id": "sleep-band-a-5min-dark",
+      "first": "pass",
+      "outcome": "pass",
+      "first_reasons": [],
+      "left_reasons": [],
+      "edits": 0,
+      "rejected": 0,
+      "changed_share": 0,
+      "cost_usd": 0.004911
+    },
+    {
+      "id": "sleep-band-c-5min-bedtime",
+      "first": "pass",
+      "outcome": "pass",
+      "first_reasons": [],
+      "left_reasons": [],
+      "edits": 0,
+      "rejected": 0,
+      "changed_share": 0,
+      "cost_usd": 0.006289
+    },
+    {
+      "id": "sleep-band-d-5min",
+      "first": "rewrite",
+      "outcome": "mended",
+      "first_reasons": [
+        "GUARDRAILS rule 2 breached",
+        "output safety review returned safe: false"
+      ],
+      "left_reasons": [],
+      "edits": 0,
+      "rejected": 0,
+      "changed_share": 0,
+      "cost_usd": 0.01351
+    },
+    {
+      "id": "space-race-band-b-15min-continuity",
+      "first": "rewrite",
+      "outcome": "revised",
+      "first_reasons": [
+        "GUARDRAILS rule 3 breached",
+        "GUARDRAILS rule 4 breached",
+        "output safety review returned safe: false"
+      ],
+      "left_reasons": [],
+      "edits": 3,
+      "rejected": 0,
+      "changed_share": 0.022762092361567083,
+      "cost_usd": 0.108643
+    },
+    {
+      "id": "space-race-band-d",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "GUARDRAILS rule 6 breached",
+        "output safety review returned safe: false"
+      ],
+      "left_reasons": [
+        "GUARDRAILS rule 6 breached",
+        "output safety review returned safe: false"
+      ],
+      "edits": 1,
+      "rejected": 0,
+      "changed_share": 0.014076289110932828,
+      "cost_usd": 0.051795
+    },
+    {
+      "id": "titanic-band-c",
+      "first": "rewrite",
+      "outcome": "rewrite",
+      "first_reasons": [
+        "sentence_length:average 14.7 words (limit 14); 17% of sentences over 25 words (limit 12%). Split the long sentences.",
+        "not age-appropriate for band C",
+        "facts contradict the fact pack",
+        "chapter 7: 'sonar' is not explained",
+        "chapter 7: 'submersible' is not explained",
+        "chapter 4: 'more than twice that many aboard' contradicts pack's about 2,224 aboard (twice 1,178 is 2,356)",
+        "chapter 8: 'a hundred years, almost to the day, after the keel' contradicts pack: keel laid 1909, museum opened 2012"
+      ],
+      "left_reasons": [
+        "sentence_length:average 14.7 words (limit 14); 17% of sentences over 25 words (limit 12%). Split the long sentences.",
+        "not age-appropriate for band C",
+        "facts contradict the fact pack",
+        "chapter 7: 'sonar' is not explained",
+        "chapter 7: 'submersible' is not explained",
+        "chapter 4: 'more than twice that many aboard' contradicts pack's about 2,224 aboard (twice 1,178 is 2,356)",
+        "chapter 8: 'a hundred years, almost to the day, after the keel' contradicts pack: keel laid 1909, museum opened 2012"
+      ],
+      "edits": 0,
+      "rejected": 0,
+      "changed_share": 0,
+      "cost_usd": 0.151529
+    },
+    {
+      "id": "video-games-band-b-15min",
+      "first": "pass",
+      "outcome": "pass",
+      "first_reasons": [],
+      "left_reasons": [],
+      "edits": 0,
+      "rejected": 0,
+      "changed_share": 0,
+      "cost_usd": 0.009623
+    },
+    {
+      "id": "video-games-band-c-solo",
+      "first": "rewrite",
+      "outcome": "revised",
+      "first_reasons": [
+        "not age-appropriate for band C",
+        "chapter 1: 'refresh rate' is technical and never explained",
+        "chapter 3: 'soldering iron' is not explained",
+        "chapter 2: 'PvP' is technical and not explained"
+      ],
+      "left_reasons": [],
+      "edits": 3,
+      "rejected": 0,
+      "changed_share": 0.030766965994406006,
+      "cost_usd": 0.065178
+    },
+    {
+      "id": "volcanoes-mixed-ages",
+      "first": "pass",
+      "outcome": "pass",
+      "first_reasons": [],
+      "left_reasons": [],
+      "edits": 0,
+      "rejected": 0,
+      "changed_share": 0,
+      "cost_usd": 0.006229
+    }
+  ]
+}
