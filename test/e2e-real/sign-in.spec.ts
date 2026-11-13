@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
+import { LINK_REFUSED } from '../../app/login/LoginForm'
 import {
   approveEmail,
   deleteTestUser,
@@ -243,7 +244,7 @@ test.describe('F2: the magic link, opened exactly as it arrives', () => {
 
       await page.goto(link) // used
       await expect(page).toHaveURL(/\/login/)
-      await expect(page.getByText(/expired or was already used|did not work/)).toBeVisible()
+      await expect(page.getByText(LINK_REFUSED)).toBeVisible()
       await page.goto('/dashboard')
       await expect(page).toHaveURL(/\/login\?next=/)
 
@@ -255,7 +256,7 @@ test.describe('F2: the magic link, opened exactly as it arrives', () => {
       expect(altered).not.toBe(fresh)
       await page.goto(altered)
       await expect(page).toHaveURL(/\/login/)
-      await expect(page.getByText(/expired or was already used|did not work/)).toBeVisible()
+      await expect(page.getByText(LINK_REFUSED)).toBeVisible()
       await page.goto('/dashboard')
       await expect(page).toHaveURL(/\/login\?next=/)
     } finally {
