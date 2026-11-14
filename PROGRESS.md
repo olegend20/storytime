@@ -908,6 +908,15 @@ finished. The migration (`generation_progress`) is applied to production by hand
 (DEPLOY.md); until then the page does what it did before.
 
 
+### 2026-11-13 — the approval (invite) email redesigned (DECISIONS #221)
+
+Owner-approved design for the "your place is ready" email: night-green hero with one gold
+"Start tonight’s story" button, a labelled sample page with its true fact, the three steps,
+four promises. New `lib/email/invite-layout.ts`; `inviteMail()` uses it; copy in
+`EMAIL.invite`. 6 new unit tests in `test/unit/email.test.ts`; the real e2e's invite check
+follows the new lead. **Gates:** lint ✅ · typecheck ✅ · unit+int 1369 ✅ · guardrails 32 ✅ ·
+e2e mock and real run in CI (no local Supabase in this session).
+
 ### 2026-11-13 — story costs count the writing calls (issue #104, DECISIONS #220)
 
 **Delivered**

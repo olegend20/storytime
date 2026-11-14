@@ -144,7 +144,7 @@ test.describe('issue #92: the coming-soon page and the approved waitlist', () =>
       await ownerContext.close()
 
       const invite = await fetchLatestEmailBody(visitor)
-      expect(invite).toMatch(/Your place at The Last Ten is ready|Create your account here/)
+      expect(invite).toMatch(/Your place at The Last Ten is open|Create your account here/)
       const inviteLink = invite.match(/https?:\/\/\S+\/login\?email=\S+/)?.[0]
       expect(inviteLink, 'the invite links to sign-in').toBeTruthy()
 
