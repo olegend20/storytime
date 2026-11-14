@@ -908,6 +908,17 @@ finished. The migration (`generation_progress`) is applied to production by hand
 (DEPLOY.md); until then the page does what it did before.
 
 
+### 2026-11-14 — writer prompt v9 for the youngest children (issue #106, DECISIONS #221)
+
+**Delivered**
+- `prompts/master.v9.md`: for bands A and B a storm, chase, getting lost or deadline is one
+  short paragraph that ends safe, never a scene; a band-A child's action is named, and asking,
+  cheering, patting and hugging don't count.
+- Band-A bench: sent back 52% → 33%, too scary 6 → 0. Full eval against v6: mean 4.12 → 4.13,
+  first drafts untouched 11 → 15. Results are in `eval/results/eval-2026-11-13{,-2}.json`.
+- v10 (a wider rule 10) was evaluated (`eval-2026-11-13-3.json`) and dropped, because it
+  contradicted the fact pack more often. Follow-up is in #108. Live spend for #106 was about $64.
+
 ### 2026-11-13 — story costs count the writing calls (issue #104, DECISIONS #220)
 
 **Delivered**
