@@ -164,6 +164,13 @@ describe('the redesigned invite email (owner request 2026-11-13)', () => {
     const text = inviteText(href)
     for (const line of [m.lead, m.note, href, m.reason]) expect(text).toContain(line)
   })
+
+  it('the help line opens /about at the FAQ heading, in both parts', () => {
+    expect(html).toContain('href="https://lastten.org/about#faq-h"')
+    expect(inviteText(href)).toContain('https://lastten.org/about#faq-h')
+    const landing = readFileSync(join(process.cwd(), 'components/landing/Landing.tsx'), 'utf8')
+    expect(landing).toContain('id="faq-h"')
+  })
 })
 
 describe('the SMTP sender passes the html part through (VT-E2)', () => {

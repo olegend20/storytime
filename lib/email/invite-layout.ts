@@ -153,7 +153,7 @@ ${title(m.close, 28, c.fg, c.accent)}
 <tr><td align="center" style="padding:34px 24px 0;">
 <div style="font-family:${SANS};font-size:10.5px;letter-spacing:0.24em;text-transform:uppercase;font-weight:600;color:${c.muted};">${e(BRAND.tagline)}</div>
 <p style="margin:12px 0 14px;font-family:${SERIF};font-style:italic;font-size:17px;line-height:1.5;color:${c.soft};">${e(BRAND.footer)}</p>
-<p style="margin:0;font-family:${SANS};font-size:12px;line-height:1.7;color:${c.muted};">${e(m.help)} <a href="${e(site + '/about#faq')}" target="_blank" style="color:${c.muted};">${e(host)}/about</a><br>${e(m.reason)}<br>${e(BRAND.project)} &middot; <a href="${e(site)}" target="_blank" style="color:${c.muted};">${e(host)}</a></p>
+<p style="margin:0;font-family:${SANS};font-size:12px;line-height:1.7;color:${c.muted};">${e(m.help)} <a href="${e(site + '/about#faq-h')}" target="_blank" style="color:${c.muted};">${e(host)}/about</a><br>${e(m.reason)}<br>${e(BRAND.project)} &middot; <a href="${e(site)}" target="_blank" style="color:${c.muted};">${e(host)}</a></p>
 </td></tr>
 
 </table>
@@ -188,7 +188,7 @@ export function inviteText(href: string): string {
     ...s.paragraphs,
     `${s.factLabel}: ${s.fact}`,
     '',
-    m.help + ' ' + EMAIL_SITE + '/about#faq',
+    m.help + ' ' + EMAIL_SITE + '/about#faq-h',
     m.reason,
     '',
     'Sleep well,',
