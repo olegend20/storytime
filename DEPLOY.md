@@ -47,6 +47,7 @@ RUN_SCHEMA_TESTS=1 SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… SUPABASE_ANON_
 | `NEXT_PUBLIC_API_MOCK`, `UI_MOCK_API` | **Must be unset in production.** Test-only: the first is inlined at build time and points the whole UI at `/api/mock/*` |
 | `DAILY_BUDGET_USD` | Global daily spend cap (5) |
 | `OWNER_USER_ID` | The owner's auth user id: unlocks `/admin` and the unlimited quota |
+| `ADMIN_USER_IDS` | Issue #110. Optional, comma-separated auth user ids that may also open `/admin` and approve the waitlist. Admin pages only: the unlimited quota stays with `OWNER_USER_ID`. Blank = nobody extra |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `KINDLE_FROM_EMAIL` | Send to Kindle. Unset = the feature says it is not set up, and the landing page does not mention it |
 | `WAITLIST_ENABLED` | Issue #92. Unset or `true`: lastten.org is the coming-soon page, and only an address approved at `/admin/waitlist` can create an account. `false` is the public launch: the homepage returns at `/` and anyone can sign up |
 | `SITE_URL` | `https://lastten.org`: where the waitlist invite links, wherever the owner approved from. Unset = the address the owner approved from |

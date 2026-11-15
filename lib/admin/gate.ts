@@ -13,9 +13,33 @@ import { supabaseServer } from '@/lib/supabase/server'
 import { isOwner } from '@/lib/owner'
 export { isOwner, ownerUserId } from '@/lib/owner'
 
-/** Never returns for a non-owner: `notFound()` throws Next's 404. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * Issue #110: extra accounts that may open /admin, besides the owner. `ADMIN_USER_IDS` is a
+ * comma-separated list of auth user ids. It grants the admin pages and nothing else: the
+ * unlimited daily quota stays with `OWNER_USER_ID` alone (DECISIONS #141, lib/owner.ts).
+ *
+ * Read fresh on every call, like the owner, so adding an admin needs no rebuild. Spaces and
+ * empty entries are ignored, and an entry that is not a uuid matches nobody.
+ */
+export function adminUserIds(): string[] {
+  const raw = process.env.ADMIN_USER_IDS ?? ''
+  return raw
+    .split(',')
+    .map((id) => id.trim().toLowerCase())
+    .filter((id) => UUID.test(id))
+}
+
+/** The owner, or a listed admin. Fails closed: with both unset, nobody is an admin. */
+export function isAdmin(userId: string | null | undefined): boolean {
+  if (typeof userId !== 'string' || userId.length === 0) return false
+  return isOwner(userId) || adminUserIds().includes(userId.toLowerCase())
+}
+
+/** Never returns for a non-admin: `notFound()` throws Next's 404. */
 export function assertOwner(userId: string | null | undefined): void {
-  if (!isOwner(userId)) notFound()
+  if (!isAdmin(userId)) notFound()
 }
 
 /** The signed-in user's id, or null - no session, no cookies and auth unreachable alike. */
@@ -29,14 +53,14 @@ async function currentUserId(): Promise<string | null> {
   }
 }
 
-/** For a route handler that answers a non-owner with its own 404 (issue #92). */
+/** For a route handler that answers a non-admin with its own 404 (issues #92, #110). */
 export async function currentUserIsOwner(): Promise<boolean> {
-  return isOwner(await currentUserId())
+  return isAdmin(await currentUserId())
 }
 
 /**
- * Resolve the signed-in user and 404 unless they are the owner.
- * Returns the owner's user id on success.
+ * Resolve the signed-in user and 404 unless they are the owner or a listed admin (#110).
+ * Returns that user's id on success.
  */
 export async function requireOwner(): Promise<string> {
   const userId = await currentUserId()

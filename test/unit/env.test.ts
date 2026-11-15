@@ -61,3 +61,20 @@ describe('F1 env validation', () => {
     expect(parseEnv({ ...complete, SUPABASE_URL: 'not-a-url' }).success).toBe(false)
   })
 })
+
+/** Issue #110: ADMIN_USER_IDS is optional, a comma list of user ids. */
+describe('#110 ADMIN_USER_IDS env', () => {
+  it('accepts a list of uuids, with spaces', () => {
+    const ids = 'f9175146-ed9b-49b5-a095-41c664fcc141, 2e8ae912-fe9a-47a1-9b69-48803d85d46e'
+    expect(parseEnv({ ...complete, ADMIN_USER_IDS: ids }).success).toBe(true)
+  })
+
+  it('treats blank as unset', () => {
+    expect(parseEnv({ ...complete, ADMIN_USER_IDS: '' }).success).toBe(true)
+  })
+
+  it('does not fail the whole app over a bad entry (the gate skips it instead)', () => {
+    const result = parseEnv({ ...complete, ADMIN_USER_IDS: 'f9175146-ed9b-49b5-a095-41c664fcc141,david@lastten.org' })
+    expect(result.success).toBe(true)
+  })
+})

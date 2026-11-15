@@ -83,6 +83,13 @@ const ServerEnv = z.object({
 
   /** F12: /admin is gated to this user id; everyone else gets a 404. */
   OWNER_USER_ID: z.string().uuid().optional(),
+  /**
+   * Issue #110: more accounts that may open /admin, comma-separated user ids. Admin pages
+   * only; the unlimited quota stays with OWNER_USER_ID. Blank = nobody extra. Deliberately
+   * not validated here: a typo must not take down the whole app, so lib/admin/gate.ts skips
+   * an entry that is not a uuid and that entry is simply nobody.
+   */
+  ADMIN_USER_IDS: blankIsUnset(z.string()),
 
   /** Model overrides. Defaults live in config/models.json. */
   WRITING_MODEL: z.string().optional(),
