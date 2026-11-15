@@ -908,6 +908,13 @@ finished. The migration (`generation_progress`) is applied to production by hand
 (DEPLOY.md); until then the page does what it did before.
 
 
+### 2026-11-15 — a second admin account (issue #110, DECISIONS #222)
+
+`ADMIN_USER_IDS` (comma-separated user ids) lets more accounts open `/admin` and approve the
+waitlist, besides `OWNER_USER_ID`. Admin pages only: the unlimited daily quota stays with the
+owner. Unset adds nobody; non-admins still get a 404. VTs: `test/unit/admin-gate.test.ts`,
+`test/unit/env.test.ts` (#110 block).
+
 ### 2026-11-13 — the approval (invite) email redesigned (DECISIONS #221)
 
 Owner-approved design for the "your place is ready" email: night-green hero with one gold
