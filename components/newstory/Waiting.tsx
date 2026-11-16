@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react'
 import { Check } from '@/components/Icons'
 import { Phase } from '@/components/Phase'
 import { joinNames } from '@/lib/client/reader'
+import { GROWN_UP_AFTER_MS, GROWN_UP_LINE, thankfulQuestion } from '@/lib/waiting'
 
 /**
  * Waiting for the writer, quietly (issue #17; replaces the tic-tac-toe of DECISIONS #142).
@@ -11,6 +13,9 @@ import { joinNames } from '@/lib/client/reader'
  *
  * The topic is only shown once the server has sent its own label for it: until then the
  * parent's words have not been accepted, and we never show back a topic that may be refused.
+ *
+ * Below the stages, one question for the family to answer out loud (issue #112): the children
+ * first, then the grown-up. Nothing to tap and nothing kept - it is a wind-down, not a game.
  */
 export function Waiting({
   names,
@@ -26,6 +31,11 @@ export function Waiting({
   onCancel?: () => void
 }) {
   const who = joinNames(names)
+  const [askGrownUp, setAskGrownUp] = useState(false)
+  useEffect(() => {
+    const timer = setTimeout(() => setAskGrownUp(true), GROWN_UP_AFTER_MS)
+    return () => clearTimeout(timer)
+  }, [])
   return (
     <section className="st-waiting" data-testid="waiting">
       <Phase lit={stage === 'facts' ? 0.22 : 0.62} size={46} className="st-waiting-moon" />
@@ -45,6 +55,13 @@ export function Waiting({
         </li>
       </ol>
       <p className="st-waiting-help">You can start reading as soon as the first words arrive.</p>
+      <div className="st-thankful" data-testid="thankful">
+        <p className="st-thankful-eyebrow">While we wait…</p>
+        <p className="st-thankful-question">{thankfulQuestion(names)}</p>
+        <p className="st-thankful-grownup" aria-live="polite">
+          {askGrownUp ? <span className="st-fade-in">{GROWN_UP_LINE}</span> : null}
+        </p>
+      </div>
       <i className="st-rule" aria-hidden />
       {who ? (
         <p className="st-waiting-for">

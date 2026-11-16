@@ -341,6 +341,32 @@ test('waiting shows the stage the server has reached, with no countdown, then th
 })
 
 /**
+ * VT-TH1-3 (issue #112): while the story is written, the children are asked one question by
+ * name, and the grown-up 40 seconds later. Nothing to tap, no clock, and it goes with the
+ * waiting screen. The page's clock is faked so the 40 seconds pass at once.
+ */
+test('waiting asks the children what they are thankful for, then the grown-up', async ({ page }) => {
+  await page.clock.install()
+  await page.reload()
+  await creatorReady(page)
+  await startStory(page, '!thinking the history of soccer')
+
+  const thankful = page.getByTestId('thankful')
+  await expect(thankful).toBeVisible()
+  await expect(thankful.getByText('Milo, Juno & Theo, what are you thankful for today?')).toBeVisible()
+  await expect(thankful.getByText('And you, grown-up?')).toHaveCount(0)
+  // Nothing to tap: the only control on the waiting screen is still the way back.
+  await expect(page.getByTestId('waiting').locator('button, a, input, [tabindex]')).toHaveCount(1)
+  expect(await thankful.innerText()).not.toMatch(/\d/)
+
+  await page.clock.fastForward('00:41')
+  await expect(thankful.getByText('And you, grown-up?')).toBeVisible()
+
+  await expect(page.getByRole('progressbar', { name: 'Writing the story' })).toBeVisible({ timeout: 15_000 })
+  await expect(thankful).toHaveCount(0)
+})
+
+/**
  * VT-RS2 (issue #74): the writer's connection drops halfway through chapter 2. The half chapter
  * goes, a gentle "Still writing…" line holds its place, and chapter 2 then arrives whole -
  * never its first half twice. The owner's decisions 1B and 4B, 2026-10-19.
