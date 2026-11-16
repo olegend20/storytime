@@ -908,6 +908,13 @@ finished. The migration (`generation_progress`) is applied to production by hand
 (DEPLOY.md); until then the page does what it did before.
 
 
+### 2026-11-15 — a thankful question while the story is written (issue #112, DECISIONS #223)
+
+The waiting screen asks the children by name what they are thankful for today, and the
+grown-up 40 seconds later. Nothing to tap or type, nothing stored, no model call; the words
+are in `config/waiting.json`. VTs: `test/unit/waiting-thankful.test.ts` (VT-TH4),
+`test/e2e/new-story.spec.ts` (VT-TH1-3).
+
 ### 2026-11-15 — a second admin account (issue #110, DECISIONS #222)
 
 `ADMIN_USER_IDS` (comma-separated user ids) lets more accounts open `/admin` and approve the

@@ -1,0 +1,7 @@
+{
+  "$comment": "Issue #112. The one question on the waiting screen, the same every night (owner's wording, 2026-11-15). {names} is the children's names as the screen already writes them ('Milo, Juno & Theo'). The grown-up line fades in after grown_up_after_seconds, so the children answer first. Nothing is typed or kept.",
+  "thankful_question": "{names}, what are you thankful for today?",
+  "thankful_question_no_names": "What are you thankful for today?",
+  "grown_up": "And you, grown-up?",
+  "grown_up_after_seconds": 40
+}
