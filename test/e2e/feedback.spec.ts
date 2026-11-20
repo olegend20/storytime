@@ -8,11 +8,20 @@ import { expect, test } from '@playwright/test'
 
 test.describe('tester feedback page', () => {
   test('opens signed out, sends the answers, and says thank you', async ({ page }) => {
-    let sent: Record<string, unknown> | null = null
-    await page.route('**/api/feedback', async (route) => {
-      sent = route.request().postDataJSON() as Record<string, unknown>
-      await route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' })
+    // The body is read in the page, not from the routed request: WebKit (the mobile project)
+    // can hand the route a request with no post data, which made this test fail on mobile only.
+    await page.addInitScript(() => {
+      const realFetch = window.fetch.bind(window)
+      window.fetch = (input, init) => {
+        if (String(input).includes('/api/feedback')) {
+          ;(window as unknown as { __feedbackBody?: string }).__feedbackBody = String(init?.body ?? '')
+        }
+        return realFetch(input, init)
+      }
     })
+    await page.route('**/api/feedback', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }),
+    )
 
     await page.goto('/feedback')
     await expect(page).toHaveURL(/\/feedback$/)
@@ -24,7 +33,8 @@ test.describe('tester feedback page', () => {
     await page.getByRole('button', { name: /send feedback/i }).click()
 
     await expect(page.getByRole('status')).toContainText(/your feedback has reached us/i)
-    expect(sent).toMatchObject({ enjoyment: 'loved', reading_on: ['ereader'], loved: 'The volcano facts' })
+    const sent = await page.evaluate(() => (window as unknown as { __feedbackBody?: string }).__feedbackBody)
+    expect(JSON.parse(sent ?? 'null')).toMatchObject({ enjoyment: 'loved', reading_on: ['ereader'], loved: 'The volcano facts' })
   })
 
   test('shows the server’s message when nothing was answered', async ({ page }) => {
@@ -37,6 +47,7 @@ test.describe('tester feedback page', () => {
     )
     await page.goto('/feedback')
     await page.getByRole('button', { name: /send feedback/i }).click()
-    await expect(page.getByRole('alert')).toContainText(/at least one question/i)
+    // Filtered by text: Next's route announcer is also a role="alert" element on every page.
+    await expect(page.getByRole('alert').filter({ hasText: /at least one question/i })).toBeVisible()
   })
 })
