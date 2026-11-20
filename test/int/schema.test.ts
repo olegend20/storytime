@@ -70,6 +70,19 @@ describe.runIf(process.env.RUN_SCHEMA_TESTS === '1')('F1 schema introspection', 
     expect(extra.error, 'waitlist must not have a name column').not.toBeNull()
   })
 
+  /** Tester feedback (2026-11-20): answers, an optional name and email; nothing about a child. */
+  it('feedback exists with exactly its columns', async () => {
+    const { error } = await db!
+      .from('feedback')
+      .select('id, created_at, enjoyment, stories_read, loved, confusing, reading_on, wish, keep_using, anything_else, name, email')
+      .limit(0)
+    expect(error, `feedback: ${error?.message}`).toBeNull()
+    for (const forbidden of ['child_name', 'child_age', 'age', 'birthdate', 'family_id']) {
+      const extra = await db!.from('feedback').select(forbidden).limit(0)
+      expect(extra.error, `feedback must not have a ${forbidden} column`).not.toBeNull()
+    }
+  })
+
   /** Kickoff rule 7: children's data is minimal and the field list is closed. */
   it('children has no last_name or birthdate column (F11 VT)', async () => {
     for (const forbidden of ['last_name', 'birthdate', 'surname', 'photo_url', 'address']) {

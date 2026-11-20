@@ -37,7 +37,7 @@ export default function PrivacyPage() {
       <h1 className="mt-3 mb-1 text-3xl font-semibold tracking-tight">Privacy</h1>
       {/* --fg-muted, not opacity: 60% opacity failed the WCAG contrast check (axe, F10 VT). */}
       <p className="mt-0 mb-8 text-sm" style={{ color: 'var(--fg-muted)' }}>
-        Last updated 13 October 2026
+        Last updated 20 November 2026
       </p>
 
       <section className="mb-8">
@@ -98,6 +98,11 @@ export default function PrivacyPage() {
           place is ready. We email that address to check it is yours - at most once a day, and only
           when you ask to join. If nobody confirms it, we delete it after 7 days, or after 30 if our
           email to it could not be sent. Ask us and we will delete it sooner.
+        </p>
+        <p className="mt-3 mb-0 text-[0.95rem] leading-relaxed">
+          If you send us feedback, we keep your answers, and your name and email only if you add
+          them, so we can improve StoryTime and reply to you. The form asks nothing about your
+          child. Ask us and we will delete your feedback.
         </p>
       </section>
 
