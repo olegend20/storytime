@@ -56,6 +56,9 @@ export function parseFeedback(body: unknown): FeedbackParse {
       if (value && value.length > MAX_TEXT) return { ok: false, field: q.key, reason: 'too_long' }
       row[q.key] = value
     } else if (q.kind === 'one') {
+      if (raw !== undefined && raw !== null && typeof raw !== 'string') {
+        return { ok: false, field: q.key, reason: 'invalid' }
+      }
       const value = text(raw)
       if (value === null) continue
       if (!allowed(q).has(value)) return { ok: false, field: q.key, reason: 'invalid' }

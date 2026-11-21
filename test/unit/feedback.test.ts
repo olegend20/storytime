@@ -77,6 +77,9 @@ describe('parseFeedback (VT-FB1)', () => {
     expect(parseFeedback({ enjoyment: 'amazing' })).toMatchObject({ ok: false, field: 'enjoyment', reason: 'invalid' })
     expect(parseFeedback({ reading_on: ['phone', 'fax'] })).toMatchObject({ ok: false, field: 'reading_on', reason: 'invalid' })
     expect(parseFeedback({ reading_on: 'phone' })).toMatchObject({ ok: false, field: 'reading_on', reason: 'invalid' })
+    // A pick-one answer of the wrong type is refused too, not silently dropped.
+    expect(parseFeedback({ enjoyment: 5, loved: 'ok' })).toMatchObject({ ok: false, field: 'enjoyment', reason: 'invalid' })
+    expect(parseFeedback({ keep_using: ['sometimes'] })).toMatchObject({ ok: false, field: 'keep_using', reason: 'invalid' })
   })
 
   it('refuses over-long text and names', () => {
