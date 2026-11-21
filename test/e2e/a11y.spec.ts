@@ -247,6 +247,16 @@ test.describe('accessibility', () => {
     expect(report('privacy', (await scan(page)).violations)).toEqual([])
   })
 
+  /** Tester feedback (issue #114): a public form of radios, checkboxes and text, light and dark. */
+  for (const scheme of ['light', 'dark'] as const) {
+    test(`the feedback page has no serious violations (${scheme})`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: scheme })
+      await page.goto('/feedback')
+      await page.getByRole('radio', { name: 'We love it' }).check()
+      expect(report(`feedback-${scheme}`, (await scan(page)).violations)).toEqual([])
+    })
+  }
+
   /** VT-R2 (issue #17): the landing page, in the light and the dark it will be seen in. */
   for (const scheme of ['light', 'dark'] as const) {
     test(`the landing page has no serious violations (${scheme})`, async ({ page }) => {

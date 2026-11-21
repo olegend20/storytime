@@ -34,6 +34,15 @@ Legend: ⬜ not started · 🟡 in progress · 🔴 blocked · ✅ done
 
 ## Session log
 
+### 2026-11-20 — tester feedback page (issue #114, DECISIONS #224)
+
+`/feedback` on lastten.org: eight optional questions, optional name and email, stored in a
+new service-role-only `feedback` table through `POST /api/feedback`. VT-FB1 and VT-FB2 (unit),
+VT-FB3 (int, needs the local database), VT-FB4 (e2e, mock) and the schema introspection row.
+**Gates run here:** lint ✅ · typecheck ✅ · unit+int 1393 ✅ (int and schema skipped: no Docker in
+this session) · `pnpm build` ✅ and the page and route checked by hand. e2e not run here (no
+browser download); CI runs it.
+
 ### 2026-09-27 — Phase 0 (lead, solo)
 
 **Features touched:** F1 (scaffold, CI, migrations, env validation), plus the shared
