@@ -71,7 +71,7 @@ describe.runIf(process.env.RUN_SCHEMA_TESTS === '1')('F1 schema introspection', 
   })
 
   /** Tester feedback (2026-11-20): answers, an optional name and email; nothing about a child. */
-  it('feedback exists with exactly its columns', async () => {
+  it('feedback has its answer columns and none about a child', async () => {
     const { error } = await db!
       .from('feedback')
       .select('id, created_at, enjoyment, stories_read, loved, confusing, reading_on, wish, keep_using, anything_else, name, email')
