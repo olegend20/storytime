@@ -51,3 +51,17 @@ test.describe('tester feedback page', () => {
     await expect(page.getByRole('alert').filter({ hasText: /at least one question/i })).toBeVisible()
   })
 })
+
+/**
+ * Pages with the lastten.org landing header draw their own header and footer; the app's header
+ * must step aside there. On 2026-11-22 the live /feedback page showed both, one above the other.
+ */
+test.describe('landing-style pages show one header and one footer', () => {
+  for (const path of ['/feedback', '/waitlist/confirm']) {
+    test(path, async ({ page }) => {
+      await page.goto(path)
+      await expect(page.getByRole('banner')).toHaveCount(1)
+      await expect(page.getByRole('contentinfo')).toHaveCount(1)
+    })
+  }
+})
