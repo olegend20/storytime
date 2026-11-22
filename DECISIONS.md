@@ -485,3 +485,9 @@ The owner's first real stories: every first draft sent back, every rewrite faile
 | # | Decision | Why |
 |---|---|---|
 | 224 | **Tester feedback is a public page, `/feedback`, writing to a service-role-only `feedback` table through `POST /api/feedback` (issue #114).** Eight optional questions (one answer needed), an optional name and email, the waitlist's honeypot, and the proxy's per-IP rate limit. The questions live once in `lib/feedback/questions.ts` and both the page and the route read them; the database repeats the allowed values as `check` constraints. No field about a child and no link to a family. | Owner request 2026-11-20: thank testers and let them give feedback whenever they are ready. A page on the existing domain needs no DNS change. Answers in one table can be counted and compared, unlike email replies. Testers may not be signed in, so the page is public; the same pattern as the waitlist (RLS on, no policies, no grants to anon or authenticated) means the route is the only way in and nobody can read anyone's answers through the public API key. Not linked to a family so feedback stays anonymous unless the tester adds a name or email, and rule 7 is untouched. |
+
+## 2026-11-22 — how long tester feedback keeps a name and email
+
+| # | Decision | Why |
+|---|---|---|
+| 225 | **A tester's name and email on `feedback` are cleared 90 days after they send it; the answers are kept.** `purge_feedback_contact()` (security definer, execute revoked from public, anon and authenticated) is run daily by pg_cron, like the guardrail raw-text purge. `/privacy` says so. | Owner decision 2026-11-22 (PR #115 review raised that the table kept contact details with no end date, unlike the waitlist). Ninety days is long enough to reply to a tester and follow up; after that the answers still teach us, without saying who wrote them. Same function-plus-cron shape as GUARDRAILS s1.5, so it is tested the same way. |

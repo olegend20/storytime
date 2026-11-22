@@ -42,6 +42,31 @@ describe.runIf(reachable)('feedback table (VT-FB3)', () => {
     expect(error).not.toBeNull()
   })
 
+  it('purge_feedback_contact() clears name and email after 90 days and keeps the answers', async () => {
+    const days = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000).toISOString()
+    const { error: insertError } = await service()
+      .from('feedback')
+      .insert([
+        { enjoyment: 'liked', anything_else: RUN, name: 'Old Tester', email: 'old@example.com', created_at: days(91) },
+        { enjoyment: 'mixed', anything_else: RUN, name: 'New Tester', email: 'new@example.com', created_at: days(89) },
+      ])
+    expect(insertError).toBeNull()
+
+    const { error: rpcError } = await service().rpc('purge_feedback_contact')
+    expect(rpcError).toBeNull()
+
+    const { data } = await service().from('feedback').select('enjoyment, name, email').eq('anything_else', RUN)
+    const old = data!.find((r) => r.enjoyment === 'liked')!
+    const recent = data!.find((r) => r.enjoyment === 'mixed')!
+    expect(old).toMatchObject({ name: null, email: null })
+    expect(recent).toMatchObject({ name: 'New Tester', email: 'new@example.com' })
+  })
+
+  it('the anon key cannot run the purge (SECURITY DEFINER)', async () => {
+    const { error } = await anon().rpc('purge_feedback_contact')
+    expect(error).not.toBeNull()
+  })
+
   it('the database itself refuses a value off the list', async () => {
     const { error } = await service().from('feedback').insert({ enjoyment: 'amazing', anything_else: RUN })
     expect(error).not.toBeNull()
