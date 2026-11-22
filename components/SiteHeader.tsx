@@ -13,15 +13,26 @@ const LINKS = [
 ]
 
 /**
+ * Pages that draw the lastten.org landing header and footer themselves (`LandingHeader`,
+ * `LandingFooter`). The app's own header and footer step aside there, or the page shows two
+ * of each.
+ */
+const OWN_CHROME = new Set(['/', '/feedback', '/waitlist/confirm'])
+
+export function drawsOwnChrome(pathname: string | null): boolean {
+  return OWN_CHROME.has(pathname ?? '')
+}
+
+/**
  * The app's header (issue #17): the name, two places to go, and the account.
  *
  * `data-chrome` marks this as furniture: reading mode hides everything so marked, in CSS,
- * before first paint (see globals.css). The home page draws its own header, so this one steps
- * aside there.
+ * before first paint (see globals.css). Pages with their own landing header (`drawsOwnChrome`)
+ * get none of this.
  */
 export function SiteHeader() {
   const pathname = usePathname()
-  if (pathname === '/') return null
+  if (drawsOwnChrome(pathname)) return null
   return <AppHeader />
 }
 
@@ -73,7 +84,7 @@ export function AppHeader() {
 /** The quiet end of every app page: the line we stand behind, two links, and the theme. */
 export function SiteFooter() {
   const pathname = usePathname()
-  if (pathname === '/') return null
+  if (drawsOwnChrome(pathname)) return null
   return <AppFooter />
 }
 
