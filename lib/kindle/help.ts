@@ -14,7 +14,10 @@ export const KINDLE_HELP_PATH = '/kindle'
 
 /** Amazon's pages. Links only: the page loads nothing from Amazon. */
 export const AMAZON = {
-  /** Manage Your Content and Devices → Preferences, where Personal Document Settings lives. */
+  /**
+   * Manage Your Content and Devices → Preferences, where Personal Document Settings lives.
+   * The `settings/payment` ending is Amazon's real address for the Preferences tab, not a slip.
+   */
   preferences: 'https://www.amazon.com/hz/mycd/myx#/home/settings/payment',
   /** Amazon's own help for sending documents by email. */
   help: 'https://www.amazon.com/sendtokindle/email',

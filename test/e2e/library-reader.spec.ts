@@ -563,6 +563,8 @@ test('Send to Kindle reports where the story went, and links to Settings when no
   await openStoryActions(page)
   await page.getByTestId('send-to-kindle').click()
   await expect(page.getByTestId('kindle-sent')).toContainText('Sent to mock_family@kindle.com')
+  // Issue #117: a book that has not arrived is one press from the instructions.
+  await expect(page.getByTestId('kindle-sent').getByRole('link', { name: 'Not there?' })).toHaveAttribute('href', '/kindle')
 
   await page.goto('/stories/a2117f05-0000-4000-8000-a2117f050000')
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()

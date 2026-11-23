@@ -146,6 +146,7 @@ test.describe('Send to Kindle', () => {
       await page.getByTestId('story-actions').locator('summary').click()
       await page.getByTestId('send-to-kindle').click()
       await expect(page.getByTestId('kindle-sent')).toContainText(`Sent to ${kindle}`)
+      await expect(page.getByTestId('kindle-sent').getByRole('link', { name: 'Not there?' })).toHaveAttribute('href', '/kindle')
 
       const mail = await latestMailTo(kindle)
       expect(mail.Subject).toBe('Milo and the Tower That Clicked')
