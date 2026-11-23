@@ -34,6 +34,13 @@ Legend: ⬜ not started · 🟡 in progress · 🔴 blocked · ✅ done
 
 ## Session log
 
+### 2026-11-23 — Send to Kindle at the end of the story (issue #119, DECISIONS #228)
+
+The first real send from production reached the owner's Kindle. The button is now also at the
+end of every saved book and in the "Saved to your library" panel of a new one; the outcome
+shows beside the button pressed. Tests: `test/e2e/library-reader.spec.ts`,
+`test/e2e/new-story.spec.ts`, `test/e2e-real/kindle.spec.ts`.
+
 ### 2026-11-23 — Send to Kindle switched on, with instructions (issue #117, DECISIONS #226-227)
 
 `/kindle` is a public page with the four setup steps and the address to approve on Amazon

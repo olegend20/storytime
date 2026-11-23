@@ -51,6 +51,9 @@ test('happy path streams a story and the quota indicator decrements', async ({ p
 
   const firstChapter = page.getByRole('heading', { level: 2 }).first()
   await expect(firstChapter).toBeVisible()
+  // Issue #119: nothing offers to send a book that is still being written.
+  await expect(page.getByTestId('send-to-kindle-end')).toHaveCount(0)
+  await expect(page.getByTestId('send-to-kindle')).toHaveCount(0)
 
   // Prose grows over time rather than appearing all at once.
   const readTextLength = () =>
@@ -66,6 +69,13 @@ test('happy path streams a story and the quota indicator decrements', async ({ p
   })
   await expect(page.getByRole('heading', { name: 'Saved to your library' })).toBeVisible()
   await expect(progress).toBeHidden()
+
+  // Issue #119: the finished book can be sent to a Kindle from here. (The button's absence
+  // while the story is still coming is asserted above, before the first chapter.)
+  const sendEnd = page.getByTestId('send-to-kindle-end')
+  await expect(sendEnd).toBeVisible()
+  await sendEnd.click()
+  await expect(page.locator('.st-again').locator('[data-testid="kindle-sent"], [data-testid="kindle-error"]')).toBeVisible()
 
   // Quota moved by exactly one.
   await expect(page.getByText('1 of 3 stories left today').first()).toBeVisible()

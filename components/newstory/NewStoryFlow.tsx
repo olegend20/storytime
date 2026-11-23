@@ -44,6 +44,7 @@ import { useHydrated } from '@/lib/client/useHydrated'
 import { checkTopic } from '@/lib/client/validate'
 import type { Child, LengthMinutes, QuotaResponse, Tone } from '@/lib/schemas'
 import type { CreatorInitial } from '@/lib/newstory/initial'
+import { SendToKindleAtEnd } from '@/components/reader/SendToKindleButton'
 import { StoryReader } from '@/components/reader/StoryReader'
 import { ArrowRight, ChevronDown } from '@/components/Icons'
 import { Phase } from '@/components/Phase'
@@ -368,6 +369,8 @@ export function NewStoryFlow({
                   <Link href="/library" className="btn btn-quiet no-underline">
                     Back to library
                   </Link>
+                  {/* Only here, in the finished panel: a book is sent whole or not at all (issue #119). */}
+                  {readerStory.id && <SendToKindleAtEnd storyId={readerStory.id} />}
                   {readerStory.id && (
                     <Link href={`/stories/${readerStory.id}`} className="st-primary st-primary-inline">
                       Open the saved story <ArrowRight />

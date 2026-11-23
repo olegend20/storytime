@@ -35,9 +35,18 @@ export function useSendToKindle(storyId: string): { state: KindleState; send: ()
   return { state, send }
 }
 
-export function SendToKindleButton({ state, onSend }: { state: KindleState; onSend: () => void }) {
+export function SendToKindleButton({
+  state,
+  onSend,
+  testId = 'send-to-kindle',
+}: {
+  state: KindleState
+  onSend: () => void
+  /** The menu's button keeps the default; the one at the end of the story has its own (issue #119). */
+  testId?: string
+}) {
   return (
-    <button type="button" className="btn btn-quiet" onClick={onSend} disabled={state.kind === 'sending'} data-testid="send-to-kindle">
+    <button type="button" className="btn btn-quiet" onClick={onSend} disabled={state.kind === 'sending'} data-testid={testId}>
       {state.kind === 'sending' ? 'Sending…' : 'Send to Kindle'}
     </button>
   )
@@ -80,5 +89,23 @@ export function KindleStatus({ state }: { state: KindleState }) {
         </>
       )}
     </p>
+  )
+}
+
+/** The test id of the button at the end of a story, as opposed to the one in the menu. */
+export const SEND_TO_KINDLE_END = 'send-to-kindle-end'
+
+/**
+ * Send to Kindle at the end of a book that has just been written (issue #119): the button and
+ * what happened to the send, together. Goes inside `.st-again-actions`, where the outcome takes
+ * a row of its own under the buttons. Render it only once the story is saved and has an id.
+ */
+export function SendToKindleAtEnd({ storyId }: { storyId: string }) {
+  const kindle = useSendToKindle(storyId)
+  return (
+    <>
+      <SendToKindleButton state={kindle.state} onSend={() => void kindle.send()} testId={SEND_TO_KINDLE_END} />
+      <KindleStatus state={kindle.state} />
+    </>
   )
 }

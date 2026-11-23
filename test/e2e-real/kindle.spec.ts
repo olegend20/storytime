@@ -141,10 +141,9 @@ test.describe('Send to Kindle', () => {
       await page.getByRole('button', { name: 'Save Kindle address' }).click()
       await expect(page.getByText('Saved.')).toBeVisible()
 
-      // Send.
+      // Send, from the button at the end of the story (issue #119).
       await page.goto(`/stories/${story!.id}`)
-      await page.getByTestId('story-actions').locator('summary').click()
-      await page.getByTestId('send-to-kindle').click()
+      await page.locator('.st-again').getByTestId('send-to-kindle-end').click()
       await expect(page.getByTestId('kindle-sent')).toContainText(`Sent to ${kindle}`)
       await expect(page.getByTestId('kindle-sent').getByRole('link', { name: 'Not there?' })).toHaveAttribute('href', '/kindle')
 

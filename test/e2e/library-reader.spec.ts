@@ -582,3 +582,35 @@ test('Send to Kindle reports where the story went, and links to Settings when no
   await expect(page.getByTestId('story-actions')).toBeHidden()
   await expect(page.getByTestId('send-to-kindle')).toBeHidden()
 })
+
+test('Send to Kindle is also a button at the end of the story, and reports beside it (issue #119)', async ({ page }) => {
+  await page.goto('/stories/833fa5ee-0001-4000-8000-833fa5ee0001')
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  const end = page.locator('.st-again')
+  const button = end.getByTestId('send-to-kindle-end')
+  await expect(button).toHaveText('Send to Kindle')
+  await button.click()
+  // Beside the button that was pressed, and only there.
+  await expect(end.getByTestId('kindle-sent')).toContainText('Sent to mock_family@kindle.com')
+  await expect(page.getByTestId('kindle-sent')).toHaveCount(1)
+
+  // The menu's button still works, and its outcome moves back under the controls.
+  await openStoryActions(page)
+  await page.getByTestId('send-to-kindle').click()
+  await expect(page.getByTestId('kindle-sent')).toHaveCount(1)
+  await expect(end.getByTestId('kindle-sent')).toHaveCount(0)
+
+  // No address saved: the same help as the menu gives, at the end of the story.
+  await page.goto('/stories/a2117f05-0000-4000-8000-a2117f050000')
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  const end2 = page.locator('.st-again')
+  await end2.getByTestId('send-to-kindle-end').click()
+  const error = end2.getByTestId('kindle-error')
+  await expect(error).toContainText('Add your Kindle address')
+  await expect(error.getByRole('link', { name: 'Add it in Settings' })).toHaveAttribute('href', '/settings')
+  await expect(error.getByRole('link', { name: 'how to set it up' })).toHaveAttribute('href', '/kindle')
+
+  // Reading mode hides the chrome, this button with it.
+  await page.getByRole('button', { name: 'Read together' }).click()
+  await expect(page.getByTestId('send-to-kindle-end')).toBeHidden()
+})

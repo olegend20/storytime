@@ -745,6 +745,8 @@ li[data-state='active'] .st-stage-dot::after { content: ''; width: 8px; height: 
 .st-again h2 { margin: 0; font-size: 25px; font-weight: 400; }
 .st-again p { margin: 6px 0 0; font-size: 14.5px; color: var(--fg-muted); }
 .st-again > p + p { margin-top: 10px; }
+/* What happened to a Send to Kindle pressed here: a row of its own under the buttons (issue #119). */
+.st-again-actions .st-rnotice { flex: 1 0 100%; margin: 6px 0 0; font-size: 14px; color: var(--fg); }
 .st-again-actions { margin-top: 20px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; }
 
 /* The chapter bar: fixed at thumb height, opaque so no line of the story shows through. */
