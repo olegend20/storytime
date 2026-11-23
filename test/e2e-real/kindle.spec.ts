@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 import { deleteTestUser, localAuthStackReachable, signInWithMagicLink, SKIP_REASON, uniqueEmail } from '../e2e/support/login'
@@ -55,6 +56,27 @@ test.describe('Send to Kindle', () => {
     test.skip(!(await localAuthStackReachable()), SKIP_REASON)
   })
 
+  test('the instructions open signed out and show the address to approve on Amazon', async ({ page }) => {
+    await page.goto('/kindle')
+    await expect(page).toHaveURL(/\/kindle$/)
+    await expect(page.getByTestId('kindle-from')).toHaveText('kindle@storytime.local')
+    await expect(page.getByRole('button', { name: 'Copy address' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'If the book does not arrive' })).toBeVisible()
+    await expect(page.getByRole('banner')).toHaveCount(1)
+
+    // The page as production serves it - steps, address box, copy button - light and dark.
+    for (const scheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme: scheme })
+      const scan = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()
+      const blocking = scan.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')
+      expect(blocking.map((v) => `${scheme}: ${v.id}`), JSON.stringify(blocking.map((v) => v.nodes.map((n) => n.target)))).toEqual([])
+    }
+
+    // Copying says what happened, either way.
+    await page.getByRole('button', { name: 'Copy address' }).click()
+    await expect(page.getByTestId('kindle-copy-status')).toHaveText(/Copied\.|Could not copy/)
+  })
+
   test('settings, then a saved story lands in the (local) Kindle mailbox as an EPUB', async ({ page }) => {
     const email = uniqueEmail('kindle')
     const kindle = `milo_${Date.now().toString(36)}@kindle.com`
@@ -100,6 +122,17 @@ test.describe('Send to Kindle', () => {
 
       // Settings: our sending address is shown, the Kindle address is saved.
       await expect(page.getByTestId('kindle-from')).toHaveText('kindle@storytime.local')
+
+      // The instructions (issue #117): linked from Settings, with the address to approve on
+      // Amazon and all four steps. The same page opens signed out (checked below).
+      await page.getByTestId('kindle-help-link').click()
+      await expect(page).toHaveURL(/\/kindle$/)
+      await expect(page.getByTestId('kindle-from')).toHaveText('kindle@storytime.local')
+      await expect(page.getByTestId('kindle-step-approve-sender')).toContainText('Approved Personal Document E-mail List')
+      await expect(page.getByTestId('kindle-step-approve-sender')).toContainText('kindle@storytime.local')
+      await expect(page.locator('ol.lt-steps > li')).toHaveCount(4)
+      await page.getByRole('link', { name: 'Open Settings' }).click()
+      await expect(page).toHaveURL(/\/settings$/)
       await page.getByLabel('Send-to-Kindle address').fill('milo@gmail.com')
       await page.getByRole('button', { name: 'Save Kindle address' }).click()
       const kindleForm = page.locator('form[aria-labelledby="kindle-heading"]')
@@ -113,6 +146,7 @@ test.describe('Send to Kindle', () => {
       await page.getByTestId('story-actions').locator('summary').click()
       await page.getByTestId('send-to-kindle').click()
       await expect(page.getByTestId('kindle-sent')).toContainText(`Sent to ${kindle}`)
+      await expect(page.getByTestId('kindle-sent').getByRole('link', { name: 'Not there?' })).toHaveAttribute('href', '/kindle')
 
       const mail = await latestMailTo(kindle)
       expect(mail.Subject).toBe('Milo and the Tower That Clicked')

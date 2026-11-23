@@ -125,8 +125,10 @@ lastten.org opens a few families at a time. To run it:
    the Supabase organisation and is rate-limited. Real families need custom SMTP (Resend) on
    lastten.org: SPF, DKIM and return-path DNS records, then Auth → SMTP settings.
 3. **DNS.** At the registrar: `A  @  76.76.21.21` and `CNAME  www  cname.vercel-dns.com`.
-4. **Send to Kindle.** Same SMTP provider; set the six variables above and
-   `KINDLE_FROM_EMAIL=kindle@lastten.org`.
+4. **Send to Kindle.** *Switched on 2026-11-23 (issue #117): `KINDLE_FROM_EMAIL=kindle@lastten.org` is set in
+   production beside the SMTP variables; it takes effect with the next deployment.* Parents add that address to
+   Amazon's approved senders; `/kindle` walks them through it. Changing the address breaks every family's setup
+   until they approve the new one, so do not change it lightly. Still to do once: send one book to a real Kindle.
 5. **Rate limiting.** The API limiter counts in process memory, so on serverless each
    instance has its own count. `RateLimitStore` in `lib/http/ratelimit.ts` is the seam for a
    shared store (Upstash).

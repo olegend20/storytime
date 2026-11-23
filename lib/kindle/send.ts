@@ -7,6 +7,7 @@ import { CONTENT_NOTICE_COPY } from '@/lib/client/content-notice'
 import { safeTimeZone, usageDateFor } from '@/lib/limits/timezone'
 import { isKindleAddress, normalizeKindleAddress } from './address'
 import { buildEpub, epubFilename, EPUB_MIME } from './epub'
+import { KINDLE_SENDS_PER_DAY } from './limit'
 
 /**
  * Send a story to a Kindle (issue #11, DECISIONS #150): build the EPUB, mail it to the
@@ -29,8 +30,7 @@ export interface MailSender {
   send(mail: OutgoingMail): Promise<void>
 }
 
-/** A family may send this many stories a day. Plenty for bedtime; a brake on abuse. */
-export const KINDLE_SENDS_PER_DAY = 20
+export { KINDLE_SENDS_PER_DAY }
 
 export type KindleSendFailure =
   | 'not_configured'
@@ -114,6 +114,18 @@ export function smtpSender(): MailSender | null {
 /** Our sending address - null unless the whole feature is configured. */
 export function kindleFromAddress(): string | null {
   return kindleConfigured() ? (serverEnv().KINDLE_FROM_EMAIL ?? null) : null
+}
+
+/**
+ * `kindleFromAddress()` for the public pages, like `canSendToKindle()`: an incomplete server
+ * env means "not set up", not a broken page.
+ */
+export function kindleFromAddressIfAny(): string | null {
+  try {
+    return kindleFromAddress()
+  } catch {
+    return null
+  }
 }
 
 export interface SendStoryInput {

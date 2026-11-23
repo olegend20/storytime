@@ -257,6 +257,16 @@ test.describe('accessibility', () => {
     })
   }
 
+  /** The Send to Kindle instructions (issue #117): public, light and dark. */
+  for (const scheme of ['light', 'dark'] as const) {
+    test(`the Kindle instructions have no serious violations (${scheme})`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: scheme })
+      await page.goto('/kindle')
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+      expect(report(`kindle-${scheme}`, (await scan(page)).violations)).toEqual([])
+    })
+  }
+
   /** VT-R2 (issue #17): the landing page, in the light and the dark it will be seen in. */
   for (const scheme of ['light', 'dark'] as const) {
     test(`the landing page has no serious violations (${scheme})`, async ({ page }) => {

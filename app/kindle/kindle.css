@@ -1,0 +1,22 @@
+/* lastten.org/kindle (issue #117). Builds on landing.css; only this page's own pieces live here. */
+.kh-hero { padding-bottom: 40px; }
+.kh-body { max-width: 760px; margin: 0 auto; padding: 0 24px 96px; }
+.kh-body .lt-steps { margin-top: 0; }
+.kh-body .lt-steps h2 { font-size: 24px; line-height: 1.2; letter-spacing: -0.012em; }
+.kh-body .lt-steps p { max-width: none; }
+.kh-body .lt-steps p + p { margin-top: 10px; }
+.kh-from { margin-top: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-raised); }
+.kh-from-label { flex: 1 0 100%; font-size: 11.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-muted); font-weight: 500; }
+.kh-from code { font-size: 18px; color: var(--fg); overflow-wrap: anywhere; user-select: all; }
+.kh-body .lt-steps p.kh-links { margin-top: 12px; font-family: inherit; color: var(--fg); display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 15.5px; }
+.kh-links a, .kh-trouble a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.kh-off { padding: 14px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-raised); font-size: 16px; }
+.kh-trouble { margin-top: 64px; }
+.kh-trouble h2 { font-size: 28px; line-height: 1.2; letter-spacing: -0.014em; }
+.kh-trouble ul { margin-top: 18px; display: grid; gap: 12px; list-style: disc; padding-left: 22px; }
+.kh-trouble li { font-family: var(--prose-font); font-size: 18px; line-height: 1.55; color: var(--fg-soft); }
+.kh-trouble p { margin-top: 18px; font-size: 15.5px; color: var(--fg-muted); }
+@media (max-width: 640px) {
+  .kh-body { padding: 0 22px 64px; }
+  .kh-body .lt-steps li { grid-template-columns: 40px minmax(0, 1fr); }
+}
