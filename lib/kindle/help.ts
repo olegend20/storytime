@@ -63,7 +63,7 @@ export function kindleHelpSteps(fromAddress: string): readonly KindleHelpStep[] 
       id: 'send-book',
       title: 'Send a book',
       body: [
-        "Open any book, tonight's or an old one from your library, open its menu and choose Send to Kindle. It usually arrives within a few minutes, while the Kindle is on Wi-Fi.",
+        "Open any book, tonight's or an old one from your library, and choose Send to Kindle at the end of the book. A saved book has the same button in its menu. It usually arrives within a few minutes, while the Kindle is on Wi-Fi.",
         `Books are sent one at a time, when you ask. Nothing is sent on its own, and you can send up to ${KINDLE_SENDS_PER_DAY} a day.`,
       ],
     },

@@ -128,7 +128,7 @@ lastten.org opens a few families at a time. To run it:
 4. **Send to Kindle.** *Switched on 2026-11-23 (issue #117): `KINDLE_FROM_EMAIL=kindle@lastten.org` is set in
    production beside the SMTP variables; it takes effect with the next deployment.* Parents add that address to
    Amazon's approved senders; `/kindle` walks them through it. Changing the address breaks every family's setup
-   until they approve the new one, so do not change it lightly. Still to do once: send one book to a real Kindle.
+   until they approve the new one, so do not change it lightly. A book sent from production reached the owner's Kindle on 2026-11-23.
 5. **Rate limiting.** The API limiter counts in process memory, so on serverless each
    instance has its own count. `RateLimitStore` in `lib/http/ratelimit.ts` is the seam for a
    shared store (Upstash).

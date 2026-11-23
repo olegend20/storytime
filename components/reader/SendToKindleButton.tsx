@@ -35,9 +35,18 @@ export function useSendToKindle(storyId: string): { state: KindleState; send: ()
   return { state, send }
 }
 
-export function SendToKindleButton({ state, onSend }: { state: KindleState; onSend: () => void }) {
+export function SendToKindleButton({
+  state,
+  onSend,
+  testId = 'send-to-kindle',
+}: {
+  state: KindleState
+  onSend: () => void
+  /** The menu's button keeps the default; the one at the end of the story is `send-to-kindle-end` (issue #119). */
+  testId?: string
+}) {
   return (
-    <button type="button" className="btn btn-quiet" onClick={onSend} disabled={state.kind === 'sending'} data-testid="send-to-kindle">
+    <button type="button" className="btn btn-quiet" onClick={onSend} disabled={state.kind === 'sending'} data-testid={testId}>
       {state.kind === 'sending' ? 'Sending…' : 'Send to Kindle'}
     </button>
   )

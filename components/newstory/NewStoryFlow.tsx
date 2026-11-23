@@ -44,6 +44,7 @@ import { useHydrated } from '@/lib/client/useHydrated'
 import { checkTopic } from '@/lib/client/validate'
 import type { Child, LengthMinutes, QuotaResponse, Tone } from '@/lib/schemas'
 import type { CreatorInitial } from '@/lib/newstory/initial'
+import { KindleStatus, SendToKindleButton, useSendToKindle } from '@/components/reader/SendToKindleButton'
 import { StoryReader } from '@/components/reader/StoryReader'
 import { ArrowRight, ChevronDown } from '@/components/Icons'
 import { Phase } from '@/components/Phase'
@@ -364,16 +365,8 @@ export function NewStoryFlow({
                 <h2>Saved to your library</h2>
                 <p>You can read it again any night — re-reading is always free.</p>
                 <QuotaIndicator quota={quota} />
-                <div className="st-again-actions">
-                  <Link href="/library" className="btn btn-quiet no-underline">
-                    Back to library
-                  </Link>
-                  {readerStory.id && (
-                    <Link href={`/stories/${readerStory.id}`} className="st-primary st-primary-inline">
-                      Open the saved story <ArrowRight />
-                    </Link>
-                  )}
-                </div>
+                {/* Only here, in the finished panel: a book is sent whole or not at all (issue #119). */}
+                <SavedActions storyId={readerStory.id ?? null} />
               </div>
             ) : null
           }
@@ -517,5 +510,30 @@ export function NewStoryFlow({
       <PrivacyNote className="st-privacy-note" />
       {below}
     </main>
+  )
+}
+
+/**
+ * The buttons under "Saved to your library". Send to Kindle (issue #119) is among them once
+ * the story has an id; what happened to the send comes last, a row of its own under the
+ * buttons, so nothing a parent is about to press moves.
+ */
+function SavedActions({ storyId }: { storyId: string | null }) {
+  const kindle = useSendToKindle(storyId ?? '')
+  return (
+    <div className="st-again-actions">
+      <Link href="/library" className="btn btn-quiet no-underline">
+        Back to library
+      </Link>
+      {storyId && (
+        <SendToKindleButton state={kindle.state} onSend={() => void kindle.send()} testId="send-to-kindle-end" />
+      )}
+      {storyId && (
+        <Link href={`/stories/${storyId}`} className="st-primary st-primary-inline">
+          Open the saved story <ArrowRight />
+        </Link>
+      )}
+      <KindleStatus state={kindle.state} />
+    </div>
   )
 }

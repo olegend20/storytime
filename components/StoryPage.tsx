@@ -23,6 +23,8 @@ export function StoryPage({ id }: { id: string }) {
   const [story, setStory] = useState<LibraryStory | null>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'error'>('loading')
   const kindle = useSendToKindle(id)
+  // Two buttons, one send (issue #119): the outcome is shown beside whichever was pressed.
+  const [kindleFrom, setKindleFrom] = useState<'menu' | 'end'>('menu')
   const [deleteFailed, setDeleteFailed] = useState(false)
 
   useEffect(() => {
@@ -90,7 +92,7 @@ export function StoryPage({ id }: { id: string }) {
         // Shown on the page, not in the menu: it must still be there once the menu has closed.
         notice={
           <>
-            <KindleStatus state={kindle.state} />
+            {kindleFrom === 'menu' && <KindleStatus state={kindle.state} />}
             {deleteFailed && (
               <p role="alert" className="st-rnotice" data-testid="delete-error">
                 We couldn&rsquo;t delete that story. Nothing was removed — please try again.
@@ -100,7 +102,13 @@ export function StoryPage({ id }: { id: string }) {
         }
         actions={
           <>
-            <SendToKindleButton state={kindle.state} onSend={() => void kindle.send()} />
+            <SendToKindleButton
+              state={kindle.state}
+              onSend={() => {
+                setKindleFrom('menu')
+                void kindle.send()
+              }}
+            />
             <DeleteStoryButton
               onFailed={setDeleteFailed}
               onConfirm={async () => {
@@ -119,12 +127,22 @@ export function StoryPage({ id }: { id: string }) {
               <button type="button" className="btn btn-quiet" onClick={readAgain}>
                 Read again
               </button>
+              <SendToKindleButton
+                state={kindle.state}
+                testId="send-to-kindle-end"
+                onSend={() => {
+                  setKindleFrom('end')
+                  void kindle.send()
+                }}
+              />
               <Link href="/library" className="btn btn-quiet no-underline">
                 Back to library
               </Link>
               <Link href="/new" className="st-primary st-primary-inline">
                 Make another book <ArrowRight />
               </Link>
+              {/* Last, so it is a row of its own under the buttons and nothing moves above it. */}
+              {kindleFrom === 'end' && <KindleStatus state={kindle.state} />}
             </div>
           </div>
         }

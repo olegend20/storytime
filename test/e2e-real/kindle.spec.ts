@@ -141,10 +141,9 @@ test.describe('Send to Kindle', () => {
       await page.getByRole('button', { name: 'Save Kindle address' }).click()
       await expect(page.getByText('Saved.')).toBeVisible()
 
-      // Send.
+      // Send, from the button at the end of the story (issue #119).
       await page.goto(`/stories/${story!.id}`)
-      await page.getByTestId('story-actions').locator('summary').click()
-      await page.getByTestId('send-to-kindle').click()
+      await page.locator('.st-again').getByTestId('send-to-kindle-end').click()
       await expect(page.getByTestId('kindle-sent')).toContainText(`Sent to ${kindle}`)
       await expect(page.getByTestId('kindle-sent').getByRole('link', { name: 'Not there?' })).toHaveAttribute('href', '/kindle')
 
@@ -157,8 +156,13 @@ test.describe('Send to Kindle', () => {
       expect(epub!.ContentType).toContain('epub')
       expect(epub!.Size).toBeGreaterThan(1_000)
 
+      // The menu's button still sends too, and says so under the controls, not at the end.
+      await page.getByTestId('story-actions').locator('summary').click()
+      await page.getByTestId('send-to-kindle').click()
+      await expect(page.locator('[data-testid="kindle-sent"]:not(.st-again *)')).toContainText(`Sent to ${kindle}`)
+
       const { data: sends } = await db.from('story_sends').select('to_address').eq('family_id', family!.id)
-      expect(sends).toEqual([{ to_address: kindle }])
+      expect(sends).toEqual([{ to_address: kindle }, { to_address: kindle }])
     } finally {
       await deleteTestUser(email)
     }
