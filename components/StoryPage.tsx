@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ApiError, deleteStory, fetchStory } from '@/lib/client/api'
 import { ArrowRight } from '@/components/Icons'
-import { KindleStatus, SEND_TO_KINDLE_END, SendToKindleButton, useSendToKindle } from '@/components/reader/SendToKindleButton'
+import { KindleStatus, SendToKindleButton, useSendToKindle } from '@/components/reader/SendToKindleButton'
 import { readerFromLibraryStory } from '@/lib/client/reader'
 import { forgetStory, saveScroll } from '@/lib/client/storage'
 import type { LibraryStory } from '@/lib/client/types'
@@ -129,7 +129,7 @@ export function StoryPage({ id }: { id: string }) {
               </button>
               <SendToKindleButton
                 state={kindle.state}
-                testId={SEND_TO_KINDLE_END}
+                testId="send-to-kindle-end"
                 onSend={() => {
                   setKindleFrom('end')
                   void kindle.send()
@@ -141,6 +141,7 @@ export function StoryPage({ id }: { id: string }) {
               <Link href="/new" className="st-primary st-primary-inline">
                 Make another book <ArrowRight />
               </Link>
+              {/* Last, so it is a row of its own under the buttons and nothing moves above it. */}
               {kindleFrom === 'end' && <KindleStatus state={kindle.state} />}
             </div>
           </div>

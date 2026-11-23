@@ -51,7 +51,8 @@ test('happy path streams a story and the quota indicator decrements', async ({ p
 
   const firstChapter = page.getByRole('heading', { level: 2 }).first()
   await expect(firstChapter).toBeVisible()
-  // Issue #119: nothing offers to send a book that is still being written.
+  // Issue #119: nothing offers to send a book that is still being written. Checked here, early
+  // in the stream, and again below once more of it has arrived.
   await expect(page.getByTestId('send-to-kindle-end')).toHaveCount(0)
   await expect(page.getByTestId('send-to-kindle')).toHaveCount(0)
 
@@ -62,6 +63,8 @@ test('happy path streams a story and the quota indicator decrements', async ({ p
   await expect
     .poll(async () => (await readTextLength()) > early, { timeout: 15_000 })
     .toBe(true)
+  // Still streaming (the progress note is up), still no way to send it.
+  if (await progress.isVisible()) await expect(page.getByTestId('send-to-kindle-end')).toHaveCount(0)
 
   // Finished: the facts checklist, the ending and the saved-to-library panel.
   await expect(page.getByRole('heading', { name: 'True facts from the story' })).toBeVisible({
@@ -70,12 +73,16 @@ test('happy path streams a story and the quota indicator decrements', async ({ p
   await expect(page.getByRole('heading', { name: 'Saved to your library' })).toBeVisible()
   await expect(progress).toBeHidden()
 
-  // Issue #119: the finished book can be sent to a Kindle from here. (The button's absence
-  // while the story is still coming is asserted above, before the first chapter.)
+  // Issue #119: the finished book can be sent to a Kindle from here. The mock sends unless the
+  // new story's random id ends in 0, when it answers "no address" - both mean the route found
+  // the story just written; "Story not found" or a server error would fail this.
   const sendEnd = page.getByTestId('send-to-kindle-end')
   await expect(sendEnd).toBeVisible()
   await sendEnd.click()
-  await expect(page.locator('.st-again').locator('[data-testid="kindle-sent"], [data-testid="kindle-error"]')).toBeVisible()
+  const outcome = page.locator('.st-again-actions > .st-rnotice')
+  await expect(outcome).toContainText(/Sent to mock_family@kindle\.com|Add your Kindle address/)
+  // The outcome is the last thing in the panel: under the buttons, not between them.
+  await expect(page.locator('.st-again-actions > :last-child')).toHaveClass(/st-rnotice/)
 
   // Quota moved by exactly one.
   await expect(page.getByText('1 of 3 stories left today').first()).toBeVisible()

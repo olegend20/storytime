@@ -597,8 +597,10 @@ test('Send to Kindle is also a button at the end of the story, and reports besid
   // The menu's button still works, and its outcome moves back under the controls.
   await openStoryActions(page)
   await page.getByTestId('send-to-kindle').click()
-  await expect(page.getByTestId('kindle-sent')).toHaveCount(1)
+  const underControls = page.locator('[data-testid="kindle-sent"]:not(.st-again *)')
+  await expect(underControls).toContainText('Sent to mock_family@kindle.com')
   await expect(end.getByTestId('kindle-sent')).toHaveCount(0)
+  await expect(end.getByTestId('send-to-kindle-end')).toBeEnabled()
 
   // No address saved: the same help as the menu gives, at the end of the story.
   await page.goto('/stories/a2117f05-0000-4000-8000-a2117f050000')
