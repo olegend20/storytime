@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 import { deleteTestUser, localAuthStackReachable, signInWithMagicLink, SKIP_REASON, uniqueEmail } from '../e2e/support/login'
@@ -61,6 +62,19 @@ test.describe('Send to Kindle', () => {
     await expect(page.getByTestId('kindle-from')).toHaveText('kindle@storytime.local')
     await expect(page.getByRole('button', { name: 'Copy address' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'If the book does not arrive' })).toBeVisible()
+    await expect(page.getByRole('banner')).toHaveCount(1)
+
+    // The page as production serves it - steps, address box, copy button - light and dark.
+    for (const scheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme: scheme })
+      const scan = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()
+      const blocking = scan.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')
+      expect(blocking.map((v) => `${scheme}: ${v.id}`), JSON.stringify(blocking.map((v) => v.nodes.map((n) => n.target)))).toEqual([])
+    }
+
+    // Copying says what happened, either way.
+    await page.getByRole('button', { name: 'Copy address' }).click()
+    await expect(page.getByTestId('kindle-copy-status')).toHaveText(/Copied\.|Could not copy/)
   })
 
   test('settings, then a saved story lands in the (local) Kindle mailbox as an EPUB', async ({ page }) => {

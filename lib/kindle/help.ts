@@ -38,6 +38,7 @@ export function kindleHelpSteps(fromAddress: string): readonly KindleHelpStep[] 
       body: [
         'Every Kindle has its own address ending in @kindle.com. On Amazon, open Manage Your Content and Devices, choose Preferences, then scroll to Personal Document Settings. The address is listed under Send-to-Kindle E-Mail Settings, one for each Kindle and Kindle app.',
         'On the Kindle itself it is under Settings, Your Account, Send-to-Kindle Email.',
+        "Use the Amazon site your Kindle is registered with. The links here open amazon.com; if yours is another country's, such as amazon.co.uk, sign in there and follow the same menus.",
       ],
     },
     {

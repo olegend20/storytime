@@ -68,15 +68,16 @@ export function KindleStatus({ state }: { state: KindleState }) {
     <p role="alert" className="st-rnotice" data-testid="kindle-error">
       {state.message}{' '}
       {state.code === 'no_kindle_address' && (
-        <Link href="/settings" className="underline" style={{ color: 'inherit' }}>
-          Add it in Settings
-        </Link>
-      )}
-      {state.code === 'no_kindle_address' && ' or see '}
-      {state.code === 'no_kindle_address' && (
-        <Link href={KINDLE_HELP_PATH} className="underline" style={{ color: 'inherit' }}>
-          how to set it up
-        </Link>
+        <>
+          <Link href="/settings" className="underline" style={{ color: 'inherit' }}>
+            Add it in Settings
+          </Link>
+          , or see{' '}
+          <Link href={KINDLE_HELP_PATH} className="underline" style={{ color: 'inherit' }}>
+            how to set it up
+          </Link>
+          .
+        </>
       )}
     </p>
   )

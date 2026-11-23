@@ -116,6 +116,18 @@ export function kindleFromAddress(): string | null {
   return kindleConfigured() ? (serverEnv().KINDLE_FROM_EMAIL ?? null) : null
 }
 
+/**
+ * `kindleFromAddress()` for the public pages, like `canSendToKindle()`: an incomplete server
+ * env means "not set up", not a broken page.
+ */
+export function kindleFromAddressIfAny(): string | null {
+  try {
+    return kindleFromAddress()
+  } catch {
+    return null
+  }
+}
+
 export interface SendStoryInput {
   familyId: string
   /** The parent's saved address; null when none is set. */

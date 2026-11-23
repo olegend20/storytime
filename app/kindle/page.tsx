@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { BRAND } from '@/lib/brand'
 import { AMAZON, KINDLE_HELP_OFF, kindleHelpSteps, kindleHelpTroubles, type KindleHelpStep } from '@/lib/kindle/help'
-import { kindleFromAddress } from '@/lib/kindle/send'
+import { kindleFromAddressIfAny } from '@/lib/kindle/send'
 import CopyAddress from './CopyAddress'
 import '../landing.css'
 import './kindle.css'
@@ -18,21 +18,12 @@ import './kindle.css'
  */
 
 export const metadata: Metadata = {
-  title: `Send to Kindle — ${BRAND.wordmark}`,
+  title: `Send to Kindle — ${BRAND.app}`,
   description: 'How to have a StoryTime book sent to your Kindle.',
 }
 
 // The sending address is server configuration: read it per request, not at build time.
 export const dynamic = 'force-dynamic'
-
-/** Like `canSendToKindle()`: an incomplete server env means "not set up", not a broken page. */
-function fromAddress(): string | null {
-  try {
-    return kindleFromAddress()
-  } catch {
-    return null
-  }
-}
 
 function StepExtras({ step, from }: { step: KindleHelpStep; from: string }) {
   if (step.id === 'find-address') {
@@ -71,7 +62,7 @@ function StepExtras({ step, from }: { step: KindleHelpStep; from: string }) {
 }
 
 export default function KindleHelpPage() {
-  const from = fromAddress()
+  const from = kindleFromAddressIfAny()
   return (
     <div className="lt">
       <main id="main">
