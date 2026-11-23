@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useCallback, useState } from 'react'
 import { sendToKindle, ApiError } from '@/lib/client/api'
+import { KINDLE_HELP_PATH } from '@/lib/kindle/help'
 
 /**
  * Send to Kindle (issue #11). One tap; the story arrives on the Kindle in a few minutes.
@@ -56,6 +57,10 @@ export function KindleStatus({ state }: { state: KindleState }) {
     return (
       <p role="status" className="st-rnotice" data-testid="kindle-sent">
         Sent to <strong>{state.to}</strong>. It usually arrives on the Kindle within a few minutes.
+        {' '}
+        <Link href={KINDLE_HELP_PATH} className="underline" style={{ color: 'inherit' }}>
+          Not there?
+        </Link>
       </p>
     )
   }
@@ -65,6 +70,12 @@ export function KindleStatus({ state }: { state: KindleState }) {
       {state.code === 'no_kindle_address' && (
         <Link href="/settings" className="underline" style={{ color: 'inherit' }}>
           Add it in Settings
+        </Link>
+      )}
+      {state.code === 'no_kindle_address' && ' or see '}
+      {state.code === 'no_kindle_address' && (
+        <Link href={KINDLE_HELP_PATH} className="underline" style={{ color: 'inherit' }}>
+          how to set it up
         </Link>
       )}
     </p>

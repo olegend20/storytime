@@ -34,6 +34,16 @@ Legend: ⬜ not started · 🟡 in progress · 🔴 blocked · ✅ done
 
 ## Session log
 
+### 2026-11-23 — Send to Kindle switched on, with instructions (issue #117, DECISIONS #226-227)
+
+`/kindle` is a public page with the four setup steps and the address to approve on Amazon
+(`kindle@lastten.org`, copy button). Settings links to it, and so do the messages under the
+Send to Kindle button. Production has `KINDLE_FROM_EMAIL` set (SMTP was already there), so the
+feature is on from the next deployment. Sending is unchanged: any saved book, one at a time,
+20 a day. Tests: `test/unit/kindle-help.test.ts`, `test/e2e/kindle-help.spec.ts`, two a11y
+scans, and `test/e2e-real/kindle.spec.ts` extended. **Not yet done: one book sent to a real
+Kindle from production.**
+
 ### 2026-11-22 — feedback contact retention (DECISIONS #225)
 
 Owner chose 90 days: `purge_feedback_contact()` clears a tester's name and email after 90 days,

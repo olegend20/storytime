@@ -491,3 +491,11 @@ The owner's first real stories: every first draft sent back, every rewrite faile
 | # | Decision | Why |
 |---|---|---|
 | 225 | **A tester's name and email on `feedback` are cleared 90 days after they send it; the answers are kept.** `purge_feedback_contact()` (security definer, execute revoked from public, anon and authenticated) is run daily by pg_cron, like the guardrail raw-text purge. `/privacy` says so. | Owner decision 2026-11-22 (PR #115 review raised that the table kept contact details with no end date, unlike the waitlist). Ninety days is long enough to reply to a tester and follow up; after that the answers still teach us, without saying who wrote them. Same function-plus-cron shape as GUARDRAILS s1.5, so it is tested the same way. |
+
+## 2026-11-23 — Send to Kindle switched on, with instructions (issue #117)
+
+| # | Decision | Why |
+|---|---|---|
+| 226 | **The setup instructions are a page of ours, `/kindle`, not a link to Amazon's help.** Public (no sign-in), four steps: find the Kindle's address, add our sending address to Amazon's Approved Personal Document E-mail List, save the Kindle address in Settings, send a book. It shows the address the server really sends from (`kindleFromAddress()`), with a copy button, and links out to Amazon's Preferences page and Amazon's own help. Settings and the messages under the Send to Kindle button link to it. With no mail configured it says sending is not switched on and shows no address. The words live in `lib/kindle/help.ts`. | Owner request 2026-11-23, who offered either. Amazon's help cannot name our address, and the approved-sender step is the one that fails silently: Amazon drops mail from an unlisted sender without telling the parent or us. Public because a parent follows it with Amazon open in another tab, often on another device. |
+| 227 | **Sending stays one book at a time, on the parent's press, for any saved book; the sender is `kindle@lastten.org`.** No "send every new book" setting. Production got `KINDLE_FROM_EMAIL` on 2026-11-23; SMTP was already there for the waitlist mail. | Owner 2026-11-23: "book by book, not all books automatically", old ones from the library included - which the button on every saved story already did. A fixed, dedicated address because every family copies it into Amazon: changing it later silently breaks them all. |
+

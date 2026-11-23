@@ -58,6 +58,12 @@ export default defineConfig({
        * stack (test/e2e-real/waitlist.spec.ts), where the waitlist is on.
        */
       WAITLIST_ENABLED: 'false',
+      /**
+       * Issue #117: this suite's server has no mail, whatever a developer's .env.local says, so
+       * `/kindle` and the homepage are tested in the one state CI also has. Blank is unset
+       * (lib/env.ts). Sending for real is tested on the real stack.
+       */
+      KINDLE_FROM_EMAIL: '',
     },
   },
 })

@@ -1,6 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
+import { KINDLE_HELP_PATH } from '@/lib/kindle/help'
 
 /**
  * Send to Kindle (issue #11): the parent's Send-to-Kindle address, and the one thing Amazon
@@ -71,6 +73,13 @@ export default function KindleSettingsForm({
           </li>
           <li>Find your Kindle&rsquo;s Send-to-Kindle address on the same page and enter it below.</li>
         </ol>
+      ) : null}
+      {fromAddress ? (
+        <p className="mt-0 mb-4 text-[0.95rem]">
+          <Link href={KINDLE_HELP_PATH} className="underline underline-offset-2" data-testid="kindle-help-link">
+            Step-by-step instructions
+          </Link>
+        </p>
       ) : (
         <p className="mt-0 mb-4 text-[0.95rem]" role="status">
           Send to Kindle is not set up on this server yet.

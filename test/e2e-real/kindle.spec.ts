@@ -55,6 +55,14 @@ test.describe('Send to Kindle', () => {
     test.skip(!(await localAuthStackReachable()), SKIP_REASON)
   })
 
+  test('the instructions open signed out and show the address to approve on Amazon', async ({ page }) => {
+    await page.goto('/kindle')
+    await expect(page).toHaveURL(/\/kindle$/)
+    await expect(page.getByTestId('kindle-from')).toHaveText('kindle@storytime.local')
+    await expect(page.getByRole('button', { name: 'Copy address' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'If the book does not arrive' })).toBeVisible()
+  })
+
   test('settings, then a saved story lands in the (local) Kindle mailbox as an EPUB', async ({ page }) => {
     const email = uniqueEmail('kindle')
     const kindle = `milo_${Date.now().toString(36)}@kindle.com`
@@ -100,6 +108,17 @@ test.describe('Send to Kindle', () => {
 
       // Settings: our sending address is shown, the Kindle address is saved.
       await expect(page.getByTestId('kindle-from')).toHaveText('kindle@storytime.local')
+
+      // The instructions (issue #117): linked from Settings, with the address to approve on
+      // Amazon and all four steps. The same page opens signed out (checked below).
+      await page.getByTestId('kindle-help-link').click()
+      await expect(page).toHaveURL(/\/kindle$/)
+      await expect(page.getByTestId('kindle-from')).toHaveText('kindle@storytime.local')
+      await expect(page.getByTestId('kindle-step-approve-sender')).toContainText('Approved Personal Document E-mail List')
+      await expect(page.getByTestId('kindle-step-approve-sender')).toContainText('kindle@storytime.local')
+      await expect(page.locator('ol.lt-steps > li')).toHaveCount(4)
+      await page.getByRole('link', { name: 'Open Settings' }).click()
+      await expect(page).toHaveURL(/\/settings$/)
       await page.getByLabel('Send-to-Kindle address').fill('milo@gmail.com')
       await page.getByRole('button', { name: 'Save Kindle address' }).click()
       const kindleForm = page.locator('form[aria-labelledby="kindle-heading"]')
