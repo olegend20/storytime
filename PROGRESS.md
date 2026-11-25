@@ -34,6 +34,11 @@ Legend: ⬜ not started · 🟡 in progress · 🔴 blocked · ✅ done
 
 ## Session log
 
+### 2026-11-25 — the code is open source under Apache-2.0 (issue #126, DECISIONS #229)
+
+`LICENSE` (Apache-2.0), the `license` field in `package.json` and a README section. Nothing in
+the app changes. VTs: `test/unit/license.test.ts` (VT-LIC1-3).
+
 ### 2026-11-23 — Send to Kindle at the end of the story (issue #119, DECISIONS #228)
 
 The first real send from production reached the owner's Kindle. The button is now also at the
