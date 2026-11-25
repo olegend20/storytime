@@ -1634,10 +1634,11 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       }),
     }
 
+    const quota = new RecordingQuota()
     const { events, result } = await collect(run, {
       db: family.db,
       sink: new MemoryLogSink(),
-      quota: new RecordingQuota(),
+      quota,
       safetyReviewer: alwaysTooScary,
       now: () => FIXED_NOW,
     })
@@ -1658,6 +1659,9 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       .single()
     expect((row as { status: string }).status).toBe('flagged')
     expect((row as { content: StoryOutput }).content.chapters.length).toBeGreaterThanOrEqual(6)
+    // A flagged story is a delivered book: it uses one of the day's stories, like a ready one.
+    // The reader's second-look banner says so (lib/client/second-look.ts).
+    expect(quota.calls).toEqual(['consumeQuota'])
   })
 
   /**

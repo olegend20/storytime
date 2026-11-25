@@ -11,6 +11,7 @@ import { swipeDirection, type Point } from '@/lib/client/swipe'
 import { ReaderControls } from './ReaderControls'
 import { TrueFactsChecklist } from './TrueFactsChecklist'
 import { CONTENT_NOTICE_COPY } from '@/lib/client/content-notice'
+import { SECOND_LOOK_COPY } from '@/lib/client/second-look'
 import { useScrollMemory } from './useScrollMemory'
 
 /**
@@ -142,12 +143,12 @@ export function StoryReader({
 
       {flagged && (
         <p
+          data-testid="second-look"
           className="card st-rflag p-4 text-sm"
           role="status"
           style={{ background: 'var(--accent-soft)', borderColor: 'var(--accent)' }}
         >
-          We had a second look at this one before showing it to you. If anything reads oddly,
-          make another — it won&rsquo;t use one of your stories.
+          {SECOND_LOOK_COPY}
         </p>
       )}
 
