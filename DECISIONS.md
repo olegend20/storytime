@@ -505,3 +505,8 @@ The owner's first real stories: every first draft sent back, every rewrite faile
 |---|---|---|
 | 228 | **Send to Kindle is a button at the end of the story, beside the other end-of-story buttons, on a saved book and in the "Saved to your library" panel of a book just written. The menu button stays; the outcome is shown beside whichever was pressed.** It is not offered while a book is still streaming, and there is no "send it when it is ready" tick box on the creator. | Owner 2026-11-23, after the first real send: the button was too hard to find in the menu. The end of the book is where a parent decides what to do with it, and the finished panel only exists once the story is saved, so a book is sent whole or not at all. A tick box before writing was the owner's other suggestion; it was left out because it is a send the parent does not press at the time, and the owner's rule is book by book (#227). |
 
+## 2026-11-25 — the code is open source (issue #126)
+
+| # | Decision | Why |
+|---|---|---|
+| 229 | **The repository is licensed under Apache-2.0: `LICENSE` at the root (the unmodified text from apache.org), `"license": "Apache-2.0"` in `package.json`, a line in the README.** It covers everything in the repository, the prompts and reference stories included. `"private": true` stays: it stops an accidental `npm publish`, and says nothing about the licence. | Owner 2026-11-25: open source rather than a patent on the fix-in-place technique, and Apache-2.0 over MIT for its explicit patent grant, which ends for anyone who sues over the code. The repository had been public since 2026-09-30 with no licence, so nobody could legally reuse it. The grant cannot be withdrawn for copies already taken. |

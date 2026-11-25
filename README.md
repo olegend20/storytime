@@ -168,3 +168,7 @@ F7's gate and the judge both read one definition of "the story". What they estab
 
 Both band A references sit above the nominal 1,700-word ceiling for their band and pass
 only on the ±15% tolerance. Worth knowing before anyone tightens that tolerance.
+
+## License
+
+Copyright 2026 David Murray. Licensed under the [Apache License, Version 2.0](LICENSE).
