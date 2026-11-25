@@ -34,6 +34,12 @@ Legend: ⬜ not started · 🟡 in progress · 🔴 blocked · ✅ done
 
 ## Session log
 
+### 2026-11-25 — the second-look banner no longer promises a free story (DECISIONS #229)
+
+A flagged story always counted against the day's limit, but its banner said making another
+"won't use one of your stories". The banner now says it will. No change to the limit. Tests:
+`test/unit/second-look-copy.test.ts`, the F7 flag test in `test/int/pipeline.test.ts`.
+
 ### 2026-11-23 — Send to Kindle at the end of the story (issue #119, DECISIONS #228)
 
 The first real send from production reached the owner's Kindle. The button is now also at the
