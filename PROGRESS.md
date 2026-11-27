@@ -39,6 +39,8 @@ Legend: ⬜ not started · 🟡 in progress · 🔴 blocked · ✅ done
 - Input classifier v3 (`prompts/guardrail.input-classifier.v3.md`): mermaids, unicorns,
   dragons and fairies are `allow_with_care` / `educational` instead of `off_mission`. Care
   notes point the facts at a real subject; the story never says whether the creature is real.
+- Normalizer v3 keys the creature's real subject (mermaids → `ocean-animals`), and code
+  (`isMakeBelieveKind`) never treats a kind of creature as a borrowed character.
 - Corpus: 10 make-believe care entries (VT-MB1) and 4 creatures carrying refused content
   (VT-MB2) in `test/guardrails/`. The `classify_input` fixtures must be re-recorded live
   (the prompt is part of every fixture key) before the L2 corpus can pass in CI.
