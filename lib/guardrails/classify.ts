@@ -2,7 +2,7 @@ import { callModel, parseJsonLoose, type GenerationLogSink } from '@/lib/ai/call
 import { InputClassification } from '@/lib/schemas/guardrail'
 import { dataBlock, DATA_BLOCK_NOTICE } from './prompt'
 import { INPUT_CLASSIFIER_PROMPT, promptSection, promptVersion } from './prompts'
-import { namedInTopic } from './names'
+import { isMakeBelieveKind, namedInTopic } from './names'
 
 /**
  * L2 - the Haiku input classifier. GUARDRAILS.md s3.3.
@@ -88,6 +88,18 @@ export function confirmCharacters(reply: InputClassification, topic: string): In
   // Always the confirmed list: a name may come back shortened to what the parent typed
   // ("Sonic the Hedgehog" -> "Sonic"), not only dropped.
   const confirmed = namedInTopic(reply.requested_characters, topic)
+  // A kind of make-believe creature ("Mermaid", "the Tooth Fairy") is a topic, not a
+  // character (issue #130): no name is handed on and no notice is shown, but the care notes
+  // were written for that creature and still reach the writer.
+  const creaturesOnly =
+    reply.requested_characters.length > 0 && reply.requested_characters.every(isMakeBelieveKind)
+  if (confirmed.length === 0 && creaturesOnly) {
+    return {
+      ...reply,
+      requested_characters: [],
+      category: reply.category === 'commercial_ip_character' ? 'educational' : reply.category,
+    }
+  }
   if (confirmed.length === 0) {
     const aboutCharacter = reply.category === 'commercial_ip_character' || reply.requested_characters.length > 0
     return { ...reply, requested_characters: [], care_notes: aboutCharacter ? null : reply.care_notes }

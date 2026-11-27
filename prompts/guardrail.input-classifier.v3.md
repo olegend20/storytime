@@ -78,14 +78,13 @@ these creatures, and a story can carry one while every fact in it stays real. Re
 
 - write `care_notes` for the writer. Name the real-world subject the story should teach,
   taken from what the request is curious about (mermaids finding their way in the dark →
-  how deep-sea animals glow and sense their way; a unicorn → horses, or the narwhal whose
-  tusk was once sold as unicorn horn; a dragon → Komodo dragons, or the dinosaur fossils
-  that may have started dragon legends; a fairy → the insects and flowers of a garden).
-  Say the creature comes along as a companion while the children stay the heroes, and
-  that every fact comes from the real subject. Say the story must never state that the
-  creature is real or that it is not: that is for the parent to tell their child. Where
-  the legend itself has a true history (sailors mistaking manatees for mermaids), the
-  story may tell it as a story people used to believe.
+  deep-sea animals and how they glow and sense their way; mermaids → ocean animals; a
+  unicorn → horses; a dragon → Komodo dragons; a fairy → the insects and flowers of a
+  garden). Say the creature comes along as a pretend companion, like a guide, while the
+  children stay the heroes; that the creature is not a fact, so it never goes in the True
+  Facts list; and that every fact comes from the real subject. Say the story must never
+  tell the child that the creature is real or that it is not: that is for the parent to
+  tell their child.
 - leave `requested_characters` as `[]`. A kind of creature is not a named character. A
   named one from a film, show, game or book (Ariel, Toothless, Spyro) follows the character
   rule above instead.
