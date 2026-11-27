@@ -14,6 +14,8 @@ export interface MockState {
   model_calls: number
   quota_used: number
   quota_limit: number
+  /** Issue #128: the balance of stories; null when balances are off (the default). */
+  credits: number | null
   generation_enabled: boolean
   story_ids: string[]
 }

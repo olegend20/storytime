@@ -241,6 +241,8 @@ export function needsFreeRetryNote(error: ErrorBody): boolean {
   if (error.quota_consumed) return false
   // The story is still being made and will use a story: the free-retry note would be untrue.
   if (error.code === 'still_making') return false
+  // Issue #128: with no stories left there is nothing to try again with.
+  if (error.code === 'out_of_stories') return false
   const normalized = error.message.toLowerCase().replace(/[‘’]/g, "'")
   return !normalized.includes("didn't use one of your stories")
 }

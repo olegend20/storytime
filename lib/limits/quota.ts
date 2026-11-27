@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabaseService } from '@/lib/supabase/service'
 import { DAILY_STORY_LIMIT } from '@/lib/schemas/api'
 import { isOwner } from '@/lib/owner'
+import { consumeCredit, creditsApplyTo } from './credits'
 import { nextResetAtIso, safeTimeZone, usageDateFor } from './timezone'
 
 /**
@@ -38,6 +39,11 @@ export interface QuotaSnapshot {
 export interface ConsumeResult extends QuotaSnapshot {
   /** False when the family was already at the limit. Nothing was incremented. */
   allowed: boolean
+  /**
+   * Issue #128: what happened to the family's balance of stories, when balances apply to it.
+   * `taken: false` means the balance was already 0 (two stories finishing at once).
+   */
+  credits?: { taken: boolean; balance: number }
 }
 
 interface QuotaArgs {
@@ -121,12 +127,34 @@ export async function quotaStatus(args: QuotaArgs): Promise<QuotaSnapshot> {
 }
 
 /**
+ * Take one story from the balance, for a story that is already saved. A failure here is
+ * logged and swallowed: the story exists and the parent is reading it, so it must not be
+ * reported as failed (which would also offer a retry that writes a second story). The cost
+ * of the miss is one uncounted story.
+ */
+async function takeCredit(args: QuotaArgs): Promise<{ taken: boolean; balance: number } | undefined> {
+  try {
+    return await consumeCredit(args.familyId, args.client)
+  } catch (err) {
+    console.error(
+      `[limits] a saved story was not taken from family ${args.familyId}'s balance: ` +
+        (err instanceof Error ? err.message : String(err)),
+    )
+    return undefined
+  }
+}
+
+/**
  * Atomically claim one story for today. Returns `allowed: false` if the family is already
  * at the limit — the increment and the limit check happen in the same statement
  * (`insert ... on conflict do update ... where count < limit`), so two concurrent requests
  * at count = 2 cannot both succeed.
  *
  * Call this AFTER the `stories` row is committed.
+ *
+ * With STORY_CREDITS_ENABLED on, the same call takes one story from the family's balance
+ * (issue #128): a story was saved, so it is counted in both places, whatever the daily
+ * counter answered.
  */
 export async function consumeQuota(args: QuotaArgs): Promise<ConsumeResult> {
   const { timezone, limit } = await resolveZoneAndLimit(args)
@@ -146,7 +174,13 @@ export async function consumeQuota(args: QuotaArgs): Promise<ConsumeResult> {
     | undefined
   if (!row) throw new Error('[limits] consume_daily_quota returned no row')
 
+  const dayLimit = row.day_limit ?? limit
+  const credits = creditsApplyTo({ unlimited: dayLimit >= UNLIMITED_DAILY_LIMIT })
+    ? await takeCredit(args)
+    : undefined
+
   return {
+    ...(credits ? { credits } : {}),
     allowed: row.allowed,
     used: row.used,
     limit: row.day_limit ?? limit,

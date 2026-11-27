@@ -169,6 +169,46 @@ test('an exhausted quota disables the button and shows the reset time', async ({
   await expect(page.getByText(/your next story unlocks at \d/i).first()).toBeVisible()
 })
 
+/**
+ * Issue #128, VT-CR11: with balances switched on, the indicator says what the family has left
+ * in all, counts down after a story, and at zero the button is disabled with the message.
+ */
+test('a balance of stories counts down, and at zero the button is disabled with the message', async ({
+  page,
+}) => {
+  test.slow()
+  await patchMock(page, { credits: 3 })
+  await page.reload()
+  await creatorReady(page)
+  await expect(page.getByText('3 stories left', { exact: true })).toBeVisible()
+  // The balance replaces the daily wording, and nothing on the page calls a counted story free.
+  await expect(page.getByText(/stories left today/)).toHaveCount(0)
+  await expect(page.getByText(/free for families/i)).toHaveCount(0)
+
+  await startStory(page, 'the history of soccer')
+  await expect(page.getByRole('heading', { name: 'Saved to your library' })).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByText('2 stories left', { exact: true }).first()).toBeVisible()
+  expect((await mockState(page)).credits).toBe(2)
+
+  // A refused topic takes nothing from the balance.
+  await page.goto('/new')
+  await creatorReady(page)
+  await startStory(page, '!refuse something')
+  await expect(page.getByRole('alert').filter({ hasText: /can.t make a story/i })).toBeVisible()
+  expect((await mockState(page)).credits).toBe(2)
+
+  await patchMock(page, { credits: 0 })
+  await page.reload()
+  await creatorReady(page)
+  await expect(page.getByText('No stories left', { exact: true }).first()).toBeVisible()
+  await expect(page.getByRole('button', { name: MAKE_BOOK })).toBeDisabled()
+  await expect(page.getByText("You've used your free stories. More are coming soon.").first()).toBeVisible()
+  // Not a daily limit: no time is promised.
+  await expect(page.getByText(/unlocks at/i)).toHaveCount(0)
+  const before = await mockState(page)
+  expect(before.model_calls).toBe(1)
+})
+
 test('a paused service disables the button and says so', async ({ page }) => {
   await patchMock(page, { generation_enabled: false })
   await page.reload()

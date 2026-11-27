@@ -23,6 +23,7 @@ export async function GET(req: Request): Promise<Response> {
       model_calls: state.modelCalls,
       quota_used: state.quotaUsed,
       quota_limit: quotaLimit(),
+      credits: state.credits,
       generation_enabled: state.generationEnabled,
       story_ids: [...state.stories.keys()],
     }),
@@ -32,6 +33,8 @@ export async function GET(req: Request): Promise<Response> {
 const Patch = z.object({
   reset: z.boolean().optional(),
   quota_used: z.number().int().min(0).optional(),
+  /** Issue #128: a number switches balances on for this session; null switches them off. */
+  credits: z.number().int().min(0).nullable().optional(),
   generation_enabled: z.boolean().optional(),
   model_calls: z.number().int().min(0).optional(),
 })
@@ -48,6 +51,7 @@ export async function POST(req: Request): Promise<Response> {
     if (!patch.success) return json({ code: 'invalid_request' }, { status: 400 })
     const target = patch.data.reset ? resetState(sid) : state
     if (patch.data.quota_used !== undefined) target.quotaUsed = patch.data.quota_used
+    if (patch.data.credits !== undefined) target.credits = patch.data.credits
     if (patch.data.generation_enabled !== undefined) {
       target.generationEnabled = patch.data.generation_enabled
     }
@@ -57,6 +61,7 @@ export async function POST(req: Request): Promise<Response> {
       model_calls: target.modelCalls,
       quota_used: target.quotaUsed,
       quota_limit: quotaLimit(),
+      credits: target.credits,
       generation_enabled: target.generationEnabled,
       story_ids: [...target.stories.keys()],
     })

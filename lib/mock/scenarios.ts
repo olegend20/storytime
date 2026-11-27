@@ -69,6 +69,7 @@ const MESSAGES: Record<string, string> = {
     "That one's a bit much for a 4-year-old. How about how giant ships float? Or pick just your older child for tonight.",
   quota_exceeded:
     "That's all three stories for today. Your next one unlocks at midnight — sleep well!",
+  out_of_stories: "You've used your free stories. More are coming soon.",
   service_paused: 'StoryTime is taking a short break tonight. Please try again tomorrow.',
   budget_exceeded: 'StoryTime is taking a short break tonight. Please try again tomorrow.',
   generation_failed: "We couldn't make a story we're happy with tonight. Try a different angle.",

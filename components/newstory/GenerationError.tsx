@@ -29,7 +29,7 @@ export function GenerationError({
   const showFreeNote = needsFreeRetryNote(error)
   // A story still being made must not be retried: that would make a second one.
   const stillMaking = error.code === 'still_making'
-  const canRetry = onRetry && error.code !== 'quota_exceeded' && !stillMaking
+  const canRetry = onRetry && error.code !== 'quota_exceeded' && error.code !== 'out_of_stories' && !stillMaking
 
   return (
     <div

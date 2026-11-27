@@ -20,6 +20,7 @@ export type ParentMessageKey =
   | 'topic_refused'
   | 'generation_failed'
   | 'quota_exceeded'
+  | 'out_of_stories'
   | 'service_paused'
   | 'budget_exceeded'
   | 'invalid_request'

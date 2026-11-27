@@ -52,7 +52,7 @@ import { PrivacyNote } from '@/components/PrivacyCopy'
 import { GenerationError } from './GenerationError'
 import { HeroesCard } from './HeroesCard'
 import { LengthPicker, TonePicker } from './Pickers'
-import { QuotaIndicator, resetTimeLabel } from './QuotaIndicator'
+import { outOfStories, OUT_OF_STORIES_NOTE, QuotaIndicator, resetTimeLabel } from './QuotaIndicator'
 import { TopicField } from './TopicField'
 import { Waiting } from './Waiting'
 
@@ -231,7 +231,9 @@ export function NewStoryFlow({
   const topicCheck = checkTopic(form.topic)
   const blocker = formBlocker(effectiveForm)
   const quotaLeft = quota ? Math.max(0, quota.limit - quota.used) : null
-  const quotaBlocked = quotaLeft === 0 || quota?.generation_enabled === false
+  // Issue #128: with balances switched on, an empty balance blocks as the daily limit does.
+  const noStoriesLeft = quota ? outOfStories(quota) : false
+  const quotaBlocked = quotaLeft === 0 || noStoriesLeft || quota?.generation_enabled === false
   // A clock time in the parent's own locale: only the browser knows it, so not before hydration.
   const resetLabel = hydrated ? resetTimeLabel(quota?.resets_at) : null
   const busy = stream.phase === 'connecting' || stream.phase === 'streaming' || stream.phase === 'finishing'
@@ -380,12 +382,16 @@ export function NewStoryFlow({
   const note = quotaBlocked
     ? paused
       ? 'New stories are paused right now. Everything in your library is still there to read.'
-      : `That's all ${quota?.limit ?? 3} for today${resetLabel ? ` — your next story unlocks at ${resetLabel}` : ''}.`
+      : noStoriesLeft
+        ? OUT_OF_STORIES_NOTE
+        : `That's all ${quota?.limit ?? 3} for today${resetLabel ? ` — your next story unlocks at ${resetLabel}` : ''}.`
     : blocker === 'no_children'
       ? 'Pick who the story is about.'
       : blocker === 'no_tone'
         ? 'Pick at least one feeling in Story options.'
-        : `Free for families · ${form.lengthMinutes} min read aloud`
+        : quota?.credits
+          ? `${form.lengthMinutes} min read aloud`
+          : `Free for families · ${form.lengthMinutes} min read aloud`
   const sampleA = names[0] ?? 'Milo'
   const sampleB = names.length === 0 ? 'Juno' : names[1]
   const sampleNames = names.length === 0 ? 'Milo & Juno' : joinNames(names)

@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { ErrorBody, HTTP_STATUS_FOR_ERROR } from '@/lib/schemas/api'
 import { budgetStatus, type BudgetStatus } from '@/lib/costs/budget'
 import { LIMIT_MESSAGES } from './messages'
+import { creditBalance, creditsApplyTo } from './credits'
 import { quotaStatus, type QuotaSnapshot } from './quota'
 import { generationEnabled } from './switches'
 
@@ -16,7 +17,10 @@ import { generationEnabled } from './switches'
  * Order is deliberate — cheapest and most global first:
  *   1. `GENERATION_ENABLED=false` → 503 service_paused (no DB read at all)
  *   2. today's spend ≥ `DAILY_BUDGET_USD` → 503 budget_exceeded
- *   3. family at the daily story limit → 429 quota_exceeded, with the local reset time
+ *   3. the family's balance of stories is 0 → 402 out_of_stories (issue #128; only when
+ *      STORY_CREDITS_ENABLED is on, and never for the owner's family). Before the daily
+ *      limit, because a parent with nothing left should not be told to come back at midnight
+ *   4. family at the daily story limit → 429 quota_exceeded, with the local reset time
  */
 
 export interface PreflightArgs {
@@ -34,6 +38,8 @@ export interface PreflightAllowed {
   ok: true
   quota: QuotaSnapshot
   budget: BudgetStatus | null
+  /** The family's balance, when balances apply to it (issue #128). Null otherwise. */
+  credits: { balance: number } | null
 }
 
 export interface PreflightBlocked {
@@ -47,7 +53,7 @@ export interface PreflightBlocked {
 export type PreflightResult = PreflightAllowed | PreflightBlocked
 
 function blocked(
-  code: 'service_paused' | 'budget_exceeded' | 'quota_exceeded',
+  code: 'service_paused' | 'budget_exceeded' | 'quota_exceeded' | 'out_of_stories',
   opts: { resetsAt?: string | null; quota?: QuotaSnapshot | null; budget?: BudgetStatus | null } = {},
 ): PreflightBlocked {
   return {
@@ -77,11 +83,20 @@ export async function preflight(args: PreflightArgs): Promise<PreflightResult> {
   }
 
   const quota = await quotaStatus(args)
+
+  let credits: { balance: number } | null = null
+  if (creditsApplyTo(quota)) {
+    credits = { balance: await creditBalance(args.familyId, args.client) }
+    if (credits.balance <= 0) {
+      return blocked('out_of_stories', { quota, budget })
+    }
+  }
+
   if (quota.remaining <= 0) {
     return blocked('quota_exceeded', { resetsAt: quota.resetsAt, quota, budget })
   }
 
-  return { ok: true, quota, budget }
+  return { ok: true, quota, budget, credits }
 }
 
 /**

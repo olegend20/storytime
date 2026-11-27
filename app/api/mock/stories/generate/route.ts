@@ -56,6 +56,10 @@ export async function POST(req: Request): Promise<Response> {
         status: HTTP_STATUS_FOR_ERROR.service_paused,
       })
     }
+    // Issue #128: an empty balance is refused before the daily limit, as the real guard does.
+    if (state.credits !== null && state.credits <= 0) {
+      return json(mockErrorBody('out_of_stories'), { status: HTTP_STATUS_FOR_ERROR.out_of_stories })
+    }
     if (state.quotaUsed >= quotaLimit()) {
       return json(mockErrorBody('quota_exceeded', resetsAt()), {
         status: HTTP_STATUS_FOR_ERROR.quota_exceeded,
@@ -94,6 +98,7 @@ export async function POST(req: Request): Promise<Response> {
     const saved = scenario !== 'midstream_failure' && scenario !== 'connection_dropped_discarded'
     if (saved) {
       state.quotaUsed += 1
+      if (state.credits !== null) state.credits = Math.max(0, state.credits - 1)
       state.stories.set(story.id, story)
     }
     // Issue #59: how the request ended, for a page that lost the stream.

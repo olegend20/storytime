@@ -46,6 +46,7 @@ RUN_SCHEMA_TESTS=1 SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… SUPABASE_ANON_
 | `GENERATION_ENABLED` | The kill switch. `false` pauses new stories; saved ones still read |
 | `NEXT_PUBLIC_API_MOCK`, `UI_MOCK_API` | **Must be unset in production.** Test-only: the first is inlined at build time and points the whole UI at `/api/mock/*` |
 | `DAILY_BUDGET_USD` | Global daily spend cap (5) |
+| `STORY_CREDITS_ENABLED` | Issue #128. **Leave unset in production until paying exists.** `true` = a family can start a story only while its balance of stories is above 0 (three free ones each, then nothing until plans ship); the 3-a-day limit still applies. Unset or anything else = balances are not read or counted |
 | `OWNER_USER_ID` | The owner's auth user id: unlocks `/admin` and the unlimited quota |
 | `ADMIN_USER_IDS` | Issue #110. Optional, comma-separated auth user ids that may also open `/admin` and approve the waitlist. Admin pages only: the unlimited quota stays with `OWNER_USER_ID`. Blank = nobody extra |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `KINDLE_FROM_EMAIL` | Send to Kindle. Unset = the feature says it is not set up, and the landing page does not mention it |

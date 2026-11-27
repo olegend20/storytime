@@ -13,6 +13,7 @@ export async function GET(req: Request): Promise<Response> {
         limit: quotaLimit(),
         resets_at: resetsAt(),
         generation_enabled: state.generationEnabled,
+        ...(state.credits === null ? {} : { credits: { balance: state.credits } }),
       }),
     ),
   )

@@ -1,4 +1,5 @@
 import { QuotaResponse } from '@/lib/schemas/api'
+import { creditBalance, creditsApplyTo } from './credits'
 import { generationAvailable } from './guard'
 import { quotaStatus } from './quota'
 
@@ -14,11 +15,14 @@ export async function quotaResponseFor(family: { id: string; timezone: string })
     quotaStatus({ familyId: family.id, timezone: family.timezone }),
     generationAvailable(),
   ])
+  // Issue #128: only when balances are switched on, and not for the owner's family.
+  const balance = creditsApplyTo(quota) ? await creditBalance(family.id) : null
   return QuotaResponse.parse({
     used: quota.used,
     limit: quota.limit,
     ...(quota.unlimited ? { unlimited: true } : {}),
     resets_at: quota.resetsAt,
     generation_enabled: availability.enabled,
+    ...(balance === null ? {} : { credits: { balance } }),
   })
 }
