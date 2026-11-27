@@ -89,6 +89,15 @@ function failure(
   }
 }
 
+/**
+ * The refusal for a family that may not start a story: the daily limit, with its reset time,
+ * or an empty balance of stories (issue #128), which no midnight refills.
+ */
+function quotaRefusal(quota: QuotaState): PreStreamFailure {
+  if (quota.blocked_code === 'out_of_stories') return failure('out_of_stories', 'out_of_stories')
+  return failure('quota_exceeded', 'quota_exceeded', { resets_at: quota.resets_at })
+}
+
 export interface PreparedGeneration {
   familyId: string
   storyId: string
@@ -136,7 +145,7 @@ export async function precheckGeneration(
     return { ok: false, ...failure(code, code) }
   }
   if (!quota.allowed) {
-    return { ok: false, ...failure('quota_exceeded', 'quota_exceeded', { resets_at: quota.resets_at }) }
+    return { ok: false, ...quotaRefusal(quota) }
   }
   return { ok: true }
 }
@@ -167,10 +176,7 @@ export async function prepareGeneration(
     return { ok: false, ...failure(code, code) }
   }
   if (!quota.allowed) {
-    return {
-      ok: false,
-      ...failure('quota_exceeded', 'quota_exceeded', { resets_at: quota.resets_at }),
-    }
+    return { ok: false, ...quotaRefusal(quota) }
   }
 
   // ---- 3. children ----

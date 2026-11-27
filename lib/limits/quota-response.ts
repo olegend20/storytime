@@ -1,4 +1,5 @@
 import { QuotaResponse } from '@/lib/schemas/api'
+import { creditBalance, creditsApplyTo } from './credits'
 import { generationAvailable } from './guard'
 import { quotaStatus } from './quota'
 
@@ -10,9 +11,11 @@ import { quotaStatus } from './quota'
  * successful story insert, never here.
  */
 export async function quotaResponseFor(family: { id: string; timezone: string }): Promise<QuotaResponse> {
-  const [quota, availability] = await Promise.all([
+  const [quota, availability, balance] = await Promise.all([
     quotaStatus({ familyId: family.id, timezone: family.timezone }),
     generationAvailable(),
+    // Issue #128: only when balances are switched on, and not for the owner's family.
+    creditsApplyTo(family.id).then((applies) => (applies ? creditBalance(family.id) : null)),
   ])
   return QuotaResponse.parse({
     used: quota.used,
@@ -20,5 +23,6 @@ export async function quotaResponseFor(family: { id: string; timezone: string })
     ...(quota.unlimited ? { unlimited: true } : {}),
     resets_at: quota.resetsAt,
     generation_enabled: availability.enabled,
+    ...(balance === null ? {} : { credits: { balance } }),
   })
 }

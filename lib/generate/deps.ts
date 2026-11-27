@@ -27,6 +27,11 @@ export interface QuotaState {
   generation_enabled: boolean
   /** Which of the two switches is off, when `generation_enabled` is false. */
   disabled_reason?: 'service_paused' | 'budget_exceeded'
+  /**
+   * Why `allowed` is false, when it is not the daily limit: the family's balance of stories
+   * is 0 (issue #128). Absent means the daily limit, as before.
+   */
+  blocked_code?: 'out_of_stories'
 }
 
 /**

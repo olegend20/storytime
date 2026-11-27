@@ -86,6 +86,8 @@ export const SseEvent = z.discriminatedUnion('type', [
     type: z.literal('error'),
     code: z.enum([
       'quota_exceeded',
+      /** Issue #128: the family's balance of stories is 0. Not a daily limit: it does not reset. */
+      'out_of_stories',
       'topic_refused',
       'too_mature_for_band',
       'generation_failed',
@@ -122,7 +124,7 @@ export function factCardsFor(
 /**
  * Non-streaming failures that happen BEFORE the stream opens return a normal JSON body
  * with the matching HTTP status, not an SSE event:
- *   429 quota_exceeded · 422 topic_refused / too_mature_for_band
+ *   429 quota_exceeded · 402 out_of_stories · 422 topic_refused / too_mature_for_band
  *   503 service_paused / budget_exceeded · 400 invalid_request
  * Once the stream is open, failures arrive as an `error` event with HTTP 200.
  */
@@ -149,6 +151,7 @@ export const HTTP_STATUS_FOR_ERROR: Record<string, number> = {
   topic_refused: 422,
   too_mature_for_band: 422,
   quota_exceeded: 429,
+  out_of_stories: 402,
   generation_failed: 502,
   service_paused: 503,
   budget_exceeded: 503,
@@ -164,6 +167,11 @@ export const QuotaResponse = z.object({
   resets_at: z.string(),
   /** False when GENERATION_ENABLED=false or the daily budget is spent. */
   generation_enabled: z.boolean(),
+  /**
+   * Issue #128: the stories this family has left in all, when balances are switched on
+   * (STORY_CREDITS_ENABLED). Absent when they are off, and for the owner's own family.
+   */
+  credits: z.object({ balance: z.number().int().nonnegative() }).optional(),
 })
 export type QuotaResponse = z.infer<typeof QuotaResponse>
 

@@ -34,6 +34,21 @@ Legend: ⬜ not started · 🟡 in progress · 🔴 blocked · ✅ done
 
 ## Session log
 
+### 2026-11-27 — a balance of stories, starting with three free ones (issue #128, DECISIONS #229-232)
+
+- Groundwork for paid plans, with no payment in it. `story_credit_grants` holds what each
+  family has been given; `grant_story_credits` and `consume_story_credit` (service role only)
+  add and take. A trigger gives every new family three free stories; the migration gives
+  them to the families that already exist.
+- Behind `STORY_CREDITS_ENABLED`, off unless `true`. Off: nothing reads or moves a balance.
+  On: an empty balance is refused with `out_of_stories` (402) before any model call, a saved
+  story takes one, the page says "3 stories left" and, at zero, "You've used your free
+  stories. More are coming soon." The 3-a-day limit still applies on top.
+- `lib/schemas/`: `QuotaResponse.credits` (optional) and `out_of_stories` added, owner approved.
+- Tests: VT-CR1..CR9 (`test/int/story-credits.test.ts`), VT-CR10
+  (`test/unit/quota-indicator.test.ts`), VT-CR11 (`test/e2e/new-story.spec.ts`).
+- **Leave the switch off in production** until the next issue (subscribe and manage) ships.
+
 ### 2026-11-23 — Send to Kindle at the end of the story (issue #119, DECISIONS #228)
 
 The first real send from production reached the owner's Kindle. The button is now also at the

@@ -43,6 +43,7 @@
     "too_mature_for_band": "That one's a bit much for a {age}-year-old. How about {alternative}? Or pick just your older child for tonight.",
     "generation_failed": "We couldn't make a story we're happy with tonight. This didn't use one of your stories - try a different topic or angle.",
     "quota_exceeded": "That's all three stories for today. New ones unlock at midnight — see you tomorrow night.",
+    "out_of_stories": "You've used your free stories. More are coming soon.",
     "service_paused": "Story time is paused just now. Please try again a little later.",
     "budget_exceeded": "Story time is paused for today. New stories will be ready tomorrow.",
     "invalid_request": "Type a topic and we'll get started - try volcanoes or how bees make honey."

@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabaseService } from '@/lib/supabase/service'
 import { DAILY_STORY_LIMIT } from '@/lib/schemas/api'
 import { isOwner } from '@/lib/owner'
+import { consumeCredit, creditsApplyTo } from './credits'
 import { nextResetAtIso, safeTimeZone, usageDateFor } from './timezone'
 
 /**
@@ -38,6 +39,11 @@ export interface QuotaSnapshot {
 export interface ConsumeResult extends QuotaSnapshot {
   /** False when the family was already at the limit. Nothing was incremented. */
   allowed: boolean
+  /**
+   * Issue #128: what happened to the family's balance of stories, when balances apply to it.
+   * `taken: false` means the balance was already 0 (two stories finishing at once).
+   */
+  credits?: { taken: boolean; balance: number }
 }
 
 interface QuotaArgs {
@@ -127,6 +133,10 @@ export async function quotaStatus(args: QuotaArgs): Promise<QuotaSnapshot> {
  * at count = 2 cannot both succeed.
  *
  * Call this AFTER the `stories` row is committed.
+ *
+ * With STORY_CREDITS_ENABLED on, the same call takes one story from the family's balance
+ * (issue #128): a story was saved, so it is counted in both places, whatever the daily
+ * counter answered.
  */
 export async function consumeQuota(args: QuotaArgs): Promise<ConsumeResult> {
   const { timezone, limit } = await resolveZoneAndLimit(args)
@@ -146,7 +156,12 @@ export async function consumeQuota(args: QuotaArgs): Promise<ConsumeResult> {
     | undefined
   if (!row) throw new Error('[limits] consume_daily_quota returned no row')
 
+  const credits = (await creditsApplyTo(args.familyId, args.client))
+    ? await consumeCredit(args.familyId, args.client)
+    : undefined
+
   return {
+    ...(credits ? { credits } : {}),
     allowed: row.allowed,
     used: row.used,
     limit: row.day_limit ?? limit,

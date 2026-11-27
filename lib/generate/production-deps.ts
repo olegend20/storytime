@@ -46,6 +46,16 @@ export class LimitsQuotaService implements QuotaService {
         disabled_reason: code,
       }
     }
+    if (code === 'out_of_stories') {
+      return {
+        used: r.quota?.used ?? 0,
+        limit: r.quota?.limit ?? 0,
+        resets_at: r.quota?.resetsAt ?? new Date().toISOString(),
+        allowed: false,
+        generation_enabled: true,
+        blocked_code: 'out_of_stories',
+      }
+    }
     // quota_exceeded: `preflight` only blocks it once the quota has been read.
     return {
       ...toQuotaState(r.quota!, false),

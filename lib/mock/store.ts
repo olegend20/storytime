@@ -27,6 +27,11 @@ export interface MockState {
   stories: Map<string, LibraryStory>
   quotaUsed: number
   /**
+   * Issue #128: the family's balance of stories. Null = balances switched off, which is how
+   * every session starts; a test turns them on through the debug route.
+   */
+  credits: number | null
+  /**
    * Stand-in for `generation_logs`: how many writing-model calls this session has caused.
    * F9's AC is "opening a saved story makes zero model calls", and an AC that is asserted is
    * worth more than one that is assumed - e2e reads this counter before and after an open.
@@ -86,6 +91,7 @@ function freshState(): MockState {
   return {
     stories,
     quotaUsed: 1,
+    credits: null,
     modelCalls: 0,
     generationEnabled: true,
     generated: 0,
