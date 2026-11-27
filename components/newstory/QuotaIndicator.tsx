@@ -17,6 +17,13 @@ export function isUnlimited(quota: QuotaResponse): boolean {
   return quota.unlimited === true || quota.limit >= UNLIMITED_AT
 }
 
+/**
+ * Issue #128: what the form says under a disabled button when the balance is empty. The same
+ * words as `out_of_stories` in config/guardrails/messages.json, which is where the copy
+ * lives; that file is not imported into the browser, so a unit test holds the two equal.
+ */
+export const OUT_OF_STORIES_NOTE = "You've used your free stories. More are coming soon."
+
 /** Issue #128: the family has a balance of stories, and it is empty. */
 export function outOfStories(quota: QuotaResponse): boolean {
   return !isUnlimited(quota) && quota.credits !== undefined && quota.credits.balance <= 0

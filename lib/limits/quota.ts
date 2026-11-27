@@ -127,6 +127,24 @@ export async function quotaStatus(args: QuotaArgs): Promise<QuotaSnapshot> {
 }
 
 /**
+ * Take one story from the balance, for a story that is already saved. A failure here is
+ * logged and swallowed: the story exists and the parent is reading it, so it must not be
+ * reported as failed (which would also offer a retry that writes a second story). The cost
+ * of the miss is one uncounted story.
+ */
+async function takeCredit(args: QuotaArgs): Promise<{ taken: boolean; balance: number } | undefined> {
+  try {
+    return await consumeCredit(args.familyId, args.client)
+  } catch (err) {
+    console.error(
+      `[limits] a saved story was not taken from family ${args.familyId}'s balance: ` +
+        (err instanceof Error ? err.message : String(err)),
+    )
+    return undefined
+  }
+}
+
+/**
  * Atomically claim one story for today. Returns `allowed: false` if the family is already
  * at the limit — the increment and the limit check happen in the same statement
  * (`insert ... on conflict do update ... where count < limit`), so two concurrent requests
@@ -156,8 +174,9 @@ export async function consumeQuota(args: QuotaArgs): Promise<ConsumeResult> {
     | undefined
   if (!row) throw new Error('[limits] consume_daily_quota returned no row')
 
-  const credits = (await creditsApplyTo(args.familyId, args.client))
-    ? await consumeCredit(args.familyId, args.client)
+  const dayLimit = row.day_limit ?? limit
+  const credits = creditsApplyTo({ unlimited: dayLimit >= UNLIMITED_DAILY_LIMIT })
+    ? await takeCredit(args)
     : undefined
 
   return {

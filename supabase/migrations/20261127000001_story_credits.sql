@@ -12,7 +12,7 @@
 -- names the same reference and adds stories once.
 --
 -- Holds nothing about a child (CLAUDE.md rule 7). Family-scoped, so RLS is on: a family can
--- read its own grants and write none; both functions are service role only.
+-- read its own grants and write none; the three functions are service role only.
 
 create table story_credit_grants (
   id          uuid primary key default gen_random_uuid(),
@@ -37,6 +37,30 @@ create policy story_credit_grants_select on story_credit_grants for select
 -- Read-only for a signed-in parent; nothing at all for anon.
 revoke all on story_credit_grants from anon;
 revoke insert, update, delete, truncate, trigger, references on story_credit_grants from authenticated;
+
+-- ============================================================ balance
+--
+-- The stories left on grants that have not expired, by the database's clock: the same
+-- `now()` that `consume_story_credit` uses, so what is shown and what can be taken agree.
+create or replace function story_credit_balance(p_family_id uuid)
+returns int
+language sql
+stable
+security invoker
+set search_path = public
+as $$
+  select coalesce(sum(g.remaining), 0)::int
+    from story_credit_grants g
+   where g.family_id = p_family_id
+     and (g.expires_at is null or g.expires_at > now());
+$$;
+
+comment on function story_credit_balance is
+  'Issue #128: a family''s balance of stories. Service role only.';
+
+revoke all on function story_credit_balance(uuid) from public;
+revoke all on function story_credit_balance(uuid) from anon, authenticated;
+grant execute on function story_credit_balance(uuid) to service_role;
 
 -- ============================================================ grant
 --

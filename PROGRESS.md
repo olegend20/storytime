@@ -34,7 +34,7 @@ Legend: ⬜ not started · 🟡 in progress · 🔴 blocked · ✅ done
 
 ## Session log
 
-### 2026-11-27 — a balance of stories, starting with three free ones (issue #128, DECISIONS #229-232)
+### 2026-11-27 — a balance of stories, starting with three free ones (issue #128, DECISIONS #229-233)
 
 - Groundwork for paid plans, with no payment in it. `story_credit_grants` holds what each
   family has been given; `grant_story_credits` and `consume_story_credit` (service role only)

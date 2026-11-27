@@ -1,6 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabaseService } from '@/lib/supabase/service'
-import { isOwner } from '@/lib/owner'
 
 /**
  * Issue #128: a family's balance of stories.
@@ -35,39 +34,24 @@ function db(client?: SupabaseClient): SupabaseClient {
 }
 
 /**
- * Whether the balance applies to this family: the switch is on and it is not the owner's own
- * family, which stays unlimited (DECISIONS #141). One read of `families`, and only when the
- * switch is on.
+ * Whether the balance applies to a family: the switch is on and it is not the owner's own
+ * family, which stays unlimited (DECISIONS #141). Takes the quota already read for the
+ * request, so asking costs no query.
  */
-export async function creditsApplyTo(familyId: string, client?: SupabaseClient): Promise<boolean> {
-  if (!storyCreditsEnabled()) return false
-  const { data, error } = await db(client)
-    .from('families')
-    .select('owner_user_id')
-    .eq('id', familyId)
-    .maybeSingle()
-  if (error) throw new Error(`[limits] creditsApplyTo failed: ${error.message}`)
-  return !isOwner((data as { owner_user_id?: string } | null)?.owner_user_id)
+export function creditsApplyTo(quota: { unlimited: boolean }): boolean {
+  return storyCreditsEnabled() && !quota.unlimited
 }
 
-/** Read-only: the stories left on grants that have not expired. */
-export async function creditBalance(
-  familyId: string,
-  opts: { client?: SupabaseClient; at?: Date } = {},
-): Promise<number> {
-  const { data, error } = await db(opts.client)
-    .from('story_credit_grants')
-    .select('remaining, expires_at')
-    .eq('family_id', familyId)
-    .gt('remaining', 0)
+/**
+ * Read-only: the stories left on grants that have not expired. Counted in the database
+ * (`story_credit_balance`), by the same clock that `consume_story_credit` uses, so what a
+ * parent is shown and what can be taken cannot disagree around an expiry.
+ */
+export async function creditBalance(familyId: string, client?: SupabaseClient): Promise<number> {
+  const { data, error } = await db(client).rpc('story_credit_balance', { p_family_id: familyId })
   if (error) throw new Error(`[limits] creditBalance failed: ${error.message}`)
-
-  const now = (opts.at ?? new Date()).getTime()
-  let balance = 0
-  for (const row of (data ?? []) as { remaining: number; expires_at: string | null }[]) {
-    if (row.expires_at === null || new Date(row.expires_at).getTime() > now) balance += row.remaining
-  }
-  return balance
+  if (typeof data !== 'number') throw new Error('[limits] story_credit_balance returned no number')
+  return data
 }
 
 export interface ConsumeCreditResult {

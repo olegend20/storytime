@@ -85,8 +85,8 @@ export async function preflight(args: PreflightArgs): Promise<PreflightResult> {
   const quota = await quotaStatus(args)
 
   let credits: { balance: number } | null = null
-  if (await creditsApplyTo(args.familyId, args.client)) {
-    credits = { balance: await creditBalance(args.familyId, { client: args.client, at: args.at }) }
+  if (creditsApplyTo(quota)) {
+    credits = { balance: await creditBalance(args.familyId, args.client) }
     if (credits.balance <= 0) {
       return blocked('out_of_stories', { quota, budget })
     }

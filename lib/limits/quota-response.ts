@@ -11,12 +11,12 @@ import { quotaStatus } from './quota'
  * successful story insert, never here.
  */
 export async function quotaResponseFor(family: { id: string; timezone: string }): Promise<QuotaResponse> {
-  const [quota, availability, balance] = await Promise.all([
+  const [quota, availability] = await Promise.all([
     quotaStatus({ familyId: family.id, timezone: family.timezone }),
     generationAvailable(),
-    // Issue #128: only when balances are switched on, and not for the owner's family.
-    creditsApplyTo(family.id).then((applies) => (applies ? creditBalance(family.id) : null)),
   ])
+  // Issue #128: only when balances are switched on, and not for the owner's family.
+  const balance = creditsApplyTo(quota) ? await creditBalance(family.id) : null
   return QuotaResponse.parse({
     used: quota.used,
     limit: quota.limit,

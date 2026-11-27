@@ -52,7 +52,7 @@ import { PrivacyNote } from '@/components/PrivacyCopy'
 import { GenerationError } from './GenerationError'
 import { HeroesCard } from './HeroesCard'
 import { LengthPicker, TonePicker } from './Pickers'
-import { outOfStories, QuotaIndicator, resetTimeLabel } from './QuotaIndicator'
+import { outOfStories, OUT_OF_STORIES_NOTE, QuotaIndicator, resetTimeLabel } from './QuotaIndicator'
 import { TopicField } from './TopicField'
 import { Waiting } from './Waiting'
 
@@ -383,7 +383,7 @@ export function NewStoryFlow({
     ? paused
       ? 'New stories are paused right now. Everything in your library is still there to read.'
       : noStoriesLeft
-        ? "You've used your free stories. More are coming soon."
+        ? OUT_OF_STORIES_NOTE
         : `That's all ${quota?.limit ?? 3} for today${resetLabel ? ` — your next story unlocks at ${resetLabel}` : ''}.`
     : blocker === 'no_children'
       ? 'Pick who the story is about.'

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { outOfStories, quotaMessage } from '@/components/newstory/QuotaIndicator'
+import { outOfStories, OUT_OF_STORIES_NOTE, quotaMessage } from '@/components/newstory/QuotaIndicator'
 import { ErrorBody, HTTP_STATUS_FOR_ERROR, QuotaResponse, SseEvent } from '@/lib/schemas/api'
 import { parentMessage } from '@/lib/messages'
 import { LIMIT_MESSAGES } from '@/lib/limits/messages'
@@ -68,6 +68,8 @@ describe('issue #128: the contract additions', () => {
   it('the wording is the owner\'s, the same in both places it is kept', () => {
     expect(parentMessage('out_of_stories')).toBe("You've used your free stories. More are coming soon.")
     expect(LIMIT_MESSAGES.out_of_stories).toBe(parentMessage('out_of_stories'))
+    // The form's own note is a copy the browser can load; it may not drift from the file.
+    expect(OUT_OF_STORIES_NOTE).toBe(parentMessage('out_of_stories'))
   })
 
   it('an empty balance is not answered with "try again"', () => {

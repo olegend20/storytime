@@ -222,6 +222,8 @@ describe.runIf(reachable)('issue #128: a balance of stories', () => {
     expect(grantRpc.error).not.toBeNull()
     const consumeRpc = await mine.client.rpc('consume_story_credit', { p_family_id: theirFamily.id })
     expect(consumeRpc.error).not.toBeNull()
+    const balanceRpc = await mine.client.rpc('story_credit_balance', { p_family_id: theirFamily.id })
+    expect(balanceRpc.error).not.toBeNull()
 
     expect(await creditBalance(myFamily.id)).toBe(3)
     expect(await creditBalance(theirFamily.id)).toBe(3)
@@ -332,6 +334,40 @@ describe.runIf(reachable)('issue #128: a balance of stories', () => {
     await emptyTrial(parent.familyId)
     const blocked = await preflight({ familyId: parent.familyId })
     expect(blocked.ok).toBe(false)
+  })
+
+  it('a saved story is still reported as saved when taking it from the balance fails', async () => {
+    const family = await world.createFamily({ label: 'credit-fails' })
+    const real = service()
+    // The database answers everything except the one call that takes a story.
+    const flaky = new Proxy(real, {
+      get(target, prop, receiver) {
+        if (prop === 'rpc') {
+          return (fn: string, args: unknown) =>
+            fn === 'consume_story_credit'
+              ? Promise.resolve({ data: null, error: { message: 'simulated outage' } })
+              : target.rpc(fn, args as Record<string, unknown>)
+        }
+        const value = Reflect.get(target, prop, receiver) as unknown
+        return typeof value === 'function' ? (value as (...a: unknown[]) => unknown).bind(target) : value
+      },
+    })
+
+    const logged: unknown[] = []
+    const original = console.error
+    console.error = (...a: unknown[]) => void logged.push(a.join(' '))
+    try {
+      // Does not throw: the pipeline would turn a throw here into "we couldn't make a story",
+      // with a retry button, for a story that is already in the library.
+      const saved = await consumeQuota({ familyId: family.familyId, client: flaky })
+      expect(saved.allowed).toBe(true)
+      expect(saved.used).toBe(1)
+      expect(saved.credits).toBeUndefined()
+    } finally {
+      console.error = original
+    }
+    expect(String(logged[0])).toMatch(/was not taken from family .* balance: .*simulated outage/)
+    expect(await creditBalance(family.familyId)).toBe(3)
   })
 
   it('the daily limit still applies on top of a balance', async () => {
