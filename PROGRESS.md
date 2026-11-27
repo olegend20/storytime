@@ -34,6 +34,15 @@ Legend: ⬜ not started · 🟡 in progress · 🔴 blocked · ✅ done
 
 ## Session log
 
+### 2026-11-27 — make-believe creatures allowed (issue #130, DECISIONS #234)
+
+- Input classifier v3 (`prompts/guardrail.input-classifier.v3.md`): mermaids, unicorns,
+  dragons and fairies are `allow_with_care` / `educational` instead of `off_mission`. Care
+  notes point the facts at a real subject; the story never says whether the creature is real.
+- Corpus: 10 make-believe care entries (VT-MB1) and 4 creatures carrying refused content
+  (VT-MB2) in `test/guardrails/`. The `classify_input` fixtures must be re-recorded live
+  (the prompt is part of every fixture key) before the L2 corpus can pass in CI.
+
 ### 2026-11-27 — a balance of stories, starting with three free ones (issue #128, DECISIONS #229-233)
 
 - Groundwork for paid plans, with no payment in it. `story_credit_grants` holds what each
