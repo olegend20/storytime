@@ -1,0 +1,43 @@
+{
+  "purpose": "classify_input",
+  "model": "claude-haiku-4-5-20251001",
+  "response": {
+    "model": "claude-haiku-4-5-20251001",
+    "id": "msg_011ChUr6peC9YYCqhivcr7g9",
+    "type": "message",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "```json\n{\n  \"decision\": \"allow_with_care\",\n  \"category\": \"commercial_ip_character\",\n  \"care_notes\": \"Peppa Pig is a companion character in tonight's story. The children stay the heroes. Focus on a gentle, real-world topic suitable for a 3-year-old bedtime story—such as everyday routines, animals, nature, or simple learning. Keep the tone calm and soothing for sleep.\",\n  \"min_recommended_age\": 3,\n  \"requested_characters\": [\"Peppa Pig\"],\n  \"topic_key_hint\": null,\n  \"parent_message\": null\n}\n```"
+      }
+    ],
+    "container": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "stop_details": null,
+    "usage": {
+      "input_tokens": 2334,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation": {
+        "ephemeral_5m_input_tokens": 0,
+        "ephemeral_1h_input_tokens": 0
+      },
+      "output_tokens": 155,
+      "service_tier": "standard",
+      "inference_geo": "not_available",
+      "speed": "standard"
+    },
+    "diagnostics": null,
+    "parsed_output": null
+  },
+  "usage": {
+    "input_tokens": 2334,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "output_tokens": 155
+  },
+  "stop_reason": "end_turn",
+  "recorded_at": "2026-11-28T06:24:18.028Z"
+}

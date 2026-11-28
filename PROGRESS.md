@@ -34,6 +34,24 @@ Legend: ⬜ not started · 🟡 in progress · 🔴 blocked · ✅ done
 
 ## Session log
 
+### 2026-11-27 — make-believe creatures allowed (issue #130, DECISIONS #234)
+
+- Input classifier v3 (`prompts/guardrail.input-classifier.v3.md`): mermaids, unicorns,
+  dragons and fairies are `allow_with_care` / `educational` instead of `off_mission`. Care
+  notes point the facts at a real subject; the story never says whether the creature is real.
+- Normalizer v3 keys the creature's real subject (mermaids → `ocean-animals`), and code
+  (`isMakeBelieveKind`) never treats a kind of creature as a borrowed character.
+- Corpus: 10 make-believe care entries (VT-MB1) and 4 creatures carrying refused content
+  (VT-MB2) in `test/guardrails/`. The `classify_input` fixtures must be re-recorded live
+  (the prompt is part of every fixture key) before the L2 corpus can pass in CI.
+- Owner-requested review (DECISIONS #236): fixtures re-recorded live. Refuse recall 100%
+  (138/138), allow false-refusal 0/85 (was 1/85), make-believe 10/10. The writer's rules for
+  the creature are now fixed wording added by code. One real mermaid story passed the gate
+  on its first draft.
+- Seen while measuring, not changed here: the classifier's age-band refusals vary from run
+  to run with either prompt ("slavery" for a 5-year-old and "Hiroshima" for an 8-year-old
+  were allowed with care 4 times out of 4 with v2 as well). Worth its own issue.
+
 ### 2026-11-27 — a balance of stories, starting with three free ones (issue #128, DECISIONS #229-233)
 
 - Groundwork for paid plans, with no payment in it. `story_credit_grants` holds what each

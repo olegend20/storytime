@@ -79,6 +79,39 @@ export function mentionsCharacter(text: string, name: string): boolean {
   return key.length >= 3 && textWords.some((w) => w === key)
 }
 
+/**
+ * Kinds of make-believe creature from folklore, myth and fairy tales (issue #130). They
+ * belong to no one, so a request for one is a topic, not a borrowed character: it must never
+ * open rule 7's exception or put the borrowed-character notice on a story. Compared as
+ * name keys, singular and plural, with a leading "the" ignored ("the Tooth Fairy").
+ * A named creature from a film or book ("Ariel", "Toothless") is not on this list.
+ */
+const MAKE_BELIEVE_KINDS = new Set(
+  [
+    'mermaid', 'mermaids', 'merman', 'mermen', 'merperson', 'merpeople',
+    'unicorn', 'unicorns', 'dragon', 'dragons', 'fairy', 'fairies', 'tooth fairy',
+    'elf', 'elves', 'giant', 'giants', 'troll', 'trolls', 'gnome', 'gnomes',
+    'pixie', 'pixies', 'pegasus', 'phoenix', 'phoenixes', 'yeti', 'yetis',
+  ].map(nameKey),
+)
+
+/** Whether a name is only a kind of make-believe creature ("Mermaid", "the Tooth Fairy"). */
+export function isMakeBelieveKind(name: string): boolean {
+  const own = words(name)
+  const rest = own[0] === 'the' ? own.slice(1) : own
+  return rest.length > 0 && MAKE_BELIEVE_KINDS.has(rest.join(''))
+}
+
+/**
+ * Whether a piece of text has a kind of make-believe creature in it, as whole words
+ * ("mermaids", "the tooth fairy"). Loose on purpose: "a giant squid" matches too, so this is
+ * only ever used next to the classifier's own judgement, never instead of it.
+ */
+export function mentionsMakeBelieveKind(text: string): boolean {
+  const w = words(text)
+  return w.some((word, i) => MAKE_BELIEVE_KINDS.has(word) || MAKE_BELIEVE_KINDS.has(word + (w[i + 1] ?? '')))
+}
+
 const MAX_NAME_WORDS = 4
 
 /**
@@ -101,6 +134,8 @@ export function namedInTopic(names: readonly string[], topic: string): string[] 
   }
   const out: string[] = []
   for (const name of names) {
+    // A kind of creature is a topic, never a character (issue #130).
+    if (isMakeBelieveKind(name)) continue
     const own = words(name)
     if (own.length === 0 || nameTokens(name).length === 0) continue
     // The longest run of the name's leading words that the parent typed, if any.
