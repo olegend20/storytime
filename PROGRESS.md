@@ -34,6 +34,19 @@ Legend: ⬜ not started · 🟡 in progress · 🔴 blocked · ✅ done
 
 ## Session log
 
+### 2026-11-28 — the owner's family tries GLM 5.3 Flash as the writer (issue #132, DECISIONS #237-240)
+
+Owner's instruction: switch the owner's family to GLM for a trial, and score every book it
+makes against the Sonnet eval with the same rubric. While `OWNER_WRITING_MODEL` is set, stories
+asked for by `OWNER_USER_ID` are written by that model with the master prompt config gives it
+(`writer_prompts`: GLM 5.3 Flash gets `master.glm` v1, the experiment branch's v8 unchanged).
+No other family's writer or prompt changes. Each saved trial story is recorded in `story_evals`
+(new table, service role only); `pnpm eval:family` scores the unscored ones with the eval's
+judge and prints the trial beside `eval-2026-11-04.json` (Sonnet 5, mean 4.12). The judge still
+never runs in the app. Not done here: nothing sets `OWNER_WRITING_MODEL` in production (the
+owner's switch), and scoring runs when the command is run, not by itself. No live call was made.
+**Gates:** see the PR.
+
 ### 2026-11-27 — make-believe creatures allowed (issue #130, DECISIONS #234)
 
 - Input classifier v3 (`prompts/guardrail.input-classifier.v3.md`): mermaids, unicorns,

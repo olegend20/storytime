@@ -93,6 +93,13 @@ const ServerEnv = z.object({
 
   /** Model overrides. Defaults live in config/models.json. */
   WRITING_MODEL: z.string().optional(),
+  /**
+   * Issue #132: the writer for the owner's own family during a trial, and the last day it
+   * applies (`2026-12-31`, UTC). Not validated here: lib/generate/writer-trial.ts gives the
+   * owner the normal writer on any value it cannot use, so a typo never fails a story.
+   */
+  OWNER_WRITING_MODEL: blankIsUnset(z.string()),
+  OWNER_WRITING_MODEL_UNTIL: blankIsUnset(z.string()),
   HELPER_MODEL: z.string().optional(),
   FACTPACK_MODEL: z.string().optional(),
   JUDGE_MODEL: z.string().optional(),

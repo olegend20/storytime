@@ -99,6 +99,47 @@ describe('the generate route wires the real guardrails and limits', () => {
     expect(src).toMatch(/precheckGeneration\(familyId,\s*body,\s*deps\)/)
     expect(src).toMatch(/runGeneration\(prepared\.prepared,\s*channel,\s*deps\)/)
     // ...and carries the request deadline, so a retry never outlives the function (#32).
-    expect(src).toMatch(/const deps = \{ \.\.\.productionDeps\(\), deadlineMs: startedAt \+ maxDuration \* 1000 \}/)
+    expect(src).toMatch(/const deps = withOwnerTrial\(\{ \.\.\.productionDeps\(\), deadlineMs: startedAt \+ maxDuration \* 1000 \}, user\.id\)/)
+    // Issue #132: a saved trial story is recorded with the writer the request really used.
+    expect(src).toMatch(/if \(deps\.writingModel && deps\.db\) await recordTrialStory\(deps\.db, \{ familyId, writingModel: deps\.writingModel, result \}\)/)
+  })
+
+  describe('issue #132: the owner\'s writer trial', () => {
+    const ENV = ['OWNER_USER_ID', 'OWNER_WRITING_MODEL', 'OWNER_WRITING_MODEL_UNTIL'] as const
+    const post = async (): Promise<Record<string, unknown>> => {
+      calls.prepare.length = 0
+      const res = await POST(new Request('http://localhost/api/stories/generate', { method: 'POST', body: '{}' }))
+      await res.text()
+      return (calls.prepare[0] as [string, unknown, Record<string, unknown>])[2]
+    }
+    const withEnv = async (env: Partial<Record<(typeof ENV)[number], string>>): Promise<Record<string, unknown>> => {
+      const saved = Object.fromEntries(ENV.map((k) => [k, process.env[k]]))
+      for (const k of ENV) delete process.env[k]
+      Object.assign(process.env, env)
+      try {
+        return await post()
+      } finally {
+        for (const k of ENV) {
+          if (saved[k] === undefined) delete process.env[k]
+          else process.env[k] = saved[k]
+        }
+      }
+    }
+
+    it('VT-WT1: the owner\'s request is written by the trial model, with the real guardrails still in place', async () => {
+      // The mocked session is `user-1`.
+      const deps = await withEnv({ OWNER_USER_ID: 'user-1', OWNER_WRITING_MODEL: 'glm-5.3-flash' })
+      expect(deps.writingModel).toBe('glm-5.3-flash')
+      expect(deps.quota).toBeInstanceOf(LimitsQuotaService)
+      expect(deps.inputGuard).toBeInstanceOf(GuardrailsInputGuard)
+      expect(deps.safetyReviewer).toBeInstanceOf(GuardrailsSafetyReviewer)
+      expect(deps.deadlineMs).toEqual(expect.any(Number))
+    })
+
+    it('VT-WT1: any other parent\'s request has no writer override, trial on or off', async () => {
+      expect((await withEnv({ OWNER_USER_ID: 'someone-else', OWNER_WRITING_MODEL: 'glm-5.3-flash' })).writingModel).toBeUndefined()
+      expect((await withEnv({ OWNER_USER_ID: 'user-1' })).writingModel).toBeUndefined()
+      expect((await withEnv({ OWNER_USER_ID: 'user-1', OWNER_WRITING_MODEL: 'glm-5.3-flash', OWNER_WRITING_MODEL_UNTIL: '2020-01-01' })).writingModel).toBeUndefined()
+    })
   })
 })

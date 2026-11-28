@@ -18,6 +18,7 @@ import {
   startGenerationRequest,
 } from '@/lib/generate/requests'
 import { ProgressRecorder, discardGenerationProgress, pruneGenerationProgress } from '@/lib/generate/progress'
+import { recordTrialStory, withOwnerTrial } from '@/lib/generate/writer-trial'
 
 /**
  * POST /api/stories/generate - the SSE endpoint in `lib/schemas/api.ts` (F6).
@@ -92,7 +93,9 @@ export async function POST(request: Request): Promise<Response> {
   // Quota, budget cap, L1/L2 and L4. Without these the pipeline falls back to stubs that
   // allow everything (lib/generate/deps.ts) - this line is what makes the guardrails real.
   // The platform kills this function at `maxDuration`; the pipeline plans inside it.
-  const deps = { ...productionDeps(), deadlineMs: startedAt + maxDuration * 1000 }
+  // Issue #132: during the owner's writer trial, the owner's own stories - and nobody else's -
+  // are written by `OWNER_WRITING_MODEL`. For every other user this returns the deps unchanged.
+  const deps = withOwnerTrial({ ...productionDeps(), deadlineMs: startedAt + maxDuration * 1000 }, user.id)
   const familyId = (family as { id: string }).id
 
   // The cheap checks answer with a real HTTP status, as before: a malformed body, the kill
@@ -138,6 +141,9 @@ export async function POST(request: Request): Promise<Response> {
     if (generationId && records) await noteGenerationStory(records, generationId, familyId, prepared.prepared.storyId)
     const result = await runGeneration(prepared.prepared, channel, deps)
     await finish({ status: result.status, storyId: result.storyId, reason: result.reason ?? null })
+    // A saved trial story is recorded for `pnpm eval:family` to score. After `done`, and
+    // best-effort: the parent has the story whatever happens here.
+    if (deps.writingModel && deps.db) await recordTrialStory(deps.db, { familyId, writingModel: deps.writingModel, result })
     return result
   })().catch(async (err: unknown) => {
     // Anything that threw outside the pipeline's own handling (a database read in the

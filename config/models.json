@@ -24,6 +24,12 @@
       "url": "https://platform.claude.com/docs/en/models/overview",
       "fetched": "2026-10-15",
       "note": "quality_reviewer role added: claude-haiku-5-5 confirmed current (adaptive thinking, default effort medium). Prices re-checked on the pricing page the same day, unchanged."
+    },
+    {
+      "page": "Understudy model catalog (`understudy models show glm-5.3-flash`)",
+      "url": "https://understudylabs.com",
+      "fetched": "2026-11-28",
+      "note": "glm-5.3-flash is listed for the organization; the catalog publishes no limits, reasoning parameters or price. Issue #132. No Claude row was changed, so the Anthropic pages were not re-fetched."
     }
   ],
   "roles": {
@@ -62,6 +68,10 @@
       "why": "JUDGE_AGENT.md s6 step 5: a second judge on the 12 highest-stakes comparisons, with the agreement rate reported. Now the strongest model, which keeps s2's intent alive where it matters most. Both judges are also contestants, so self-preference bias is reported on their own rows rather than engineered away - see DECISIONS.md #3.",
       "env_override": "JUDGE_MODEL_SECONDARY"
     }
+  },
+  "writer_prompts": {
+    "$comment": "Issue #132: a writer model may name its own master prompt id (`prompts/<id>.v<N>.md`). A writer not listed here gets `master`. The prompt follows the model wherever it is the writer: the owner's trial, WRITING_MODEL, an eval.",
+    "glm-5.3-flash": "master.glm"
   },
   "bakeoff_contestants": [
     "claude-haiku-4-5-20251001",
@@ -130,6 +140,13 @@
       "supports_web_search": false,
       "tokenizer": "v4_7",
       "notes": "Released 2026-10-07. Adaptive thinking is ON by default, steered by effort; omit temperature/top_p/top_k (400). About 30% more tokens than Haiku 4.5 for the same text. Whether it accepts thinking {type:'disabled'} is probed in the review bench, not documented on the overview page."
+    },
+    "glm-5.3-flash": {
+      "thinking": "adaptive",
+      "supports_effort": false,
+      "supports_temperature": false,
+      "supports_web_search": false,
+      "notes": "Issue #132: the writer for the owner's family during the trial (OWNER_WRITING_MODEL), never a role default. Reached through the Understudy gateway's catalog. The catalog publishes no limits or reasoning parameters; this row records what the 2026-11-06 smoke test and the eight evals of 2026-11-07/09 ran with. Through the gateway, sending any effort switches its thinking off, so `supports_effort` stays false."
     }
   }
 }

@@ -140,6 +140,9 @@ import { STORY_OUTPUT_FORMAT } from '@/lib/generate/output-schema'
 import { buildBibleUpdateMessage } from '@/lib/bible'
 import { loadPrompt } from '@/lib/prompts'
 import { modelForRole } from '@/lib/ai'
+import { masterPromptIdFor } from '@/lib/ai/pricing'
+import { recordTrialStory } from '@/lib/generate/writer-trial'
+import { anon } from '../helpers/db'
 import { dataBlock as untrustedBlockRaw, untrustedBlock } from '@/lib/datablock'
 
 /**
@@ -157,6 +160,9 @@ import { dataBlock as untrustedBlockRaw, untrustedBlock } from '@/lib/datablock'
  * key, not a researched pack under `history-of-lego` in the globally shared table).
  * `prepareGeneration` has its own tests below - the same split the HTTP contract makes.
  */
+
+/** Issue #132: the model `config/models.json` gives its own master prompt. */
+const TRIAL_WRITER = 'glm-5.3-flash'
 
 const available = await databaseAvailable()
 /**
@@ -333,9 +339,11 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
    */
   function stubResponsesFor(
     run: PreparedGeneration,
-    opts: { rewriteReasons?: string[]; story?: StoryOutput } = {},
+    opts: { rewriteReasons?: string[]; story?: StoryOutput; writer?: string } = {},
   ): { story: StoryOutput; rewritten: StoryOutput } {
-    const writer = modelForRole('writer')
+    const writer = opts.writer ?? modelForRole('writer')
+    // Issue #132: the master prompt follows the writer, so a trial writer's keys are its own.
+    const writerModel = opts.writer ? { writerModel: opts.writer } : {}
     const helperModel = modelForRole('helper')
     const story = opts.story ?? stubStory()
     const rewritten = stubRewrittenStory()
@@ -345,6 +353,7 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
       request: run.request,
       bible: BIBLE_AT_START,
       factPack: FIXTURE_FACT_PACK,
+      ...writerModel,
     })
     stubFixture(
       'write',
@@ -390,6 +399,7 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
         request: rewriteRequest,
         bible: BIBLE_AT_START,
         factPack: FIXTURE_FACT_PACK,
+        ...writerModel,
       })
       stubFixture(
         'rewrite',
@@ -555,6 +565,88 @@ describe.skipIf(!available)('F6 pipeline, streamed half (int, fixtures)', () => 
     expect(bible.content.last_story?.title).toBe(story.title)
     expect(bible.token_estimate).toBeLessThanOrEqual(800)
     expect(bible.content.topics_covered.map((t) => t.topic)).toContain(FIXTURE_TOPIC_LABEL)
+  })
+
+  // ---- issue #132: the owner's writer trial ----
+
+  it('VT-WT3: with a trial writer, the write is that model with its own master prompt', async () => {
+    const run = await prepared()
+    // Only the trial writer's keys exist: the model AND the `master.glm` system block. A write
+    // sent with the default writer, or with `master`, would find no fixture and fail.
+    stubResponsesFor(run, { writer: TRIAL_WRITER })
+    const sink = new MemoryLogSink()
+    const { result } = await collect(run, { db: family.db, sink, quota: new RecordingQuota(), now: () => FIXED_NOW, writingModel: TRIAL_WRITER })
+
+    expect(result.status).toBe('ready')
+    const writes = sink.rows.filter((r) => r.purpose === 'write')
+    expect(writes.map((r) => r.model)).toEqual([TRIAL_WRITER])
+    // Nothing else moved to the trial model: the reviewers and the bible update are unchanged.
+    if (result.bibleUpdate) await result.bibleUpdate
+    expect(sink.rows.filter((r) => r.purpose !== 'write').map((r) => r.model)).not.toContain(TRIAL_WRITER)
+    expect(masterPromptIdFor(TRIAL_WRITER)).toBe('master.glm')
+    expect(buildPrompt({ request: run.request, bible: BIBLE_AT_START, factPack: FIXTURE_FACT_PACK, writerModel: TRIAL_WRITER }).system[0]!.text).toBe(
+      loadPrompt('master.glm').body,
+    )
+    // The bible the story was written to is handed back for the trial's record.
+    expect(result.bibleAtStart).toEqual(BIBLE_AT_START)
+  })
+
+  it('VT-WT3: without a trial writer, the write is what it was: the configured writer and `master`', async () => {
+    const run = await prepared()
+    stubResponsesFor(run)
+    const sink = new MemoryLogSink()
+    const { result } = await collect(run, { db: family.db, sink, quota: new RecordingQuota(), now: () => FIXED_NOW })
+    expect(result.status).toBe('ready')
+    expect(sink.rows.filter((r) => r.purpose === 'write').map((r) => r.model)).toEqual([modelForRole('writer')])
+    const plain = buildPrompt({ request: run.request, bible: BIBLE_AT_START, factPack: FIXTURE_FACT_PACK })
+    expect(plain.masterPromptId).toBe('master')
+    expect(plain.system[0]!.text).toBe(loadPrompt('master').body)
+    if (result.bibleUpdate) await result.bibleUpdate
+  })
+
+  it('VT-WT4: a saved trial story is recorded once in story_evals, with the bible before the story', async () => {
+    const run = await prepared()
+    stubResponsesFor(run, { writer: TRIAL_WRITER })
+    const { result } = await collect(run, { db: family.db, sink: new MemoryLogSink(), quota: new RecordingQuota(), now: () => FIXED_NOW, writingModel: TRIAL_WRITER })
+    if (result.bibleUpdate) await result.bibleUpdate
+
+    expect(await recordTrialStory(family.db, { familyId: family.familyId, writingModel: TRIAL_WRITER, result })).toBe(true)
+    const { data } = await family.db.from('story_evals').select('*').eq('story_id', run.storyId)
+    expect(data).toHaveLength(1)
+    expect(data![0]).toMatchObject({
+      family_id: family.familyId,
+      writer_model: TRIAL_WRITER,
+      master_prompt: `master.glm.v${loadPrompt('master.glm').version}`,
+      // Before the story, not after: the bible update above has already moved `story_bibles` on.
+      bible_before: BIBLE_AT_START,
+      write_calls: 1,
+      after_streaming: 'unchanged',
+      first_draft_untouched: true,
+      judged_at: null,
+      overall_final: null,
+    })
+
+    // A second record of the same story is refused by the key, logged, and never thrown.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(await recordTrialStory(family.db, { familyId: family.familyId, writingModel: TRIAL_WRITER, result })).toBe(false)
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('could not record story'))
+    warn.mockRestore()
+
+    // No client key can read or write it.
+    const client = anon()
+    expect((await client.from('story_evals').select('story_id').limit(1)).data ?? []).toEqual([])
+    expect((await client.from('story_evals').insert({ story_id: run.storyId, family_id: family.familyId, writer_model: 'x', master_prompt: 'x', write_calls: 1, after_streaming: 'unchanged', first_draft_untouched: true })).error).not.toBeNull()
+
+    // Gone with the story.
+    await family.db.from('stories').delete().eq('id', run.storyId)
+    expect((await family.db.from('story_evals').select('story_id').eq('story_id', run.storyId)).data).toEqual([])
+  })
+
+  it('VT-WT4: a story that was not saved is not recorded', async () => {
+    const run = await prepared()
+    const discarded = { storyId: run.storyId, status: 'discarded' as const, story: null, quality: null, wordCount: 0, writeCalls: 1, bibleUpdate: null }
+    expect(await recordTrialStory(family.db, { familyId: family.familyId, writingModel: TRIAL_WRITER, result: discarded })).toBe(false)
+    expect((await family.db.from('story_evals').select('story_id').eq('story_id', run.storyId)).data).toEqual([])
   })
 
   it('VT-C3: a story that borrows a character says so in the meta event and on the stored row', async () => {

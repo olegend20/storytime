@@ -85,6 +85,7 @@ write failures.
 |---|---|
 | `run-eval.ts` | `pnpm eval` |
 | `run-bakeoff.ts` | `pnpm bakeoff` |
+| `run-family-eval.ts` | `pnpm eval:family` (issue #132): scores the books the owner's family made during the writer trial (`story_evals` rows with no score) with the judge, saves the scores on the rows, and prints the trial beside a Sonnet eval (`--baseline=`, default `results/eval-2026-11-04.json`). `--dry-run`, `--report-only`, `--limit=N`. LIVE, about $0.10-0.15 a book. Reads the database `SUPABASE_URL` names; writes no file. |
 | `run-revise-bench.ts` | Issue #85: replays rewritten first drafts (`review-bench/set-rewritten-*.json`) through the gate and the in-place revision, and counts how many it fixes. LIVE. |
 | `results/` | `eval-<date>.json`, `bakeoff-<date>.{json,md}`, `calibration-<date>.json`. Never overwritten: a second run on the same day gets a `-2` suffix. |
 | `fixtures/stories/` | Optional recorded stories for fixture-mode runs, named `<scenario>.<model>.<sample>.json`. |
