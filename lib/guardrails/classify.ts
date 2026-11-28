@@ -140,12 +140,16 @@ export function confirmCharacters(reply: InputClassification, topic: string): In
   }
   // A confirmed name means a character request, whatever the model labelled it: the
   // category the schema documents, and allow_with_care so the care notes reach the writer.
-  return {
-    ...reply,
-    decision: 'allow_with_care',
-    category: 'commercial_ip_character',
-    requested_characters: confirmed,
-  }
+  // A creature asked for beside the character ("Elsa and a mermaid") keeps its own rules.
+  return withMakeBelieveRules(
+    {
+      ...reply,
+      decision: 'allow_with_care',
+      category: 'commercial_ip_character',
+      requested_characters: confirmed,
+    },
+    topic,
+  )
 }
 
 /**

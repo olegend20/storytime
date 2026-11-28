@@ -59,6 +59,22 @@ describe('make-believe creatures (issue #130)', () => {
     expect(long.care_notes!.endsWith(MAKE_BELIEVE_WRITER_RULES)).toBe(true)
   })
 
+  it('a creature beside a requested character keeps its rules, and the character its notice', () => {
+    const reply: InputClassification = {
+      decision: 'allow_with_care',
+      category: 'commercial_ip_character',
+      care_notes: 'Teach how ice forms. Elsa and a mermaid come along as companions.',
+      min_recommended_age: 4,
+      requested_characters: ['Elsa'],
+      topic_key_hint: 'how-ice-forms',
+      parent_message: null,
+    }
+    const out = confirmCharacters(reply, 'Elsa and a mermaid learn about ice')
+    expect(out.requested_characters).toEqual(['Elsa'])
+    expect(borrowsCharacter(out)).toBe(true)
+    expect(out.care_notes?.endsWith(MAKE_BELIEVE_WRITER_RULES)).toBe(true)
+  })
+
   it('adds nothing when the word alone is there: a giant squid is not a giant', () => {
     const squid: InputClassification = {
       decision: 'allow_with_care',
