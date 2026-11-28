@@ -16,6 +16,7 @@ import {
   type FactPackRecord,
   type QualityResult,
   type SseEvent,
+  type StoryBible,
   type StoryOutput,
   factCardsFor,
   type StoryStatus,
@@ -466,6 +467,12 @@ export interface RunGenerationResult {
    */
   firstGated?: { story: StoryOutput; request: GenerationRequest }
   /**
+   * The series bible the story was written to, before this story updated it: what the owner's
+   * writer trial keeps so the book can be scored as the eval scores one (issue #132). Only on
+   * a saved story.
+   */
+  bibleAtStart?: StoryBible
+  /**
    * Why it was not saved, as a stable code safe to log and store (issue #59): the rules and
    * checks behind a discard, the error class behind a failure. Never free text from an error.
    */
@@ -621,10 +628,13 @@ export async function runGeneration(
     // The request the saved story was written to: `prepared.request`, unless rung 3 below
     // had to retry it one length tier shorter.
     let request: GenerationRequest = prepared.request
+    // Issue #132: the master prompt follows the model that writes (`masterPromptIdFor`).
+    const writer = deps.writingModel ? { writerModel: deps.writingModel } : {}
     const prompt = buildPrompt({
       request,
       bible: bibleAtStart,
       factPack: pack,
+      ...writer,
     })
     writeCalls += 1
     const writeWith = (p: BuiltPrompt, structured: boolean, signal?: AbortSignal, continuation = false) =>
@@ -682,7 +692,7 @@ export async function runGeneration(
       // Not when every chapter is already showing: only the ending is left to write.
       if (!soFar.chaptersComplete) channel.push({ type: 'chapter_start', index: soFar.chapters.length, heading: '' })
       parser = emitMetaAndChapters(soFar)
-      const rest = buildContinuationPrompt({ request, bible: bibleAtStart, factPack: pack, soFar })
+      const rest = buildContinuationPrompt({ request, bible: bibleAtStart, factPack: pack, soFar, ...writer })
       return writeWith(rest, structured, signal, true).then((result) => ({ ...result, text: stitchContinuation(result.text, soFar) }))
     }
     // Issue #52: the gateway can cut a stream partway, even seconds in. If no chapter has
@@ -743,7 +753,7 @@ export async function runGeneration(
       console.warn(`[generate] ${why} - retrying at ${to} minutes (was ${request.length_minutes})`)
       retriedShorter = { from: request.length_minutes, to, why }
       request = { ...request, length_minutes: to, target_words: targetWords({ band: prepared.band, minutes: to }) }
-      const retryPrompt = buildPrompt({ request, bible: bibleAtStart, factPack: pack })
+      const retryPrompt = buildPrompt({ request, bible: bibleAtStart, factPack: pack, ...writer })
       writeCalls += 1
       const retry = (withFormat: boolean) =>
         callModel({
@@ -934,6 +944,7 @@ export async function runGeneration(
         request: rewriteRequest,
         bible: (await loadBible(prepared.seriesId, { db })).content,
         factPack: pack,
+        ...writer,
       })
       writeCalls += 1
       // Not streamed: the client has already received attempt 1's chapters, and replaying
@@ -1177,6 +1188,7 @@ export async function runGeneration(
       // The route waits on this after the response; the cost links ride along with it.
       bibleUpdate: Promise.all([linked, bibleUpdate]),
       firstGated,
+      bibleAtStart,
     }
   } catch (err) {
     const message = parentMessage('generation_failed')

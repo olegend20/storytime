@@ -25,6 +25,12 @@
       "url": "https://platform.claude.com/docs/en/models/haiku-5-5/overview",
       "fetched": "2026-10-15",
       "used_for": "claude-haiku-5-5 id and prices by prompt length"
+    },
+    {
+      "page": "Understudy billing (`understudy billing usage-by-model`, 2026-11-06 to 2026-11-11)",
+      "url": "https://understudylabs.com",
+      "fetched": "2026-11-28",
+      "used_for": "glm-5.3-flash (issue #132): 649 requests, 3,679,722 input + 488,648 cache-read + 14,470,283 output tokens, billed $6.0013. No published price exists; see the row's note. No Claude row was changed, so the Anthropic pages were not re-fetched."
     }
   ],
   "refresh_policy": {
@@ -89,6 +95,16 @@
       "cache_read": 0.01,
       "cache_read_multiplier": 0.1,
       "note": "Prices for prompts up to 100,000 tokens. A prompt over 100,000 tokens (cache reads and writes included) pays 5x: $0.50 / $2.50 / $0.625 / $1 / $0.05. Not modelled: every StoryTime helper prompt is under 15,000 tokens."
+    },
+    "glm-5.3-flash": {
+      "display_name": "GLM 5.3 Flash",
+      "input": 0.35,
+      "output": 0.35,
+      "cache_write_5m": 0.35,
+      "cache_write_1h": 0.35,
+      "cache_read": 0.035,
+      "cache_read_multiplier": 0.1,
+      "note": "NOT A PUBLISHED PRICE (issue #132). The Understudy catalog publishes none, so this is one effective rate for input and output alike, from the gateway's own bill for 2026-11-06..11: $6.0013 for 18.15M input+output tokens = $0.331 per million, rounded up to $0.35 so the budget cap and the cost page over-count by about 6% on that mix. A story's real cost is what `understudy billing usage-by-model` says for its window."
     }
   }
 }

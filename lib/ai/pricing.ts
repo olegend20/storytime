@@ -40,6 +40,8 @@ export const models = modelsJson as unknown as {
   roles: Record<string, { model: string; why: string; env_override: string }>
   bakeoff_contestants: string[]
   capabilities: Record<string, Record<string, unknown>>
+  /** Issue #132: a writer model's own master prompt id. Keys starting with `$` are comments. */
+  writer_prompts?: Record<string, string>
 }
 
 export function priceFor(model: string): ModelPrice {
@@ -109,6 +111,24 @@ export function modelForRole(role: keyof typeof models.roles | string): string {
   if (!entry) throw new Error(`Unknown model role "${role}" in config/models.json`)
   const override = process.env[entry.env_override]
   return override && override.length > 0 ? override : entry.model
+}
+
+/** The id every writer's master prompt has unless `config/models.json` names another for it. */
+export const DEFAULT_MASTER_PROMPT_ID = 'master'
+
+/**
+ * The master prompt a writer is sent (issue #132). A prompt is tuned to a model, so it follows
+ * the model wherever that model writes: the owner's trial, `WRITING_MODEL`, an eval. Unset is
+ * the configured writer.
+ */
+export function masterPromptIdFor(model: string = modelForRole('writer')): string {
+  const id = models.writer_prompts?.[model]
+  return typeof id === 'string' && id.length > 0 && !model.startsWith('$') ? id : DEFAULT_MASTER_PROMPT_ID
+}
+
+/** Whether a model can be the writer: it must have capabilities and a price in config. */
+export function isConfiguredModel(model: string): boolean {
+  return Object.hasOwn(models.capabilities, model) && Object.hasOwn(pricing.models, model)
 }
 
 export function capabilities(model: string): Record<string, unknown> {

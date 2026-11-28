@@ -56,7 +56,8 @@ export interface PipelineStoryResult {
   progress?: { writes: number; failures: number; lagMs: number[] }
 }
 
-export type AfterStreaming = 'unchanged' | 'edited' | 'replaced'
+export type { AfterStreaming } from '@/lib/generate/after-streaming'
+import type { AfterStreaming } from '@/lib/generate/after-streaming'
 
 export interface FirstDraft {
   passed: boolean

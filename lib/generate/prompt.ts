@@ -1,5 +1,6 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import type { CacheableBlock } from '@/lib/ai'
+import { masterPromptIdFor } from '@/lib/ai/pricing'
 import { estimateTokens, loadPrompt } from '@/lib/prompts'
 import { dataBlock, escapeForDataBlock, field } from '@/lib/datablock'
 import { serializeBible } from '@/lib/bible/limits'
@@ -33,6 +34,11 @@ export interface BuildPromptInput {
   request: GenerationRequest
   bible: StoryBible
   factPack: FactPack | null
+  /**
+   * The model that will write (issue #132): it decides which master prompt is sent
+   * (`masterPromptIdFor`). Unset is the configured writer.
+   */
+  writerModel?: string
 }
 
 export interface BuiltPrompt {
@@ -41,6 +47,8 @@ export interface BuiltPrompt {
   /** Estimated size of the cached block, for the cache-read ratio assertion (F6 AC). */
   masterPromptTokens: number
   masterPromptVersion: number
+  /** `master`, or the writer's own prompt id (issue #132). */
+  masterPromptId: string
 }
 
 /**
@@ -180,19 +188,20 @@ function storyContext(input: BuildPromptInput): string[] {
   ]
 }
 
-function withMaster(userContent: string): BuiltPrompt {
-  const master = loadPrompt('master')
+function withMaster(userContent: string, writerModel?: string): BuiltPrompt {
+  const master = loadPrompt(masterPromptIdFor(writerModel))
   return {
     // The ONLY cache breakpoint. §4.1: one static block, identical for every story call.
     system: [{ text: master.body, cache: true }],
     messages: [{ role: 'user', content: userContent }],
     masterPromptTokens: estimateTokens(master.body),
     masterPromptVersion: master.version,
+    masterPromptId: master.id,
   }
 }
 
 export function buildPrompt(input: BuildPromptInput): BuiltPrompt {
-  return withMaster([...storyContext(input), 'Write the story now. Return the JSON object only.'].join('\n\n'))
+  return withMaster([...storyContext(input), 'Write the story now. Return the JSON object only.'].join('\n\n'), input.writerModel)
 }
 
 /** What the parent already has on the page when a write drops partway (issue #74). */
@@ -230,5 +239,6 @@ export function buildContinuationPrompt(input: BuildPromptInput & { soFar: Story
   const story = { title: soFar.title, subtitle: soFar.subtitle, chapters: soFar.chapters }
   return withMaster(
     [...storyContext(input), dataBlock('story_so_far', escapeForDataBlock(JSON.stringify(story))), ask].join('\n\n'),
+    input.writerModel,
   )
 }

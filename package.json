@@ -26,6 +26,7 @@
     "db:reset": "supabase db reset",
     "seed": "tsx scripts/seed.ts",
     "eval": "tsx eval/run-eval.ts",
+    "eval:family": "tsx eval/run-family-eval.ts",
     "bakeoff": "tsx eval/run-bakeoff.ts",
     "review-bench": "tsx eval/run-review-bench.ts",
     "mend-bench": "tsx eval/run-mend-bench.ts",

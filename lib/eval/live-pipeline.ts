@@ -24,8 +24,9 @@ import {
   type PreparedGeneration,
   type RunGenerationResult,
 } from '@/lib/generate'
+import { afterStreaming, firstDraftUntouched } from '@/lib/generate/after-streaming'
 import type { GateSummary } from './caps'
-import { assertThinkingDisplaySupported, parseForceDropAfterChapters, parseThinkingDisplay, type AfterStreaming, type FirstDraft, type GenerateInput, type PipelineStoryResult, type StoryPipeline } from './pipeline'
+import { assertThinkingDisplaySupported, parseForceDropAfterChapters, parseThinkingDisplay, type FirstDraft, type GenerateInput, type PipelineStoryResult, type StoryPipeline } from './pipeline'
 
 /**
  * What the eval sends as the writer's thinking display. Unset runs what production runs (issue
@@ -247,26 +248,6 @@ async function generateOne(
   }
 }
 
-/**
- * Issue #85: what the parent saw happen to the story that streamed. Read from the stories
- * themselves: a new title or new headings is a replaced story (a rewrite), the same ones with
- * different text an edited one. A lost rewrite that fell back to attempt 1 (#72) is not
- * replaced, whatever the ladder did to it after. Rung 3's shorter retry is replaced: the
- * unusable draft streamed first. Without the stories, the gate's record is the guess.
- */
-export function afterStreaming(quality: QualityResult, first?: StoryOutput, delivered?: StoryOutput): AfterStreaming {
-  if ((quality.first_attempt?.reasons ?? []).some((r) => r.startsWith('output unusable; retried'))) return 'replaced'
-  if (first && delivered) {
-    const outline = (s: StoryOutput) => JSON.stringify([s.title, s.subtitle, s.chapters.map((c) => c.heading)])
-    const body = (s: StoryOutput) => JSON.stringify([s.chapters.map((c) => c.text), s.ending_line, s.true_facts])
-    if (outline(first) !== outline(delivered)) return 'replaced'
-    return body(first) !== body(delivered) ? 'edited' : 'unchanged'
-  }
-  const fellBack = quality.rewrite_reasons.some((r) => r.startsWith('rewrite output unusable'))
-  if (quality.attempt === 2 && !fellBack) return 'replaced'
-  return (quality.mended?.edits ?? 0) + (quality.mended?.cut ?? 0) > 0 ? 'edited' : 'unchanged'
-}
-
 export function firstDraftOf(
   quality: QualityResult | null,
   writeCalls: number,
@@ -278,7 +259,7 @@ export function firstDraftOf(
   const mendedRules = quality.mended?.rules ?? []
   const after = afterStreaming(quality, gated?.story, delivered)
   return {
-    passed: writeCalls <= 1 && sentBack === null && mendedRules.length === 0 && after === 'unchanged' && quality.outcome !== 'discarded',
+    passed: firstDraftUntouched(quality, writeCalls, after),
     failures: (sentBack?.failures ?? []).map((f) => f.check),
     reasons: sentBack?.reasons ?? [],
     mended_rules: mendedRules,
@@ -287,7 +268,10 @@ export function firstDraftOf(
   }
 }
 
-function gateSummary(quality: QualityResult | null): GateSummary | null {
+export { afterStreaming }
+
+/** What the judge's caps are told about the gate. Exported for `pnpm eval:family` (issue #132). */
+export function gateSummary(quality: QualityResult | null): GateSummary | null {
   if (!quality) return null
   return {
     outcome: quality.outcome,
