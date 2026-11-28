@@ -92,7 +92,7 @@ describe('VT-WT1: who is given the trial writer', () => {
   it('the normal writer for an end date that is not a date', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     process.env.OWNER_WRITING_MODEL = GLM
-    for (const bad of ['next friday', '12/12/2026', '2026-13-45']) {
+    for (const bad of ['next friday', '12/12/2026', '2026-13-45', '2026-02-30', '2026-11-31']) {
       process.env.OWNER_WRITING_MODEL_UNTIL = bad
       expect(ownerTrialWriter(OWNER, NOW), bad).toBeNull()
     }

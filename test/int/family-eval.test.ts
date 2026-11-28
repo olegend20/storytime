@@ -2,8 +2,11 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { randomUUID } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { BlindnessViolationError } from '@/lib/eval/blind'
 import {
   bibleForJudge,
+  clearJudgeErrors,
+  permanentFailure,
   formatFamilyReport,
   loadFamilyBook,
   loadFamilyEvalRows,
@@ -165,7 +168,7 @@ describe.skipIf(!available)('VT-WT5: eval:family (int)', () => {
     }
 
     const run = await runFamilyEval({ db: family.db, familyId: family.familyId, score, now: () => NOW })
-    expect(run).toMatchObject({ scored: 2, errors: 1 })
+    expect(run).toMatchObject({ scored: 2, errors: 1, failed: 0 })
     expect(run.costUsd).toBeCloseTo(0.42, 5)
 
     const rows = await loadFamilyEvalRows(family.db, { familyId: family.familyId })
@@ -191,7 +194,7 @@ describe.skipIf(!available)('VT-WT5: eval:family (int)', () => {
     let called = 0
     const again = await runFamilyEval({ db: family.db, familyId: family.familyId, score: async () => { called += 1; return judged({ center: 1, craft: 1, facts: 1, age_fit: 1, continuity: 1, delight: 1 }) } })
     expect(called).toBe(0)
-    expect(again).toEqual({ scored: 0, errors: 0, costUsd: 0 })
+    expect(again).toEqual({ scored: 0, errors: 0, failed: 0, costUsd: 0 })
   })
 
   it('a book whose story is gone gets the reason on its row, and the run does not stop', async () => {
@@ -250,5 +253,31 @@ describe.skipIf(!available)('VT-WT5: eval:family (int)', () => {
 
   it('the judge prompt on disk is the one the Sonnet baseline was scored with', () => {
     expect(loadJudgePrompt().sha256).toBe(BASELINE.judge_prompt.sha256)
+  })
+
+  it('a failure that may pass leaves the book unscored for the next run; a word the blind check trips on is kept without the story\'s text', async () => {
+    const id = await saveBook({ firstDraft: true, after: 'unchanged' })
+    const row = async () => (await loadFamilyEvalRows(family.db, { familyId: family.familyId })).find((r) => r.story_id === id)!
+
+    // The gateway is down: nothing is written, and the book is still waiting.
+    const down = await runFamilyEval({ db: family.db, familyId: family.familyId, score: async () => { throw new Error('529 overloaded') }, now: () => NOW })
+    expect(down).toMatchObject({ scored: 0, errors: 0, failed: 1 })
+    expect(await row()).toMatchObject({ judged_at: null, judge_error: null })
+
+    // The blind check quotes the payload around the match. Only the matched word is saved.
+    const leak = new BlindnessViolationError('SCORE payload', [{ needle: 'fable', kind: 'brand_word', index: 10, excerpt: '…Milo opened the book of fables and…' }])
+    const blind = await runFamilyEval({ db: family.db, familyId: family.familyId, score: async () => { throw leak }, now: () => NOW })
+    expect(blind).toMatchObject({ scored: 0, errors: 1, failed: 0 })
+    const saved = await row()
+    expect(saved.judge_error).toBe('blind_check: the story or the request contains fable')
+    expect(saved.judge_error).not.toContain('Milo')
+    expect(permanentFailure(leak)).not.toContain('opened the book')
+    expect(permanentFailure(new Error('socket hang up'))).toBeNull()
+
+    // --retry-errors makes it unscored again, and this time it scores.
+    expect(await clearJudgeErrors(family.db, family.familyId)).toBeGreaterThanOrEqual(1)
+    const retried = await runFamilyEval({ db: family.db, familyId: family.familyId, score: async () => judged({ center: 4, craft: 4, facts: 4, age_fit: 4, continuity: 4, delight: 4 }), now: () => NOW })
+    expect(retried.scored).toBeGreaterThanOrEqual(1)
+    expect((await row()).overall_final).toBe(4)
   })
 })

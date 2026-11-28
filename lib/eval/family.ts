@@ -10,6 +10,7 @@ import {
   type StoryBible,
 } from '@/lib/schemas'
 import type { AfterStreaming } from '@/lib/generate/after-streaming'
+import { BlindnessViolationError } from './blind'
 import type { EvalResult } from './harness'
 import { JUDGE_PROMPT_FILE, loadJudgePrompt, scoreStory, type ScoreStoryResult } from './judge'
 import { gateSummary } from './live-pipeline'
@@ -98,6 +99,18 @@ export function bibleForJudge(bible: StoryBible | null): StoryBible | null {
   return empty ? null : bible
 }
 
+/**
+ * A book that can never be scored as it stands: the story or its children are gone, or the
+ * saved story no longer parses. Its message is fixed wording of ours - never the story's text -
+ * because it is saved on the row and printed.
+ */
+export class UnscorableBook extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'UnscorableBook'
+  }
+}
+
 /** Everything `scoreStory` needs for one saved book. */
 export interface FamilyBook {
   context: JudgeContext
@@ -114,7 +127,7 @@ export async function loadFamilyBook(db: SupabaseClient, row: FamilyEvalRow): Pr
     .eq('id', row.story_id)
     .maybeSingle()
   if (error) throw new Error(`stories read: ${error.message}`)
-  if (!story) throw new Error('the story is no longer in the database')
+  if (!story) throw new UnscorableBook('the story is no longer in the database')
   const s = story as {
     series_id: string
     topic_input: string
@@ -137,7 +150,7 @@ export async function loadFamilyBook(db: SupabaseClient, row: FamilyEvalRow): Pr
   if (childErr) throw new Error(`children read: ${childErr.message}`)
   const byId = new Map(((children ?? []) as { id: string; first_name: string; age: number; likes: string[] | null; notes: string | null }[]).map((c) => [c.id, c]))
   const cast = childIds.map((id) => byId.get(id)).filter((c): c is NonNullable<typeof c> => c !== undefined)
-  if (cast.length === 0) throw new Error('the children this story was written for are no longer in the family')
+  if (cast.length === 0) throw new UnscorableBook('the children this story was written for are no longer in the family')
 
   let factPack: FactPack | null = null
   if (s.fact_pack_id) {
@@ -148,6 +161,8 @@ export async function loadFamilyBook(db: SupabaseClient, row: FamilyEvalRow): Pr
   }
 
   const quality = QualityResult.safeParse(s.quality)
+  const content = StoryOutput.safeParse(s.content)
+  if (!content.success) throw new UnscorableBook('the saved story no longer matches the story schema')
   return {
     context: {
       children: cast.map((c) => ({ name: c.first_name, age: c.age, likes: c.likes ?? [], notes: c.notes })),
@@ -160,7 +175,7 @@ export async function loadFamilyBook(db: SupabaseClient, row: FamilyEvalRow): Pr
       // As `judgeContextFor`: the judge is not shown the pack; the caps check the fact ids.
       fact_pack: null,
     },
-    story: StoryOutput.parse(s.content),
+    story: content.data,
     quality: quality.success ? quality.data : null,
     factPack,
   }
@@ -182,8 +197,28 @@ export interface FamilyEvalRunOptions {
 
 export interface FamilyEvalRun {
   scored: number
+  /** Books that cannot be scored as they stand: the reason is on the row, and they are not tried again. */
   errors: number
+  /** Books left unscored by a failure that may pass (the API, the database): tried again next run. */
+  failed: number
   costUsd: number
+}
+
+/**
+ * Why a book that threw can never be scored, as wording safe to save and print - or null when
+ * the failure may pass (a gateway error, a database read) and the book must stay unscored so
+ * the next run tries it again.
+ *
+ * The blind check's own message quotes the payload around each match, which is the story's
+ * text: only the matched words are kept ("fable", a model id), never the excerpt.
+ */
+export function permanentFailure(err: unknown): string | null {
+  if (err instanceof BlindnessViolationError) {
+    const needles = [...new Set(err.leaks.map((l) => l.needle.toLowerCase()))].sort().join(', ')
+    return `blind_check: the story or the request contains ${needles}`
+  }
+  if (err instanceof UnscorableBook) return `not scored: ${err.message}`
+  return null
 }
 
 const ERROR_MAX = 500
@@ -212,10 +247,11 @@ export function judgedColumns(result: ScoreStoryResult, now: Date): Record<strin
 }
 
 /**
- * Score every recorded book that has no score. A book the judge cannot score (it will not
- * parse, the blind check trips on a word, the story was deleted) gets `judge_error` on its
- * row and the run carries on: it is not retried by the next run, so a broken book cannot be
- * paid for every night.
+ * Score every recorded book that has no score. A book that can never be scored as it stands
+ * (the judge's answer will not parse twice, the blind check trips on a word, the story or its
+ * children are gone) gets `judge_error` on its row and is not tried again, so a broken book
+ * cannot be paid for every night; `--retry-errors` clears those. A failure that may pass (the
+ * gateway, the database) leaves the row untouched, and the next run scores it.
  */
 export async function runFamilyEval(opts: FamilyEvalRunOptions): Promise<FamilyEvalRun> {
   const score = opts.score ?? scoreStory
@@ -226,7 +262,7 @@ export async function runFamilyEval(opts: FamilyEvalRunOptions): Promise<FamilyE
     ...(opts.limit !== undefined ? { limit: opts.limit } : {}),
     ...(opts.familyId ? { familyId: opts.familyId } : {}),
   })
-  const run: FamilyEvalRun = { scored: 0, errors: 0, costUsd: 0 }
+  const run: FamilyEvalRun = { scored: 0, errors: 0, failed: 0, costUsd: 0 }
 
   for (const row of rows) {
     say(`score ${row.story_id} (${row.writer_model}, ${row.master_prompt})`)
@@ -249,12 +285,18 @@ export async function runFamilyEval(opts: FamilyEvalRunOptions): Promise<FamilyE
       if (result.ok) run.scored += 1
       else run.errors += 1
     } catch (err) {
+      const reason = permanentFailure(err)
+      if (reason === null) {
+        run.failed += 1
+        say(`  not scored this run, will be tried again: ${err instanceof Error ? err.name : 'error'}`)
+        continue
+      }
       const prompt = loadJudgePrompt()
       columns = {
         judged_at: now().toISOString(),
         judge_prompt: prompt.version,
         judge_prompt_sha: prompt.sha256,
-        judge_error: `not scored: ${err instanceof Error ? err.message : String(err)}`.slice(0, ERROR_MAX),
+        judge_error: reason.slice(0, ERROR_MAX),
       }
       run.errors += 1
     }
@@ -263,6 +305,15 @@ export async function runFamilyEval(opts: FamilyEvalRunOptions): Promise<FamilyE
     if (error) throw new Error(`story_evals write for ${row.story_id}: ${error.message}`)
   }
   return run
+}
+
+/** `--retry-errors`: books the judge could not score become unscored again. Returns how many. */
+export async function clearJudgeErrors(db: SupabaseClient, familyId?: string): Promise<number> {
+  let query = db.from('story_evals').update({ judged_at: null, judge_error: null }).not('judge_error', 'is', null)
+  if (familyId) query = query.eq('family_id', familyId)
+  const { data, error } = await query.select('story_id')
+  if (error) throw new Error(`story_evals write: ${error.message}`)
+  return (data ?? []).length
 }
 
 // ---------------------------------------------------------------------------

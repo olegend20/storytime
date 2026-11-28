@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs'
 import { MeteredLogSink } from '@/lib/ai'
 import { installCliCostLogging } from '@/lib/costs/cli'
 import {
+  clearJudgeErrors,
   formatFamilyReport,
   loadFamilyEvalRows,
   rubricDifferences,
@@ -26,6 +27,7 @@ import { supabaseService } from '@/lib/supabase/service'
  *   --report-only     score nothing; print the report from the scores already saved
  *   --dry-run         say how many books are waiting and what scoring them is estimated to cost
  *   --limit=N         score at most N books this run
+ *   --retry-errors    try again the books an earlier run could not score
  *   --baseline=PATH   the eval file to compare with (default: the Sonnet eval of 2026-11-04)
  *   --budget=N        approve up to $N for this run (default ceiling $20, as pnpm eval)
  */
@@ -64,6 +66,9 @@ async function main(): Promise<void> {
   }
 
   if (!reportOnly) {
+    if (flag('retry-errors') && !flag('dry-run')) {
+      console.log(`${await clearJudgeErrors(db)} book(s) an earlier run could not score will be tried again.`)
+    }
     const waiting = await loadFamilyEvalRows(db, { unjudgedOnly: true, ...(limit !== undefined ? { limit } : {}) })
     const estimate = waiting.length * JUDGE_USD_PER_BOOK
     console.log(`${waiting.length} book(s) waiting for a score; estimated $${estimate.toFixed(2)} at $${JUDGE_USD_PER_BOOK.toFixed(2)} a book.`)
@@ -93,7 +98,11 @@ async function main(): Promise<void> {
         ...(limit !== undefined ? { limit } : {}),
         onProgress: (line) => console.log(`  … ${line}`),
       })
-      console.log(`Scored ${run.scored} book(s), ${run.errors} without a score, for $${run.costUsd.toFixed(2)}.`)
+      console.log(
+        `Scored ${run.scored} book(s) for $${run.costUsd.toFixed(2)}; ${run.errors} cannot be scored (reason on the row); ` +
+          `${run.failed} failed this run and will be tried again.`,
+      )
+      if (run.failed > 0) process.exitCode = 1
     }
     console.log('')
   }

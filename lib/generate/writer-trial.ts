@@ -18,9 +18,14 @@ import { writerThinkingDisplay } from './production-deps'
  * itself: the last day it applies, in UTC.
  *
  * Read from the environment on every request, like the owner and the kill switch, so
- * removing the variable ends the trial without a deploy. Everything fails CLOSED to the
- * normal writer: an unset owner, a model missing from config or the price table, a date that
- * does not parse. A typo must give the owner an ordinary story, never a failed one.
+ * removing the variable ends the trial without a deploy. A setting that cannot be used fails
+ * CLOSED to the normal writer: an unset owner, a model missing from config or the price table,
+ * a date that does not parse or does not exist. A typo gives the owner an ordinary story.
+ *
+ * What it does not cover: a trial model that is configured but stops working at the gateway.
+ * Then the owner's stories fail, as any family's would if the writer were down, until the
+ * variable is removed. There is no fallback to the normal writer mid-story: a second writer
+ * with a different prompt after a failed first is not what the trial measures.
  *
  * Each trial story that is saved is recorded in `story_evals` (`recordTrialStory`), so
  * `pnpm eval:family` can score it with the judge afterwards. The judge itself never runs
@@ -35,7 +40,10 @@ function trialEnd(raw: string | undefined): Date | null {
   if (!value) return null
   if (!DAY.test(value)) throw new Error(`OWNER_WRITING_MODEL_UNTIL="${value}" is not a date like 2026-12-31`)
   const end = new Date(`${value}T23:59:59.999Z`)
-  if (Number.isNaN(end.getTime())) throw new Error(`OWNER_WRITING_MODEL_UNTIL="${value}" is not a real date`)
+  // 2026-02-30 parses, as 2 March: a day that does not exist must not lengthen the trial.
+  if (Number.isNaN(end.getTime()) || end.toISOString().slice(0, 10) !== value) {
+    throw new Error(`OWNER_WRITING_MODEL_UNTIL="${value}" is not a real date`)
+  }
   return end
 }
 
