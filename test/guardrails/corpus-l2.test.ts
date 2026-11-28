@@ -5,6 +5,7 @@ import { GUARDRAIL_PASS_CRITERIA } from '@/lib/schemas'
 import { MissingFixtureError, fixtureReadRoots } from '@/lib/ai/fixtures'
 import { MemoryLogSink } from '@/lib/ai/types'
 import { guardInput } from '@/lib/guardrails/input'
+import { MAKE_BELIEVE_WRITER_RULES } from '@/lib/guardrails/classify'
 import { estimateCorpusCostUsd } from './cost'
 import { loadInputCorpus, pct, runL1 } from './measure'
 
@@ -217,7 +218,8 @@ describe('s7 full corpus (L1 + L2)', () => {
           r?.decision !== 'allow_with_care' ||
           r.category !== 'educational' ||
           r.requestedCharacters.length > 0 ||
-          (r.careNotes ?? '') === ''
+          // The writer's fixed rules (never a True Fact, never said to be real or not).
+          !(r.careNotes ?? '').endsWith(MAKE_BELIEVE_WRITER_RULES)
         )
       })
       const detail = wrong

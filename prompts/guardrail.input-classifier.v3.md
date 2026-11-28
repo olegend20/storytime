@@ -4,8 +4,9 @@
 - changes: v3 (2026-11-27, issue #130) a make-believe creature from folklore, myth or fairy
   tales (a mermaid, a unicorn, a dragon, a fairy) is no longer refused as `off_mission`: it
   is `allow_with_care` with `category: "educational"`, care notes that name the real subject
-  the story teaches, and no requested characters. The writer is told never to say whether
-  such a creature is real. Every other decision is unchanged.
+  the story teaches, and no requested characters. Code adds the writer's rules for the
+  creature (`MAKE_BELIEVE_WRITER_RULES`): a pretend companion, never a True Fact, and never
+  said to be real or not. Every other decision is unchanged.
   v2 (2026-10-02, issue #27) a character from a film, game, show, comic or book that
   the parent asks for in the topic is no longer refused: it is `allow_with_care` with
   `category: "commercial_ip_character"`, the names in `requested_characters`, and care notes
@@ -76,15 +77,16 @@ the tooth fairy), the parent wants it in tonight's story, and that is allowed. C
 these creatures, and a story can carry one while every fact in it stays real. Return
 `decision: "allow_with_care"` with `category: "educational"`, and:
 
-- write `care_notes` for the writer. Name the real-world subject the story should teach,
-  taken from what the request is curious about (mermaids finding their way in the dark →
-  deep-sea animals and how they glow and sense their way; mermaids → ocean animals; a
-  unicorn → horses; a dragon → Komodo dragons; a fairy → the insects and flowers of a
-  garden). Say the creature comes along as a pretend companion, like a guide, while the
-  children stay the heroes; that the creature is not a fact, so it never goes in the True
-  Facts list; and that every fact comes from the real subject. Say the story must never
-  tell the child that the creature is real or that it is not: that is for the parent to
-  tell their child.
+- write `care_notes` for the writer. They are the only way the writer hears about the
+  creature, so never return a plain `allow` here. Name the creature the parent asked for and
+  the real-world subject the story should teach, taken from what the request is curious
+  about (mermaids finding their way in the dark → deep-sea animals and how they glow and
+  sense their way; mermaids → ocean animals; a unicorn → horses; a dragon → Komodo dragons;
+  a fairy → the insects and flowers of a garden; a giant → the biggest animals). Say the
+  creature comes along as a pretend companion, like a guide, while the children stay the
+  heroes, and that every fact comes from the real subject. Do not write anything about
+  whether the creature is real, and nothing about the True Facts list: the writer is given
+  those rules separately.
 - leave `requested_characters` as `[]`. A kind of creature is not a named character. A
   named one from a film, show, game or book (Ariel, Toothless, Spyro) follows the character
   rule above instead.
@@ -93,11 +95,9 @@ these creatures, and a story can carry one while every fact in it stays real. Re
 A request that only wants the creature's adventure, with nothing to learn named ("a mermaid
 story", "a unicorn adventure"), is still allowed: choose the closest real subject yourself.
 
-This does not open any other door either. Judge the rest of the request exactly as you
-would without the creature: a creature in a request that is sexual, violent, frightening,
-a weapon lesson or anything else in the refuse list is refused under that category, and a
-creature written to frighten (zombies, vampires, demons, a monster that hunts children) is
-`horror_scary` as before.
+This does not open any other door either: the rest of the request is judged exactly as it
+would be without the creature, and a creature written to frighten (zombies, vampires,
+demons, a monster that hunts children) is `horror_scary` as before.
 
 **refuse** — anything in this list:
 
@@ -107,7 +107,8 @@ creature written to frighten (zombies, vampires, demons, a monster that hunts ch
 - drugs, alcohol, smoking or gambling as the subject
 - hate or extremist content
 - instructions for weapons, hacking, lock-picking or dangerous experiments — including
-  when the request is dressed up as educational ("a fun story about how to pick locks")
+  when the request is dressed up as educational ("a fun story about how to pick locks").
+  How a thing works is not how to defeat it: "how a lock works inside" is a plain `allow`
 - horror written to frighten
 - a real private individual as the subject: a classmate, a teacher, a neighbour, an ex,
   a colleague, a boss, the child who bullies someone

@@ -2,7 +2,7 @@ import { callModel, parseJsonLoose, type GenerationLogSink } from '@/lib/ai/call
 import { InputClassification } from '@/lib/schemas/guardrail'
 import { dataBlock, DATA_BLOCK_NOTICE } from './prompt'
 import { INPUT_CLASSIFIER_PROMPT, promptSection, promptVersion } from './prompts'
-import { isMakeBelieveKind, namedInTopic } from './names'
+import { isMakeBelieveKind, mentionsMakeBelieveKind, namedInTopic } from './names'
 
 /**
  * L2 - the Haiku input classifier. GUARDRAILS.md s3.3.
@@ -76,6 +76,34 @@ function failClosed(youngestAge: number): InputClassification {
 }
 
 /**
+ * What the writer is told about a make-believe creature (issue #130, DECISIONS #236). Fixed
+ * wording, added by code: the first live run had the classifier's own notes ask for mermaids
+ * to be labelled make-believe in the True Facts list, which is the one thing the owner ruled
+ * out. Worded so that it does no harm on a story with no such creature in it.
+ */
+export const MAKE_BELIEVE_WRITER_RULES =
+  'Rules for a make-believe creature (a mermaid, a unicorn, a dragon, a fairy and the like), ' +
+  'which come before anything above: it is a pretend companion and the children stay the ' +
+  'heroes. It is never a fact, so it stays out of the True Facts list. Nothing in the story ' +
+  'or anywhere else in the book says that the creature is real or that it is not: that is ' +
+  'for the parent to tell their child.'
+
+const CARE_NOTES_MAX = 800
+
+/**
+ * Adds the fixed rules when the parent typed a kind of creature and the classifier wrote
+ * notes about one. Both, because the word alone proves nothing ("a giant squid"). The
+ * classifier's notes are cut, never the rules, to stay inside the schema's 800 characters.
+ */
+export function withMakeBelieveRules(reply: InputClassification, topic: string): InputClassification {
+  const notes = reply.care_notes
+  if (reply.decision !== 'allow_with_care' || !notes) return reply
+  if (!mentionsMakeBelieveKind(topic) || !mentionsMakeBelieveKind(notes)) return reply
+  const room = CARE_NOTES_MAX - MAKE_BELIEVE_WRITER_RULES.length - 1
+  return { ...reply, care_notes: `${notes.slice(0, room).trimEnd()}\n${MAKE_BELIEVE_WRITER_RULES}` }
+}
+
+/**
  * Only a character the parent typed into the topic counts (s3.3), and code decides that, not
  * the model: a name from the child's likes, or one the classifier made up, is dropped so
  * nothing downstream can grant rule 7's exception on the model's word alone. And when the
@@ -94,15 +122,21 @@ export function confirmCharacters(reply: InputClassification, topic: string): In
   const creaturesOnly =
     reply.requested_characters.length > 0 && reply.requested_characters.every(isMakeBelieveKind)
   if (confirmed.length === 0 && creaturesOnly) {
-    return {
-      ...reply,
-      requested_characters: [],
-      category: reply.category === 'commercial_ip_character' ? 'educational' : reply.category,
-    }
+    return withMakeBelieveRules(
+      {
+        ...reply,
+        requested_characters: [],
+        category: reply.category === 'commercial_ip_character' ? 'educational' : reply.category,
+      },
+      topic,
+    )
   }
   if (confirmed.length === 0) {
     const aboutCharacter = reply.category === 'commercial_ip_character' || reply.requested_characters.length > 0
-    return { ...reply, requested_characters: [], care_notes: aboutCharacter ? null : reply.care_notes }
+    return withMakeBelieveRules(
+      { ...reply, requested_characters: [], care_notes: aboutCharacter ? null : reply.care_notes },
+      topic,
+    )
   }
   // A confirmed name means a character request, whatever the model labelled it: the
   // category the schema documents, and allow_with_care so the care notes reach the writer.

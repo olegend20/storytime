@@ -102,6 +102,16 @@ export function isMakeBelieveKind(name: string): boolean {
   return rest.length > 0 && MAKE_BELIEVE_KINDS.has(rest.join(''))
 }
 
+/**
+ * Whether a piece of text has a kind of make-believe creature in it, as whole words
+ * ("mermaids", "the tooth fairy"). Loose on purpose: "a giant squid" matches too, so this is
+ * only ever used next to the classifier's own judgement, never instead of it.
+ */
+export function mentionsMakeBelieveKind(text: string): boolean {
+  const w = words(text)
+  return w.some((word, i) => MAKE_BELIEVE_KINDS.has(word) || MAKE_BELIEVE_KINDS.has(word + (w[i + 1] ?? '')))
+}
+
 const MAX_NAME_WORDS = 4
 
 /**
